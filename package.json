@@ -1,0 +1,22 @@
+{
+  "name": "radar",
+  "description": "Presence and status api",
+  "version": "0.0.1",
+  "main": "index.js",
+  "dependencies": {
+    "engine.io": "0.2.x",
+    "miniee": "git://github.com/mixu/miniee.git#master",
+    "redis": "*",
+    "heartbeat": "git://github.com/mixu/heartbeat.git#master",
+    "minilog": "*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "radar_client": "git+ssh://git@github.com:zendesk/radar_client.git#master",
+    "engine.io-client": "0.1.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "make test"
+  }
+}

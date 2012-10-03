@@ -1,0 +1,95 @@
+<!doctype html>
+  <html lang="en">
+  <head>
+    <title>Test</title>
+
+    <link rel='stylesheet' type='text/css' href='/css/style.css' media='screen' />
+
+<script src="/engine.io.js"></script>
+<script src="/miniee.js"></script>
+<script src="/stalker.js"></script>
+<script src="/views.js"></script>
+
+<script>
+
+var client = new Stalker();
+client.configure({
+  host: window.location.hostname,
+  port: 843,
+  secure: true,
+
+  userId: %user_id%,
+  userType: 2,
+  accountName: 'dev'
+}).once('ready', function () {
+  view.status.render('Connected');
+
+  // Agent collision / presence
+  client.presence('foo')
+    .set('online')
+    .on(function(message) {
+      onlineUpdate(message);
+      redraw();
+    })
+    .sync();
+
+  // Chat
+  client.message.on('chat/foo/messages', function(message) {
+    model.messages.push(message);
+    redraw();
+  });
+  client.message.sync('chat/foo/messages');
+
+
+}).on('disconnected', function() {
+  view.status.render('Disconnected');
+  // Set models to offline
+  model.online = {};
+  redraw();
+
+}).on('unavailable', function() {
+  view.status.render('Permanently disconnected / Service unavailable');
+}).on('reconnecting', function(inSeconds) {
+  view.status.render('Reconnecting' + (inSeconds ? ' in '+inSeconds : ''));
+}).on('reconnected', function(inSeconds) {
+  view.status.render('Reconnected');
+
+  // until full restore is supported
+  client.presence('foo').set('online');
+}).connect();
+</script>
+  </head>
+  <body>
+    <div id="info"></div>
+
+<div id="header">
+  <div class="section">
+    <h2>Who's here?</h2>
+    <div id="online"></div>
+
+    <div id="toggle"></div>
+
+  </div>
+
+</div>
+
+<div id="content">
+
+  <div class="section">
+    <h2>Messages</h2>
+    <div id="messages"></div>
+
+    <input type="text" id="send" onkeypress="e = event;
+      if(e.which == 13) {
+        e.preventDefault();
+        client.message.publish('chat/foo/messages', this.value);
+        this.value = '';
+      }">
+  </div>
+</div>
+
+</body>
+</html>
+
+
+
