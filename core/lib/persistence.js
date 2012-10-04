@@ -1,6 +1,10 @@
 var redisLib = require('redis'),
     logging = require('minilog')('persistence'),
-    configuration = require('../../configuration');
+    // defaults
+    configuration = {
+      redis_host: 'localhost',
+      redis_port: 6379,
+    };
 
 var client, isConnecting = false;
 
@@ -21,6 +25,10 @@ function redis() {
 }
 
 function Persistence() { };
+
+Persistence.setConfig = function(config) {
+  configuration = config;
+};
 
 Persistence.applyPolicy = function(multi, key, policy) {
   if(policy.maxCount) {

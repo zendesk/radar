@@ -8,8 +8,7 @@ var redis = require('redis'),
     PresenceMaintainer = require('../core').PresenceMaintainer,
     Heartbeat = require('heartbeat'),
     logging = require('minilog')('server'),
-    hostname = require('os').hostname(),
-    configuration = require('../configuration');
+    hostname = require('os').hostname();
 
 // Parse JSON
 function parseJSON(data) {
@@ -33,9 +32,10 @@ function Server() {
 MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
-Server.prototype.attach = function(server) {
+Server.prototype.attach = function(server, configuration) {
   var self = this,
       engine = require('engine.io');
+  require('../core').Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
   this.subscriber.on('message', function(name, data) {
     logging.debug('#redis_in', name, data);

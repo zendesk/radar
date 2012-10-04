@@ -1,6 +1,10 @@
 var http = require('http'),
 
-    configuration = require('./configuration.js'),
+    configuration = {
+      redis_host: 'localhost',
+      redis_port: 6379,
+      port: 8000
+    },
     Radar = require('./server/server.js'),
     Api = require('./api/api.js'),
     Minilog = require('minilog');
@@ -30,6 +34,6 @@ server = http.createServer(p404);
 Api.attach(server);
 
 // Radar server
-Radar.attach(server, require('engine.io'));
+Radar.attach(server, configuration);
 
 server.listen(configuration.port);

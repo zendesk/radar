@@ -1,4 +1,3 @@
-
 var Types = {};
 
 function get(type) {
@@ -37,7 +36,9 @@ function getByExpression(name) {
 
 module.exports = {
   get: get,
-  getByExpression: getByExpression
+  getByExpression: getByExpression,
+  register: function(name, type) {
+    Types[name] = type;
+  }
 };
-
 

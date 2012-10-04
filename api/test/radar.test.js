@@ -17,7 +17,6 @@ var fs = require('fs'),
 var subdomain = 'support',
     frontend,
     backend,
-    config = require(__dirname + '/../../configuration.js'),
     routes;
 
 var Client = new ClientScope({
