@@ -2,6 +2,8 @@ var fs = require('fs'),
     url = require('url'),
     http = require('http'),
 
+    Minilog = require('minilog'),
+    Radar = require('../index.js').server;
     Router = require('../api/lib/router.js');
 
 var server = http.createServer(function(req, res) {
@@ -13,21 +15,21 @@ var server = http.createServer(function(req, res) {
 var routes = new Router();
 
 routes.get(new RegExp('^/$'), function(req, res) {
-  res.end(fs.readFileSync('./index.html'));
+  res.end(fs.readFileSync('./index.html').toString().replace('%user_id%', Math.floor(Math.random() * 100000)));
 });
 
 routes.get(new RegExp('^/user/(.*)$'), function(req, res, re) {
   res.end(fs.readFileSync('./index.html').toString().replace('%user_id%', re[1]));
 });
 
-routes.get(new RegExp('^/miniee.js$'), function(req, res) {
+routes.get(new RegExp('^/minilog.js$'), function(req, res) {
   res.setHeader('content-type', 'text/javascript');
-  res.end(fs.readFileSync('../node_modules/miniee/dist/miniee.js'));
+  res.end(fs.readFileSync('../node_modules/minilog/dist/minilog.js'));
 });
 
-routes.get(new RegExp('^/stalker.js$'), function(req, res) {
+routes.get(new RegExp('^/radar_client.js$'), function(req, res) {
   res.setHeader('content-type', 'text/javascript');
-  res.end(fs.readFileSync('../client/dist/stalker.js'));
+  res.end(fs.readFileSync('../node_modules/radar_client/dist/radar_client.js'));
 });
 
 routes.get(new RegExp('^/engine.io.js$'), function(req, res) {
@@ -44,6 +46,13 @@ routes.get(new RegExp('^/views.js$'), function(req, res) {
   res.end(fs.readFileSync('./views.js'));
 });
 
+Minilog.pipe(Minilog.backends.nodeConsole)
+  .format(Minilog.backends.nodeConsole.formatWithStack);
 
+
+Radar.attach(server);
 routes.attach(server);
-server.listen(9000);
+
+server.listen(8080);
+
+console.log('Server listening on localhost:8080');

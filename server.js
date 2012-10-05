@@ -13,15 +13,9 @@ var server,
     stdoutPipe = Minilog.pipe(Minilog.backends.nodeConsole);
 
 // configure log output
-if(process.env.NODE_ENV == 'production') {
-  stdoutPipe
-    .filter(Minilog.backends.nodeConsole.filterEnv('*'))
-    .format(Minilog.backends.nodeConsole.formatClean);
-} else {
-  stdoutPipe
-    .filter(Minilog.backends.nodeConsole.filterEnv((process.env.radar_log ? process.env.radar_log : '*')))
-    .format(Minilog.backends.nodeConsole.formatWithStack);
-}
+stdoutPipe
+  .filter(Minilog.backends.nodeConsole.filterEnv((process.env.radar_log ? process.env.radar_log : '*')))
+  .format(Minilog.backends.nodeConsole.formatWithStack);
 
 function p404(req, res){
   console.log('Returning Error 404 for '+req.method+' '+req.url);

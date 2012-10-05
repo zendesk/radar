@@ -35,6 +35,9 @@ MiniEventEmitter.mixin(Server);
 Server.prototype.attach = function(server, configuration) {
   var self = this,
       engine = require('engine.io');
+  configuration || (configuration = {});
+  configuration.redis_port || (configuration.redis_port = 6379);
+  configuration.redis_host || (configuration.redis_host = 'localhost');
   require('../core').Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
   this.subscriber.on('message', function(name, data) {

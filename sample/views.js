@@ -33,8 +33,8 @@ function OnlineToggle(elId) {
 
 OnlineToggle.prototype.render = function() {
   this.el || (this.el = document.getElementById(this.elId));
-  var status = (model.online[client._me.userId] ? 'offline' : 'online');
-  this.el.innerHTML = '<a onclick="client.presence(\'foo\').set(\''+status+'\');" href="javascript:;">Go '+status+'</a>';
+  var status = (model.online[RadarClient._me.userId] ? 'offline' : 'online');
+  this.el.innerHTML = '<a onclick="RadarClient.presence(\'foo\').set(\''+status+'\');" href="javascript:;">Go '+status+'</a>';
 
 };
 

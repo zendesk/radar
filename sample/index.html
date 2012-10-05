@@ -6,26 +6,23 @@
     <link rel='stylesheet' type='text/css' href='/css/style.css' media='screen' />
 
 <script src="/engine.io.js"></script>
-<script src="/miniee.js"></script>
-<script src="/stalker.js"></script>
+<script src="/minilog.js"></script>
+<script src="/radar_client.js"></script>
 <script src="/views.js"></script>
 
 <script>
-
-var client = new Stalker();
-client.configure({
+RadarClient.configure({
   host: window.location.hostname,
-  port: 843,
-  secure: true,
+  port: 8080,
 
   userId: %user_id%,
   userType: 2,
   accountName: 'dev'
-}).once('ready', function () {
+}).alloc('example', function (){
   view.status.render('Connected');
 
   // Agent collision / presence
-  client.presence('foo')
+  RadarClient.presence('foo')
     .set('online')
     .on(function(message) {
       onlineUpdate(message);
@@ -34,11 +31,10 @@ client.configure({
     .sync();
 
   // Chat
-  client.message.on('chat/foo/messages', function(message) {
+  RadarClient.message('chat/foo/messages').on(function(message) {
     model.messages.push(message);
     redraw();
-  });
-  client.message.sync('chat/foo/messages');
+  }).sync();
 
 
 }).on('disconnected', function() {
@@ -53,10 +49,7 @@ client.configure({
   view.status.render('Reconnecting' + (inSeconds ? ' in '+inSeconds : ''));
 }).on('reconnected', function(inSeconds) {
   view.status.render('Reconnected');
-
-  // until full restore is supported
-  client.presence('foo').set('online');
-}).connect();
+});
 </script>
   </head>
   <body>
@@ -82,7 +75,7 @@ client.configure({
     <input type="text" id="send" onkeypress="e = event;
       if(e.which == 13) {
         e.preventDefault();
-        client.message.publish('chat/foo/messages', this.value);
+        RadarClient.message.publish('chat/foo/messages', this.value);
         this.value = '';
       }">
   </div>
