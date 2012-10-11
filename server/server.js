@@ -100,6 +100,16 @@ Server.prototype.message = function(client, data) {
 
   var res = this.resource(message.to);
 
+  if(res && res.options && typeof res.options.auth === 'function') {
+    if(!res.options.auth(message)) {
+      client.send(JSON.stringify({
+        op: 'err',
+        value: 'auth'
+      }));
+      return;
+    }
+  }
+
   switch(message.op) {
     case 'get':
       res.getStatus && res.getStatus(client, message.key);

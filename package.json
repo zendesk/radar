@@ -2,6 +2,7 @@
   "name": "radar",
   "description": "Presence and status api",
   "version": "0.0.1",
+  "author": "Mikito Takada <mikito.takada@gmail.com>",
   "main": "index.js",
   "dependencies": {
     "engine.io": "0.2.x",
