@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>radar - High level API and backend for writing web apps that use push messaging</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../assets/css/gh.css"/>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="assets/js/prettify.js"></script>
+
+  </head>
+<body onload="prettyPrint()">
+  <div id="wrapper">
+    <div id="header">
+      <div id="title">
+
+<h1>radar</h1>
+
+      </div>
+      <div id="navi">
+<ul class="ca-menu">
+  <li>
+      <a href="https://github.com/zendesk/radar" target="_blank">
+          <span class="ca-icon"><i class="icon-heart"></i></span>
+          <div class="ca-content">
+              <h2 class="ca-main">Watch</h2>
+              <h3 class="ca-sub">+1 on GitHub</h3>
+          </div>
+      </a>
+  </li>
+  <li>
+      <a href="https://github.com/zendesk/radar" target="_blank">
+          <span class="ca-icon"><i class="icon-github"></i></span>
+          <div class="ca-content">
+              <h2 class="ca-main">Fork</h2>
+              <h3 class="ca-sub">Full source code on Github</h3>
+          </div>
+      </a>
+  </li>
+
+</ul>
+
+
+
+      </div>
+    </div>
+
+    <div class="clear"></div>
+
+    <div id="main">
+      <div id="content" class="post">
+<!-- Content -->
+<h1>REST API</h1>
+<ul class="list">
+<li>All the POST apis respond with:</li>
+</ul>
+<pre class="prettyprint">{}
+200: OK</pre>
+<h3>Status</h3>
+<h4>/radar/status [POST]</h4>
+<pre class="prettyprint">curl -k -H &quot;Content-Type: application/json&quot; -X POST -d &#39;{&quot;accountName&quot;:&quot;test&quot;,&quot;scope&quot;:&quot;ticket/1&quot;,&quot;key&quot;:&quot;greeting&quot;,&quot;value&quot;:&quot;hello&quot;}&#39; https://localhost/radar/status</pre>
+<p>You probably want to set the key to the current user&#39;s ID if you want to have each user have it&#39;s own value in the same scope.
+
+</p>
+<p>You can store any arbitrary string as the value.
+
+</p>
+<h5>/radar/status [GET]</h5>
+<pre class="prettyprint">curl -k &quot;https://localhost/radar/status?accountName=test&amp;scope=ticket/1&quot;</pre>
+<h6>Response - Status</h6>
+<pre class="prettyprint">{
+  1: &#39;foo&#39;,
+  2: &#39;bar&#39;,
+  123: &#39;foo&#39;
+}
+200: OK</pre>
+<p>The keys and values of the hash are determined by the content of the status. Often these are userID: value pairs.
+
+</p>
+<h3>Presence</h3>
+<p>Presence can only be set from the Radar client, not via the API.
+
+</p>
+<h4>/radar/presence [GET]</h4>
+<pre class="prettyprint">curl -k &quot;https://localhost/radar/presence?accountName=test&amp;scope=ticket/1&quot;</pre>
+<p>You can use scopes=one,two to get multiple scopes in one get:
+
+</p>
+<pre class="prettyprint">curl -k &quot;https://localhost/radar/presence?accountName=test&amp;scopes=ticket/1,ticket/2&quot;</pre>
+<h6>Response - Presence</h6>
+<pre class="prettyprint">{
+  1: 0,
+  2: 2,
+  123: 4
+}
+200: OK</pre>
+<p>This the keys are the user IDs of present users, and the values are the user types of the users (0 = end user, 2 = agent, 4 = admin).
+
+</p>
+<p>When getting multiple scopes, the format is:
+
+</p>
+<pre class="prettyprint">{
+  &quot;scope1&quot;: { ... },
+  &quot;scope2&quot;: { ... }
+}</pre>
+<h3>MessageList</h3>
+<h4>/radar/message [POST]</h4>
+<pre class="prettyprint">curl -k -H &quot;Content-Type: application/json&quot; -X POST -d &#39;{&quot;accountName&quot;:&quot;test&quot;,&quot;scope&quot;:&quot;chat/123&quot;, &quot;value&quot;:&quot;hello&quot;}&#39; https://localhost/radar/message</pre>
+<h4>/radar/message [GET]</h4>
+<pre class="prettyprint">curl -k &quot;https://localhost/radar/message?accountName=test&amp;scope=dev/test&quot;</pre>
+<h6>Response - MessageList</h6>
+<pre class="prettyprint">[
+  { to: &#39;message:/dev/test&#39;, value: ... },
+  { to: &#39;message:/dev/test&#39;, value: ... }
+]
+200: OK</pre>
+<p>The response includes all the messages have not yet expired (based on the message retention policy on the server side, e.g. time-limited for some resources).
+</p>
+
+<!-- end content -->
+      </div>
+    </div>
+
+    <div class="clear">
+    </div>
+
+    <div id="footer">
+    </div>
+  </div>
+</body>
+</html>
