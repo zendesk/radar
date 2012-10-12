@@ -100,12 +100,13 @@ Server.prototype.message = function(client, data) {
 
   var res = this.resource(message.to);
 
-  if(res && res.options && typeof res.options.auth === 'function') {
-    if(!res.options.auth(message)) {
+  if(res && res.options && res.options.auth) {
+    if(typeof res.options.auth !== 'function' || !res.options.auth(message)) {
       client.send(JSON.stringify({
         op: 'err',
         value: 'auth'
       }));
+      logging.error('#auth_invalid', data);
       return;
     }
   }
