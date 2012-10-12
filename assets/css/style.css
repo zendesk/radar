@@ -306,3 +306,7 @@ ul.list, ol.list {
   padding-left: 3.333em;
   max-width: 580px;
 }
+
+.post h2 {
+  border-bottom: 1px solid #EDEDED;
+}
