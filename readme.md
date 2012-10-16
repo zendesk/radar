@@ -1,3 +1,7 @@
+## Documentation
+
+See http://radar.zendesk.com/ for detailed documentation.
+
 ## Installation
 
 Installing from scratch:
