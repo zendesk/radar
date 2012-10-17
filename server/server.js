@@ -101,7 +101,7 @@ Server.prototype.message = function(client, data) {
   var res = this.resource(message.to);
 
   if(res && res.options && res.options.auth) {
-    if(typeof res.options.auth !== 'function' || !res.options.auth(message)) {
+    if(typeof res.options.auth !== 'function' || !res.options.auth(message, client)) {
       client.send(JSON.stringify({
         op: 'err',
         value: 'auth'
