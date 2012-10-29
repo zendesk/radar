@@ -12,7 +12,10 @@ var Server = {
   timer: new Heartbeat().interval(1500),
   broadcast: function(subscribers, message) { },
   terminate: function() { Server.timer.clear(); },
-  destroy: function() {}
+  destroy: function() {},
+  server: {
+    clients: { }
+  }
 };
 
 var counter = 1000;
@@ -97,7 +100,7 @@ exports['given a presence'] = {
     done();
   },
 
-  'when two connections have the same user, a disconnect is only queued after both disconnect': {
+  'when two connections have the same user, a disconnect is only queued after both disconnect but client disconnects are exposed': {
 
     beforeEach: function(done) {
       this.client2 = new MiniEE();
@@ -113,6 +116,15 @@ exports['given a presence'] = {
         }
       };
 
+      Server.server.clients[this.client.id] = this.client;
+      Server.server.clients[this.client2.id] = this.client2;
+      this.messages = {};
+      this.client.send = function(json) {
+        (self.messages[self.client.id] || (self.messages[self.client.id] = [])).push(JSON.parse(json));
+      };
+      this.client2.send = function(json) {
+        (self.messages[self.client2.id] || (self.messages[self.client2.id] = [])).push(JSON.parse(json));
+      };
       done();
     },
 
@@ -130,6 +142,14 @@ exports['given a presence'] = {
       // there should be a disconnect notification
       assert.equal(2, this.notifications.length);
       assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      // there should be a client_offline message for client 1
+      assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
+      op: 'client_offline',
+      value: {
+        userId: 1,
+        userType: 2,
+        clientId: this.client.id
+      }} ]);
 
       done();
     },
@@ -153,6 +173,14 @@ exports['given a presence'] = {
       // there should be a disconnect notification
       assert.equal(2, this.notifications.length);
       assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      // there should be a client_offline message for client 1
+      assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
+      op: 'client_offline',
+      value: {
+        userId: 1,
+        userType: 2,
+        clientId: this.client.id
+      }} ]);
 
       done();
     },
@@ -171,12 +199,20 @@ exports['given a presence'] = {
       // there should be a disconnect notification
       assert.equal(2, this.notifications.length);
       assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      // there should be a client_offline message for client 1
+      assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
+      op: 'client_offline',
+      value: {
+        userId: 1,
+        userType: 2,
+        clientId: this.client.id
+      }} ]);
 
       done();
     }
   },
 
-  'when a user is on two servers, and goes offline on one, the other one should ???': function(done) {
+  'when a user is on two servers, and goes explicitly offline on one, the other one should remain online': function(done) {
     done();
   },
 

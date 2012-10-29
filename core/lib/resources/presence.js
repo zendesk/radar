@@ -97,6 +97,8 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
         sendAck && self.ack(client, sendAck);
       });
     } else {
+      // only send client_offline when there are other clients that are still active, not when the last client leaves
+      isSet && self.notifyClientDisconnect(userId, prev.userType, client.id);
       // send ack, even if this is a NOP since some other client is keeping this presence
       sendAck && self.ack(client, sendAck);
     }
@@ -119,17 +121,16 @@ Presence.prototype.unsubscribe = function(client, sendAck) {
       if(!user || !user.refs) {
         return;
       }
-      if(user.refs) {
-        if(user.refs == 1) {
-          // NOTE: do not modify user.refs here! Otherwise, we will decrement twice (once here and once when the real disconnect happens)
-          // do an actual disconnect only if there are no connections that refer to this user
-          self.parent.presenceMaintainer.queue(self.name, userId, user.userType);
-          self._local.remove(userId);
-        } else {
-          // instead of disconnecting, just decrement the ref counter
-          user.refs--;
-        }
+      if(user.refs == 1) {
+        // NOTE: do not modify user.refs here! Otherwise, we will decrement twice (once here and once when the real disconnect happens)
+        // do an actual disconnect only if there are no connections that refer to this user
+        self.parent.presenceMaintainer.queue(self.name, userId, user.userType);
+        self._local.remove(userId);
+      } else {
+        // instead of disconnecting, just decrement the ref counter
+        user.refs--;
       }
+      self.notifyClientDisconnect(userId, user.userType, client.id);
     });
   }
   // remove parent callback if empty
@@ -177,6 +178,24 @@ Presence.prototype.updateSubscribers = function(userId, userType, online) {
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     client && client.send(message);
+  });
+};
+
+Presence.prototype.notifyClientDisconnect = function(userId, userType, clientId) {
+  var self = this,
+      message = JSON.stringify({
+      to: self.name,
+      op: 'client_offline',
+      value: {
+        userId: userId,
+        userType: userType,
+        clientId: clientId
+      }
+  });
+  Object.keys(this.subscribers).forEach(function(subscriber) {
+    var client = self.parent.server.clients[subscriber];
+    // exclude the client itself, notifying yourself of disconnects is silly
+    client && (client.id != clientId) && client.send(message);
   });
 };
 
