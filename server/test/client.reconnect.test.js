@@ -54,18 +54,17 @@ exports['given a server and two connected clients'] = {
     var client = this.client, client2 = this.client2, self = this, messages = [];
     this.timeout(30000);
 
-    client.message.on('foo', function(msg) {
+    client.message('foo').on(function(msg) {
       messages.push(msg);
-    });
-    client.message.sync('foo');
+    }).sync();
 
-    client2.message.publish('foo', '1');
+    client2.message('foo').publish('1');
 
     setTimeout(function() {
       common.endRadar(self, function() {
-        client2.message.publish('foo', '2');
+        client2.message('foo').publish('2');
         common.startRadar(8009, self, function(){
-          client2.message.publish('foo', '3');
+          client2.message('foo').publish('3');
           setTimeout(function() {
             assert.equal(messages.length, 3);
             assert.ok(messages.some(function(m) { return m.value == '1';}));

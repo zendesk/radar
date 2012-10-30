@@ -188,7 +188,7 @@ exports['given a server'] = {
       return match;
     });
     // optional (due to new "connect-if-configured-logic"): client.alloc('test');
-    client.message.subscribe('test');
+    client.message('test').subscribe();
   },
 
   'message: can publish()': function(done) {
@@ -196,7 +196,7 @@ exports['given a server'] = {
     // test.expect(2);
     var message = { state: 'other'};
 
-    client.message.when('test', function(msg) {
+    client.message('test').when(function(msg) {
       if(msg.value && msg.value.state && msg.value.state == 'other') {
         assert.equal('message:/dev/test', msg.to);
         assert.equal('other', msg.value.state);
@@ -205,8 +205,7 @@ exports['given a server'] = {
       }
       return false;
     });
-    client.message.subscribe('test');
-    client.message.publish('test', message);
+    client.message('test').subscribe().publish(message);
   },
 
   'message: can sync()': function(done) {
@@ -214,7 +213,7 @@ exports['given a server'] = {
         message = { foo: 'bar' },
         assertions = 0;
     Persistence.persistOrdered('message:/dev/test', JSON.stringify(message), function() {
-      client.message.on('test', function(msg) {
+      client.message('test').on(function(msg) {
         assert.equal('bar', msg.foo);
         assertions++;
       }).sync('test');

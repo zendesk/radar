@@ -15,7 +15,7 @@ exports['given two clients'] = {
     function next() { tasks++ && (tasks == 4) && done(); }
     this.client = new Client()
                   .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001})
-                  .once('ready', function() { self.client.message.subscribe('test', next); })
+                  .once('ready', function() { self.client.message('test').subscribe(next); })
                   .alloc('test');
     this.client2 = new Client()
                   .configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001})
@@ -31,27 +31,27 @@ exports['given two clients'] = {
         message = { state: 'test1'},
         assertions = 0;
     client2.once('ready', function() {
-      client.message.on('test', function(msg) {
+      client.message('test').on(function(msg) {
         assert.equal('message:/dev/test', msg.to);
         assert.equal(message.state, msg.value.state);
         assertions += 2;
       });
-      client2.message.on('test', function(msg) {
+      client2.message('test').on(function(msg) {
         assert.equal('message:/dev/test', msg.to);
         assert.equal(message.state, msg.value.state);
         assertions += 2;
       });
       Radar.once('subscribe', function(c, msg) {
-        client.message.publish('test', message);
+        client.message('test').publish(message);
         setTimeout(function() {
           assert.equal(4, assertions);
 
-          client.message.removeAllListeners('test');
-          client2.message.removeAllListeners('test');
+          client.message('test').removeAllListeners();
+          client2.message('test').removeAllListeners();
           done();
         }, 50); // 50 ms at most
       });
-      client2.message.subscribe('test');
+      client2.message('test').subscribe();
     });
     client2.alloc('test');
   },
@@ -62,23 +62,23 @@ exports['given two clients'] = {
         message = { state: 'test2'},
         assertions = 0;
     client2.once('ready', function() {
-      client2.message.on('test', function(msg) {
+      client2.message('test').on(function(msg) {
         if(msg.value.state == 'test2') {
           assert.ok(false);
           assertions++;
         }
       });
-      client.message.on('test', function(msg) {
+      client.message('test').on(function(msg) {
         if(msg.value.state == 'test2') {
           assert.ok(true);
           assertions++;
         }
       });
-      client.message.publish('test', message);
+      client.message('test').publish(message);
       setTimeout(function() {
         assert.equal(1, assertions);
-        client.message.removeAllListeners('test');
-        client2.message.removeAllListeners('test');
+        client.message('test').removeAllListeners();
+        client2.message('test').removeAllListeners();
         done();
       }, 100); // 100 ms at most
     });
@@ -94,31 +94,31 @@ exports['given two clients'] = {
     // test.numAssertions = 3;
     client2.once('ready', function() {
       Radar.once('subscribe', function(c, msg) {
-        client.message.publish('test', message);
+        client.message('test').publish(message);
       });
-      client2.message.on('test', function(msg) {
+      client2.message('test').on(function(msg) {
         if(msg.value.state == 'test3') {
           assert.ok(true);
-          client2.message.unsubscribe('test', function() { });
+          client2.message('test').unsubscribe(function() { });
         }
         if(msg.value.state == 'test4') {
           assert.ok(false);
         }
       });
-      client.message.on('test', function(msg) {
+      client.message('test').on(function(msg) {
         if(msg.value.state == 'test3') {
           assert.ok(true);
         }
       });
       Radar.once('unsubscribe', function(c, msg) {
-        client.message.publish('test', message2);
+        client.message('test').publish(message2);
         setTimeout(function() {
-          client.message.removeAllListeners('test');
-          client2.message.removeAllListeners('test');
+          client.message('test').removeAllListeners();
+          client2.message('test').removeAllListeners();
           done();
         }, 50); // 100 ms at most
       });
-      client2.message.subscribe('test', function() { });
+      client2.message('test').subscribe(function() { });
     });
     client2.alloc('test');
   }

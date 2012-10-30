@@ -30,9 +30,11 @@ exports['given a server and two connected clients'] = {
     common.endRadar(this, done);
   },
 
+/*
   after: function(done) {
     Persistence.disconnect(done);
   },
+*/
 
   'a presence can be set to online and subscribers will be updated': function(done) {
     var client = this.client, client2 = this.client2,
@@ -90,14 +92,14 @@ exports['given a server and two connected clients'] = {
   },
 
   'a presence will not be set to offline during the grace period but will be offline after it': function(done) {
-
+/*
     var Minilog = require('minilog');
     Minilog.pipe(Minilog.backends.nodeConsole)
       .format(Minilog.backends.nodeConsole.formatWithStack);
     require('radar_client')._log
       .pipe(Minilog.backends.nodeConsole)
       .format(Minilog.backends.nodeConsole.formatWithStack);
-
+*/
     this.timeout(18*1000);
     var client = this.client, client2 = this.client2,
         notifications = [];
@@ -117,19 +119,23 @@ exports['given a server and two connected clients'] = {
         client2.presence('chat/1/participants').get(function(message) {
           logging.info('FOOOOO1', message, notifications);
           // both should show client 1 as online
-          assert.equal('get', message.op)
-          assert.deepEqual({ '123': 0 }, message.value)
-            // we should have received one message only (online), no spurious notifications
-          assert.equal(1, notifications.length);
+          assert.equal('get', message.op);
+          assert.deepEqual({ '123': 0 }, message.value);
+
+          // we should have received a online notification
+          assert.ok(notifications.some(function(m) { return m.op == 'online'}));
+          // This does not hold now that we have client_online/client_offline notifications: assert.equal(1, notifications.length);
 
           // a presence be set to offline after the grace period
           setTimeout(function() {
             client2.presence('chat/1/participants').get(function(message) {
               logging.info('FOOOOO2', message, notifications);
               // both should show client 1 as offline
-              assert.equal('get', message.op)
-              assert.deepEqual({}, message.value)
-              assert.equal(2, notifications.length);
+              assert.equal('get', message.op);
+              assert.deepEqual({}, message.value);
+
+              assert.ok(notifications.some(function(m) { return m.op == 'offline'}));
+              // broken due to new notifications: assert.equal(2, notifications.length);
               done();
             });
           }, 3*1000);
