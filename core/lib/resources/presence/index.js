@@ -1,4 +1,5 @@
-var Resource = require('../../resource.js');
+var Resource = require('../../resource.js'),
+    logging = require('minilog')('presence');
 
 function Presence(name, parent, options) {
   Resource.call(this, name, parent, options);
@@ -7,19 +8,23 @@ function Presence(name, parent, options) {
 
   this.counter = new UserCounter();
   this.counter.on('user_online', function(userId) {
+    var value = {};
+    value[userId] = userType;
     self.broadcast(JSON.stringify({
       to: self.name,
-      op: ( online ? 'online' : 'offline'),
+      op: 'online',
       value: value
     });
   });
   this.counter.on('user_offline', function(userId) {
     // here, we set a delay for the check
     setTimeout(function() {
+      var value = {};
       if(self.counter.has(userId)) {
         logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
       } else {
-        self.broadcast(JSON.stringify({
+      value[userId] = userType;
+      self.broadcast(JSON.stringify({
           to: self.name,
           op: ( online ? 'online' : 'offline'),
           value: value
@@ -30,15 +35,21 @@ function Presence(name, parent, options) {
   this.counter.on('client_online', function(clientId, userId) {
     self.broadcast(JSON.stringify({
       to: self.name,
-      op: ( online ? 'online' : 'offline'),
-      value: value
+      op: 'client_online',
+      value: {
+        userId: userId,
+        clientId: clientId
+      }
     });
   });
   this.counter.on('client_offline', function(clientId, userId) {
     self.broadcast(JSON.stringify({
       to: self.name,
-      op: ( online ? 'online' : 'offline'),
-      value: value
+      op: 'client_offline',
+      value: {
+        userId: userId,
+        clientId: clientId
+      }
     });
   });
 }
@@ -76,20 +87,20 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
     this.counter.remove(client.id, userId);
   }
   // only local changes get sent externally
-  this.sendPresence(userId, userType, isOnline, function() {
+  this.sendPresence(userId, userType, client.id, isOnline, function() {
     // send ACK
     sendAck && self.ack(client, sendAck);
   });
 };
 
-Presence.prototype.sendPresence = function(userId, userType, online, callback) {
+Presence.prototype.sendPresence = function(userId, userType, clientId, online, callback) {
   if(online) {
-    var message = JSON.stringify({ userId: userId, userType: userType, online: true, at: new Date().getTime()});
+    var message = JSON.stringify({ userId: userId, userType: userType, clientId: clientId, online: true, at: new Date().getTime()});
     Persistence.persistHash(this.scope, userId, message);
     Persistence.publish(this.scope, message, callback);
   } else {
     Persistence.deleteHash(this.scope, userId);
-    Persistence.publish(this.scope, JSON.stringify({ userId: userId, userType: userType, online: false, at: 0}), callback);
+    Persistence.publish(this.scope, JSON.stringify({ userId: userId, userType: userType, clientId: clientId, online: false, at: 0}), callback);
   }
 };
 
@@ -137,12 +148,14 @@ Presence.prototype.broadcast = function(message) {
   });
 };
 
-// TODO update
 Presence.prototype.fullRead = function(callback) {
   var self = this;
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.scope);
   Persistence.readHashAll(this.scope, function(replies) {
+    var changeOnline = {},
+        changeOffline = {},
+        maxAge = new Date().getTime() - 45 * 1000;
     logging.debug(self.scope, 'REPLIES', replies);
 
     if(!replies) {
@@ -151,9 +164,6 @@ Presence.prototype.fullRead = function(callback) {
 
     // process all messages in one go before updating subscribers to avoid
     // sending multiple messages
-    var changeOnline = {};
-    var changeOffline = {};
-    var maxAge = new Date().getTime() - 45 * 1000;
     Object.keys(replies).forEach(function(key) {
       var data = replies[key];
       try {
@@ -166,35 +176,32 @@ Presence.prototype.fullRead = function(callback) {
         return callback && callback({});
       }
       var isOnline = message.online,
-          isExpired = (message.at < maxAge);
+          isExpired = (message.at < maxAge),
+          keyName = message.userId + '.' + message.clientId;
       logging.info(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
       // reminder: there may be multiple online/offline transitions. We want to replay the
       // history here.
-      if(isOnline && !isExpired && !self._online.has(message.userId)) {
-        changeOnline[message.userId] = message.userType;
-        delete changeOffline[message.userId];
-      } else if(
-        (!isOnline || (isOnline && isExpired))
-         && self._online.has(message.userId)) {
-        changeOffline[message.userId] = message.userType;
-        delete changeOnline[message.userId];
+      if(isOnline && !isExpired) {
+        changeOnline[keyName] = message;
+        delete changeOffline[keyName];
+      } else if(!isOnline || (isOnline && isExpired)) {
+        changeOffline[keyName] = message;
+        delete changeOnline[keyName];
       }
     });
 
-    Object.keys(changeOffline).forEach(function(userId) {
-      var userType = changeOffline[userId];
-      self._online.remove(userId);
-      self.emit('user_removed', userId, userType);
+    Object.keys(changeOffline).forEach(function(key) {
+      var value = changeOffline[key];
+      self.counter.remove(value.clientId, value.userId);
     });
-    Object.keys(changeOnline).forEach(function(userId) {
-      var userType = changeOnline[userId];
-      self._online.add(userId, userType);
-      self.emit('user_added', userId, userType);
+    Object.keys(changeOnline).forEach(function(key) {
+      var value = changeOnline[key];
+      self.counter.add(value.clientId, value.userId);
     });
 
-    logging.info('fullRead changes - offline', changeOffline, ' online', changeOnline, 'result', self._online.items);
+    logging.info('fullRead changes - offline', changeOffline, ' online', changeOnline, 'result', self.counter);
 
-    callback && callback(self._online.items);
+    callback && callback(self.counter.items());
   });
 };
 

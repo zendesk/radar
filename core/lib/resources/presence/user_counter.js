@@ -49,4 +49,13 @@ UserCounter.prototype.has = function(userId) {
   return (this._byUserId[userId] ? this._byUserId[userId].length : 0);
 };
 
+// without the client ID info
+UserCounter.prototype.items = function() {
+  var result = {};
+  Object.keys(this._byUserId).forEach(function(userId) {
+    result[userId] = 0; // userType is always 0 for now
+  });
+  return result;
+};
+
 module.exports = UserCounter;
