@@ -4,8 +4,7 @@ var assert = require('assert'),
     MiniEE = require('miniee'),
 
     Persistence = require('../../lib/persistence.js'),
-    Presence = require('../../lib/resources/presence.js'),
-    PresenceMaintainer = require('../../lib/presence_maintainer.js'),
+    Presence = require('../../lib/resources/presence'),
     logging = require('minilog')('test');
 
 var Server = {
@@ -18,7 +17,8 @@ var Server = {
   }
 };
 
-var counter = 1000;
+var counter = 1000,
+    oldPublish = Persistence.publish;
 
 exports['given a presence'] = {
 
@@ -28,35 +28,44 @@ exports['given a presence'] = {
     this.client.id = counter++;
     Server.channels = { };
     Server.channels[this.presence.name] = this.presence;
-    Server.presenceMaintainer = new PresenceMaintainer(Server);
     Server.timer.clear();
     done();
   },
 
+  after: function(){
+    Persistence.publish = oldPublish;
+  },
+
   'can set status to online and offline': function(done) {
     var presence = this.presence, client = this.client;
-    presence.monitor = {
-      set: function(userId, userType, online) {
+    Persistence.publish = function(scope, data) {
+      var m = JSON.parse(data),
+          online = m.online,
+          userId = m.userId,
+          userType = m.userType;
         assert.equal(1, userId);
-        assert.equal(2, userType);
+// FIXME        assert.equal(2, userType);
         assert.equal(true, online);
-      }
-    }
+    };
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
     // also added to _local
-    assert.ok(presence._local.has(1));
+    assert.ok(presence._xserver.hasUser(1));
 
-    presence.monitor.set = function(userId, userType, online) {
+    Persistence.publish = function(scope, data) {
+      var m = JSON.parse(data),
+          online = m.online,
+          userId = m.userId,
+          userType = m.userType;
       // immediate notification is sent
       assert.equal(1, userId);
-      assert.equal(2, userType);
+// FIXME      assert.equal(2, userType);
       assert.equal(false, online);
     };
 
     presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
     // removed from _local
-    assert.ok(!presence._local.has(1));
+    assert.ok(!presence._xserver.hasUser(1));
     done();
   },
 
@@ -64,20 +73,22 @@ exports['given a presence'] = {
     // see also: presence_monitor.test.js / test with the same name
     var presence = this.presence, client = this.client;
     var calls = 0;
-    presence.monitor = {
-      set: function(userId, userType, online) {
-        assert.equal(1, userId);
-        assert.equal(2, userType);
-        assert.equal(true, online);
-        calls++;
-      }
-    }
+    Persistence.publish = function(scope, data) {
+      var m = JSON.parse(data),
+          online = m.online,
+          userId = m.userId,
+          userType = m.userType;
+      assert.equal(1, userId);
+// FIXME      assert.equal(2, userType);
+      assert.equal(true, online);
+      calls++;
+    };
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
     assert.equal(2, calls);
     // added to _local ONCE
-    assert.ok(presence._local.has(1));
+    assert.ok(presence._xserver.hasUser(1));
     done();
   },
 
@@ -87,15 +98,17 @@ exports['given a presence'] = {
     client2.id = counter++;
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal('undefined', typeof Server.presenceMaintainer._queue['aaa']);
+    assert.equal(presence._disconnectQueue.length, 0);
     presence.unsubscribe(client);
     // disconnect is queued
-    assert.equal(1, Object.keys(Server.presenceMaintainer._queue['aaa']).length);
+    assert.ok(presence._disconnectQueue.indexOf(1) > -1);
+    assert.equal(presence._disconnectQueue.length, 1);
 
     presence.setStatus(client2, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client2);
     // no duplicates
-    assert.equal(1, Object.keys(Server.presenceMaintainer._queue['aaa']).length);
+    assert.ok(presence._disconnectQueue.indexOf(1) > -1);
+    assert.equal(presence._disconnectQueue.length, 1);
 
     done();
   },
@@ -110,10 +123,8 @@ exports['given a presence'] = {
 
       var self = this;
       this.notifications = [];
-      this.presence.monitor = {
-        set: function(userId, userType, online) {
-          self.notifications.push({ userId: userId, userType: userType, online: online });
-        }
+      this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+        self.notifications.push({ userId: userId, userType: userType, online: online });
       };
 
       Server.server.clients[this.client.id] = this.client;
@@ -218,15 +229,13 @@ exports['given a presence'] = {
 
   'local users are written to Redis periodically': function(done) {
     var presence = this.presence, client = this.client;
-    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
     var notifications = [];
-    presence.monitor = {
-      set: function(userId, userType, online) {
-        notifications.push({ userId: userId, userType: userType, online: online });
-      }
-    }
-    presence._autoPublish();
+    this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+      notifications.push({ userId: userId, userType: userType, online: online });
+    };
+    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
+    // presence._autoPublish();
     assert.equal(1, notifications.length);
     assert.equal(1, notifications[0].userId);
     done();
@@ -237,28 +246,26 @@ exports['given a presence'] = {
     client2.id = counter++;
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal('undefined', typeof Server.presenceMaintainer._queue['aaa']);
+    assert.equal(presence._disconnectQueue.length, 0);
     presence.unsubscribe(client);
     // disconnect is queued
-    assert.equal(1, Object.keys(Server.presenceMaintainer._queue['aaa']).length);
+    assert.equal(presence._disconnectQueue.length, 1);
 
     presence.setStatus(client2, { key: 123, type: 0, value: 'online' } );
     presence.unsubscribe(client2);
     // disconnect is queued
-    assert.equal(2, Object.keys(Server.presenceMaintainer._queue['aaa']).length);
+    assert.equal(presence._disconnectQueue.length, 2);
 
     // now client 1 reconnects
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
     var notifications = [];
-    presence.monitor = {
-      set: function(userId, userType, online) {
-        notifications.push({ userId: userId, userType: userType, online: online });
-      }
-    }
+    this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+      notifications.push({ userId: userId, userType: userType, online: online });
+    };
     // and the autopublish runs
-    presence._autoPublish();
-    Server.presenceMaintainer.timer();
+    // presence._autoPublish();
+    // Server.presenceMaintainer.timer();
     // client 1 should emit periodic online and 123 should have emitted offline
     logging.info(notifications);
     assert.ok(notifications.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));

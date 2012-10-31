@@ -1,4 +1,6 @@
 var Resource = require('../../resource.js'),
+    Persistence = require('../../persistence.js'),
+    CrossServer = require('./cross_server.js'),
     logging = require('minilog')('presence');
 
 function Presence(name, parent, options) {
@@ -6,33 +8,28 @@ function Presence(name, parent, options) {
   var self = this;
   this.type = 'presence';
 
-  this.counter = new UserCounter();
-  this.counter.on('user_online', function(userId) {
+  this._disconnectQueue = [];
+  this._xserver = new CrossServer();
+  this._xserver.on('user_online', function(userId) {
+    console.log('user_online', userId);
     var value = {};
-    value[userId] = userType;
+    value[userId] = 0; // fixme
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'online',
       value: value
-    });
+    }));
   });
-  this.counter.on('user_offline', function(userId) {
+  this._xserver.on('user_offline', function(userId) {
+    console.log('user_offline (queue)', userId);
+    if(self._disconnectQueue.indexOf(userId) == -1) {
+      self._disconnectQueue.push(userId);
+    }
     // here, we set a delay for the check
-    setTimeout(function() {
-      var value = {};
-      if(self.counter.has(userId)) {
-        logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
-      } else {
-      value[userId] = userType;
-      self.broadcast(JSON.stringify({
-          to: self.name,
-          op: ( online ? 'online' : 'offline'),
-          value: value
-        });
-      }
-    }, 15000);
+    setTimeout(function() { self._processDisconnects(); }, 15000);
   });
-  this.counter.on('client_online', function(clientId, userId) {
+  this._xserver.on('client_online', function(clientId, userId) {
+    console.log('client_online', userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_online',
@@ -40,9 +37,10 @@ function Presence(name, parent, options) {
         userId: userId,
         clientId: clientId
       }
-    });
+    }));
   });
-  this.counter.on('client_offline', function(clientId, userId) {
+  this._xserver.on('client_offline', function(clientId, userId) {
+    console.log('client_offline', userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_offline',
@@ -50,7 +48,7 @@ function Presence(name, parent, options) {
         userId: userId,
         clientId: clientId
       }
-    });
+    }));
   });
 }
 
@@ -61,12 +59,11 @@ Presence.prototype.redisIn = function(data) {
     var message = JSON.parse(data);
   } catch(e) { return; }
 
-
-  if(message.online) {
-    this.counter.add(message.clientId, message.userId);
-  } else {
-    this.counter.remove(message.clientId, message.userId);
+  if(this._xserver.isLocal(message.clientId)) {
+    return;
   }
+
+  this._xserver.remoteMessage(message);
 };
 
 Presence.prototype.setStatus = function(client, message, sendAck) {
@@ -78,39 +75,26 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
       userType = message.type,
       isOnline = (message.value != 'offline');
 
+  function ackCheck() {
+    sendAck && self.ack(client, sendAck);
+  }
+
   if(isOnline) {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this.counter.add(client.id, userId);
+    this._xserver.addLocal(client.id, userId, ackCheck);
   } else {
     // remove from local
-    this.counter.remove(client.id, userId);
-  }
-  // only local changes get sent externally
-  this.sendPresence(userId, userType, client.id, isOnline, function() {
-    // send ACK
-    sendAck && self.ack(client, sendAck);
-  });
-};
-
-Presence.prototype.sendPresence = function(userId, userType, clientId, online, callback) {
-  if(online) {
-    var message = JSON.stringify({ userId: userId, userType: userType, clientId: clientId, online: true, at: new Date().getTime()});
-    Persistence.persistHash(this.scope, userId, message);
-    Persistence.publish(this.scope, message, callback);
-  } else {
-    Persistence.deleteHash(this.scope, userId);
-    Persistence.publish(this.scope, JSON.stringify({ userId: userId, userType: userType, clientId: clientId, online: false, at: 0}), callback);
+    this._xserver.removeLocal(client.id, userId, ackCheck);
   }
 };
-
 
 Presence.prototype.unsubscribe = function(client, sendAck) {
-  // remove from local - if in local at all
-  this.local.remove(client.id);
+  var self = this;
+  this._xserver.disconnectLocal(client.id);
   // garbage collect if the set of subscribers is empty
   if (Object.keys(this.subscribers).length == 1) {
-    this.counter = null;
+    // this._counter = null;
   }
   // call parent
   Resource.prototype.unsubscribe.call(this, client, sendAck);
@@ -153,9 +137,6 @@ Presence.prototype.fullRead = function(callback) {
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.scope);
   Persistence.readHashAll(this.scope, function(replies) {
-    var changeOnline = {},
-        changeOffline = {},
-        maxAge = new Date().getTime() - 45 * 1000;
     logging.debug(self.scope, 'REPLIES', replies);
 
     if(!replies) {
@@ -175,36 +156,28 @@ Presence.prototype.fullRead = function(callback) {
         logging.error('Persistence full read: invalid message', data, err);
         return callback && callback({});
       }
-      var isOnline = message.online,
-          isExpired = (message.at < maxAge),
-          keyName = message.userId + '.' + message.clientId;
-      logging.info(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
-      // reminder: there may be multiple online/offline transitions. We want to replay the
-      // history here.
-      if(isOnline && !isExpired) {
-        changeOnline[keyName] = message;
-        delete changeOffline[keyName];
-      } else if(!isOnline || (isOnline && isExpired)) {
-        changeOffline[keyName] = message;
-        delete changeOnline[keyName];
-      }
+      self._xserver.remoteMessage(message);
     });
 
-    Object.keys(changeOffline).forEach(function(key) {
-      var value = changeOffline[key];
-      self.counter.remove(value.clientId, value.userId);
-    });
-    Object.keys(changeOnline).forEach(function(key) {
-      var value = changeOnline[key];
-      self.counter.add(value.clientId, value.userId);
-    });
-
-    logging.info('fullRead changes - offline', changeOffline, ' online', changeOnline, 'result', self.counter);
-
-    callback && callback(self.counter.items());
+    callback && callback(self._xserver.getOnline());
   });
 };
 
+Presence.prototype._processDisconnects = function() {
+  var value = {}, self = this;
+  this._disconnectQueue.forEach(function(userId)  {
+    if(self._counter.has(userId)) {
+      logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
+    } else {
+      value[userId] = 0; // fixme
+      self.broadcast(JSON.stringify({
+        to: self.name,
+        op: 'offline',
+        value: value
+      }));
+    }
+  });
+};
 
 Presence.setBackend = function(backend) { Persistence = backend; };
 

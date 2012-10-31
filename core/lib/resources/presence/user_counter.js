@@ -16,15 +16,22 @@ UserCounter.prototype.add = function(clientId, userId) {
   this._byClientId[clientId] || (this._byClientId[clientId] = []);
   if(this._byClientId[clientId].indexOf(userId) == -1) {
     this._byClientId[clientId].push(userId);
-    this.emit('client_online', clientId, userId);
   }
 };
 
-// Note: userId is optional - if it is not set, we should remove all user ids
-// if it is set, then we should only remove the specific userId
 UserCounter.prototype.remove = function(clientId, userId) {
-  var index;
-  if(userId && this._byUserId[userId]) {
+  var index, self = this;
+  if(this._byClientId[clientId]) {
+    this._byClientId[clientId] = this._byClientId[clientId].filter(function(uid) {
+      if(!userId || uid == userId) {
+        self.emit('client_offline', clientId, uid);
+        return false;
+      }
+      return true;
+    });
+  }
+  // order is significant (so that client_offline is emitted before user_offline)
+  if(this._byUserId[userId]) {
     index = this._byUserId[userId].indexOf(clientId);
     if(index > -1) {
       this._byUserId[userId].splice(index, 1);
@@ -34,28 +41,16 @@ UserCounter.prototype.remove = function(clientId, userId) {
       this.emit('user_offline', userId);
     }
   }
-  if(this._byClientId[clientId]) {
-    this._byClientId[clientId] = this._byClientId[clientId].filter(function(uid) {
-      if(!userId || uid == userId) {
-        this.emit('client_offline', clientId, uid);
-        return false;
-      }
-      return true;
-    });
-  }
 };
 
+// for checking wheter a user is online
 UserCounter.prototype.has = function(userId) {
   return (this._byUserId[userId] ? this._byUserId[userId].length : 0);
 };
 
-// without the client ID info
-UserCounter.prototype.items = function() {
-  var result = {};
-  Object.keys(this._byUserId).forEach(function(userId) {
-    result[userId] = 0; // userType is always 0 for now
-  });
-  return result;
+// for fetching the user IDs associated with a client ID
+UserCounter.prototype.getByClientId = function(clientId) {
+  return this._byClientId[clientId];
 };
 
 module.exports = UserCounter;

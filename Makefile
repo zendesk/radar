@@ -1,6 +1,6 @@
 #TESTS += api/test/radar.test.js
 
-TESTS += core/test/presence_monitor.test.js
+#TESTS += core/test/presence_monitor.test.js
 TESTS += core/test/resources/message_list.test.js
 TESTS += core/test/resources/presence.test.js
 TESTS += core/test/resources/status.test.js
