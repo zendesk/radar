@@ -3,7 +3,7 @@ var redisLib = require('redis'),
     // defaults
     configuration = {
       redis_host: 'localhost',
-      redis_port: 6379,
+      redis_port: 6379
     };
 
 var client, isConnecting = false;
@@ -16,6 +16,14 @@ function redis() {
     }
     isConnecting = true;
     client = redisLib.createClient(configuration.redis_port, configuration.redis_host);
+    if (configuration.redis_auth) {
+      client.on('connected', function() {
+        client.auth(configuration.redis_auth);
+      });
+      client.on('reconnected', function() {
+        client.auth(configuration.redis_auth);
+      });
+    }
     client.once('ready', function() {
       isConnecting = false;
     });
