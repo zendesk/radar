@@ -41,13 +41,9 @@ Server.prototype.attach = function(server, configuration) {
   require('../core').Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
   if (configuration.redis_auth) {
-    this.subscriber.on('connected', function() {
-        this.subscriber.auth(configuration.redis_auth);
-    });
-    this.subscriber.on('reconnected', function() {
-        this.subscriber.auth(configuration.redis_auth);
-    });
+    this.subscriber.auth(configuration.redis_auth);
   }
+
   this.subscriber.on('message', function(name, data) {
     logging.debug('#redis_in', name, data);
     if (self.channels[name]) {
