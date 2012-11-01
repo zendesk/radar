@@ -50,6 +50,10 @@ function Presence(name, parent, options) {
       }
     }));
   });
+
+  // add parent callback
+  this.callback = function() { self._autoPublish() };
+  this.parent.timer.add(this._xserver.timeouts);
 }
 
 Presence.prototype = new Resource();
@@ -165,8 +169,10 @@ Presence.prototype.fullRead = function(callback) {
 
 Presence.prototype._processDisconnects = function() {
   var value = {}, self = this;
+  console.log('_disconnectQueue', this._disconnectQueue);
   this._disconnectQueue.forEach(function(userId)  {
-    if(self._counter.has(userId)) {
+    console.log('disconnect check', userId, self._xserver.hasUser(userId));
+    if(self._xserver.hasUser(userId)) {
       logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
     } else {
       value[userId] = 0; // fixme

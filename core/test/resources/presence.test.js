@@ -123,7 +123,11 @@ exports['given a presence'] = {
 
       var self = this;
       this.notifications = [];
-      this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+      Persistence.publish = function(scope, data) {
+        var m = JSON.parse(data),
+            online = m.online,
+            userId = m.userId,
+            userType = m.userType;
         self.notifications.push({ userId: userId, userType: userType, online: online });
       };
 
@@ -231,12 +235,16 @@ exports['given a presence'] = {
     var presence = this.presence, client = this.client;
 
     var notifications = [];
-    this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+    Persistence.publish = function(scope, data) {
+      var m = JSON.parse(data),
+          online = m.online,
+          userId = m.userId,
+          userType = m.userType;
       notifications.push({ userId: userId, userType: userType, online: online });
     };
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
-    // presence._autoPublish();
-    assert.equal(1, notifications.length);
+    presence._xserver.timeouts();
+    assert.ok(notifications.length > 0); // ideally, only one message, but given the timeouts() processing >1 is also OK
     assert.equal(1, notifications[0].userId);
     done();
   },
@@ -260,14 +268,22 @@ exports['given a presence'] = {
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
     var notifications = [];
-    this.presence._sendPresence = function(userId, userType, clientId, online, callback) {
+    Persistence.publish = function(scope, data) {
+      var m = JSON.parse(data),
+          online = m.online,
+          userId = m.userId,
+          userType = m.userType;
       notifications.push({ userId: userId, userType: userType, online: online });
     };
+    Presence.broadcast = function(message) {
+
+    };
+    console.log('run auto');
     // and the autopublish runs
-    // presence._autoPublish();
-    // Server.presenceMaintainer.timer();
+    presence._xserver.timeouts();
+    presence._processDisconnects();
     // client 1 should emit periodic online and 123 should have emitted offline
-    logging.info(notifications);
+    console.log(notifications);
     assert.ok(notifications.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));
     assert.ok(notifications.some(function(msg) { return msg.userId == 123 && msg.userType == 0 && msg.online == false; } ));
 

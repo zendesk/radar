@@ -1,5 +1,6 @@
 var Set = require('../../map.js'),
-    Persistence = require('../../persistence.js');
+    Persistence = require('../../persistence.js'),
+    logging = require('minilog')('presence');
 
 function CrossServer() {
   this.remoteUsers = new Set();
@@ -70,8 +71,14 @@ CrossServer.prototype.disconnectLocal = function(clientId) {
   // send out disconnects for all user id-client-id pairs
   var userId = this.localClients.get(clientId);
   // remove from local - if in local at all
+  this.emitIfExists(clientId, userId);
   this.localUsers.remove(userId);
   this.localClients.remove(clientId);
+};
+
+CrossServer.prototype.timeouts = function() {
+  this.processLocal();
+  this.processRemoteTimeouts();
 };
 
 CrossServer.prototype.processLocal = function() {
@@ -79,18 +86,11 @@ CrossServer.prototype.processLocal = function() {
   logging.debug('_autoPublish', this.name, this._local);
 
   var now = new Date().getTime();
-  this._local.forEach(function(userId) {
-    var user = self._local.get(userId);
+  this.localUsers.forEach(function(userId) {
+    var clientId = self.localUsers.get(userId);
     logging.debug('Autopub - set online', 'userId:', userId);
-    self.monitor.set(parseInt(userId, 10), user.userType, true);
+    self.addLocal(clientId, userId);
   });
-
-  // if we have nothing worth doing, then do nothing
-  if(this._local.length == 0 && this.callback) {
-    // remove parent callback
-    this.parent.timer.remove(this.callback);
-    this.callback = false;
-  }
 };
 
 // causes removeRemote() calls
