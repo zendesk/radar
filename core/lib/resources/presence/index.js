@@ -53,7 +53,9 @@ function Presence(name, parent, options) {
 
   // add parent callback
   this.callback = function() { self._autoPublish() };
-  this.parent.timer.add(this._xserver.timeouts);
+  this.parent.timer.add( function() {
+    self._xserver.timeouts();
+  });
 }
 
 Presence.prototype = new Resource();
