@@ -48,7 +48,7 @@ function Presence(name, parent, options) {
         userId: userId,
         clientId: clientId
       }
-    }));
+    }), clientId);
   });
 
   // add parent callback
@@ -127,12 +127,12 @@ Presence.prototype.getStatus = function(client, key) {
   });
 };
 
-Presence.prototype.broadcast = function(message) {
+Presence.prototype.broadcast = function(message, except) {
   logging.debug('updateSubscribers', message);
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    client && client.send(message);
+    client && (client.id != except) && client.send(message);
   });
 };
 
