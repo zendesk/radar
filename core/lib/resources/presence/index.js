@@ -8,7 +8,6 @@ function Presence(name, parent, options) {
   var self = this;
   this.type = 'presence';
 
-  this._disconnectQueue = [];
   this._xserver = new CrossServer(this.name);
   this._xserver.on('user_online', function(userId) {
     console.log('user_online', userId);
@@ -21,15 +20,17 @@ function Presence(name, parent, options) {
     }));
   });
   this._xserver.on('user_offline', function(userId) {
-    console.log('user_offline (queue)', userId);
-    if(self._disconnectQueue.indexOf(userId) == -1) {
-      self._disconnectQueue.push(userId);
-    }
-    // here, we set a delay for the check
-    setTimeout(function() { self._processDisconnects(); }, 15000);
+    console.log('user_offline', userId);
+    var value = {};
+    value[userId] = 0; // fixme
+    self.broadcast(JSON.stringify({
+      to: self.name,
+      op: 'offline',
+      value: value
+    }));
   });
   this._xserver.on('client_online', function(clientId, userId) {
-    console.log('client_online', userId);
+    console.log('client_online', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_online',
@@ -40,7 +41,7 @@ function Presence(name, parent, options) {
     }));
   });
   this._xserver.on('client_offline', function(clientId, userId) {
-    console.log('client_offline', userId);
+    console.log('client_offline', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_offline',
@@ -168,24 +169,6 @@ Presence.prototype.fullRead = function(callback) {
     });
 
     callback && callback(self._xserver.getOnline());
-  });
-};
-
-Presence.prototype._processDisconnects = function() {
-  var value = {}, self = this;
-  console.log('_disconnectQueue', this._disconnectQueue);
-  this._disconnectQueue.forEach(function(userId)  {
-    console.log('disconnect check', userId, self._xserver.hasUser(userId));
-    if(self._xserver.hasUser(userId)) {
-      logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
-    } else {
-      value[userId] = 0; // fixme
-      self.broadcast(JSON.stringify({
-        to: self.name,
-        op: 'offline',
-        value: value
-      }));
-    }
   });
 };
 

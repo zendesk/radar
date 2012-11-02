@@ -7,14 +7,15 @@ var common = require('./common.js'),
     Client = require('radar_client').constructor,
     logging = require('minilog')('test');
 
-http.globalAgent.maxSockets = 100;
+http.globalAgent.maxSockets = 10000;
 
 var enabled = false;
-
+/*
 var Minilog = require('minilog');
 Minilog.pipe(Minilog.backends.nodeConsole)
   .filter(function() { return enabled; })
   .format(Minilog.backends.nodeConsole.formatWithStack);
+*/
 
 exports['given a server and two connected clients'] = {
 
@@ -142,8 +143,8 @@ exports['given a server and two connected clients'] = {
               client2.presence('chat/1/participants').get(function(message) {
                 logging.info('FOOOOO2', message, notifications);
                 // both should show client 1 as offline
-                assert.equal('get', message.op);
-                assert.deepEqual({}, message.value);
+                assert.equal(message.op, 'get');
+                assert.deepEqual(message.value, {});
 
                 assert.ok(notifications.some(function(m) { return m.op == 'offline'}));
                 // broken due to new notifications: assert.equal(2, notifications.length);
