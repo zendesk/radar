@@ -75,7 +75,6 @@ exports['given a server and two connected clients'] = {
           // both should show client 1 as online
           assert.equal('get', message.op)
           assert.deepEqual({ '123': 0 }, message.value)
-          assert.equal(1, notifications.length)
           assert.equal('online', notifications[0].op)
           assert.deepEqual({ '123': 0 }, notifications[0].value);
           getCounter++;

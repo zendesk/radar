@@ -9,12 +9,16 @@ function Presence(name, parent, options) {
   var self = this;
   this.type = 'presence';
   this.monitor = new PresenceMonitor(this.name);
-  this.monitor.on('user_added', function(userId, userType) {
-    self.updateSubscribers(userId, userType, true);
+  this.monitor.on('user_added', function(userId, userType, clients) {
+    self.updateSubscribers(userId, userType, true, clients);
   });
 
-  this.monitor.on('user_removed', function(userId, userType) {
-    self.updateSubscribers(userId, userType, false);
+  this.monitor.on('client_added', function(userId, userType, clients) {
+    self.updateSubscribers(userId, userType, true, clients);
+  });
+
+  this.monitor.on('user_removed', function(userId, userType, clients) {
+    self.updateSubscribers(userId, userType, false, clients);
   });
 
   this.callback = false;
@@ -50,7 +54,7 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
     // set to online
-    this.monitor.set(userId, userType, true, function() {
+    this.monitor.set(userId, userType, true, client.id, function() {
       sendAck && self.ack(client, sendAck);
     });
     // get the clientId to userId map
@@ -93,7 +97,7 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
         this._local.remove(userId);
       }
       // only send a notification if there are no other clients interested in this status
-      this.monitor.set(userId, userType, false, function() {
+      this.monitor.set(userId, userType, false, client.id, function() {
         sendAck && self.ack(client, sendAck);
       });
     } else {
@@ -130,6 +134,7 @@ Presence.prototype.unsubscribe = function(client, sendAck) {
         // instead of disconnecting, just decrement the ref counter
         user.refs--;
       }
+      self._localClients.remove(client.id);
       self.notifyClientDisconnect(userId, user.userType, client.id);
     });
   }
@@ -144,11 +149,12 @@ Presence.prototype.unsubscribe = function(client, sendAck) {
 
 Presence.prototype.sync = function(client) {
   var self = this;
-  this.monitor.fullRead(function(online) {
+  this.monitor.fullRead(function(online, clients) {
     client.send(JSON.stringify({
       op: 'online',
       to: self.name,
-      value: online
+      value: online,
+      clients: clients
     }));
   });
 };
@@ -156,24 +162,26 @@ Presence.prototype.sync = function(client) {
 // this is a full sync of the online status from Redis
 Presence.prototype.getStatus = function(client, key) {
   var self = this;
-  this.monitor.fullRead(function(online) {
+  this.monitor.fullRead(function(online, clients) {
     client.send(JSON.stringify({
       op: 'get',
       to: self.name,
-      value: online
+      value: online,
+      clients: clients
     }));
   });
 };
 
-Presence.prototype.updateSubscribers = function(userId, userType, online) {
-  logging.debug('updateSubscribers', userId, userType, online);
+Presence.prototype.updateSubscribers = function(userId, userType, online, clients) {
+  logging.debug('updateSubscribers', userId, userType, online, clients);
   var self = this,
       value = {};
   value[userId] = userType;
   var message = JSON.stringify({
       to: self.name,
       op: ( online ? 'online' : 'offline'),
-      value: value
+      value: value,
+      clients: clients
   });
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
@@ -182,6 +190,7 @@ Presence.prototype.updateSubscribers = function(userId, userType, online) {
 };
 
 Presence.prototype.notifyClientDisconnect = function(userId, userType, clientId) {
+  this.monitor.setClientOffline(userId, userType, clientId);
   var self = this,
       message = JSON.stringify({
       to: self.name,

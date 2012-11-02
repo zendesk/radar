@@ -92,6 +92,10 @@ Persistence.persistOrdered = function(key, value, callback) {
   redis().zadd(key, new Date().getTime(), value, callback);
 };
 
+Persistence.removeOrdered = function(key, value, callback) {
+  redis().zrem(key, value, callback);
+};
+
 Persistence.delWildCard = function(expr, callback) {
   redis().keys(expr, function(err, results) {
     if(err) throw new Error(err);
