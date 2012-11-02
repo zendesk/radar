@@ -9,7 +9,7 @@ function Presence(name, parent, options) {
   this.type = 'presence';
 
   this._disconnectQueue = [];
-  this._xserver = new CrossServer();
+  this._xserver = new CrossServer(this.name);
   this._xserver.on('user_online', function(userId) {
     console.log('user_online', userId);
     var value = {};
@@ -128,20 +128,22 @@ Presence.prototype.getStatus = function(client, key) {
 };
 
 Presence.prototype.broadcast = function(message, except) {
-  logging.debug('updateSubscribers', message);
+  logging.debug('updateSubscribers', message, except);
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    client && (client.id != except) && client.send(message);
+    if(client && client.id != except) {
+      client.send(message);
+    }
   });
 };
 
 Presence.prototype.fullRead = function(callback) {
   var self = this;
   // sync scope presence
-  logging.debug('Persistence.readHashAll', this.scope);
-  Persistence.readHashAll(this.scope, function(replies) {
-    logging.debug(self.scope, 'REPLIES', replies);
+  logging.debug('Persistence.readHashAll', this.name);
+  Persistence.readHashAll(this.name, function(replies) {
+    logging.debug(self.name, 'REPLIES', replies);
 
     if(!replies) {
       return callback && callback({});

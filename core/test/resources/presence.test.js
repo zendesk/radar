@@ -96,6 +96,9 @@ exports['given a presence'] = {
   'users that disconnect ungracefully are added to the list of waiting items, no duplicates': function(done) {
     var presence = this.presence, client = this.client, client2 = new MiniEE();
     client2.id = counter++;
+
+    Persistence.publish = function(scope, data) { };
+
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
     assert.equal(presence._disconnectQueue.length, 0);
@@ -180,6 +183,7 @@ exports['given a presence'] = {
       assert.equal(this.remote[2].online, false);
 
       // check local broadcast
+      assert.equal(this.local.length, 3);
       // there should be a client_offline notification for CID 1
       assert.equal(this.local[0].op, 'client_offline');
       assert.equal(this.local[0].value.userId, 1);
@@ -198,7 +202,7 @@ exports['given a presence'] = {
       assert.equal(this.messages[this.client2.id].length, 2);
     },
 
-    'ungraceful disconnects': function(done) {
+    'ungraceful disconnects': function() {
       var presence = this.presence, client = this.client, client2 = this.client2;
 
       presence.unsubscribe(client);
@@ -206,34 +210,48 @@ exports['given a presence'] = {
       presence._xserver.timeouts();
       presence._processDisconnects();
 
-      Server.presenceMaintainer.timer();
-      // there should be one notification - the autopublish renewal
-      assert.equal(1, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[0]);
+      assert.equal(this.remote.length, 2);
+      // a client_offline should be sent for CID 1
+      assert.equal(this.remote[0].userId, 1);
+      assert.equal(this.remote[0].clientId, client.id);
+      assert.equal(this.remote[0].online, false);
+      // a autopublish renewal should be sent remotely for UID 1 (CID 2)
+      assert.equal(this.remote[1].userId, 1);
+      assert.equal(this.remote[1].clientId, client2.id);
+      assert.equal(this.remote[1].online, true);
 
       presence.unsubscribe(client2);
       // and the autopublish runs
       presence._xserver.timeouts();
       presence._processDisconnects();
 
-      Server.presenceMaintainer.timer();
-      logging.info(this.notifications);
-      // there should be a disconnect notification
-      assert.equal(2, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
-      // there should be a client_offline message for client 1
-      assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
-      op: 'client_offline',
-      value: {
-        userId: 1,
-        userType: 2,
-        clientId: this.client.id
-      }} ]);
+      assert.equal(this.remote.length, 3);
+      // there should be a client_offline notification for CID 2
+      assert.equal(this.remote[2].userId, 1);
+      assert.equal(this.remote[2].clientId, client2.id);
+      assert.equal(this.remote[2].online, false);
 
-      done();
+      // check local broadcast
+      assert.equal(this.local.length, 3);
+      // there should be a client_offline notification for CID 1
+      assert.equal(this.local[0].op, 'client_offline');
+      assert.equal(this.local[0].value.userId, 1);
+      assert.equal(this.local[0].value.clientId, this.client.id);
+      // there should be a client_offline notification for CID 2
+      assert.equal(this.local[1].op, 'client_offline');
+      assert.equal(this.local[1].value.userId, 1);
+      assert.equal(this.local[1].value.clientId, this.client2.id);
+      // there should be a broadcast for a offline notification for UID 1
+      assert.equal(this.local[2].op, 'offline');
+      assert.deepEqual(this.local[2].value, { 1: 0 });
+
+      // only CID 2 receives any messages
+      // = one message for the CID1 disconnect, after which no messages are delivered
+      assert.equal(typeof this.messages[this.client.id], 'undefined');
+      assert.equal(this.messages[this.client2.id].length, 1);
     },
 
-    'one does a ungraceful disconnect, the other one does a explicit disconnect': function(done) {
+    'one does a ungraceful disconnect, the other one does a explicit disconnect': function() {
       var presence = this.presence, client = this.client, client2 = this.client2;
 
       presence.unsubscribe(client);
@@ -241,24 +259,40 @@ exports['given a presence'] = {
       presence._xserver.timeouts();
       presence._processDisconnects();
 
-      // there should be one notification - the autopublish renewal
-      assert.equal(1, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[0]);
+      assert.equal(this.remote.length, 2);
+      // a client_offline should be sent for CID 1
+      assert.equal(this.remote[0].userId, 1);
+      assert.equal(this.remote[0].clientId, client.id);
+      assert.equal(this.remote[0].online, false);
+      // a autopublish renewal should be sent remotely for UID 1 (CID 2)
+      assert.equal(this.remote[1].userId, 1);
+      assert.equal(this.remote[1].clientId, client2.id);
+      assert.equal(this.remote[1].online, true);
 
       presence.setStatus(this.client2, { key: 1, type: 2, value: 'offline' } );
-      // there should be a disconnect notification
-      assert.equal(2, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
-      // there should be a client_offline message for client 1
-      assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
-      op: 'client_offline',
-      value: {
-        userId: 1,
-        userType: 2,
-        clientId: this.client.id
-      }} ]);
+      // and the autopublish runs
+      presence._xserver.timeouts();
+      presence._processDisconnects();
 
-      done();
+      // check local broadcast
+      console.log(this.local)
+      assert.equal(this.local.length, 3);
+      // there should be a client_offline notification for CID 1
+      assert.equal(this.local[0].op, 'client_offline');
+      assert.equal(this.local[0].value.userId, 1);
+      assert.equal(this.local[0].value.clientId, this.client.id);
+      // there should be a client_offline notification for CID 2
+      assert.equal(this.local[1].op, 'client_offline');
+      assert.equal(this.local[1].value.userId, 1);
+      assert.equal(this.local[1].value.clientId, this.client2.id);
+      // there should be a broadcast for a offline notification for UID 1
+      assert.equal(this.local[2].op, 'offline');
+      assert.deepEqual(this.local[2].value, { 1: 0 });
+
+      // only CID 2 receives any messages
+      // = two messages, one for CID 1 offline and one for UID1 offline
+      assert.equal(typeof this.messages[this.client.id], 'undefined');
+      assert.equal(this.messages[this.client2.id].length, 2);
     }
   },
 

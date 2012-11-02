@@ -9,16 +9,29 @@ var common = require('./common.js'),
 
 http.globalAgent.maxSockets = 100;
 
+var enabled = false;
+
+var Minilog = require('minilog');
+Minilog.pipe(Minilog.backends.nodeConsole)
+  .filter(function() { return enabled; })
+  .format(Minilog.backends.nodeConsole.formatWithStack);
+
 exports['given a server and two connected clients'] = {
 
   beforeEach: function(done) {
     var self = this,
         tasks = 0;
-    function next() { tasks++ && (tasks == 3) && done(); }
+    function next() {
+      tasks++;
+      if (tasks == 3) {
+        enabled = true;
+        done();
+      }
+    }
     common.startRadar(8000, this, function(){
       self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8000})
                     .on('ready', next).alloc('test');
-      self.client2 = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8000})
+      self.client2 = new Client().configure({ userId: 222, userType: 0, accountName: 'test', port: 8000})
                     .on('ready', next).alloc('test');
     });
     Persistence.delWildCard('*:/test/*', next);
@@ -43,20 +56,23 @@ exports['given a server and two connected clients'] = {
     // cache the notifications to client 2
     client2.presence('chat/1/participants').on(function(message){
       notifications.push(message);
-    }).subscribe();
-    // set client 1 to online
-    client.presence('chat/1/participants').set('online', function() {
-      client2.presence('chat/1/participants').get(function(message) {
-        // both should show client 1 as online
-        assert.equal('get', message.op);
-        assert.deepEqual({ '123': 0 }, message.value);
-        assert.deepEqual({ '123': 0 }, message.value);
-        assert.equal(notifications.length, 1);
-        assert.equal('online', notifications[0].op);
-        assert.deepEqual({ '123': 0 }, notifications[0].value);
-        done();
-      });
+    }).subscribe(function() {
+      // set client 1 to online
+      client.presence('chat/1/participants').set('online', function() {
+        client2.presence('chat/1/participants').get(function(message) {
+          // both should show client 1 as online
+          assert.equal('get', message.op);
+          assert.deepEqual({ '123': 0 }, message.value);
 
+          assert.equal(notifications.length, 2);
+          assert.equal(notifications[0].op, 'online');
+          assert.deepEqual(notifications[0].value, { '123': 0 });
+          assert.equal(notifications[1].op, 'client_online');
+          assert.equal(notifications[1].value.userId, 123);
+          assert.equal(notifications[1].value.clientId, client.manager.socket.id);
+          done();
+        });
+      });
     });
   },
 
@@ -92,14 +108,6 @@ exports['given a server and two connected clients'] = {
   },
 
   'a presence will not be set to offline during the grace period but will be offline after it': function(done) {
-/*
-    var Minilog = require('minilog');
-    Minilog.pipe(Minilog.backends.nodeConsole)
-      .format(Minilog.backends.nodeConsole.formatWithStack);
-    require('radar_client')._log
-      .pipe(Minilog.backends.nodeConsole)
-      .format(Minilog.backends.nodeConsole.formatWithStack);
-*/
     this.timeout(18*1000);
     var client = this.client, client2 = this.client2,
         notifications = [];

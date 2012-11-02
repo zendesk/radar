@@ -3,7 +3,8 @@ var Set = require('../../map.js'),
     Persistence = require('../../persistence.js'),
     logging = require('minilog')('presence');
 
-function CrossServer() {
+function CrossServer(scope) {
+  this.scope = scope;
   // client lists are simple sets
   this.localClients = new Set();
   this.remoteClients = new Set();
@@ -56,7 +57,7 @@ CrossServer.prototype.addLocal = function(clientId, userId, callback) {
     userId: userId, userType: 0,
     clientId: clientId, online: true, at: new Date().getTime()
   });
-  Persistence.persistHash(this.scope, userId, message);
+  Persistence.persistHash(this.scope, userId + '.' + clientId, message);
   Persistence.publish(this.scope, message, callback);
 };
 
@@ -65,7 +66,7 @@ CrossServer.prototype.removeLocal = function(clientId, userId, callback) {
   this.localClients.remove(clientId);
   this.emitAfterRemove(clientId, userId);
   // persist local
-  Persistence.deleteHash(this.scope, userId);
+  Persistence.deleteHash(this.scope, userId + '.' + clientId);
   Persistence.publish(this.scope, JSON.stringify({
     userId: userId, userType: 0,
     clientId: clientId, online: false, at: 0
@@ -80,6 +81,12 @@ CrossServer.prototype.disconnectLocal = function(clientId) {
   this.localUsers.removeItem(userId, clientId);
   this.localClients.remove(clientId);
   this.emitAfterRemove(clientId, userId);
+  // persist local
+  Persistence.deleteHash(this.scope, userId + '.' + clientId);
+  Persistence.publish(this.scope, JSON.stringify({
+    userId: userId, userType: 0,
+    clientId: clientId, online: false, at: 0
+  }));
 };
 
 CrossServer.prototype.timeouts = function() {
@@ -89,7 +96,7 @@ CrossServer.prototype.timeouts = function() {
 
 CrossServer.prototype.processLocal = function() {
   var self = this;
-  logging.debug('_autoPublish', this.name);
+  logging.debug('_autoPublish', this.scope);
 
   this.localUsers.keys().forEach(function(userId) {
     self.localUsers.getItems(userId).forEach(function(clientId) {
@@ -127,10 +134,10 @@ CrossServer.prototype.remoteMessage = function(message) {
   logging.info(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
   if(isOnline && !isExpired) {
     this.emitIfNew(cid, uid);
-    this.remoteUsers.add(uid, cid);
+    this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
   } else if(!isOnline || (isOnline && isExpired)) {
-    this.remoteUsers.remove(uid, cid);
+    this.remoteUsers.removeItem(uid, cid);
     this.remoteClients.remove(cid, message);
     this.emitAfterRemove(cid, uid);
   }
@@ -140,9 +147,11 @@ CrossServer.prototype.remoteMessage = function(message) {
 // for sending API replies
 CrossServer.prototype.getOnline = function() {
   var result = {};
-  Object.keys(this._byUserId).forEach(function(userId) {
-    result[userId] = 0; // userType is always 0 for now
-  });
+  function setUid(userId) {
+    result[userId] = 0; // FIXME
+  }
+  this.remoteUsers.keys().forEach(setUid);
+  this.localUsers.keys().forEach(setUid);
   return result;
 };
 
