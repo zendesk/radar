@@ -36,10 +36,11 @@ exports['given a presence'] = {
   'can set status to online and offline': function(done) {
     var presence = this.presence, client = this.client;
     presence.monitor = {
-      set: function(userId, userType, online) {
+      set: function(userId, userType, online, clientId) {
         assert.equal(1, userId);
         assert.equal(2, userType);
         assert.equal(true, online);
+        assert.equal(client.id, clientId);
       }
     }
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
@@ -65,10 +66,11 @@ exports['given a presence'] = {
     var presence = this.presence, client = this.client;
     var calls = 0;
     presence.monitor = {
-      set: function(userId, userType, online) {
+      set: function(userId, userType, online, clientId) {
         assert.equal(1, userId);
         assert.equal(2, userType);
         assert.equal(true, online);
+        assert.equal(client.id, clientId);
         calls++;
       }
     }
@@ -113,6 +115,9 @@ exports['given a presence'] = {
       this.presence.monitor = {
         set: function(userId, userType, online) {
           self.notifications.push({ userId: userId, userType: userType, online: online });
+        },
+        setClientOffline: function(userId, userType, clientId) {
+          self.notifications.push({ userId: userId, userType: userType, clientId: clientId });
         }
       };
 
@@ -134,14 +139,15 @@ exports['given a presence'] = {
       presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
       // and the autopublish runs
       presence._autoPublish();
-      // there should be one notification - the autopublish renewal
-      assert.equal(1, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[0]);
+      // there should be two notifications - the autopublish renewal, and the client offline
+      assert.equal(2, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, clientId: client.id}, this.notifications[0]);
+      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[1]);
 
       presence.setStatus(client2, { key: 1, type: 2, value: 'offline' } );
       // there should be a disconnect notification
-      assert.equal(2, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      assert.equal(3, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[2]);
       // there should be a client_offline message for client 1
       assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
       op: 'client_offline',
@@ -161,18 +167,20 @@ exports['given a presence'] = {
       // and the autopublish runs
       presence._autoPublish();
       Server.presenceMaintainer.timer();
-      // there should be one notification - the autopublish renewal
-      assert.equal(1, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[0]);
+      // there should be two notifications - the autopublish renewal, and the client offline
+      assert.equal(2, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, clientId: client.id }, this.notifications[0]);
+      assert.deepEqual({ userId: 1, userType: 2, online: true }, this.notifications[1]);
 
       presence.unsubscribe(client2);
       // and the autopublish runs
       presence._autoPublish();
       Server.presenceMaintainer.timer();
       logging.info(this.notifications);
-      // there should be a disconnect notification
-      assert.equal(2, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      // there should be a disconnect notification and a client offline
+      assert.equal(4, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, clientId: client2.id}, this.notifications[2]);
+      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[3]);
       // there should be a client_offline message for client 1
       assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
       op: 'client_offline',
@@ -191,14 +199,15 @@ exports['given a presence'] = {
       presence.unsubscribe(client);
       // and the autopublish runs
       presence._autoPublish();
-      // there should be one notification - the autopublish renewal
-      assert.equal(1, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: true}, this.notifications[0]);
+      // there should be two notifications - the autopublish renewal and the client offline
+      assert.equal(2, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, clientId: client.id }, this.notifications[0]);
+      assert.deepEqual({ userId: 1, userType: 2, online: true }, this.notifications[1]);
 
       presence.setStatus(this.client2, { key: 1, type: 2, value: 'offline' } );
       // there should be a disconnect notification
-      assert.equal(2, this.notifications.length);
-      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[1]);
+      assert.equal(3, this.notifications.length);
+      assert.deepEqual({ userId: 1, userType: 2, online: false}, this.notifications[2]);
       // there should be a client_offline message for client 1
       assert.deepEqual(this.messages[this.client2.id], [ { to: 'aaa',
       op: 'client_offline',
