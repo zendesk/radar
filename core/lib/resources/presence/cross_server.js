@@ -141,12 +141,13 @@ CrossServer.prototype.processRemoteTimeouts = function() {
   this.remoteClients.forEach(function(cid) {
     var message = self.remoteClients.get(cid),
         isOnline = message.online,
-        isExpired = (message.at < maxAge);
+        isExpired = (message.at < maxAge),
+        uid = message.userId;
 
     if(!isOnline || (isOnline && isExpired)) {
-      this.remoteUsers.removeItem(uid, cid);
-      this.remoteClients.remove(cid);
-      this.emitAfterRemove(cid, uid);
+      self.remoteUsers.removeItem(uid, cid);
+      self.remoteClients.remove(cid);
+      self.emitAfterRemove(cid, uid);
     }
   });
 };

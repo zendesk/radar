@@ -144,12 +144,13 @@ exports['given a server'] = {
   },
 
   'status: can subscribe()': function(done) {
-    this.timeout(100000);
+    this.timeout(10000);
 
     var client = this.client;
     var client2 = new Client()
       .configure({ userId: 234, userType: 0, accountName: 'dev', port: 8002})
       .alloc('test', function() {
+
         client2.status('voice/status')
           .once(function(message) {
             assert.equal('set', message.op);
@@ -162,6 +163,7 @@ exports['given a server'] = {
           });
       });
   },
+
 
   'status: can sync()': function(done) {
     var client = this.client;

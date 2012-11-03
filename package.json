@@ -18,8 +18,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "git+ssh://git@github.com:zendesk/radar_client.git#master",
-    "engine.io-client": "0.3.x"
+    "radar_client": "git+ssh://git@github.com:zendesk/radar_client.git#master"
   },
   "scripts": {
     "start": "node server.js",
