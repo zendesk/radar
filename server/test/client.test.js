@@ -32,7 +32,7 @@ exports['given a server'] = {
   },
 
   afterEach: function() {
-    this.client.dealloc('test');
+//    this.client.dealloc('test');
   },
 
 // Presence tests

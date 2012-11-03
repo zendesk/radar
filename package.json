@@ -12,7 +12,7 @@
   "dependencies": {
     "engine.io": "0.3.5",
     "miniee": "git://github.com/mixu/miniee.git#master",
-    "redis": "0.8.x",
+    "redis": "0.7.3",
     "heartbeat": "git://github.com/mixu/heartbeat.git#master",
     "minilog": "*"
   },

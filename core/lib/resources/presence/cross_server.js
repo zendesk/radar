@@ -22,6 +22,10 @@ CrossServer.prototype.hasUser = function(userId) {
   return this.remoteUsers.hasKey(userId) || this.localUsers.hasKey(userId);
 };
 
+CrossServer.prototype.isLocal = function(clientId) {
+  return this.localClients.has(clientId);
+};
+
 CrossServer.prototype.hasClient = function(clientId) {
   return this.remoteClients.has(clientId) || this.localClients.has(clientId);
 };
