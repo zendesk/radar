@@ -10,7 +10,7 @@ function Presence(name, parent, options) {
 
   this._xserver = new CrossServer(this.name);
   this._xserver.on('user_online', function(userId, userType) {
-    console.log('user_online', userId, userType);
+    logging.debug('user_online', userId, userType);
     var value = {};
     value[userId] = userType;
     self.broadcast(JSON.stringify({
@@ -20,7 +20,7 @@ function Presence(name, parent, options) {
     }));
   });
   this._xserver.on('user_offline', function(userId, userType) {
-    console.log('user_offline', userId, userType);
+    logging.debug('user_offline', userId, userType);
     var value = {};
     value[userId] = userType;
     self.broadcast(JSON.stringify({
@@ -30,7 +30,7 @@ function Presence(name, parent, options) {
     }));
   });
   this._xserver.on('client_online', function(clientId, userId) {
-    console.log('client_online', clientId, userId);
+    logging.debug('client_online', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_online',
@@ -41,7 +41,7 @@ function Presence(name, parent, options) {
     }));
   });
   this._xserver.on('client_offline', function(clientId, userId) {
-    console.log('client_offline', clientId, userId);
+    logging.debug('client_offline', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_offline',

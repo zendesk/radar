@@ -54,7 +54,7 @@ CrossServer.prototype.emitAfterRemove = function(clientId, userId, isFastPath) {
     }
     // fast path doesn't set a disconnect queue item
   } else {
-    console.log('user_offline (queue)', userId, clientId);
+    logging.info('user_offline (queue)', userId, clientId);
     // slow path
     // the disconnect queue needs to be at this level, so that
     // if someone asks for who is online while we the disconnect is pending
@@ -132,12 +132,9 @@ CrossServer.prototype.processLocal = function() {
       // prevent autopublish for client ids that have been removed
       // but that may still be in the localUsers list, because that
       // list is only updated after the grace period
-      console.log('local clients', self.localClients.items,
-        self.remoteClients.items,
-        self.localClients.has(clientId));
       if(!self.localClients.has(clientId)) { return; }
       userId = parseInt(userId, 10);
-      console.log('Autopub - set online', 'userId:', userId, 'clientId:', clientId);
+      logging.debug('Autopub - set online', 'userId:', userId, 'clientId:', clientId);
       self.addLocal(clientId, userId, self.userTypes.get(userId));
     });
   });
@@ -186,11 +183,10 @@ CrossServer.prototype.remoteMessage = function(message) {
 
 CrossServer.prototype._processDisconnects = function() {
   var self = this;
-  console.log('_disconnectQueue', this._disconnectQueue);
+  logging.debug('_disconnectQueue', this._disconnectQueue);
   Object.keys(this._disconnectQueue).forEach(function(userId) {
     var userId = parseInt(userId, 10);
     // do not resend the notification for users that are already offline
-    console.log(self.hasUser(userId));
     if(!self.hasUser(userId)) { return; }
     // now, remove the queued clientIds from the set of userIds
     // but only if the clientId is not already in remote|localClients
@@ -203,10 +199,10 @@ CrossServer.prototype._processDisconnects = function() {
         Persistence.deleteHash(self.scope, userId + '.' + clientId);
       }
     });
-    console.log('disconnect check', userId, self.hasUser(userId));
     if(self.hasUser(userId)) {
       logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
     } else {
+      logging.info('disconnect user', userId, self.hasUser(userId));
       self.emit('user_offline', userId, self.userTypes.get(userId));
       self.userTypes.remove(userId);
     }

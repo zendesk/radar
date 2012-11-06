@@ -22,6 +22,14 @@ exports['given a presence monitor'] = {
     this.presence = new Presence('aaa', Server, {});
   },
 
+  before: function() {
+    Presence.setBackend(FakePersistence);
+  },
+
+  after: function() {
+    Presence.setBackend(Persistence);
+  },
+
   'messages from Redis trigger immediate notifications if new': function(done) {
     var presence = this.presence;
     presence._xserver.once('user_online', function(userId, userType) {
@@ -144,8 +152,8 @@ exports['given a presence monitor'] = {
   'full reads consider users with a recent online key as online and users without a key as offline': function(done) {
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, at: new Date().getTime()}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, at: new Date().getTime()}),
+        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}),
+        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
       });
     };
     var users = {};
@@ -164,8 +172,8 @@ exports['given a presence monitor'] = {
     // this may happen if the server gets terminated, so the key is never deleted properly...
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, at: new Date().getTime() - 50 * 1000}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, at: new Date().getTime()}),
+        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000}),
+        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
       });
     };
     this.presence.fullRead(function(online) {
@@ -177,12 +185,12 @@ exports['given a presence monitor'] = {
   'full reads cause change events based on what was previously known': function(done) {
     var presence = this.presence;
     // make 123 online
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
+    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
 
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, at: new Date().getTime() - 50 * 1000}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, at: new Date().getTime()}),
+        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000}),
+        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
       });
     };
     var added = {}, removed = {};
