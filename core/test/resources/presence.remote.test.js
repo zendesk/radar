@@ -1,111 +1,125 @@
 var assert = require('assert'),
+    Heartbeat = require('heartbeat'),
 
-    Persistence = require('../lib/persistence.js'),
-    PresenceMonitor = require('../lib/presence_monitor.js');
+    Persistence = require('../../lib/persistence.js'),
+    Presence = require('../../lib/resources/presence');
+
+var Server = {
+  timer: new Heartbeat().interval(1500),
+  broadcast: function(subscribers, message) { },
+  terminate: function() { Server.timer.clear(); },
+  destroy: function() {},
+  server: {
+    clients: { }
+  }
+};
 
 var FakePersistence = { };
 
 exports['given a presence monitor'] = {
 
-  before: function(done) {
-    PresenceMonitor.setBackend(FakePersistence);
-    done();
-  },
-
-  after: function(done) {
-    PresenceMonitor.setBackend(Persistence);
-    done();
-  },
-
-  beforeEach: function(done) {
-    this.presence = new PresenceMonitor('aaa');
-    done();
+  beforeEach: function() {
+    this.presence = new Presence('aaa', Server, {});
   },
 
   'messages from Redis trigger immediate notifications if new': function(done) {
     var presence = this.presence;
-    presence.once('user_added', function(userId, userType) {
+    presence._xserver.once('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
-      presence.once('user_removed', function(userId, userType) {
-        assert.equal(123, userId);
-        assert.equal(0, userType);
-        done();
+      // we assume that messages always arrive in separate ticks
+      process.nextTick(function() {
+        presence._xserver.once('user_offline', function(userId, userType) {
+          assert.equal(123, userId);
+          assert.equal(0, userType);
+          done();
+        });
+        // remote and local messages are treated differently
+        // namely, remote messages about local clients cannot trigger the fast path
+        presence.redisIn(JSON.stringify({ online: false, userId: 123, clientId: 'aab', userType: 0, at: 0}));
+        // manually trigger the disconnect processing
+        presence._xserver._processDisconnects();
       });
-      presence.redisIn({ online: false, userId: 123, userType: 0, at: 0});
     });
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
+    presence.redisIn(JSON.stringify({ online: true, userId: 123, clientId: 'aab', userType: 0, at: new Date().getTime()}));
   },
 
-  'messages from Redis are not broadcast, only changes in status are': function(done) {
+  'messages from Redis are not broadcast, only changes in status are': function() {
     var presence = this.presence;
     var updates = [];
     // replace function
-    presence.on('user_added', function(userId, userType) {
+    presence._xserver.on('user_online', function(userId, userType) {
       updates.push([true, userId, userType]);
     });
-    presence.on('user_removed', function(userId, userType) {
+    presence._xserver.on('user_offline', function(userId, userType) {
       updates.push([false, userId, userType]);
     });
 
-    this.presence.redisIn({
+    this.presence.redisIn(JSON.stringify({
       userId: 123,
       userType: 2,
+      clientId: 'aab',
       online: true,
       at: new Date().getTime()
-    });
+    }));
     assert.equal(1, updates.length);
     assert.deepEqual([true, 123, 2], updates[0]);
 
-    this.presence.redisIn({
+    // receiving the same info twice should have no effect
+    this.presence.redisIn(JSON.stringify({
       userId: 123,
       userType: 2,
+      clientId: 'aab',
       online: true,
       at: new Date().getTime()
-    });
+    }));
     assert.equal(1, updates.length);
 
-    this.presence.redisIn({
+    // if we receive a online message for a different client, send it
+    this.presence.redisIn(JSON.stringify({
       userId: 345,
       userType: 0,
+      clientId: 'ccc',
       online: true,
       at: new Date().getTime()
-    });
+    }));
 
     assert.equal(2, updates.length);
     assert.deepEqual([true, 345, 0], updates[1]);
 
-    this.presence.redisIn({
+    // do not send notifications for users that were never online
+    this.presence.redisIn(JSON.stringify({
       userId: 456,
       userType: 2,
+      clientId: 'bbb',
       online: false,
       at: new Date().getTime()
-    });
+    }));
     assert.equal(2, updates.length);
 
-    this.presence.redisIn({
+    // do send changes to user that were online
+    this.presence.redisIn(JSON.stringify({
       userId: 123,
       userType: 2,
+      clientId: 'aab',
       online: false,
       at: new Date().getTime()
-    });
+    }));
     assert.equal(3, updates.length);
     assert.deepEqual([false, 123, 2], updates[2]);
-
-    done();
   },
 
   'setting status twice does not cause duplicate notifications': function(done) {
     var presence = this.presence;
     var calls = 0;
-    presence.on('user_added', function(userId, userType) {
+    presence._xserver.on('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
+    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
+    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, at: new Date().getTime()}));
 
     assert.equal(1, calls);
     done();
@@ -114,14 +128,14 @@ exports['given a presence monitor'] = {
   'string userId is treated the same as int userId': function(done) {
     var presence = this.presence;
     var calls = 0;
-    presence.on('user_added', function(userId, userType) {
+    presence._xserver.on('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
-    presence.redisIn({ online: true, userId: '123', userType: 0, at: new Date().getTime()});
+    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
+    presence.redisIn(JSON.stringify({ online: true, userId: '123', userType: 0, clientId: 'aab', at: new Date().getTime()}));
 
     assert.equal(1, calls);
     done();
@@ -135,7 +149,7 @@ exports['given a presence monitor'] = {
       });
     };
     var users = {};
-    this.presence.on('user_added', function(userId, userType) {
+    this.presence._xserver.on('user_online', function(userId, userType) {
       users[userId] = userType;
     });
 
@@ -172,10 +186,10 @@ exports['given a presence monitor'] = {
       });
     };
     var added = {}, removed = {};
-    presence.on('user_added', function(userId, userType) {
+    presence._xserver.on('user_online', function(userId, userType) {
       added[userId] = userType;
     });
-    presence.on('user_removed', function(userId, userType) {
+    presence._xserver.on('user_offline', function(userId, userType) {
       removed[userId] = userType;
     });
 

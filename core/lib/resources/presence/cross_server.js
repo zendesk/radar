@@ -156,7 +156,7 @@ CrossServer.prototype.processRemoteTimeouts = function() {
     if(!isOnline || (isOnline && isExpired)) {
       self.remoteUsers.removeItem(uid, cid);
       self.remoteClients.remove(cid);
-      self.emitAfterRemove(cid, uid);
+      self.emitAfterRemove(cid, uid, false);
     }
   });
 };
@@ -175,10 +175,12 @@ CrossServer.prototype.remoteMessage = function(message) {
     this.emitIfNew(cid, uid);
     this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
-  } else if(!isOnline || (isOnline && isExpired)) {
+  } else if((!isOnline || isExpired) && this.remoteUsers.hasKey(uid)) {
+    // not online, or expired - and must be a remote user we've seen before (don't send offline for users that we never had online)
     this.remoteUsers.removeItem(uid, cid);
     this.remoteClients.remove(cid);
-    this.emitAfterRemove(cid, uid);
+    // why is this in the fast path? Because we remove the user immediately
+    this.emitAfterRemove(cid, uid, true);
   }
 };
 
@@ -188,6 +190,7 @@ CrossServer.prototype._processDisconnects = function() {
   Object.keys(this._disconnectQueue).forEach(function(userId) {
     var userId = parseInt(userId, 10);
     // do not resend the notification for users that are already offline
+    console.log(self.hasUser(userId));
     if(!self.hasUser(userId)) { return; }
     // now, remove the queued clientIds from the set of userIds
     // but only if the clientId is not already in remote|localClients
