@@ -12,6 +12,8 @@ function CrossServer(scope) {
   this.localUsers = new ArraySet();
   this.remoteUsers = new ArraySet();
   this._disconnectQueue = {};
+  // user type information (assumed to be same each userId)
+  this.userTypes = new Set();
 }
 
 require('util').inherits(CrossServer, require('events').EventEmitter);
@@ -32,7 +34,7 @@ CrossServer.prototype.hasClient = function(clientId) {
 
 CrossServer.prototype.emitIfNew = function(clientId, userId) {
   if(!this.hasUser(userId)) {
-    this.emit('user_online', userId);
+    this.emit('user_online', userId, this.userTypes.get(userId));
   }
   if(!this.hasClient(clientId)) {
     this.emit('client_online', clientId, userId);
@@ -47,7 +49,8 @@ CrossServer.prototype.emitAfterRemove = function(clientId, userId, isFastPath) {
   }
   if(isFastPath) {
     if(!this.hasUser(userId)) {
-      this.emit('user_offline', userId);
+      this.emit('user_offline', userId, this.userTypes.get(userId));
+      this.userTypes.remove(userId);
     }
     // fast path doesn't set a disconnect queue item
   } else {
@@ -66,13 +69,14 @@ CrossServer.prototype.emitAfterRemove = function(clientId, userId, isFastPath) {
   }
 };
 
-CrossServer.prototype.addLocal = function(clientId, userId, callback) {
+CrossServer.prototype.addLocal = function(clientId, userId, userType, callback) {
+  this.userTypes.add(userId, userType);
   this.emitIfNew(clientId, userId);
   this.localUsers.push(userId, clientId);
   this.localClients.add(clientId, userId);
   // persist local
   var message = JSON.stringify({
-    userId: userId, userType: 0,
+    userId: userId, userType: userType,
     clientId: clientId, online: true, at: new Date().getTime()
   });
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
@@ -81,6 +85,7 @@ CrossServer.prototype.addLocal = function(clientId, userId, callback) {
 
 // note: this is the fast path (e.g. graceful only)
 CrossServer.prototype.removeLocal = function(clientId, userId, callback) {
+  var userType = this.userTypes.get(userId);
   // fast path allows us to do the delete right away
   this.localUsers.removeItem(userId, clientId);
   this.localClients.remove(clientId);
@@ -88,7 +93,7 @@ CrossServer.prototype.removeLocal = function(clientId, userId, callback) {
   // persist local
   Persistence.deleteHash(this.scope, userId + '.' + clientId);
   Persistence.publish(this.scope, JSON.stringify({
-    userId: userId, userType: 0,
+    userId: userId, userType: userType,
     clientId: clientId, online: false, at: 0
   }), callback);
 };
@@ -106,7 +111,7 @@ CrossServer.prototype.disconnectLocal = function(clientId) {
   // the slow path should apply here
   // e.g. users should only be dropped when the at value expires
   var message = JSON.stringify({
-    userId: userId, userType: 0,
+    userId: userId, userType: this.userTypes.get(userId),
     clientId: clientId, online: false, at: new Date().getTime()
   });
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
@@ -133,7 +138,7 @@ CrossServer.prototype.processLocal = function() {
       if(!self.localClients.has(clientId)) { return; }
       userId = parseInt(userId, 10);
       console.log('Autopub - set online', 'userId:', userId, 'clientId:', clientId);
-      self.addLocal(clientId, userId);
+      self.addLocal(clientId, userId, self.userTypes.get(userId));
     });
   });
 };
@@ -162,15 +167,17 @@ CrossServer.prototype.remoteMessage = function(message) {
       isOnline = message.online,
       isExpired = (message.at < maxAge),
       uid = message.userId,
-      cid = message.clientId;
+      cid = message.clientId,
+      userType = message.userType;
   // console.log(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
   if(isOnline && !isExpired) {
+    this.userTypes.add(uid, userType);
     this.emitIfNew(cid, uid);
     this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
   } else if(!isOnline || (isOnline && isExpired)) {
     this.remoteUsers.removeItem(uid, cid);
-    this.remoteClients.remove(cid, message);
+    this.remoteClients.remove(cid);
     this.emitAfterRemove(cid, uid);
   }
 };
@@ -197,7 +204,8 @@ CrossServer.prototype._processDisconnects = function() {
     if(self.hasUser(userId)) {
       logging.info('Cancel disconnect, as user has reconnected during grace period, userId:', userId);
     } else {
-      self.emit('user_offline', userId);
+      self.emit('user_offline', userId, self.userTypes.get(userId));
+      self.userTypes.remove(userId);
     }
   });
   this._disconnectQueue = {};
@@ -207,9 +215,9 @@ CrossServer.prototype._processDisconnects = function() {
 // without the client ID info
 // for sending API replies
 CrossServer.prototype.getOnline = function() {
-  var result = {};
+  var result = {}, self = this;
   function setUid(userId) {
-    result[userId] = 0; // FIXME
+    result[userId] = self.userTypes.get(userId);
   }
   this.remoteUsers.keys().forEach(setUid);
   this.localUsers.keys().forEach(setUid);

@@ -44,7 +44,7 @@ exports['given a presence'] = {
           userId = m.userId,
           userType = m.userType;
         assert.equal(1, userId);
-// FIXME        assert.equal(2, userType);
+        assert.equal(2, userType);
         assert.equal(true, online);
     };
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
@@ -58,8 +58,9 @@ exports['given a presence'] = {
           userId = m.userId,
           userType = m.userType;
       // immediate notification is sent
+      console.log(m);
       assert.equal(1, userId);
-// FIXME      assert.equal(2, userType);
+      assert.equal(2, userType);
       assert.equal(false, online);
     };
 
@@ -79,7 +80,7 @@ exports['given a presence'] = {
           userId = m.userId,
           userType = m.userType;
       assert.equal(1, userId);
-// FIXME      assert.equal(2, userType);
+      assert.equal(2, userType);
       assert.equal(true, online);
       calls++;
     };
@@ -194,7 +195,7 @@ exports['given a presence'] = {
       assert.equal(this.local[1].value.clientId, this.client2.id);
       // there should be a broadcast for a offline notification for UID 1
       assert.equal(this.local[2].op, 'offline');
-      assert.deepEqual(this.local[2].value, { 1: 0 });
+      assert.deepEqual(this.local[2].value, { 1: 2 });
 
       // each client should have received two messages, since we don't send client_offline
       // notifications to the client itself.
@@ -245,7 +246,7 @@ exports['given a presence'] = {
       assert.equal(this.local[1].value.clientId, this.client2.id);
       // there should be a broadcast for a offline notification for UID 1
       assert.equal(this.local[2].op, 'offline');
-      assert.deepEqual(this.local[2].value, { 1: 0 });
+      assert.deepEqual(this.local[2].value, { 1: 2 });
 
       // only CID 2 receives any messages
       // = one message for the CID1 disconnect, after which no messages are delivered
@@ -289,7 +290,7 @@ exports['given a presence'] = {
       assert.equal(this.local[1].value.clientId, this.client2.id);
       // there should be a broadcast for a offline notification for UID 1
       assert.equal(this.local[2].op, 'offline');
-      assert.deepEqual(this.local[2].value, { 1: 0 });
+      assert.deepEqual(this.local[2].value, { 1: 2 });
 
       // only CID 2 receives any messages
       // = two messages, one for CID 1 offline and one for UID1 offline
@@ -351,9 +352,8 @@ exports['given a presence'] = {
     presence._xserver.timeouts();
     presence._xserver._processDisconnects();
     // client 1 should emit periodic online and 123 should have emitted offline
-// FIXME    assert.ok(notifications.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));
     // one autopublish message
-    assert.ok(remote.some(function(msg) { return msg.userId == 1 && msg.userType == 0 && msg.online == true; } ));
+    assert.ok(remote.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));
     // one broadcast of a user offline
     assert.deepEqual(local[0], { to: 'aaa', op: 'offline', value: { '123': 0 } });
 

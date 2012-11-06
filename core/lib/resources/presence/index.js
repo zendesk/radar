@@ -9,20 +9,20 @@ function Presence(name, parent, options) {
   this.type = 'presence';
 
   this._xserver = new CrossServer(this.name);
-  this._xserver.on('user_online', function(userId) {
-    console.log('user_online', userId);
+  this._xserver.on('user_online', function(userId, userType) {
+    console.log('user_online', userId, userType);
     var value = {};
-    value[userId] = 0; // fixme
+    value[userId] = userType;
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'online',
       value: value
     }));
   });
-  this._xserver.on('user_offline', function(userId) {
-    console.log('user_offline', userId);
+  this._xserver.on('user_offline', function(userId, userType) {
+    console.log('user_offline', userId, userType);
     var value = {};
-    value[userId] = 0; // fixme
+    value[userId] = userType;
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'offline',
@@ -89,7 +89,7 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
   if(isOnline) {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this._xserver.addLocal(client.id, userId, ackCheck);
+    this._xserver.addLocal(client.id, userId, userType, ackCheck);
   } else {
     // remove from local
     this._xserver.removeLocal(client.id, userId, ackCheck);
