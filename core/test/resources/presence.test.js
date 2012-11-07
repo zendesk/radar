@@ -58,7 +58,6 @@ exports['given a presence'] = {
           userId = m.userId,
           userType = m.userType;
       // immediate notification is sent
-      console.log(m);
       assert.equal(1, userId);
       assert.equal(2, userType);
       assert.equal(false, online);
@@ -226,8 +225,6 @@ exports['given a presence'] = {
       presence._xserver.timeouts();
       presence._xserver._processDisconnects();
 
-      console.log(this.remote);
-
       assert.equal(this.remote.length, 3);
       // there should be a client_offline notification for CID 2
       assert.equal(this.remote[2].userId, 1);
@@ -278,7 +275,6 @@ exports['given a presence'] = {
       presence._xserver._processDisconnects();
 
       // check local broadcast
-      console.log(this.local)
       assert.equal(this.local.length, 3);
       // there should be a client_offline notification for CID 1
       assert.equal(this.local[0].op, 'client_offline');

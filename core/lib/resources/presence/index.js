@@ -142,34 +142,7 @@ Presence.prototype.broadcast = function(message, except) {
 };
 
 Presence.prototype.fullRead = function(callback) {
-  var self = this;
-  // sync scope presence
-  logging.debug('Persistence.readHashAll', this.name);
-  Persistence.readHashAll(this.name, function(replies) {
-    logging.debug(self.name, 'REPLIES', replies);
-
-    if(!replies) {
-      return callback && callback({});
-    }
-
-    // process all messages in one go before updating subscribers to avoid
-    // sending multiple messages
-    Object.keys(replies).forEach(function(key) {
-      var data = replies[key];
-      try {
-        var message = JSON.parse(data);
-        if(message.constructor !== Object) {
-          throw new Error('JSON parse result is not an Object');
-        }
-      } catch(err) {
-        logging.error('Persistence full read: invalid message', data, err);
-        return callback && callback({});
-      }
-      self._xserver.remoteMessage(message);
-    });
-
-    callback && callback(self._xserver.getOnline());
-  });
+  this._xserver.fullRead(callback);
 };
 
 Presence.setBackend = function(backend) { Persistence = backend; };

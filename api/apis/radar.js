@@ -2,7 +2,6 @@ var url = require('url'),
     Status = require('../../core').Status,
     MessageList = require('../../core').MessageList,
     Presence = require('../../core').Presence,
-    PresenceMonitor = require('../../core').PresenceMonitor,
     Type = require('../../core').Type,
     hostname = require('os').hostname();
 // Note that Firefox needs a application/json content type or it will show a warning

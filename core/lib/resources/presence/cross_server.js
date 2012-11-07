@@ -14,6 +14,26 @@ function CrossServer(scope) {
   this._disconnectQueue = {};
   // user type information (assumed to be same each userId)
   this.userTypes = new Set();
+
+
+  remoteManager.on('client_online', function(clientId, userId) {
+    // now this is a bit of a problem since we don't have access to the userType here
+    this.userTypes.add(uid, userType);
+    // as is this
+
+    emitIfNotInLocal(cid, uid);
+
+    this.emitIfNew(cid, uid);
+  });
+
+  remoteManager.on('client_offline', function(clientId, userId) {
+    // why is this in the fast path? Because we remove the user immediately
+
+    emitIfNotInLocal(cid, uid, true);
+
+
+    this.emitAfterRemove(cid, uid, true);
+  });
 }
 
 require('util').inherits(CrossServer, require('events').EventEmitter);
@@ -120,7 +140,7 @@ CrossServer.prototype.disconnectLocal = function(clientId) {
 
 CrossServer.prototype.timeouts = function() {
   this.processLocal();
-  this.processRemoteTimeouts();
+  this.remoteManager.timeouts();
 };
 
 CrossServer.prototype.processLocal = function() {
@@ -140,45 +160,27 @@ CrossServer.prototype.processLocal = function() {
   });
 };
 
-// causes removeRemote() calls
-CrossServer.prototype.processRemoteTimeouts = function() {
-  var self = this,
-      maxAge = new Date().getTime() - 45 * 1000;
-  this.remoteClients.forEach(function(cid) {
-    var message = self.remoteClients.get(cid),
-        isOnline = message.online,
-        isExpired = (message.at < maxAge),
-        uid = message.userId;
+// takes into account both local and remote results
+CrossServer.prototype.fullRead = function(callback) {
+  remoteManager.getOnline(function(remoteOnline) {
+    // without the client ID info
+    // for sending API replies
+    CrossServer.prototype.getOnline = function() {
+      var result = {}, self = this;
+      function setUid(userId) {
+        result[userId] = self.userTypes.get(userId);
+      }
+      this.remoteUsers.keys().forEach(setUid);
+      this.localUsers.keys().forEach(setUid);
+      return result;
+    };
 
-    if(!isOnline || (isOnline && isExpired)) {
-      self.remoteUsers.removeItem(uid, cid);
-      self.remoteClients.remove(cid);
-      self.emitAfterRemove(cid, uid, false);
-    }
   });
 };
 
 // causes addRemote() and removeRemote() calls
 CrossServer.prototype.remoteMessage = function(message) {
-  var maxAge = new Date().getTime() - 45 * 1000,
-      isOnline = message.online,
-      isExpired = (message.at < maxAge),
-      uid = message.userId,
-      cid = message.clientId,
-      userType = message.userType;
-  // console.log(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
-  if(isOnline && !isExpired) {
-    this.userTypes.add(uid, userType);
-    this.emitIfNew(cid, uid);
-    this.remoteUsers.push(uid, cid);
-    this.remoteClients.add(cid, message);
-  } else if((!isOnline || isExpired) && this.remoteUsers.hasKey(uid)) {
-    // not online, or expired - and must be a remote user we've seen before (don't send offline for users that we never had online)
-    this.remoteUsers.removeItem(uid, cid);
-    this.remoteClients.remove(cid);
-    // why is this in the fast path? Because we remove the user immediately
-    this.emitAfterRemove(cid, uid, true);
-  }
+
 };
 
 CrossServer.prototype._processDisconnects = function() {
@@ -210,17 +212,5 @@ CrossServer.prototype._processDisconnects = function() {
   this._disconnectQueue = {};
 };
 
-
-// without the client ID info
-// for sending API replies
-CrossServer.prototype.getOnline = function() {
-  var result = {}, self = this;
-  function setUid(userId) {
-    result[userId] = self.userTypes.get(userId);
-  }
-  this.remoteUsers.keys().forEach(setUid);
-  this.localUsers.keys().forEach(setUid);
-  return result;
-};
 
 module.exports = CrossServer;

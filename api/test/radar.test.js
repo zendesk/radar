@@ -10,7 +10,6 @@ var fs = require('fs'),
 
     Type = require('../../core').Type,
     Status = require('../../core').Status,
-    PresenceMonitor = require('../../core').PresenceMonitor,
 
     logging = require('minilog')('test');
 
