@@ -9,15 +9,24 @@ exports['given a server'] = {
 
   before: function(done) {
     var Minilog = require('minilog');
+
+    /*
+    Minilog.pipe(Minilog.backends.nodeConsole)
+      .format(Minilog.backends.nodeConsole.formatWithStack);
+
     require('radar_client')._log
       .pipe(Minilog.backends.nodeConsole)
       .filter(Minilog.backends.nodeConsole.filterEnv((process.env.radar_log ? process.env.radar_log : '*')))
       .format(Minilog.backends.nodeConsole.formatWithStack);
+    */
 
     common.startRadar(8002, this, done);
   },
 
-  after: function(done) { common.endRadar(this, function() { Persistence.disconnect(done); }); },
+  after: function(done) {
+    common.endRadar(this, function() {});
+    Persistence.disconnect(done);
+  },
 
   beforeEach: function(done) {
     var tasks = 0;
@@ -28,29 +37,47 @@ exports['given a server'] = {
     Persistence.delWildCard('*:/dev/*', next);
   },
 
+  afterEach: function() {
+//    this.client.dealloc('test');
+  },
+
 // Presence tests
 // - .get(callback)
 // - .set('online', ack) / .set('offline', ack)
 // - .subscribe(ack)
 // - .unsubscribe(ack)
 // - .sync(callback)
-
   'presence: can set("online")': function(done) {
-    Radar.once('set', function(client, message) {
-      assert.equal('set', message.op)
-      assert.equal('online', message.value)
+    var client = this.client;
+    Radar.once('set', function(socket, message) {
+      assert.equal('set', message.op);
+      assert.equal('online', message.value);
       assert.equal(123, message.key);
-      done();
+      client.presence('ticket/21').get(function(message) {
+        assert.equal('get', message.op);
+        assert.deepEqual(message.value, { 123: 0});
+        client.presence('ticket/21').set('offline', function() {
+          done();
+        });
+      });
     });
     this.client.presence('ticket/21').set('online');
   },
 
   'presence: can set("offline")': function(done) {
-    Radar.once('set', function(client, message) {
+    var client = this.client;
+    Radar.once('set', function(socket, message) {
       assert.equal('set', message.op);
       assert.equal('offline', message.value);
       assert.equal(123, message.key);
-      done();
+      // finish executing this request in Radar first
+      process.nextTick(function() {
+        client.presence('ticket/21').get(function(message) {
+          assert.equal('get', message.op);
+          assert.deepEqual(message.value, { });
+          done();
+        });
+      });
     });
     this.client.presence('ticket/21').set('offline');
   },
@@ -63,13 +90,12 @@ exports['given a server'] = {
       client.presence('ticket/21').set('online', function() {
         client.presence('ticket/21').get(function(message) {
           assert.equal('get', message.op);
-          assert.deepEqual({ '123': 0 }, message.value);
+          assert.deepEqual(message.value, { '123': 0 });
           done();
         });
       });
     });
   },
-
 /*
 
   This does not work right now, as the result from .get and .sync use different op codes.
@@ -139,10 +165,13 @@ exports['given a server'] = {
   },
 
   'status: can subscribe()': function(done) {
+    this.timeout(10000);
+
     var client = this.client;
     var client2 = new Client()
       .configure({ userId: 234, userType: 0, accountName: 'dev', port: 8002})
       .alloc('test', function() {
+
         client2.status('voice/status')
           .once(function(message) {
             assert.equal('set', message.op);
@@ -155,6 +184,7 @@ exports['given a server'] = {
           });
       });
   },
+
 
   'status: can sync()': function(done) {
     var client = this.client;
@@ -227,7 +257,7 @@ exports['given a server'] = {
 
 // if this module is the script being run, then run the tests:
 if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
+  var mocha = require('child_process').spawn('mocha', [ '--colors', '--bail', '--ui', 'exports', '--reporter', 'spec', __filename ]);
   mocha.stdout.pipe(process.stdout);
   mocha.stderr.pipe(process.stderr);
 }

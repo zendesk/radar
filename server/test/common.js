@@ -4,7 +4,7 @@ var http = require('http'),
 
     Radar = require('../server.js');
 
-http.globalAgent.maxSockets = 100;
+http.globalAgent.maxSockets = 10000;
 
 module.exports = {
   // starts a Radar server at the given port
@@ -16,11 +16,12 @@ module.exports = {
   },
   // ends the Radar server
   endRadar: function(context, done) {
-    Radar.terminate();
     if(!context.serverStarted) return done();
     context.server.on('close', function() {
       context.serverStarted = false;
       done();
-    }).close();
+    });
+    Radar.terminate();
+    context.server.close();
   }
 }
