@@ -5,8 +5,7 @@ module.exports = {
   Map: require('./lib/map.js'),
 
   MessageList: require('./lib/resources/message_list.js'),
-  Presence: require('./lib/resources/presence.js'),
-  PresenceMonitor: require('./lib/presence_monitor.js'),
-  PresenceMaintainer: require('./lib/presence_maintainer.js'),
-  Status: require('./lib/resources/status.js')
+  Presence: require('./lib/resources/presence'),
+  Status: require('./lib/resources/status.js'),
+  RemoteManager: require('./lib/resources/presence/remote_manager')
 };

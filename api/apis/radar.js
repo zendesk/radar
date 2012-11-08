@@ -1,8 +1,7 @@
 var url = require('url'),
     Status = require('../../core').Status,
     MessageList = require('../../core').MessageList,
-    Presence = require('../../core').Presence,
-    PresenceMonitor = require('../../core').PresenceMonitor,
+    RemoteManager = require('../../core').RemoteManager,
     Type = require('../../core').Type,
     hostname = require('os').hostname();
 // Note that Firefox needs a application/json content type or it will show a warning
@@ -81,7 +80,7 @@ function getPresence(req, res) {
   if(!(q.scope || q.scopes)) { return res.end(); }
   // sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
   if(q.scope) {
-    var monitor = new PresenceMonitor('presence:/'+q.accountName+'/'+q.scope);
+    var monitor = new RemoteManager('presence:/'+q.accountName+'/'+q.scope);
     monitor.fullRead(function(online) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
@@ -92,7 +91,7 @@ function getPresence(req, res) {
     var scopes = q.scopes.split(','),
         result = {}; // key: scope - value: replies
     scopes.forEach(function(scope) {
-      var monitor = new PresenceMonitor('presence:/'+q.accountName+'/'+scope);
+      var monitor = new RemoteManager('presence:/'+q.accountName+'/'+scope);
       monitor.fullRead(function(online) {
         result[scope] = online;
         if (Object.keys(result).length == scopes.length) {
@@ -114,6 +113,6 @@ module.exports = {
   getPresence: getPresence,
   // API for tests
   _setPresenceMonitor: function(monitor) {
-    PresenceMonitor = monitor;
+    RemoteManager = monitor;
   }
 };

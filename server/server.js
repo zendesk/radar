@@ -5,7 +5,6 @@ var redis = require('redis'),
     Status = require('../core').Status,
     MessageList = require('../core').MessageList,
     Presence = require('../core').Presence,
-    PresenceMaintainer = require('../core').PresenceMaintainer,
     Heartbeat = require('heartbeat'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname();
@@ -26,7 +25,6 @@ function Server() {
   this.subs = {};
 
   this.timer = new Heartbeat().interval(15000);
-  this.presenceMaintainer = new PresenceMaintainer(this);
 }
 
 MiniEventEmitter.mixin(Server);
@@ -75,7 +73,6 @@ Server.prototype.attach = function(server, configuration) {
     });
   });
 
-  this.timer.add(function() { self.presenceMaintainer.timer(); });
   this.timer.start();
 
   // event: server started
