@@ -57,6 +57,7 @@ model = {
 };
 
 function onlineUpdate(message) {
+  if(message.op != 'online' && message.op != 'offline') return;
   for(var userId in message.value) {
     if(!message.value.hasOwnProperty(userId)) continue;
     model.online[userId] = !!(message.op == 'online');

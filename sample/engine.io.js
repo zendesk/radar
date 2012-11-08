@@ -6,7 +6,7 @@
  * @api public.
  */
 
-exports.version = '0.2.2';
+exports.version = '0.3.8';
 
 /**
  * Protocol version.
@@ -422,7 +422,7 @@ exports.decodePayload = function (data) {
 var util = require('./util')
   , transports = require('./transports')
   , debug = require('debug')('engine-client:socket')
-  , EventEmitter = require('./event-emitter')
+  , EventEmitter = require('./event-emitter');
 
 /**
  * Module exports.
@@ -442,14 +442,14 @@ function Socket (opts) {
     var uri = util.parseUri(opts);
     opts = arguments[1] || {};
     opts.host = uri.host;
-    opts.secure = uri.scheme == 'https' || uri.scheme == 'wss';
-    opts.port = uri.port || (opts.secure ? 443 : 80);
+    opts.secure = uri.protocol == 'https' || uri.protocol == 'wss';
+    opts.port = uri.port;
   }
 
   opts = opts || {};
-  this.secure = opts.secure || false;
-  this.host = opts.host || opts.hostname || 'localhost';
-  this.port = opts.port || 80;
+  this.secure = null != opts.secure ? opts.secure : (global.location && 'https:' == location.protocol);
+  this.host = opts.host || opts.hostname || (global.location ? location.hostname : 'localhost');
+  this.port = opts.port || (global.location && location.port ? location.port : (this.secure ? 443 : 80));
   this.query = opts.query || {};
   this.query.uid = rnd();
   this.upgrade = false !== opts.upgrade;
@@ -465,6 +465,9 @@ function Socket (opts) {
   this.writeBuffer = [];
   this.policyPort = opts.policyPort || 843;
   this.open();
+
+  Socket.sockets.push(this);
+  Socket.sockets.evs.emit('add', this);
 };
 
 /**
@@ -472,6 +475,13 @@ function Socket (opts) {
  */
 
 util.inherits(Socket, EventEmitter);
+
+/**
+ * Static EventEmitter.
+ */
+
+Socket.sockets = [];
+Socket.sockets.evs = new EventEmitter;
 
 /**
  * Creates transport of the given type.
@@ -483,7 +493,7 @@ util.inherits(Socket, EventEmitter);
 
 Socket.prototype.createTransport = function (name) {
   debug('creating transport "%s"', name);
-  var query = clone(this.query)
+  var query = clone(this.query);
   query.transport = name;
 
   if (this.id) {
@@ -559,7 +569,7 @@ Socket.prototype.setTransport = function (transport) {
     })
     .on('close', function () {
       self.onClose('transport close');
-    })
+    });
 };
 
 /**
@@ -572,7 +582,7 @@ Socket.prototype.setTransport = function (transport) {
 Socket.prototype.probe = function (name) {
   debug('probing transport "%s"', name);
   var transport = this.createTransport(name, { probe: 1 })
-    , self = this
+    , self = this;
 
   transport.once('open', function () {
     debug('probe transport "%s" opened', name);
@@ -652,14 +662,19 @@ Socket.prototype.onOpen = function () {
 Socket.prototype.onPacket = function (packet) {
   if ('opening' == this.readyState || 'open' == this.readyState) {
     debug('socket receive: type "%s", data "%s"', packet.type, packet.data);
+
+    this.emit('packet', packet);
+
+    // Socket is live - any packet counts
+    this.emit('heartbeat');
+
     switch (packet.type) {
       case 'open':
         this.onHandshake(util.parseJSON(packet.data));
         break;
 
-      case 'ping':
-        this.sendPacket('pong');
-        this.setPingTimeout();
+      case 'pong':
+        this.ping();
         break;
 
       case 'error':
@@ -673,7 +688,7 @@ Socket.prototype.onPacket = function (packet) {
         var event = { data: packet.data };
         event.toString = function () {
           return packet.data;
-        }
+        };
         this.onmessage && this.onmessage.call(this, event);
         break;
     }
@@ -694,23 +709,46 @@ Socket.prototype.onHandshake = function (data) {
   this.id = data.sid;
   this.transport.query.sid = data.sid;
   this.upgrades = data.upgrades;
+  this.pingInterval = data.pingInterval;
   this.pingTimeout = data.pingTimeout;
   this.onOpen();
-  this.setPingTimeout();
+  this.ping();
+
+  // Prolong liveness of socket on heartbeat
+  this.removeListener('heartbeat', this.onHeartbeat);
+  this.on('heartbeat', this.onHeartbeat);
 };
 
 /**
- * Clears and sets a ping timeout based on the expected ping interval.
+ * Resets ping timeout.
  *
  * @api private
  */
 
-Socket.prototype.setPingTimeout = function () {
+Socket.prototype.onHeartbeat = function (timeout) {
   clearTimeout(this.pingTimeoutTimer);
   var self = this;
-  this.pingTimeoutTimer = setTimeout(function () {
+  self.pingTimeoutTimer = setTimeout(function () {
+    if ('closed' == self.readyState) return;
     self.onClose('ping timeout');
-  }, this.pingTimeout);
+  }, timeout || (self.pingInterval + self.pingTimeout));
+};
+
+/**
+ * Pings server every `this.pingInterval` and expects response
+ * within `this.pingTimeout` or closes connection.
+ *
+ * @api private
+ */
+
+Socket.prototype.ping = function () {
+  var self = this;
+  clearTimeout(self.pingIntervalTimer);
+  self.pingIntervalTimer = setTimeout(function () {
+    debug('writing ping packet - expecting pong within %sms', self.pingTimeout);
+    self.sendPacket('ping');
+    self.onHeartbeat(self.pingTimeout);
+  }, self.pingInterval);
 };
 
 /**
@@ -720,8 +758,8 @@ Socket.prototype.setPingTimeout = function () {
  */
 
 Socket.prototype.flush = function () {
-  if ('closed' != this.readyState && this.transport.writable
-    && !this.upgrading && this.writeBuffer.length) {
+  if ('closed' != this.readyState && this.transport.writable &&
+    !this.upgrading && this.writeBuffer.length) {
     debug('flushing %d packets in socket', this.writeBuffer.length);
     this.transport.send(this.writeBuffer);
     this.writeBuffer = [];
@@ -736,6 +774,7 @@ Socket.prototype.flush = function () {
  * @api public
  */
 
+Socket.prototype.write =
 Socket.prototype.send = function (msg) {
   this.sendPacket('message', msg);
   return this;
@@ -751,6 +790,7 @@ Socket.prototype.send = function (msg) {
 
 Socket.prototype.sendPacket = function (type, data) {
   var packet = { type: type, data: data };
+  this.emit('packetCreate', packet);
   this.writeBuffer.push(packet);
   this.flush();
 };
@@ -766,6 +806,7 @@ Socket.prototype.close = function () {
     this.onClose('forced close');
     debug('socket closing - telling transport to close');
     this.transport.close();
+    this.transport.removeAllListeners();
   }
 
   return this;
@@ -794,6 +835,7 @@ Socket.prototype.onClose = function (reason, desc) {
     this.readyState = 'closed';
     this.emit('close', reason, desc);
     this.onclose && this.onclose.call(this);
+    this.id = null;
   }
 };
 
@@ -957,13 +999,19 @@ Transport.prototype.onClose = function () {
  */
 
 var WS = require('./websocket')
-  , util = require('../util')
+  , util = require('../util');
 
 /**
  * Module exports.
  */
 
 module.exports = FlashWS;
+
+/**
+ * Obfuscated key for Blue Coat.
+ */
+
+var xobject = global[['Active'].concat('Object').join('X')];
 
 /**
  * FlashWS constructor.
@@ -1008,7 +1056,7 @@ FlashWS.prototype.doOpen = function () {
     return function () {
       var str = Array.prototype.join.call(arguments, ' ');
       // debug: [websocketjs %s] %s, type, str
-    }
+    };
   };
 
   WEB_SOCKET_LOGGER = { log: log('debug'), error: log('error') };
@@ -1071,9 +1119,8 @@ FlashWS.prototype.write = function() {
  */
 
 FlashWS.prototype.ready = function (fn) {
-  if (typeof WebSocket == 'undefined'
-    || !('__initialize' in WebSocket) || !swfobject
-  ) {
+  if (typeof WebSocket == 'undefined' ||
+    !('__initialize' in WebSocket) || !swfobject) {
     return;
   }
 
@@ -1120,10 +1167,10 @@ FlashWS.prototype.check = function () {
     return false;
   }
 
-  if (window.ActiveXObject) {
+  if (xobject) {
     var control = null;
     try {
-      control = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
+      control = new xobject('ShockwaveFlash.ShockwaveFlash');
     } catch (e) { }
     if (control) {
       return true;
@@ -1159,8 +1206,8 @@ var scripts = {};
 function create (path, fn) {
   if (scripts[path]) return fn();
 
-  var el = document.createElement('script')
-    , loaded = false
+  var el = document.createElement('script');
+  var loaded = false;
 
   // debug: loading "%s", path
   el.onload = el.onreadystatechange = function () {
@@ -1210,7 +1257,7 @@ var XHR = require('./polling-xhr')
   , JSONP = require('./polling-jsonp')
   , websocket = require('./websocket')
   , flashsocket = require('./flashsocket')
-  , util = require('../util')
+  , util = require('../util');
 
 /**
  * Export transports.
@@ -1228,14 +1275,30 @@ exports.flashsocket = flashsocket;
  */
 
 function polling (opts) {
-  var xd = false;
+  var xhr
+    , xd = false
+    , isXProtocol = false;
 
   if (global.location) {
-    xd = opts.host != global.location.hostname
-      || global.location.port != opts.port;
+    var isSSL = 'https:' == location.protocol;
+    var port = location.port;
+
+    // some user agents have empty `location.port`
+    if (Number(port) != port) {
+      port = isSSL ? 443 : 80;
+    }
+
+    xd = opts.host != location.hostname || port != opts.port;
+    isXProtocol = opts.secure != isSSL;
   }
 
-  if (util.request(xd) && !opts.forceJSONP) {
+  xhr = util.request(xd);
+  /* See #7 at http://blogs.msdn.com/b/ieinternals/archive/2010/05/13/xdomainrequest-restrictions-limitations-and-workarounds.aspx */
+  if (isXProtocol && global.XDomainRequest && xhr instanceof global.XDomainRequest) {
+    return new JSONP(opts);
+  }
+
+  if (xhr && !opts.forceJSONP) {
     return new XHR(opts);
   } else {
     return new JSONP(opts);
@@ -1466,7 +1529,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 
 var Polling = require('./polling')
   , EventEmitter = require('../event-emitter')
-  , util = require('../util')
+  , util = require('../util');
 
 /**
  * Module exports.
@@ -1474,6 +1537,12 @@ var Polling = require('./polling')
 
 module.exports = XHR;
 module.exports.Request = Request;
+
+/**
+ * Obfuscated key for Blue Coat.
+ */
+
+var xobject = global[['Active'].concat('Object').join('X')];
 
 /**
  * Empty function
@@ -1492,8 +1561,8 @@ function XHR (opts) {
   Polling.call(this, opts);
 
   if (global.location) {
-    this.xd = opts.host != global.location.hostname
-      || global.location.port != opts.port;
+    this.xd = opts.host != global.location.hostname ||
+      global.location.port != opts.port;
   }
 };
 
@@ -1539,8 +1608,8 @@ XHR.prototype.request = function (opts) {
  */
 
 XHR.prototype.doWrite = function (data, fn) {
-  var req = this.request({ method: 'POST', data: data })
-    , self = this
+  var req = this.request({ method: 'POST', data: data });
+  var self = this;
   req.on('success', fn);
   req.on('error', function (err) {
     self.onError('xhr post error', err);
@@ -1556,8 +1625,8 @@ XHR.prototype.doWrite = function (data, fn) {
 
 XHR.prototype.doPoll = function () {
   // debug: xhr poll
-  var req = this.request()
-    , self = this
+  var req = this.request();
+  var self = this;
   req.on('data', function (data) {
     self.onData(data);
   });
@@ -1596,8 +1665,8 @@ util.inherits(Request, EventEmitter);
  */
 
 Request.prototype.create = function () {
-  var xhr = this.xhr = util.request(this.xd)
-    , self = this
+  var xhr = this.xhr = util.request(this.xd);
+  var self = this;
 
   xhr.open(this.method, this.uri, this.async);
 
@@ -1650,7 +1719,7 @@ Request.prototype.create = function () {
   // debug: sending xhr with url %s | data %s, this.uri, this.data
   xhr.send(this.data);
 
-  if (global.ActiveXObject) {
+  if (xobject) {
     this.index = Request.requestsCount++;
     Request.requests[this.index] = this;
   }
@@ -1665,7 +1734,7 @@ Request.prototype.create = function () {
 Request.prototype.onSuccess = function () {
   this.emit('success');
   this.cleanup();
-}
+};
 
 /**
  * Called if we have data.
@@ -1676,7 +1745,7 @@ Request.prototype.onSuccess = function () {
 Request.prototype.onData = function (data) {
   this.emit('data', data);
   this.onSuccess();
-}
+};
 
 /**
  * Called upon error.
@@ -1687,7 +1756,7 @@ Request.prototype.onData = function (data) {
 Request.prototype.onError = function (err) {
   this.emit('error', err);
   this.cleanup();
-}
+};
 
 /**
  * Cleans up house.
@@ -1706,12 +1775,12 @@ Request.prototype.cleanup = function () {
     this.xhr.abort();
   } catch(e) {}
 
-  if (global.ActiveXObject) {
+  if (xobject) {
     delete Request.requests[this.index];
   }
 
   this.xhr = null;
-}
+};
 
 /**
  * Aborts the request.
@@ -1723,7 +1792,7 @@ Request.prototype.abort = function () {
   this.cleanup();
 };
 
-if (global.ActiveXObject) {
+if (xobject) {
   Request.requestsCount = 0;
   Request.requests = {};
 
@@ -1919,8 +1988,9 @@ Polling.prototype.uri = function () {
     , schema = this.secure ? 'https' : 'http'
     , port = ''
 
-  // cache busting is forced for IE / android
-  if (global.ActiveXObject || util.ua.android || this.timestampRequests) {
+  // cache busting is forced for IE / android / iOS6 ಠ_ಠ
+  if (global.ActiveXObject || util.ua.android || util.ua.ios6
+    || this.timestampRequests) {
     query[this.timestampParam] = +new Date;
   }
 
@@ -2270,6 +2340,14 @@ exports.ua.android = 'undefined' != typeof navigator &&
   /android/i.test(navigator.userAgent);
 
 /**
+ * Detect iOS.
+ */
+
+exports.ua.ios = 'undefined' != typeof navigator &&
+  /^(iPad|iPhone|iPod)$/.test(navigator.platform);
+exports.ua.ios6 = exports.ua.ios && /OS 6_/.test(navigator.userAgent);
+
+/**
  * XHR request helper.
  *
  * @param {Boolean} whether we need xdomain
@@ -2282,7 +2360,7 @@ exports.request = function request (xdomain) {
 
 
 
-  if (xdomain && 'undefined' != typeof XDomainRequest) {
+  if (xdomain && 'undefined' != typeof XDomainRequest && !exports.ua.hasCORS) {
     return new XDomainRequest();
   }
 
@@ -2346,5 +2424,5 @@ exports.qs = function (obj) {
   return str;
 };
 
-});eio = require('engine.io-client');
+});var exp = require('engine.io-client');if ("undefined" != typeof module) module.exports = exp;else eio = exp;
 })();

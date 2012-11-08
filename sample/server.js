@@ -50,8 +50,8 @@ Minilog.pipe(Minilog.backends.nodeConsole)
   .format(Minilog.backends.nodeConsole.formatWithStack);
 
 
-Radar.attach(server);
 routes.attach(server);
+Radar.attach(server);
 
 server.listen(8080);
 

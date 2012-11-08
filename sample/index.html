@@ -19,8 +19,6 @@ RadarClient.configure({
   userType: 2,
   accountName: 'dev'
 }).alloc('example', function (){
-  view.status.render('Connected');
-
   // Agent collision / presence
   RadarClient.presence('foo')
     .set('online')
@@ -37,6 +35,8 @@ RadarClient.configure({
   }).sync();
 
 
+}).on('ready', function() {
+  view.status.render('Connected');
 }).on('disconnected', function() {
   view.status.render('Disconnected');
   // Set models to offline
@@ -62,6 +62,8 @@ RadarClient.configure({
 
     <div id="toggle"></div>
 
+    <p>Note: user IDs are randomly assigned on each reload. When clients disconnect without saying goodbye, there is a ~15 second grace period during which they are considered to be online.</p>
+
   </div>
 
 </div>
@@ -75,7 +77,7 @@ RadarClient.configure({
     <input type="text" id="send" onkeypress="e = event;
       if(e.which == 13) {
         e.preventDefault();
-        RadarClient.message.publish('chat/foo/messages', this.value);
+        RadarClient.message('chat/foo/messages').publish(this.value);
         this.value = '';
       }">
   </div>

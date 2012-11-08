@@ -105,9 +105,13 @@ RemoteManager.prototype.timeouts = function() {
         uid = message.userId;
 
     if(!isOnline || (isOnline && isExpired)) {
+      var emits = self.queueIfExists(cid, uid);
+
       self.remoteUsers.removeItem(uid, cid);
       self.remoteClients.remove(cid);
-      self.emitAfterRemove(cid, uid, false);
+      self.userTypes.remove(uid);
+
+      emits.forEach(function(c) { c(); });
     }
   });
 };
