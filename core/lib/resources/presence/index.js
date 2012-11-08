@@ -1,6 +1,6 @@
 var Resource = require('../../resource.js'),
     Persistence = require('../../persistence.js'),
-    CrossServer = require('./cross_server.js'),
+    LocalManager = require('./local_manager.js'),
     logging = require('minilog')('presence');
 
 function Presence(name, parent, options) {
@@ -8,7 +8,7 @@ function Presence(name, parent, options) {
   var self = this;
   this.type = 'presence';
 
-  this._xserver = new CrossServer(this.name);
+  this._xserver = new LocalManager(this.name);
   this._xserver.on('user_online', function(userId, userType) {
     logging.debug('user_online', userId, userType);
     var value = {};
@@ -143,7 +143,7 @@ Presence.prototype.fullRead = function(callback) {
 
 Presence.setBackend = function(backend) {
   Persistence = backend;
-  CrossServer.setBackend(backend);
+  LocalManager.setBackend(backend);
 };
 
 module.exports = Presence;
