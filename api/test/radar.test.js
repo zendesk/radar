@@ -8,6 +8,8 @@ var fs = require('fs'),
     ClientScope = require('../lib/client'),
     Persistence = require('../../core').Persistence,
 
+    RemoteManager = require('../../core').RemoteManager,
+
     Type = require('../../core').Type,
     Status = require('../../core').Status,
 
@@ -55,7 +57,7 @@ exports['Radar api tests'] = {
     Client.get('/node/radar/status')
       .data({ accountName: 'test', scope: 'ticket/1' })
       .end(function(error, response) {
-        assert.equal('{"foo":"bar"}', response);
+        assert.deepEqual({"foo":"bar"}, response);
         done();
       });
   },
@@ -79,7 +81,7 @@ exports['Radar api tests'] = {
     },
 
     after: function(done) {
-      RadarApi._setPresenceMonitor(PresenceMonitor);
+      RadarApi._setPresenceMonitor(RemoteManager);
       done();
     },
 
@@ -88,7 +90,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scope: 'ticket/1' })
         .end(function(error, response) {
-          assert.equal('{"1":"online"}\n', response);
+          assert.deepEqual({"1":"online"}, response);
           done();
         });
     },
@@ -97,8 +99,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2' })
         .end(function(error, response) {
-          assert.deepEqual({ "ticket/1": {"1":"online"}, "ticket/2":{"2":"online"}},
-            JSON.parse(response));
+          assert.deepEqual({ "ticket/1": {"1":"online"}, "ticket/2":{"2":"online"}}, response);
           done();
         });
     }

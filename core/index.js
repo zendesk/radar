@@ -6,5 +6,6 @@ module.exports = {
 
   MessageList: require('./lib/resources/message_list.js'),
   Presence: require('./lib/resources/presence'),
-  Status: require('./lib/resources/status.js')
+  Status: require('./lib/resources/status.js'),
+  RemoteManager: require('./lib/resources/presence/remote_manager')
 };
