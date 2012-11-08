@@ -101,17 +101,17 @@ exports['given a presence'] = {
 
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 0);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 0);
     presence.unsubscribe(client);
     // disconnect is queued
-    assert.ok(presence._xserver._disconnectQueue[1]);
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 1);
+    assert.ok(presence._xserver._disconnectQueue._queue[1]);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
     presence.setStatus(client2, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client2);
     // no duplicates
-    assert.ok(presence._xserver._disconnectQueue[1]);
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 1);
+    assert.ok(presence._xserver._disconnectQueue._queue[1]);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
     done();
   },
@@ -322,15 +322,15 @@ exports['given a presence'] = {
     client2.id = counter++;
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 0);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 0);
     presence.unsubscribe(client);
     // disconnect is queued
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 1);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
     presence.setStatus(client2, { key: 123, type: 0, value: 'online' } );
     presence.unsubscribe(client2);
     // disconnect is queued
-    assert.equal(Object.keys(presence._xserver._disconnectQueue).length, 2);
+    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 2);
 
     // now client 1 reconnects
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );

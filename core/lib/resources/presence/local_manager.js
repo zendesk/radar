@@ -1,6 +1,7 @@
 var Set = require('../../map.js'),
     ArraySet = require('./aset.js'),
     RemoteManager = require('./remote_manager.js'),
+    DisconnectQueue = require('./disconnect_queue.js'),
     Persistence = require('../../persistence.js'),
     logging = require('minilog')('presence');
 
@@ -45,6 +46,8 @@ function LocalManager(scope) {
       self.emit('client_offline', clientId, userId, userType);
     }
   });
+
+  this._disconnectQueue = new DisconnectQueue(this);
 }
 
 require('util').inherits(LocalManager, require('events').EventEmitter);
@@ -110,6 +113,7 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
   var userId = this.localClients.get(clientId);
   if(userId) {
     // remove from local - if in local at all
+    this.localUsers.removeItem(userId, clientId);
     this.localClients.remove(clientId);
 
     // order is significant (so that client_offline is emitted before user_offline)
@@ -121,7 +125,7 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
     // the disconnect queue needs to be at this level, so that
     // if someone asks for who is online while we the disconnect is pending
     // we still consider that user to be online
-    this._disconnectQueue.push(clientId, userId, userType);
+    this._disconnectQueue.push(clientId, userId, this.userTypes.get(userId));
   }
   // note: do not delete the hash key yet.
   // the slow path should apply here
@@ -167,7 +171,7 @@ LocalManager.prototype.fullRead = function(callback) {
     }
     self.localUsers.keys().forEach(setUid);
     // also merge with the disconnect queue
-
+    Object.keys(self._disconnectQueue._queue).forEach(setUid);
     callback(result);
   });
 };
