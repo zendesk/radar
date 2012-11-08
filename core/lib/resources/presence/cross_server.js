@@ -1,38 +1,50 @@
 var Set = require('../../map.js'),
     ArraySet = require('./aset.js'),
+    RemoteManager = require('./remote_manager.js'),
     Persistence = require('../../persistence.js'),
     logging = require('minilog')('presence');
 
 function CrossServer(scope) {
+  var self = this;
   this.scope = scope;
   // client lists are simple sets
   this.localClients = new Set();
-  this.remoteClients = new Set();
   // user lists are sets of arrays
   this.localUsers = new ArraySet();
-  this.remoteUsers = new ArraySet();
   this._disconnectQueue = {};
   // user type information (assumed to be same each userId)
   this.userTypes = new Set();
 
-
-  remoteManager.on('client_online', function(clientId, userId) {
-    // now this is a bit of a problem since we don't have access to the userType here
-    this.userTypes.add(uid, userType);
-    // as is this
-
-    emitIfNotInLocal(cid, uid);
-
-    this.emitIfNew(cid, uid);
+  this.remoteManager = new RemoteManager(scope, function(clientId) {
+    return self.localClients.has(clientId);
   });
 
-  remoteManager.on('client_offline', function(clientId, userId) {
-    // why is this in the fast path? Because we remove the user immediately
+  this.remoteManager.on('user_online', function(userId, userType) {
+    // if the userId is not in the local set, emit it
+    if(!self.localUsers.hasKey(userId)) {
+      self.emit('user_online', userId, userType);
+    }
+  });
 
-    emitIfNotInLocal(cid, uid, true);
+  this.remoteManager.on('user_offline', function(userId, userType) {
+    // if the user is not in the local set, then it is offline
+    // otherwise, the local set determines whether the user is offline
+    if(!self.localUsers.hasKey(userId)) {
+      self.emit('user_offline', userId, userType);
+    }
+  });
 
+  this.remoteManager.on('client_online', function(clientId, userId, userType) {
+    // if the clientId is not in the local set, emit it
+    if(!self.localClients.has(clientId)) {
+      self.emit('client_online', clientId, userId, userType);
+    }
+  });
 
-    this.emitAfterRemove(cid, uid, true);
+  this.remoteManager.on('client_offline', function(clientId, userId, userType) {
+    if(!self.localClients.has(clientId)) {
+      self.emit('client_offline', clientId, userId, userType);
+    }
   });
 }
 
@@ -41,20 +53,16 @@ require('util').inherits(CrossServer, require('events').EventEmitter);
 CrossServer.prototype.hasUser = function(userId) {
   // user presence is determined by whether at least one client
   // exists in the remote set or the local set
-  return this.remoteUsers.hasKey(userId) || this.localUsers.hasKey(userId);
-};
-
-CrossServer.prototype.isLocal = function(clientId) {
-  return this.localClients.has(clientId);
+  return this.remoteManager.hasUser(userId) || this.localUsers.hasKey(userId);
 };
 
 CrossServer.prototype.hasClient = function(clientId) {
-  return this.remoteClients.has(clientId) || this.localClients.has(clientId);
+  return this.remoteManager.hasClient(clientId) || this.localClients.has(clientId);
 };
 
-CrossServer.prototype.emitIfNew = function(clientId, userId) {
+CrossServer.prototype.emitIfNew = function(clientId, userId, userType) {
   if(!this.hasUser(userId)) {
-    this.emit('user_online', userId, this.userTypes.get(userId));
+    this.emit('user_online', userId, userType);
   }
   if(!this.hasClient(clientId)) {
     this.emit('client_online', clientId, userId);
@@ -91,7 +99,7 @@ CrossServer.prototype.emitAfterRemove = function(clientId, userId, isFastPath) {
 
 CrossServer.prototype.addLocal = function(clientId, userId, userType, callback) {
   this.userTypes.add(userId, userType);
-  this.emitIfNew(clientId, userId);
+  this.emitIfNew(clientId, userId, userType);
   this.localUsers.push(userId, clientId);
   this.localClients.add(clientId, userId);
   // persist local
@@ -162,25 +170,20 @@ CrossServer.prototype.processLocal = function() {
 
 // takes into account both local and remote results
 CrossServer.prototype.fullRead = function(callback) {
-  remoteManager.getOnline(function(remoteOnline) {
-    // without the client ID info
-    // for sending API replies
-    CrossServer.prototype.getOnline = function() {
-      var result = {}, self = this;
-      function setUid(userId) {
-        result[userId] = self.userTypes.get(userId);
-      }
-      this.remoteUsers.keys().forEach(setUid);
-      this.localUsers.keys().forEach(setUid);
-      return result;
-    };
-
+  var self = this;
+  this.remoteManager.fullRead(function(result) {
+    // merge with the local users for the API response
+    function setUid(userId) {
+      result[userId] = self.userTypes.get(userId);
+    }
+    self.localUsers.keys().forEach(setUid);
+    callback(result);
   });
 };
 
 // causes addRemote() and removeRemote() calls
 CrossServer.prototype.remoteMessage = function(message) {
-
+  this.remoteManager.message(message);
 };
 
 CrossServer.prototype._processDisconnects = function() {
@@ -212,5 +215,9 @@ CrossServer.prototype._processDisconnects = function() {
   this._disconnectQueue = {};
 };
 
+CrossServer.setBackend = function(backend) {
+  Persistence = backend;
+  RemoteManager.setBackend(backend);
+};
 
 module.exports = CrossServer;

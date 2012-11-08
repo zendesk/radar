@@ -9,10 +9,16 @@ exports['given a server'] = {
 
   before: function(done) {
     var Minilog = require('minilog');
+
+    /*
+    Minilog.pipe(Minilog.backends.nodeConsole)
+      .format(Minilog.backends.nodeConsole.formatWithStack);
+
     require('radar_client')._log
       .pipe(Minilog.backends.nodeConsole)
       .filter(Minilog.backends.nodeConsole.filterEnv((process.env.radar_log ? process.env.radar_log : '*')))
       .format(Minilog.backends.nodeConsole.formatWithStack);
+    */
 
     common.startRadar(8002, this, done);
   },
@@ -42,21 +48,36 @@ exports['given a server'] = {
 // - .unsubscribe(ack)
 // - .sync(callback)
   'presence: can set("online")': function(done) {
-    Radar.once('set', function(client, message) {
-      assert.equal('set', message.op)
-      assert.equal('online', message.value)
+    var client = this.client;
+    Radar.once('set', function(socket, message) {
+      assert.equal('set', message.op);
+      assert.equal('online', message.value);
       assert.equal(123, message.key);
-      done();
+      client.presence('ticket/21').get(function(message) {
+        assert.equal('get', message.op);
+        assert.deepEqual(message.value, { 123: 0});
+        client.presence('ticket/21').set('offline', function() {
+          done();
+        });
+      });
     });
     this.client.presence('ticket/21').set('online');
   },
 
   'presence: can set("offline")': function(done) {
-    Radar.once('set', function(client, message) {
+    var client = this.client;
+    Radar.once('set', function(socket, message) {
       assert.equal('set', message.op);
       assert.equal('offline', message.value);
       assert.equal(123, message.key);
-      done();
+      // finish executing this request in Radar first
+      process.nextTick(function() {
+        client.presence('ticket/21').get(function(message) {
+          assert.equal('get', message.op);
+          assert.deepEqual(message.value, { });
+          done();
+        });
+      });
     });
     this.client.presence('ticket/21').set('offline');
   },
@@ -69,7 +90,7 @@ exports['given a server'] = {
       client.presence('ticket/21').set('online', function() {
         client.presence('ticket/21').get(function(message) {
           assert.equal('get', message.op);
-          assert.deepEqual({ '123': 0 }, message.value);
+          assert.deepEqual(message.value, { '123': 0 });
           done();
         });
       });

@@ -1,63 +1,81 @@
-function RemoteManager() {
+var Set = require('../../map.js'),
+    ArraySet = require('./aset.js'),
+    Persistence = require('../../persistence.js'),
+    logging = require('minilog')('presence');
+
+function RemoteManager(scope, filter) {
+  this.name = scope;
+  // the purpose of the filter is to prevent local clients from being considered remote
+  // during a full read
+  this.filter = filter;
   this.remoteClients = new Set();
   this.remoteUsers = new ArraySet();
+  this.userTypes = new Set();
 }
 
-RemoteManager.prototype.hasUser = function(userId) {
+require('util').inherits(RemoteManager, require('events').EventEmitter);
 
+RemoteManager.prototype.hasUser = function(userId) {
+  return this.remoteUsers.hasKey(userId);
 };
 
 RemoteManager.prototype.hasClient = function(clientId) {
-
+  return this.remoteClients.has(clientId);
 };
 
-CrossServer.prototype.getOnline = function() {
-  var result = {}, self = this;
-  function setUid(userId) {
-    result[userId] = self.userTypes.get(userId);
-  }
-  this.remoteUsers.keys().forEach(setUid);
-  this.localUsers.keys().forEach(setUid);
-  return result;
-};
-
-RemoteManager.prototype.queueIfNew = function(cid, uid) {
-  var result = [];
+RemoteManager.prototype.queueIfNew = function(clientId, userId) {
+  var self = this,
+      result = [],
+      userType = this.userTypes.get(userId);
   if(!this.hasUser(userId)) {
     result.push(function() {
-      this.emit('user_online', userId, this.userTypes.get(userId));
+      self.emit('user_online', userId, userType);
     });
   }
   if(!this.hasClient(clientId)) {
     result.push(function() {
-      this.emit('client_online', clientId, userId);
+      self.emit('client_online', clientId, userId, userType);
     });
   }
   return result;
 };
 
-RemoteManager.prototype.queueIfExists = function(cid, uid) {
-  var self = this;
+RemoteManager.prototype.queueIfExists = function(clientId, userId) {
+  var self = this,
+      result = [],
+      userType = this.userTypes.get(userId);
   // order is significant (so that client_offline is emitted before user_offline)
   if(this.hasClient(clientId)) {
-    this.emit('client_offline', clientId, userId);
+    result.push(function() {
+      self.emit('client_offline', clientId, userId, userType);
+    });
   }
   if(this.hasUser(userId)) {
-    this.emit('user_offline', userId, this.userTypes.get(userId));
-    this.userTypes.remove(userId);
+    result.push(function() {
+      self.emit('user_offline', userId, userType);
+      self.userTypes.remove(userId);
+    });
   }
+  return result;
 };
 
 // for receiving messages from Redis
-RemoteManager.prototype.message = function() {
+RemoteManager.prototype.message = function(message) {
   var maxAge = new Date().getTime() - 45 * 1000,
       isOnline = message.online,
       isExpired = (message.at < maxAge),
       uid = message.userId,
       cid = message.clientId,
       userType = message.userType;
+
+  // skip local clientIds
+  if(this.filter(cid)) {
+    return;
+  }
+
   // console.log(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
   if(isOnline && !isExpired) {
+    this.userTypes.add(uid, userType);
     var emits = this.queueIfNew(cid, uid);
 
     this.remoteUsers.push(uid, cid);
@@ -65,11 +83,12 @@ RemoteManager.prototype.message = function() {
 
     emits.forEach(function(c) { c(); });
   } else if((!isOnline || isExpired) && this.remoteUsers.hasKey(uid)) {
-    var emits = this.beforeRemove(cid, uid);
+    var emits = this.queueIfExists(cid, uid);
 
     // not online, or expired - and must be a remote user we've seen before (don't send offline for users that we never had online)
     this.remoteUsers.removeItem(uid, cid);
     this.remoteClients.remove(cid);
+    this.userTypes.remove(uid);
 
     emits.forEach(function(c) { c(); });
   }
@@ -118,11 +137,24 @@ RemoteManager.prototype.fullRead = function(callback) {
         logging.error('Persistence full read: invalid message', data, err);
         return callback && callback({});
       }
-      self._xserver.remoteMessage(message);
+      self.message(message);
     });
 
-    callback && callback(self._xserver.getOnline());
+    callback && callback(self.getOnline());
   });
+};
+
+RemoteManager.prototype.getOnline = function() {
+  var result = {}, self = this;
+  function setUid(userId) {
+    result[userId] = self.userTypes.get(userId);
+  }
+  this.remoteUsers.keys().forEach(setUid);
+  return result;
+};
+
+RemoteManager.setBackend = function(backend) {
+  Persistence = backend;
 };
 
 module.exports = RemoteManager;

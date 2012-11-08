@@ -66,10 +66,6 @@ Presence.prototype.redisIn = function(data) {
     var message = JSON.parse(data);
   } catch(e) { return; }
 
-  if(this._xserver.isLocal(message.clientId)) {
-    return;
-  }
-
   this._xserver.remoteMessage(message);
 };
 
@@ -145,6 +141,9 @@ Presence.prototype.fullRead = function(callback) {
   this._xserver.fullRead(callback);
 };
 
-Presence.setBackend = function(backend) { Persistence = backend; };
+Presence.setBackend = function(backend) {
+  Persistence = backend;
+  CrossServer.setBackend(backend);
+};
 
 module.exports = Presence;
