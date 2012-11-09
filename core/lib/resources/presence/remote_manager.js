@@ -69,7 +69,7 @@ RemoteManager.prototype.message = function(message) {
       userType = message.userType;
 
   // skip local clientIds
-  if(this.filter(cid)) {
+  if(this.filter && this.filter(cid)) {
     return;
   }
 
