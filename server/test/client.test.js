@@ -9,17 +9,13 @@ exports['given a server'] = {
 
   before: function(done) {
     var Minilog = require('minilog');
-
     /*
     Minilog.pipe(Minilog.backends.nodeConsole)
       .format(Minilog.backends.nodeConsole.formatWithStack);
 
     require('radar_client')._log
-      .pipe(Minilog.backends.nodeConsole)
-      .filter(Minilog.backends.nodeConsole.filterEnv((process.env.radar_log ? process.env.radar_log : '*')))
-      .format(Minilog.backends.nodeConsole.formatWithStack);
+      .pipe(Minilog.backends.nodeConsole);
     */
-
     common.startRadar(8002, this, done);
   },
 
@@ -114,24 +110,22 @@ exports['given a server'] = {
     });
   },
 
-/*
-
-  This does not work right now, as the result from .get and .sync use different op codes.
-  Need to ensure that chat and other presence-based functionality is not expecting "online" op before changing.
-
-  'presence: can sync()': function(done) {
+  'presence: can sync() via v2 API': function(done) {
+    // not supported in v1 api because the result.op == "online" which is handled by the message
+    // listener but not by the sync() callback
     var client = this.client;
 
     this.client.presence('ticket/213').set('online', function() {
-      client.presence('ticket/213').sync(function(message) {
+      client.presence('ticket/213').sync({ version: 2 }, function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
-        assert.equal(JSON.stringify({ 123: 'foo'}), JSON.stringify(message.value));
+        var expected = {"123":{"clients":{},"userType":0}};
+        expected['123'].clients[client.manager.socket.id] = {};
+        assert.deepEqual(message.value, expected);
         done();
       });
     });
   },
-*/
 
 // Status tests
 // - .set(value, ack)
