@@ -2,6 +2,8 @@
 
 See http://radar.zendesk.com/ for detailed documentation.
 
+[![Build Status](https://secure.travis-ci.org/zendesk/radar.png?branch=master)](https://travis-ci.org/zendesk/radar)
+
 ## Installation
 
 Installing from scratch:
