@@ -157,6 +157,22 @@ RemoteManager.prototype.getOnline = function() {
   return result;
 };
 
+RemoteManager.prototype.getClientsOnline = function() {
+  var result = {}, self = this;
+  this.remoteClients.forEach(function(cid) {
+    var message = self.remoteClients.get(cid);
+    // process messages
+    if(!result[message.userId]) {
+      result[message.userId] = { clients: { } , userType: message.userType };
+      result[message.userId].clients[message.clientId] = {};
+    } else {
+      result[message.userId].clients[message.clientId] = {};
+    }
+  });
+  return result;
+}
+
+
 RemoteManager.setBackend = function(backend) {
   Persistence = backend;
 };

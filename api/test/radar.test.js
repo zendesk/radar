@@ -65,44 +65,71 @@ exports['Radar api tests'] = {
   'given a fake PresenceMonitor': {
 
     before: function(done) {
-      // swap backend with fake presence monitor
-      function FakePresence(scope) {
-        this.scope = scope;
-      }
-      FakePresence.prototype.fullRead = function(callback) {
-        if(this.scope == 'presence:/test/ticket/1') {
-          callback({ 1: 'online' });
-        } else {
-          callback({ 2: 'online' });
+      function FakePersistence() {}
+
+      var messages = {
+        'presence:/test/ticket/1': {
+          '1.1000': JSON.stringify({
+            userId: 1, userType: 0,
+            clientId: 1000, online: true, at: new Date().getTime()
+          })
+        },
+        'presence:/test/ticket/2': {
+          '2.1001': JSON.stringify({
+            userId: 2, userType: 4,
+            clientId: 1001, online: true, at: new Date().getTime()
+          })
         }
       };
-      RadarApi._setPresenceMonitor(FakePresence);
+
+      FakePersistence.readHashAll = function(scope, callback) {
+        callback(messages[scope]);
+      };
+      RemoteManager.setBackend(FakePersistence);
       done();
     },
 
     after: function(done) {
-      RadarApi._setPresenceMonitor(RemoteManager);
+      RemoteManager.setBackend(Persistence);
       done();
     },
 
     // GET /radar/presence?accountName=support&scope=ticket/1
-    'can get a presence scope': function(done) {
+    'can get a presence scope using api v1': function(done) {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scope: 'ticket/1' })
         .end(function(error, response) {
-          assert.deepEqual({"1":"online"}, response);
+          assert.deepEqual({"1": 0 }, response);
           done();
         });
     },
 
-    'can get multiple presence scopes': function(done) {
+    'can get multiple presence scopes using api v1': function(done) {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2' })
         .end(function(error, response) {
-          assert.deepEqual({ "ticket/1": {"1":"online"}, "ticket/2":{"2":"online"}}, response);
+          assert.deepEqual({ "ticket/1": {"1": 0 }, "ticket/2":{"2": 4}}, response);
           done();
         });
-    }
+    },
+
+    'can get a presence scope with client ids using api v2': function(done) {
+      Client.get('/node/radar/presence')
+        .data({ accountName: 'test', scope: 'ticket/1', version: 2 })
+        .end(function(error, response) {
+          assert.deepEqual( {"1":{"clients":{"1000":{}},"userType":0}}, response);
+          done();
+        });
+    },
+
+    'can get multiple presence scopes using api v2': function(done) {
+      Client.get('/node/radar/presence')
+        .data({ accountName: 'test', scopes: 'ticket/1,ticket/2', version: 2 })
+        .end(function(error, response) {
+          assert.deepEqual({ "ticket/1": {"1":{"clients":{"1000":{}},"userType":0}}, "ticket/2":{"2":{"clients":{"1001":{}},"userType":4}}}, response);
+          done();
+        });
+    },
   }
 };
 

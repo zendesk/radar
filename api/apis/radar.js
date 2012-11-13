@@ -73,6 +73,13 @@ function getMessage(req, res) {
 };
 
 // curl -k "https://localhost/radar/presence?accountName=test&scope=ticket/1"
+// Version 1:
+//  - Response for single scope: { userId: userType }
+//  - Response for multiple scopes (comma separated): { scope: { userId: userType } }
+// Version 2:
+//  - Version number is required (e.g. &version=2)
+//  - Response for single scope: { userId: { "clients": { clientId1: {}, clientId2: {} }, userType: }  }
+//  - Response for multiple scopes: {  scope1: ... above ..., scope2: ... above ...  }
 function getPresence(req, res) {
   var parts = url.parse(req.url, true),
       q = parts.query;
@@ -85,7 +92,11 @@ function getPresence(req, res) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('X-Radar-Host', hostname);
-      res.end(JSON.stringify(online)+'\n');
+      if(q.version == 2) {
+        res.end(JSON.stringify(monitor.getClientsOnline())+'\n');
+      } else {
+        res.end(JSON.stringify(online)+'\n');
+      }
     });
   } else {
     var scopes = q.scopes.split(','),
@@ -93,7 +104,11 @@ function getPresence(req, res) {
     scopes.forEach(function(scope) {
       var monitor = new RemoteManager('presence:/'+q.accountName+'/'+scope);
       monitor.fullRead(function(online) {
-        result[scope] = online;
+        if(q.version == 2) {
+          result[scope] = monitor.getClientsOnline();
+        } else {
+          result[scope] = online;
+        }
         if (Object.keys(result).length == scopes.length) {
           res.setHeader('Content-type', 'application/json');
           res.setHeader('Cache-Control', 'no-cache');
@@ -110,9 +125,5 @@ module.exports = {
   getStatus: getStatus,
   setMessage: setMessage,
   getMessage: getMessage,
-  getPresence: getPresence,
-  // API for tests
-  _setPresenceMonitor: function(monitor) {
-    RemoteManager = monitor;
-  }
+  getPresence: getPresence
 };
