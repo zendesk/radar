@@ -82,7 +82,7 @@ exports['given a server'] = {
     this.client.presence('ticket/21').set('offline');
   },
 
-  'presence: can get()': function(done) {
+  'presence: can get() using v1 API': function(done) {
     var client = this.client;
     client.presence('ticket/21').get(function(message) {
       assert.equal('get', message.op);
@@ -96,6 +96,24 @@ exports['given a server'] = {
       });
     });
   },
+
+  'presence: can get() using v2 API': function(done) {
+    var client = this.client;
+    client.presence('ticket/33').get({ version: 2 }, function(message) {
+      assert.equal('get', message.op);
+      assert.deepEqual([], message.value);
+      client.presence('ticket/33').set('online', function() {
+        client.presence('ticket/33').get({ version: 2 }, function(message) {
+          assert.equal('get', message.op);
+          var expected = {"123":{"clients":{},"userType":0}};
+          expected['123'].clients[client.manager.socket.id] = {};
+          assert.deepEqual(message.value, expected);
+          done();
+        });
+      });
+    });
+  },
+
 /*
 
   This does not work right now, as the result from .get and .sync use different op codes.

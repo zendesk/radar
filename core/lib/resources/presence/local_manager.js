@@ -71,14 +71,15 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, callback)
     this.emit('client_online', clientId, userId);
   }
   this.localUsers.push(userId, clientId);
-  this.localClients.add(clientId, userId);
   // persist local
-  var message = JSON.stringify({
-    userId: userId, userType: userType,
-    clientId: clientId, online: true, at: new Date().getTime()
-  });
-  Persistence.persistHash(this.scope, userId + '.' + clientId, message);
-  Persistence.publish(this.scope, message, callback);
+  var message = {
+      userId: userId, userType: userType,
+      clientId: clientId, online: true, at: new Date().getTime()
+    },
+    pmessage = JSON.stringify(message);
+  this.localClients.add(clientId, message);
+  Persistence.persistHash(this.scope, userId + '.' + clientId, pmessage);
+  Persistence.publish(this.scope, pmessage, callback);
 };
 
 // note: this is the fast path (e.g. graceful only)
@@ -110,7 +111,8 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
 // causes removeLocal() calls
 LocalManager.prototype.disconnectLocal = function(clientId) {
   // send out disconnects for all user id-client-id pairs
-  var userId = this.localClients.get(clientId);
+  var message = this.localClients.get(clientId),
+      userId = (message && message.userId ? message.userId : false);
   if(userId) {
     // remove from local - if in local at all
     this.localUsers.removeItem(userId, clientId);
@@ -174,6 +176,26 @@ LocalManager.prototype.fullRead = function(callback) {
     Object.keys(self._disconnectQueue._queue).forEach(setUid);
     callback(result);
   });
+};
+
+LocalManager.prototype.getClientsOnline = function() {
+  // assume a full read was done before this
+  var self = this,
+      result = this.remoteManager.getClientsOnline();
+  // merge with the local users for the API response
+  function processMessage(message) {
+    if(!result[message.userId]) {
+      result[message.userId] = { clients: { } , userType: message.userType };
+      result[message.userId].clients[message.clientId] = {};
+    } else {
+      result[message.userId].clients[message.clientId] = {};
+    }
+  };
+  this.localClients.forEach(function(cid){
+    processMessage(self.localClients.get(cid));
+  });
+  // TODO: the disconnect queue is not reflected in the response
+  return result;
 };
 
 // causes addRemote() and removeRemote() calls

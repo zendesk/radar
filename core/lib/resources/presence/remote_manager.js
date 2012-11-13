@@ -159,15 +159,17 @@ RemoteManager.prototype.getOnline = function() {
 
 RemoteManager.prototype.getClientsOnline = function() {
   var result = {}, self = this;
-  this.remoteClients.forEach(function(cid) {
-    var message = self.remoteClients.get(cid);
-    // process messages
+  function processMessage(message) {
     if(!result[message.userId]) {
       result[message.userId] = { clients: { } , userType: message.userType };
       result[message.userId].clients[message.clientId] = {};
     } else {
       result[message.userId].clients[message.clientId] = {};
     }
+  };
+
+  this.remoteClients.forEach(function(cid) {
+    processMessage(self.remoteClients.get(cid));
   });
   return result;
 }
