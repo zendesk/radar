@@ -42,6 +42,16 @@ MessageList.prototype._sync = function(name, policy, callback) {
   Persistence.readOrderedWithScores(name, policy, callback);
 };
 
+MessageList.prototype.unsubscribe = function(client, sendAck) {
+  Resource.prototype.unsubscribe.call(this, client, sendAck);
+  // note that since this is not synchronized across multiple backend servers, it is possible
+  // for a channel that is subscribed elsewhere to have a TTL set on it again. The assumption is that the
+  // TTL is so long that any normal workflow will terminate before it is triggered.
+  if (this.options && this.options.policy && this.options.policy.cache && Object.keys(this.subscribers).length == 0) {
+    Persistence.expire(this.name, 14 * 24 * 60 * 60); // 2 weeks in seconds
+  }
+};
+
 MessageList.setBackend = function(backend) { Persistence = backend; };
 
 module.exports = MessageList;
