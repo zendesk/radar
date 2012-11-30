@@ -25,4 +25,7 @@ test:
 reset-stats:
 	redis-cli KEYS "radar:/audit/*" | xargs redis-cli DEL
 
-.PHONY: test reset-stats
+read-stats:
+	/opt/redis/redis-cli KEYS "radar:/audit/*" | xargs --verbose -n 1 /opt/redis/redis-cli GET
+
+.PHONY: test reset-stats read-stats

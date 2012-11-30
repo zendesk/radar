@@ -7,7 +7,8 @@ var redis = require('redis'),
     Presence = require('../core').Presence,
     Heartbeat = require('heartbeat'),
     logging = require('minilog')('server'),
-    hostname = require('os').hostname();
+    hostname = require('os').hostname(),
+    Audit = require('./audit.js');
 
 // Parse JSON
 function parseJSON(data) {
@@ -54,13 +55,23 @@ Server.prototype.attach = function(server, configuration) {
   var server = this.server = engine.attach(server);
 
   server.on('connection', function(client) {
+    var oldSend = client.send;
+    // for audit purposes
+    client.send = function(data) {
+      Audit.send(client);
+      oldSend.call(client, data);
+    };
+
     // event: client connected
     logging.debug('#connect', client.id);
     client.send(JSON.stringify({
       server: hostname, cid: client.id
     }));
 
-    client.on('message', function(data) { self.message(client, data); });
+    client.on('message', function(data) {
+      Audit.receive(client);
+      self.message(client, data);
+    });
     client.on('close', function() {
       // event: client disconnected
       logging.debug('#disconnect', client.id);
@@ -74,6 +85,8 @@ Server.prototype.attach = function(server, configuration) {
   });
 
   this.timer.start();
+
+  setInterval(Audit.totals, 1 * 60 * 1000); // each minute
 
   // event: server started
   logging.debug(' ');
@@ -90,6 +103,14 @@ Server.prototype.attach = function(server, configuration) {
 // Process a message
 Server.prototype.message = function(client, data) {
   var message = parseJSON(data);
+
+  // audit messages
+  if(message.to == 'audit') {
+    Audit.log(client, message);
+    return;
+  }
+
+  // format check
   if(!message || !message.op || !message.to) {
     logging.warn('#message_rejected', (client && client.id ? client.id : ''), data);
     return;
@@ -101,6 +122,7 @@ Server.prototype.message = function(client, data) {
 
   var res = this.resource(message.to);
 
+  // auth check
   if(res && res.options && res.options.auth) {
     if(typeof res.options.auth !== 'function' || !res.options.auth(message, client)) {
       client.send(JSON.stringify({
