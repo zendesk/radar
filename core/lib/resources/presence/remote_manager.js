@@ -119,8 +119,7 @@ RemoteManager.prototype.timeouts = function() {
 // perform a full read and return who is online
 RemoteManager.prototype.fullRead = function(callback) {
   var self = this,
-      maxAge = new Date().getTime() - 50 * 1000,
-
+      maxAge = new Date().getTime() - 50 * 1000;
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.name);
   Persistence.readHashAll(this.name, function(replies) {
