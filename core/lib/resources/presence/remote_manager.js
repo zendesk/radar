@@ -118,7 +118,9 @@ RemoteManager.prototype.timeouts = function() {
 
 // perform a full read and return who is online
 RemoteManager.prototype.fullRead = function(callback) {
-  var self = this;
+  var self = this,
+      maxAge = new Date().getTime() - 50 * 1000,
+
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.name);
   Persistence.readHashAll(this.name, function(replies) {
@@ -140,6 +142,10 @@ RemoteManager.prototype.fullRead = function(callback) {
       } catch(err) {
         logging.error('Persistence full read: invalid message', data, err);
         return callback && callback({});
+      }
+      // remove expired keys
+      if(message.at < maxAge) {
+        Persistence.deleteHash(self.name, key);
       }
       self.message(message);
     });

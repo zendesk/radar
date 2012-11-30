@@ -53,10 +53,10 @@ function Presence(name, parent, options) {
   });
 
   // add parent callback
-  this.callback = function() { self._autoPublish() };
-  this.parent.timer.add( function() {
+  this.parentCallback = function() {
     self._xserver.timeouts();
-  });
+  };
+  this.parent.timer.add( this.parentCallback );
 }
 
 Presence.prototype = new Resource();
@@ -97,7 +97,7 @@ Presence.prototype.unsubscribe = function(client, sendAck) {
   this._xserver.disconnectLocal(client.id);
   // garbage collect if the set of subscribers is empty
   if (Object.keys(this.subscribers).length == 1) {
-    // this._counter = null;
+    this.parent.timer.remove(this.parentCallback);
   }
   // call parent
   Resource.prototype.unsubscribe.call(this, client, sendAck);

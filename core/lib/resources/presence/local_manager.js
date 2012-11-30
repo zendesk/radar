@@ -113,6 +113,8 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
   // send out disconnects for all user id-client-id pairs
   var message = this.localClients.get(clientId),
       userId = (message && message.userId ? message.userId : false);
+
+  // if there is no userid, then we've already removed the user (e.g. via a remove call)
   if(userId) {
     // remove from local - if in local at all
     this.localUsers.removeItem(userId, clientId);
@@ -128,16 +130,16 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
     // if someone asks for who is online while we the disconnect is pending
     // we still consider that user to be online
     this._disconnectQueue.push(clientId, userId, this.userTypes.get(userId));
+    // note: do not delete the hash key yet.
+    // the slow path should apply here
+    // e.g. users should only be dropped when the at value expires
+    var message = JSON.stringify({
+      userId: userId, userType: this.userTypes.get(userId),
+      clientId: clientId, online: false, at: new Date().getTime()
+    });
+    Persistence.persistHash(this.scope, userId + '.' + clientId, message);
+    Persistence.publish(this.scope, message);
   }
-  // note: do not delete the hash key yet.
-  // the slow path should apply here
-  // e.g. users should only be dropped when the at value expires
-  var message = JSON.stringify({
-    userId: userId, userType: this.userTypes.get(userId),
-    clientId: clientId, online: false, at: new Date().getTime()
-  });
-  Persistence.persistHash(this.scope, userId + '.' + clientId, message);
-  Persistence.publish(this.scope, message);
 };
 
 LocalManager.prototype.timeouts = function() {
@@ -147,7 +149,7 @@ LocalManager.prototype.timeouts = function() {
 
 LocalManager.prototype.processLocal = function() {
   var self = this;
-  logging.debug('_autoPublish', this.scope);
+  logging.debug('processLocal', this.scope);
 
   this.localUsers.keys().forEach(function(userId) {
     self.localUsers.getItems(userId).forEach(function(clientId) {
