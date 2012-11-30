@@ -207,6 +207,36 @@ exports['given a presence monitor'] = {
       assert.deepEqual({ 124: 2}, online);
       done();
     });
+  },
+
+  'when there are two messages for a single user - one setting the user offline and another setting it online, the online prevails': function(done) {
+    var presence = this.presence;
+
+    FakePersistence.readHashAll = function(scope, callback) {
+      callback({
+        // so, one clientId disconnected and another connected - at the same timestamp: user should be considered to be online
+        '200.aaz': JSON.stringify({ online: true, userId: 200, userType: 2, clientId: 'aaz', at: new Date().getTime()}),
+        '200.sss': JSON.stringify({ online: false, userId: 200, userType: 2, clientId: 'sss', at: new Date().getTime()}),
+        '200.1a': JSON.stringify({ online: false, userId: 200, userType: 2, clientId: '1a', at: new Date().getTime()}),
+        '201.aaq': JSON.stringify({ online: false, userId: 201, userType: 4, clientId: 'aaq', at: new Date().getTime()}),
+        '201.www': JSON.stringify({ online: true, userId: 201, userType: 4, clientId: 'www', at: new Date().getTime()}),
+      });
+    };
+
+    var added = {}, removed = {};
+    presence._xserver.on('user_online', function(userId, userType) {
+      added[userId] = userType;
+    });
+    presence._xserver.on('user_offline', function(userId, userType) {
+      removed[userId] = userType;
+    });
+
+    this.presence.fullRead(function(online) {
+      assert.deepEqual({ }, removed);
+      assert.deepEqual({ 200: 2, 201: 4 }, added);
+      assert.deepEqual({ 200: 2, 201: 4 }, online);
+      done();
+    });
   }
 
 };

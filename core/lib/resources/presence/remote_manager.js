@@ -40,27 +40,8 @@ RemoteManager.prototype.queueIfNew = function(clientId, userId) {
   return result;
 };
 
-RemoteManager.prototype.queueIfExists = function(clientId, userId) {
-  var self = this,
-      result = [],
-      userType = this.userTypes.get(userId);
-  // order is significant (so that client_offline is emitted before user_offline)
-  if(this.hasClient(clientId)) {
-    result.push(function() {
-      self.emit('client_offline', clientId, userId, userType);
-    });
-  }
-  if(this.hasUser(userId)) {
-    result.push(function() {
-      self.emit('user_offline', userId, userType);
-      self.userTypes.remove(userId);
-    });
-  }
-  return result;
-};
-
 // for receiving messages from Redis
-RemoteManager.prototype.message = function(message) {
+RemoteManager.prototype.message = function(message, skipTimeouts) {
   var maxAge = new Date().getTime() - 45 * 1000,
       isOnline = message.online,
       isExpired = (message.at < maxAge),
@@ -73,31 +54,33 @@ RemoteManager.prototype.message = function(message) {
     return;
   }
 
-  // console.log(message, (isExpired ? 'EXPIRED! ' +(message.at - new Date().getTime())/ 1000 + ' seconds ago'  : ''));
+  // to process messages, we'll set each
+  this.userTypes.add(uid, userType);
   if(isOnline && !isExpired) {
-    this.userTypes.add(uid, userType);
     var emits = this.queueIfNew(cid, uid);
 
     this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
 
     emits.forEach(function(c) { c(); });
-  } else if((!isOnline || isExpired) && this.remoteUsers.hasKey(uid)) {
-    var emits = this.queueIfExists(cid, uid);
-
-    // not online, or expired - and must be a remote user we've seen before (don't send offline for users that we never had online)
-    this.remoteUsers.removeItem(uid, cid);
-    this.remoteClients.remove(cid);
-    this.userTypes.remove(uid);
-
-    emits.forEach(function(c) { c(); });
+  } else {
+    // for not online, we'll just update the message in remoteClients
+    // and let the timeouts step handle the rest.
+    this.remoteClients.add(cid, message);
+  }
+  if(!skipTimeouts) {
+    // now, check each client for a timeout
+    this.timeouts();
   }
 };
 
 // expire existing remote users, causes removeRemote() calls
 RemoteManager.prototype.timeouts = function() {
   var self = this,
-      maxAge = new Date().getTime() - 45 * 1000;
+      maxAge = new Date().getTime() - 45 * 1000,
+      // need to snapshot here so that we can detect which ones are missing
+      oldKeys = this.remoteUsers.keys();
+
   this.remoteClients.forEach(function(cid) {
     var message = self.remoteClients.get(cid),
         isOnline = message.online,
@@ -105,13 +88,27 @@ RemoteManager.prototype.timeouts = function() {
         uid = message.userId;
 
     if(!isOnline || (isOnline && isExpired)) {
-      var emits = self.queueIfExists(cid, uid);
+      var emits = [],
+          userType = self.userTypes.get(uid);
 
       self.remoteUsers.removeItem(uid, cid);
+
+      if(self.hasClient(cid)) {
+        emits.push(function() {
+          self.emit('client_offline', cid, uid, userType);
+        });
+      }
+
       self.remoteClients.remove(cid);
-      self.userTypes.remove(uid);
 
       emits.forEach(function(c) { c(); });
+    }
+  });
+  // check if the removal of the client ids resulted in an empty user
+  oldKeys.forEach(function(userId) {
+    if(!self.hasUser(userId)) {
+      self.emit('user_offline', userId, self.userTypes.get(userId));
+      self.userTypes.remove(userId);
     }
   });
 };
@@ -146,8 +143,10 @@ RemoteManager.prototype.fullRead = function(callback) {
       if(message.at < maxAge) {
         Persistence.deleteHash(self.name, key);
       }
-      self.message(message);
+      self.message(message, true);
     });
+
+    self.timeouts();
 
     callback && callback(self.getOnline());
   });
