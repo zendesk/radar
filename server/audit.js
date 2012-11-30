@@ -1,4 +1,4 @@
-var Persistence = require('./persistence.js'),
+var Persistence = require('../core').Persistence,
     logging = require('minilog')('core');
 
 // in order to know which particular session lost messages, we need to track message counts per client id
@@ -55,11 +55,14 @@ Audit.log = function(client, message) {
   sessions[client.id].clientSent = message.sent;
   sessions[client.id].clientReceived = message.received;
 
+  var sentMatch = (sessions[client.id].serverSent == message.received),
+      receivedMatch = (sessions[client.id].serverReceived == message.sent);
   // compare the client and server values for this client, and write the logs
-  if(sent[client.id] != message.sent || received[client.id] != message.received) {
-    logging.info('#audit_error', sessions[client.id]);
+  if(!sentMatch || !receivedMatch) {
+    if(!sentMatch) logging.info('#audit_error Server -> client: ', sessions[client.id].serverSent, '->', message.received);
+    if(!receivedMatch) logging.info('#audit_error Client -> server: ', message.sent, '->', sessions[client.id].serverReceived);
   } else {
-    logging.info('#audit', sessions[client.id]);
+    logging.info('#audit '+client.id+' S('+sessions[client.id].serverSent+') -> C('+message.received+'); C('+message.sent+') -> S('+sessions[client.id].serverReceived+')');
   }
 };
 
@@ -93,10 +96,11 @@ Audit.totals = function() {
   });
 
   // increment system totals in Redis
-  Persistence.incrBy(prefix+'server/sent', serverSentIncr);
-  Persistence.incrBy(prefix+'server/received', serverReceivedIncr);
-  Persistence.incrBy(prefix+'client/sent', clientSentIncr);
-  Persistence.incrBy(prefix+'client/received', clientReceivedIncr);
+  (serverSentIncr > 0) && Persistence.incrby(prefix+'server/sent', serverSentIncr);
+  (serverReceivedIncr > 0) && Persistence.incrby(prefix+'server/received', serverReceivedIncr);
+  (clientSentIncr > 0) && Persistence.incrby(prefix+'client/sent', clientSentIncr);
+  (clientReceivedIncr > 0) && Persistence.incrby(prefix+'client/received', clientReceivedIncr);
+  logging.info('increment S('+serverSentIncr+') -> C('+clientReceivedIncr+'); C('+clientSentIncr+') -> S('+serverReceivedIncr+')');
 };
 
 module.exports = Audit;

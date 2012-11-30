@@ -22,4 +22,7 @@ test:
 		--bail \
 		$(TESTS)
 
-.PHONY: test
+reset-stats:
+	redis-cli KEYS "radar:/audit/*" | xargs redis-cli DEL
+
+.PHONY: test reset-stats
