@@ -22,8 +22,10 @@ exports['given a server and two connected clients'] = {
         tasks = 0;
     function next() { tasks++ && (tasks == 3) && done(); }
     common.startRadar(8009, this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009}).once('ready', next).alloc('test');
-      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009}).once('ready', next).alloc('test');
+      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009})
+                    .once('ready', next).alloc('test');
+      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009})
+                    .once('ready', next).alloc('test');
     });
     Persistence.delWildCard('*:/test/*', next);
   },
@@ -33,6 +35,69 @@ exports['given a server and two connected clients'] = {
     this.client2.dealloc('test');
     common.endRadar(this, function() { Persistence.disconnect(done); });
   },
+
+  'after a connection, create one subscription of each type, then disconnect. all subs should be restored and "reconnected" event': function(done) {
+    this.timeout(30000);
+    var self = this,
+        client = this.client, client2 = this.client2,
+        eioClientId = this.client.manager.socket.id,
+        beforeDisconnect = [],
+        afterDisconnect = [],
+        clientEvents = [];
+
+    client.once('disconnected', function() { clientEvents.push('disconnected'); });
+    client.once('reconnected', function() { clientEvents.push('reconnected'); });
+    client.once('ready', function() { clientEvents.push('ready'); });
+
+    function checkEvents(arr) {
+      return arr.some(function(i) { return i.to && i.to == 'message:/test/restore'; }) &&
+             arr.some(function(i) { return i.to && i.to == 'presence:/test/restore'; }) &&
+             arr.some(function(i) { return i.to && i.to == 'status:/test/restore'; });
+    }
+
+    // using the fact that messages are emitted to our advantage
+    Radar.on('subscribe', function(c, message) {
+      if(eioClientId == c.id) {
+        beforeDisconnect.push(message);
+
+        if(beforeDisconnect.length == 3) {
+          // now that all the subscriptions have been made, stop the server
+          // then start it again to trigger a real disconnect
+          setTimeout(function() {
+            //console.log('Shutting down the server');
+            common.endRadar(self, function() {
+              common.startRadar(8009, self, function(){
+                // re-establish listener
+                Radar.on('subscribe', function(c, message) {
+                  afterDisconnect.push(message);
+
+                  if(afterDisconnect.length == 3) {
+                    setTimeout(function() {
+                      console.log(beforeDisconnect, afterDisconnect, clientEvents);
+                      // assert that the subscriptions were established and re-established
+                      assert.ok(checkEvents(beforeDisconnect));
+                      assert.ok(checkEvents(afterDisconnect));
+                      // assert that the client events were fired
+                      assert.equal(clientEvents[0], 'disconnected');
+                      assert.equal(clientEvents[1], 'reconnected');
+                      assert.equal(clientEvents[2], 'ready');
+                      done();
+                    }, 500)
+                  }
+                });
+                //console.log('Server started');
+              });
+            });
+          }, 500); // allow time for messages to be delivered
+        }
+      }
+    });
+
+    client.message('restore').subscribe(function() {});
+    client.presence('restore').subscribe(function() {});
+    client.status('restore').subscribe(function() {});
+  },
+
 /*
   'restoring a message list after reconnect works': function(done) {
     var client = this.client, client2 = this.client2,
@@ -48,6 +113,15 @@ exports['given a server and two connected clients'] = {
     }, 1000);
     done();
   },
+
+  'restoring a presence after reconnect works': function(done) {
+    done();
+  },
+
+  'presence is restored even after the server has expired the previous set(online)': function(done) {
+    done();
+  },
+
   */
 
   'restarting the server will not cause duplicate messages': function(done) {
@@ -75,21 +149,7 @@ exports['given a server and two connected clients'] = {
         });
       });
     }, 500); // allow time for messages to be delivered
-  },
-/*
-
-  'restoring a presence after reconnect works': function(done) {
-    done();
-  },
-
-  'presence is restored even after the server has expired the previous set(online)': function(done) {
-    done();
-  },
-
-  'restoring a status after reconnect works': function(done) {
-    done();
   }
-*/
 
 };
 
