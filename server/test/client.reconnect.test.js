@@ -99,25 +99,6 @@ exports['given a server and two connected clients'] = {
   },
 
 /*
-  'restoring a message list after reconnect works': function(done) {
-    var client = this.client, client2 = this.client2,
-        notifications = [];
-
-    client.message.on('test/restore', function(message) {
-      notifications.push(message);
-    });
-    client.message.sync('test/restore');
-
-    setTimeout(function() {
-//      client.manager.socket.setOffline();
-    }, 1000);
-    done();
-  },
-
-  'restoring a presence after reconnect works': function(done) {
-    done();
-  },
-
   'presence is restored even after the server has expired the previous set(online)': function(done) {
     done();
   },
