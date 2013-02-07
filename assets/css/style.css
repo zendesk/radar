@@ -1,13 +1,12 @@
 @import url(http://fonts.googleapis.com/css?family=PT+Sans);
 
 body {
-  padding:50px;
+  margin: 0px;
+
   font-family: 'PT Sans', Helvetica, 'Helvetica Neuve', Arial, Tahoma, sans-serif;
   font-size: 17px;
 
   color: #333;
-
-  background: url(../img/groovepaper.png) repeat top left;
 }}
 
 h1, h2, h3, h4, h5, h6 {
@@ -258,11 +257,10 @@ footer {
 
 
 #wrapper {
-  margin-left: auto;
-  margin-right: auto;
-  width: 940px;
+  width: 650px;
   background-color: white;
-  padding: 50px;
+  padding: 20px 50px;
+
 }
 
 .ca-menu {
@@ -271,20 +269,51 @@ footer {
   margin: 20px auto;
 }
 
-#navi {
-padding-top: 15px;
-padding-right: 15px;
-float: right;
-width: 420px;
+#toc {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: 20%;
+
+  background-color: #fff;
+  /*
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+  -moz-box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
+  -webkit-box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+  -o-box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
+  */
+  padding: 20px;
+
+  position: fixed;
+  z-index: 1;
 }
 
-#title {
-padding-left: 15px;
-width: 460px;
-float: left;
+
+#toc::before {
+  content: "";
+  position: absolute;
+
+  top: 15%;
+  bottom: 15%;
+  left: -1px;
+  width: 1px;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, rgba(227,224,216,0)), color-stop(20%, #e3e0d8), color-stop(80%, #e3e0d8), color-stop(100%, rgba(227,224,216,0)));
+  background: -webkit-linear-gradient(top, rgba(227,224,216,0) 0%,#e3e0d8 20%,#e3e0d8 80%,rgba(227,224,216,0) 100%);
+  background: -moz-linear-gradient(top, rgba(227,224,216,0) 0%,#e3e0d8 20%,#e3e0d8 80%,rgba(227,224,216,0) 100%);
+  background: -o-linear-gradient(top, rgba(227,224,216,0) 0%,#e3e0d8 20%,#e3e0d8 80%,rgba(227,224,216,0) 100%);
+  background: linear-gradient(top, rgba(227,224,216,0) 0%,#e3e0d8 20%,#e3e0d8 80%,rgba(227,224,216,0) 100%);
 }
+
+#toc-inner {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+}
+
+
 div.clear {
-clear: both;
+  clear: both;
 }
 
 
@@ -310,3 +339,6 @@ ul.list, ol.list {
 .post h2 {
   border-bottom: 1px solid #EDEDED;
 }
+
+
+
