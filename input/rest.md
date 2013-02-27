@@ -1,7 +1,5 @@
 # radar
 
-## High level API and backend for writing web apps that use push messaging
-
 # REST API
 
 - All the POST apis respond with:
