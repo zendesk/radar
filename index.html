@@ -82,9 +82,57 @@
 <li>Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to be able to send recent messages to new users joining a chat - this can be configured via a policy.</li>
 <li>Library, not a framework. Doesn&#39;t require code changes or structural changes beyond responding to the events from the backend.</li>
 </ul>
-<h2>Installing</h2>
-<pre>npm install radar_client</pre>
-<h2>Quickstart</h2>
+<h2>Quickstart: let&#39;s write a Radar application</h2>
+<p>This tutorial will walk you through the process of implementing a chat server using Radar. The source code to a full example is also bundled in the radar (server) repository under <code>./sample</code>.</p>
+<h3>1. Setting up the server</h3>
+<p>Let&#39;s start by getting the Radar server up and running.</p>
+<p>Create a <code>package.json</code> file by running <code>npm init</code> for your new project; then run <code>npm install --save radar</code>. This installs the Radar server library and also adds the dependency to the <code>package.json</code> file.</p>
+<p>Now, let&#39;s require the Radar server library and attach it to a HTTP server:</p>
+<pre>var http = require(&#39;http&#39;),
+    Radar = require(&#39;radar&#39;).server;
+
+var server = http.createServer(function(req, res) {
+  console.log(&#39;404&#39;, req.url);
+  res.statusCode = 404;
+  res.end();
+});
+
+// attach Radar server to the http server
+Radar.attach(server, {
+  redis_host: &#39;localhost&#39;,
+  redis_port: 6379
+});
+
+server.listen(8000);
+console.log(&#39;Server listening on localhost:8000&#39;);</pre>
+<p>Note that you need to have Redis running for Radar to work. Save this as &quot;server.js&quot; and run it with &quot;node server.js&quot;.</p>
+<h3>2. Setting up the client</h3>
+<p>First, add the radar client to our package.json:</p>
+<pre>npm install --save radar_client</pre>
+<p>The Radar client has two dependencies:</p>
+<ul class="list">
+<li><a href="https://github.com/LearnBoost/engine.io-client">engine.io-client</a>: since Radar uses engine.io internally, it needs the client file to be available</li>
+<li><a href="http://mixu.net/minilog/">minilog</a>: Radar logs events on the client side using Minilog; that&#39;s mostly just because I wanted a logger that works on both the client and the server and is small (~80 lines)</li>
+</ul>
+<p>There are many ways in which you could include these dependencies:</p>
+<ul class="list">
+<li>you can just copy the distribution files from ./dist/ for the dependencies and make sure they are included on the page before the Radar client (e.g. with regular script tags)</li>
+<li>you can create a single file that you can distribute</li>
+</ul>
+<p>The first one is probably easy to figure out, so let&#39;s do the second one. Here is a <code>Makefile</code> that does that:</p>
+<pre>build:
+  @echo &#39;Building public/radar_client.js&#39;
+  @mkdir -p public
+  @cat ./node_modules/radar_client/node_modules/minilog/dist/minilog.js &gt; public/radar_client.js
+  @cat ./node_modules/radar_client/node_modules/engine.io-client/dist/engine.io.js &gt;&gt; public/radar_client.js
+  @cat ./node_modules/radar_client/dist/radar_client.js &gt;&gt; public/radar_client.js
+  # uncomment if you want to use uglifyJS to further minify the file @uglifyjs --overwrite public/radar_client.js
+  @echo &#39;Wrote public/radar_client.js&#39;
+
+.PHONY: build</pre>
+<p>Note that GNU make requires that you use tabs for indentation and it will not be helpful in telling you to that.</p>
+<h3>3. Putting the two together</h3>
+<p>...</p>
 <h1>Radar client</h1>
 <p>Read the <a href="client.html">client docs</a> for the details.</p>
 <h1>Radar server</h1>
