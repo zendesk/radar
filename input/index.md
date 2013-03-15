@@ -182,11 +182,70 @@ Here you can see that the Radar client is now in state 6 - which, for the intern
 
 The callback runs, and you also receive back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.
 
-### 6. Creating a chat
+### 6. Creating a chat - message resource
 
 What is chat? It's a history of messages, and information about who is online.
 
 We'll use a presence scope to track people going online and offline, and a message scope to store a channel of messages.
+
+Let's set that up by subscribing to a message scope:
+
+    RadarClient.message('chat/1').on(function(message) {
+      console.log('Chat:', message.value);
+    }).sync();
+
+If you run that you'll see something like this:
+
+    radar_state info {"op":"sync","to":"message:/dev/chat/1","direction":"out"}
+    radar_client info {"op":"sync","to":"message:/dev/chat/1","value":[],"time":1363371832947,"direction":"in"}
+
+So, there are two parts: the `.on()` handler, which is triggered when messages are received, and the `.sync()` call, which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.
+
+Now, let's send a message:
+
+    RadarClient.message('chat/1').publish('Hello world');
+
+You should see the message echoed back to you, since your current session is subscribed to the "chat/1" message resource.
+
+OK, open a second tab and keep it open. Run this code to initialize it:
+
+    RadarClient.alloc('example', function() {
+      RadarClient.message('chat/1').on(function(message) {
+        console.log('Chat:', message.value);
+      }).sync();
+    });
+
+Now, try sending another message via `.publish` - you should see the message arrive to both tabs.
+
+### 7. Message history
+
+Here is the cool part: you can run multiple Radar servers that use the same Redis server, and they just work.
+
+If two clients are on different Radar servers, but those servers use the same backend Redis server, then messages will be routed correctly via Redis. The only caveat is that you need to have source-IP sticky load balancing if you put a load balancer in front of Radar - for more details, see [the chapter on Socket.io in my book](http://book.mixu.net/) which goes through some of the basic options for using multiple socket.io/engine.io servers. The need for sticky load balancing is a limitation inherent in how a client id-based transports work.
+
+Part of a chat or any message channel is the ability for people to see message history. For example, if you are a new person joining a chat channel, you probably want to see at least a couple of minutes worth of previously sent messages.
+
+Radar has the ability to cache data for some time. This is configured through the type system, which is a bit clunky to configure. Here is an example:
+
+    var Type = require('radar').core.Type;
+
+    Type.register('chatMessage', {
+        expr: new RegExp('^message:/.+/chat/(.+)$'),
+        type: 'message',
+        policy: { cache: true, maxCount: 300 }
+    });
+
+Here, we're specifying a new type of channel - it is applied to chanlles that match the regular expression. The `policy` key defines that the data should be cached - which is what we want so that messages are kept around; `maxCount` says that we will keep up to 300 messages (see the server docs for the other options).
+
+Once you do this and restart the server, you'll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history.
+
+### 8. Creating a chat - presence resource
+
+OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.
+
+Another part of any application that allows users to communicate with each other is the ability to track user presence - to do things like showing who is online, or to route chats to people who are ready to accept them.
+
+Radar has a presence resource type built specifically to track who is online - that's what the `userId` information in the configuration is used for.
 
 ...
 

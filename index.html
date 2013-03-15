@@ -198,9 +198,45 @@ Radar is ready
 radar_client info {&quot;server&quot;:&quot;mxdeb&quot;,&quot;cid&quot;:&quot;OxJPb4OKXV6ua4saAAAA&quot;,&quot;direction&quot;:&quot;in&quot;}</pre>
 <p>Here you can see that the Radar client is now in state 6 - which, for the internal state machine, means it&#39;s ready.</p>
 <p>The callback runs, and you also receive back a message with the hostname of the server you&#39;re on and the randomly generated client id for this Radar session.</p>
-<h3>6. Creating a chat</h3>
+<h3>6. Creating a chat - message resource</h3>
 <p>What is chat? It&#39;s a history of messages, and information about who is online.</p>
 <p>We&#39;ll use a presence scope to track people going online and offline, and a message scope to store a channel of messages.</p>
+<p>Let&#39;s set that up by subscribing to a message scope:</p>
+<pre>RadarClient.message(&#39;chat/1&#39;).on(function(message) {
+  console.log(&#39;Chat:&#39;, message.value);
+}).sync();</pre>
+<p>If you run that you&#39;ll see something like this:</p>
+<pre>radar_state info {&quot;op&quot;:&quot;sync&quot;,&quot;to&quot;:&quot;message:/dev/chat/1&quot;,&quot;direction&quot;:&quot;out&quot;}
+radar_client info {&quot;op&quot;:&quot;sync&quot;,&quot;to&quot;:&quot;message:/dev/chat/1&quot;,&quot;value&quot;:[],&quot;time&quot;:1363371832947,&quot;direction&quot;:&quot;in&quot;}</pre>
+<p>So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call, which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.</p>
+<p>Now, let&#39;s send a message:</p>
+<pre>RadarClient.message(&#39;chat/1&#39;).publish(&#39;Hello world&#39;);</pre>
+<p>You should see the message echoed back to you, since your current session is subscribed to the &quot;chat/1&quot; message resource.</p>
+<p>OK, open a second tab and keep it open. Run this code to initialize it:</p>
+<pre>RadarClient.alloc(&#39;example&#39;, function() {
+  RadarClient.message(&#39;chat/1&#39;).on(function(message) {
+    console.log(&#39;Chat:&#39;, message.value);
+  }).sync();
+});</pre>
+<p>Now, try sending another message via <code>.publish</code> - you should see the message arrive to both tabs.</p>
+<h3>7. Message history</h3>
+<p>Here is the cool part: you can run multiple Radar servers that use the same Redis server, and they just work.</p>
+<p>If two clients are on different Radar servers, but those servers use the same backend Redis server, then messages will be routed correctly via Redis. The only caveat is that you need to have source-IP sticky load balancing if you put a load balancer in front of Radar - for more details, see <a href="http://book.mixu.net/">the chapter on Socket.io in my book</a> which goes through some of the basic options for using multiple socket.io/engine.io servers. The need for sticky load balancing is a limitation inherent in how a client id-based transports work.</p>
+<p>Part of a chat or any message channel is the ability for people to see message history. For example, if you are a new person joining a chat channel, you probably want to see at least a couple of minutes worth of previously sent messages.</p>
+<p>Radar has the ability to cache data for some time. This is configured through the type system, which is a bit clunky to configure. Here is an example:</p>
+<pre>var Type = require(&#39;radar&#39;).core.Type;
+
+Type.register(&#39;chatMessage&#39;, {
+    expr: new RegExp(&#39;^message:/.+/chat/(.+){{content}}#39;),
+    type: &#39;message&#39;,
+    policy: { cache: true, maxCount: 300 }
+});</pre>
+<p>Here, we&#39;re specifying a new type of channel - it is applied to chanlles that match the regular expression. The <code>policy</code> key defines that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300 messages (see the server docs for the other options).</p>
+<p>Once you do this and restart the server, you&#39;ll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history.</p>
+<h3>8. Creating a chat - presence resource</h3>
+<p>OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.</p>
+<p>Another part of any application that allows users to communicate with each other is the ability to track user presence - to do things like showing who is online, or to route chats to people who are ready to accept them.</p>
+<p>Radar has a presence resource type built specifically to track who is online - that&#39;s what the <code>userId</code> information in the configuration is used for.</p>
 <p>...</p>
 <h1>Radar client</h1>
 <p>Read the <a href="client.html">client docs</a> for the details.</p>
