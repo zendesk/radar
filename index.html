@@ -88,7 +88,9 @@
 <p>Let&#39;s start by getting the Radar server up and running.</p>
 <p>Create a <code>package.json</code> file by running <code>npm init</code> for your new project; then run <code>npm install --save radar</code>. This installs the Radar server library and also adds the dependency to the <code>package.json</code> file.</p>
 <p>Now, let&#39;s require the Radar server library and attach it to a HTTP server:</p>
-<pre>var http = require(&#39;http&#39;),
+<pre>var fs = require(&#39;fs&#39;),
+    url = require(&#39;url&#39;),
+    http = require(&#39;http&#39;),
     Radar = require(&#39;radar&#39;).server;
 
 var server = http.createServer(function(req, res) {
@@ -131,7 +133,74 @@ console.log(&#39;Server listening on localhost:8000&#39;);</pre>
 
 .PHONY: build</pre>
 <p>Note that GNU make requires that you use tabs for indentation and it will not be helpful in telling you to that.</p>
+<p>To generate the build, run <code>make build</code>.</p>
 <h3>3. Putting the two together</h3>
+<p>Let&#39;s set up the server to serve the files, and a minimal HTML page that initializes the Radar client.</p>
+<p>Rather than building anything more complicated like a UI, let&#39;s just take advantage of the developer console that all good modern browsers have to create a chat. Create the following <code>public/index.html</code>:</p>
+<pre>&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Test&lt;/title&gt;
+    &lt;script src=&quot;/radar_client.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+Minilog.enable();
+RadarClient.configure({
+  host: window.location.hostname,
+  port: 8000,
+
+  userId: Math.floor(Math.random()*100),
+  userType: 0,
+  accountName: &#39;dev&#39;
+});
+&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;Open the developer console...&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+<p>Also add support for serving the two files we created earlier, changing the server&#39;s HTTP request handler to:</p>
+<pre>var server = http.createServer(function(req, res) {
+  var pathname = url.parse(req.url).pathname;
+
+  if(/^\/radar_client.js$/.test(pathname)) {
+    res.setHeader(&#39;content-type&#39;, &#39;text/javascript&#39;);
+    res.end(fs.readFileSync(&#39;./public/radar_client.js&#39;));
+  } else if(pathname == &#39;/&#39;) {
+    res.setHeader(&#39;content-type&#39;, &#39;text/html&#39;);
+    res.end(fs.readFileSync(&#39;./public/index.html&#39;));
+  } else {
+    console.log(&#39;404&#39;, req.url);
+    res.statusCode = 404;
+    res.end();
+  }
+});</pre>
+<p>Open up <a href="http://localhost:8000/">http://localhost:8000/</a> in your browser and open the developer console.</p>
+<h3>4. What&#39;s in the Radar client configuration?</h3>
+<p>If you looked at the code in index.html, we&#39;re doing two function calls: one, to <code>Minilog.enable()</code> which turns on all logging - which includes Radar&#39;s internal logging. The other one is to <code>RadarClient.configure()</code>, which configured the host and the port of the Radar server - and three other important pieces of infomation.</p>
+<p>Those are:</p>
+<ul class="list">
+<li>userId: any number that uniquely identifies a user</li>
+<li>userType: any number that represents a user type</li>
+<li>accountName: any string</li>
+</ul>
+<p>Every user needs to have a account, a user id and a user type. The reason is basically that Radar was initially built for Zendesk&#39;s use and every Zendesk user has that information (and more). But most other applications will have the same constructs, so there was no point in getting rid of these fields when we open sourced Radar.</p>
+<p>These are just arbitrary pieces of information, which you can manage in any way you want to. There is no &quot;user management&quot; in Radar and Radar doesn&#39;t care about what values you use, you just need to pick some values. Sometimes these values are used for key names - for example, all Radar data in Redis contains the account name in as a part of the key so you can examine data for a specific account. Feel free to figure out what makes sense for your application.</p>
+<p>OK, with that, let&#39;s get started.</p>
+<h3>5. Using alloc() to connect</h3>
+<p>First, let&#39;s connect to the server by calling <code>.alloc</code>. Copy-paste this into your developer console after loading the page from localhost:</p>
+<pre>RadarClient.alloc(&#39;example&#39;, function() {  console.log(&#39;Radar is ready&#39;); });</pre>
+<p><code>alloc(scopename, [callback])</code> is used to connect to the server. The scope name (&quot;example&quot;) is just a name for the functionality you are using. The nice part is that if you have an app consisting of multiple independent features that use Radar, they can each uniquely identify themselves as either needing a Radar connection or not needing a Radar connection (via <code>.dealloc(scopename)</code>).</p>
+<p>So the connection is initialized the first time you call <code>.alloc()</code> - any duplicate calls will just use the existing connection rather than creating more connections. And the connection is only disconnected when all of the names passed to <code>alloc</code> have made a corresponding <code>dealloc</code> call.</p>
+<p>The callback is called when the connection is established (if the connection is already there, then it is called immediately).</p>
+<p>If you look at the developer console, you&#39;ll see a bunch of log statements when you run that (because we called <code>Minilog.enable()</code> earlier), such as:</p>
+<pre>radar_state debug {&quot;op&quot;:&quot;run-state&quot;,&quot;state&quot;:6}
+Radar is ready
+radar_client info {&quot;server&quot;:&quot;mxdeb&quot;,&quot;cid&quot;:&quot;OxJPb4OKXV6ua4saAAAA&quot;,&quot;direction&quot;:&quot;in&quot;}</pre>
+<p>Here you can see that the Radar client is now in state 6 - which, for the internal state machine, means it&#39;s ready.</p>
+<p>The callback runs, and you also receive back a message with the hostname of the server you&#39;re on and the randomly generated client id for this Radar session.</p>
+<h3>6. Creating a chat</h3>
+<p>What is chat? It&#39;s a history of messages, and information about who is online.</p>
+<p>We&#39;ll use a presence scope to track people going online and offline, and a message scope to store a channel of messages.</p>
 <p>...</p>
 <h1>Radar client</h1>
 <p>Read the <a href="client.html">client docs</a> for the details.</p>

@@ -41,7 +41,9 @@ Create a `package.json` file by running `npm init` for your new project; then ru
 
 Now, let's require the Radar server library and attach it to a HTTP server:
 
-    var http = require('http'),
+    var fs = require('fs'),
+        url = require('url'),
+        http = require('http'),
         Radar = require('radar').server;
 
     var server = http.createServer(function(req, res) {
@@ -92,7 +94,99 @@ The first one is probably easy to figure out, so let's do the second one. Here i
 
 Note that GNU make requires that you use tabs for indentation and it will not be helpful in telling you to that.
 
+To generate the build, run `make build`.
+
 ### 3. Putting the two together
+
+Let's set up the server to serve the files, and a minimal HTML page that initializes the Radar client.
+
+Rather than building anything more complicated like a UI, let's just take advantage of the developer console that all good modern browsers have to create a chat. Create the following `public/index.html`:
+
+    <!doctype html>
+    <html>
+      <head>
+        <title>Test</title>
+        <script src="/radar_client.js"></script>
+    <script>
+    Minilog.enable();
+    RadarClient.configure({
+      host: window.location.hostname,
+      port: 8000,
+
+      userId: Math.floor(Math.random()*100),
+      userType: 0,
+      accountName: 'dev'
+    });
+    </script>
+      </head>
+      <body>
+        <p>Open the developer console...</p>
+      </body>
+    </html>
+
+Also add support for serving the two files we created earlier, changing the server's HTTP request handler to:
+
+    var server = http.createServer(function(req, res) {
+      var pathname = url.parse(req.url).pathname;
+
+      if(/^\/radar_client.js$/.test(pathname)) {
+        res.setHeader('content-type', 'text/javascript');
+        res.end(fs.readFileSync('./public/radar_client.js'));
+      } else if(pathname == '/') {
+        res.setHeader('content-type', 'text/html');
+        res.end(fs.readFileSync('./public/index.html'));
+      } else {
+        console.log('404', req.url);
+        res.statusCode = 404;
+        res.end();
+      }
+    });
+
+Open up http://localhost:8000/ in your browser and open the developer console.
+
+### 4. What's in the Radar client configuration?
+
+If you looked at the code in index.html, we're doing two function calls: one, to `Minilog.enable()` which turns on all logging - which includes Radar's internal logging. The other one is to `RadarClient.configure()`, which configured the host and the port of the Radar server - and three other important pieces of infomation.
+
+Those are:
+
+- userId: any number that uniquely identifies a user
+- userType: any number that represents a user type
+- accountName: any string
+
+Every user needs to have a account, a user id and a user type. The reason is basically that Radar was initially built for Zendesk's use and every Zendesk user has that information (and more). But most other applications will have the same constructs, so there was no point in getting rid of these fields when we open sourced Radar.
+
+These are just arbitrary pieces of information, which you can manage in any way you want to. There is no "user management" in Radar and Radar doesn't care about what values you use, you just need to pick some values. Sometimes these values are used for key names - for example, all Radar data in Redis contains the account name in as a part of the key so you can examine data for a specific account. Feel free to figure out what makes sense for your application.
+
+OK, with that, let's get started.
+
+### 5. Using alloc() to connect
+
+First, let's connect to the server by calling `.alloc`. Copy-paste this into your developer console after loading the page from localhost:
+
+    RadarClient.alloc('example', function() {  console.log('Radar is ready'); });
+
+`alloc(scopename, [callback])` is used to connect to the server. The scope name ("example") is just a name for the functionality you are using. The nice part is that if you have an app consisting of multiple independent features that use Radar, they can each uniquely identify themselves as either needing a Radar connection or not needing a Radar connection (via `.dealloc(scopename)`).
+
+So the connection is initialized the first time you call `.alloc()` - any duplicate calls will just use the existing connection rather than creating more connections. And the connection is only disconnected when all of the names passed to `alloc` have made a corresponding `dealloc` call.
+
+The callback is called when the connection is established (if the connection is already there, then it is called immediately).
+
+If you look at the developer console, you'll see a bunch of log statements when you run that (because we called `Minilog.enable()` earlier), such as:
+
+    radar_state debug {"op":"run-state","state":6}
+    Radar is ready
+    radar_client info {"server":"mxdeb","cid":"OxJPb4OKXV6ua4saAAAA","direction":"in"}
+
+Here you can see that the Radar client is now in state 6 - which, for the internal state machine, means it's ready.
+
+The callback runs, and you also receive back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.
+
+### 6. Creating a chat
+
+What is chat? It's a history of messages, and information about who is online.
+
+We'll use a presence scope to track people going online and offline, and a message scope to store a channel of messages.
 
 ...
 
