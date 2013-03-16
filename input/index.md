@@ -29,9 +29,9 @@ Radar basically solves a number of real-world problems that need to solved, and 
 - Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to be able to send recent messages to new users joining a chat - this can be configured via a policy.
 - Library, not a framework. Doesn't require code changes or structural changes beyond responding to the events from the backend.
 
-## Quickstart: let's write a Radar application
+## Tutorial: let's write a Radar application
 
-This tutorial will walk you through the process of implementing a chat server using Radar. The source code to a full example is also bundled in the radar (server) repository under `./sample`.
+This tutorial will walk you through the process of implementing a chat server using Radar. You can also find another example application bundled in the radar (server) repository under `./sample`, which uses Radar to present a UI.
 
 ### 1. Setting up the server
 
@@ -237,7 +237,7 @@ Radar has the ability to cache data for some time. This is configured through th
 
 Here, we're specifying a new type of channel - it is applied to chanlles that match the regular expression. The `policy` key defines that the data should be cached - which is what we want so that messages are kept around; `maxCount` says that we will keep up to 300 messages (see the server docs for the other options).
 
-Once you do this and restart the server, you'll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history.
+Once you do this and restart the server, you'll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history. Since the persistence policy is determined via a RegExp, you can set different policies for different use cases.
 
 ### 8. Creating a chat - presence resource
 
@@ -247,7 +247,57 @@ Another part of any application that allows users to communicate with each other
 
 Radar has a presence resource type built specifically to track who is online - that's what the `userId` information in the configuration is used for.
 
+First, let's run this piece of code in both tabs:
+
+    RadarClient.alloc('example', function() {
+      RadarClient.presence('chat/1').on(function(message) {
+        if(!message.op || !message.value) { return; }
+        for(var userId in message.value) {
+          if(!message.value.hasOwnProperty(userId)) { continue; }
+          if(message.op == 'online' || message.op == 'offline') {
+            console.log('User ' + userId+' is now '+message.op);
+          }
+        }
+      }).sync();
+    });
+
+Run this code on each of the tabs:
+
+    RadarClient.presence('chat/1').set('online');
+
+You should see a log message that looks somthing like this:
+
+    radar_client info {"to":"presence:/dev/chat/1","op":"online","value":{"19":0},"direction":"in"}
+    User 19 is now online
+
+In the Radar configuration call on the example page, we set the `userId` option to a random number between 0 and 100, so you'll get different user id's for each of the tabs.
+
+Now, try closing one of the tabs, and look at the remaining tab's messages. You should first see this:
+
+    radar_client info {"to":"presence:/dev/chat/1","op":"client_offline","value":{"userId":19,"clientId":"CmuZcU4wvUMTiDx9AAAK"},"direction":"in"}
+
+And then, after about 30 seconds, you should see this:
+
+    radar_client info {"to":"presence:/dev/chat/1","op":"offline","value":{"19":0},"direction":"in"}
+    User 19 is now offline
+
+Note that you could also have called:
+
+    RadarClient.presence('chat/1').set('offline');
+
+and this would have triggered a "offline" message immediately - the 30 second delay only applies if you close the tab without telling Radar that you're going offline (a ungraceful exit).
+
+Radar supports two granularities of events:
+
+- client_online/client_offline messages are triggered when a client session goes offline. They are less reliable, but quicker to trigger.
+- online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you start having multiple Radar servers: then you don't want to consider a user to be offline until there are no client sessions that are active for that user on any of the Radar servers. There is also a grace period of up to 30 seconds - this allows users to experience short-term network issues, or to reload a Radar-enabled page without being immediately considered to be offline.
+
+Usually, you want to use the "online" and "offline" events unless you want to specifically track client sessions and do the work mentioned above on the client side.
+
+### 9. Status resources and the REST API
+
 ...
+
 
 # Radar client
 
