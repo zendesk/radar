@@ -5,7 +5,7 @@ var common = require('./common.js'),
     Persistence = require('../../core').Persistence,
     Client = require('radar_client').constructor;
 
-exports['given a server and two connected clients'] = {
+exports['reconnect: given a server and two connected clients'] = {
 
 /*
   before: function(done) {

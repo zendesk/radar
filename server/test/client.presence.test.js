@@ -17,7 +17,7 @@ Minilog.pipe(Minilog.backends.nodeConsole)
   .format(Minilog.backends.nodeConsole.formatWithStack);
 */
 
-exports['given a server and two connected clients'] = {
+exports['presence: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
     var self = this,
