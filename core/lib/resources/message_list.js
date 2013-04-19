@@ -57,7 +57,7 @@ MessageList.prototype.unsubscribe = function(client, sendAck) {
   // note that since this is not synchronized across multiple backend servers, it is possible
   // for a channel that is subscribed elsewhere to have a TTL set on it again. The assumption is that the
   // TTL is so long that any normal workflow will terminate before it is triggered.
-  if (this.options.policy.cache && Object.keys(this.subscribers).length == 0) {
+  if (this.options.policy.cache) {
     Persistence.expire(this.name, this.options.policy.maxPersistence);
   }
 };
