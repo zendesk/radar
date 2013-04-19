@@ -1,9 +1,15 @@
 var Resource = require('../resource.js'),
     Persistence = require('../persistence.js');
 
+var def_options = {
+  policy: { maxPersistence: 12 * 60 * 60 } // 12 hours in seconds
+};
+
 function Status(name, parent, options) {
+
   Resource.call(this, name, parent, options);
   this.type = 'status';
+  this.apply_defaults(def_options);
 }
 
 Status.prototype = new Resource();
@@ -29,15 +35,15 @@ Status.prototype.setStatus = function(client, message, sendAck) {
   if(arguments.length == 1) {
     message = client; // client and sendAck are optional
   }
-  Status.prototype._setStatus(this.name, message, function() {
+  Status.prototype._setStatus(this.name, message, this.options.policy, function() {
     sendAck && self.ack(client, sendAck);
   });
 };
 
-Status.prototype._setStatus = function(scope, message, callback) {
+Status.prototype._setStatus = function(scope, message, policy, callback) {
   Persistence.persistHash(scope, message.key, message.value);
   Persistence.publish(scope, JSON.stringify(message), callback);
-  Persistence.expire(scope, 12 * 60 * 60); // 12 hours in seconds
+  Persistence.expire(scope, policy.maxPersistence);
 };
 
 Status.prototype.sync = function(client) {

@@ -28,6 +28,9 @@ exports['given a status resource'] = {
 
   beforeEach: function(done) {
     this.status = new Status('aaa', Radar, {});
+    FakePersistence.readHashAll = function() {};
+    FakePersistence.persistHash = function() {};
+    FakePersistence.expire = function() {};
     done();
   },
 
@@ -99,6 +102,35 @@ exports['given a status resource'] = {
 
     status.subscribe(123);
     status.unsubscribe(123);
+  },
+
+  'sets a default option for maxPersistence': function(done) {
+    var status = this.status;
+    assert.equal(status.options.policy.maxPersistence, 12 * 60 * 60);
+    done();
+  },
+
+  'provided option overrides default': function(done) {
+    var options = {
+      policy : {
+        maxPersistence : 24 * 60 * 60,
+        cache : true,
+        another : false
+      },
+      base : "string here"
+    };
+
+    var status = new Status("aaa", Radar, options);
+    assert.equal(status.options.policy.maxPersistence, 24 * 60 * 60);
+    assert.equal(status.options.policy.cache, true);
+    assert.equal(status.options.policy.another, false);
+    assert.equal(status.options.base, "string here");
+
+    FakePersistence.expire = function(key, persistence) {
+      assert.equal(24 * 60 * 60, persistence);
+      done();
+    }
+    status.setStatus({ key: 123, value: 'online' });
   }
 };
 

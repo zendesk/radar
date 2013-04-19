@@ -5,7 +5,8 @@ var assert = require('assert'),
 var FakePersistence = {
   read: function() {},
   persist: function() {},
-  publish: function() {}
+  publish: function() {},
+  expire: function() {}
 };
 
 var Radar = {
@@ -41,42 +42,64 @@ exports['given a message list resource'] = {
     assert.ok(publishCalled);
     done();
   },
-/*
+
   'publish causes a broadcast and a write, if persistent': function(done) {
     var publishCalled = false, persistCalled = false;
     FakePersistence.publish = function(key, message) {
-      assert.equal('hello world', message);
+      assert.equal(JSON.stringify('hello world'), message);
       publishCalled = true;
     };
-    FakePersistence.persist = function() {
+    FakePersistence.persistOrdered = function() {
       persistCalled = true;
     };
-    this.message.publish('hello world');
+    var message = new MessageList('aab', Radar, { policy : { cache : true } })
+    message.publish('hello world');
     assert.ok(publishCalled);
     assert.ok(persistCalled);
     done();
   },
-*/
-  'sync causes a read': function(done) {
-    var message = this.message;
+
+  'set expire to maxPersistence on a publish, if persistent': function(done) {
+    var expiryTime;
+    FakePersistence.expire = function(name, expiry) {
+      expiryTime = expiry;
+    };
+    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } })
+    message.publish('hello world');
+    assert.equal(expiryTime, 24 * 60 * 60);
+    done();
+  },
+
+  'sync causes a read, and renews expiry': function(done) {
+    var expiryTime;
+    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } })
     FakePersistence.readOrderedWithScores = function(key, value, callback) {
-      assert.equal('aaa', key);
+      assert.equal('aab', key);
       callback([1, 2]);
     };
+    FakePersistence.expire = function(name, expiry) {
+      expiryTime = expiry;
+    };
 
-    this.message.sync({
+    message.sync({
       id: 123,
       send: function(payload) {
         var msg = JSON.parse(payload);
         // check message
         assert.equal('sync', msg.op);
-        assert.equal('aaa', msg.to);
+        assert.equal('aab', msg.to);
         assert.deepEqual([1, 2], msg.value);
+        assert.equal(expiryTime, 24 * 60 * 60);
         done();
       }
     });
-  }
+  },
 
+  'sets a default option for maxPersistence': function(done) {
+    var message = this.message;
+    assert.equal(message.options.policy.maxPersistence, 14 * 24 * 60 * 60);
+    done();
+  },
 };
 
 // if this module is the script being run, then run the tests:
