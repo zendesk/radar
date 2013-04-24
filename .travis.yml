@@ -3,3 +3,6 @@
    - "0.8"
 services:
   - redis-server
+before_script:
+    - which node
+    - sudo ln -s `which node` /usr/bin/node
