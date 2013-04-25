@@ -8,10 +8,10 @@ var def_options = {
 };
 
 function Presence(name, parent, options) {
-  Resource.call(this, name, parent, options);
+  var merged = Resource.apply_defaults(options, def_options);
+  Resource.call(this, name, parent, merged);
   var self = this;
   this.type = 'presence';
-  this.apply_defaults(def_options);
 
   this._xserver = new LocalManager(this.name, this.options.policy);
   this._xserver.on('user_online', function(userId, userType) {
