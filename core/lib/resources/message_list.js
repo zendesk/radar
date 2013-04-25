@@ -9,9 +9,9 @@ var def_options = {
 // after being the last user.
 
 function MessageList(name, parent, options) {
-  Resource.call(this, name, parent, options);
+  merged = Resource.apply_defaults(options, def_options);
+  Resource.call(this, name, parent, merged);
   this.type = 'message';
-  this.apply_defaults(def_options);
 }
 
 MessageList.prototype = new Resource();

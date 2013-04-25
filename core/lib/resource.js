@@ -25,8 +25,9 @@ function Resource(name, parent, options) {
   this.options = options;
 }
 
-Resource.prototype.apply_defaults = function(def_options) {
-  this.options = this.options || {};
+//helper to merge options and defaults
+Resource.apply_defaults = function(options, def_options) {
+  options = options || {};
 
   var merge_into = function(original, defaults) {
     Object.keys(defaults).forEach(function(key) {
@@ -42,7 +43,8 @@ Resource.prototype.apply_defaults = function(def_options) {
     });
   };
 
-  merge_into(this.options, def_options);
+  merge_into(options, def_options);
+  return(options);
 };
 
 // Add a subscriber (Engine.io client)
