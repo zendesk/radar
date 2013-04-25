@@ -25,6 +25,28 @@ function Resource(name, parent, options) {
   this.options = options;
 }
 
+//helper to merge options and defaults
+Resource.apply_defaults = function(options, def_options) {
+  options = options || {};
+
+  var merge_into = function(original, defaults) {
+    Object.keys(defaults).forEach(function(key) {
+      if(typeof(defaults[key]) === 'object') {
+        original[key] = original[key] || {};
+        merge_into(original[key], defaults[key]);
+      }
+      else {
+        if(original[key] == undefined) {
+          original[key] = defaults[key];
+        }
+      }
+    });
+  };
+
+  merge_into(options, def_options);
+  return(options);
+};
+
 // Add a subscriber (Engine.io client)
 Resource.prototype.subscribe = function(client, sendAck) {
   this.subscribers[client.id] = true;
