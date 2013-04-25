@@ -18,6 +18,7 @@ var Server = {
 };
 
 var counter = 1000,
+    oldExpire = Persistence.expire,
     oldPublish = Persistence.publish;
 
 exports['given a presence'] = {
@@ -32,9 +33,11 @@ exports['given a presence'] = {
     done();
   },
 
-  after: function(){
+  afterEach: function(){
+    Persistence.expire = oldExpire;
     Persistence.publish = oldPublish;
   },
+
 
   'can set status to online and offline': function(done) {
     var presence = this.presence, client = this.client;
@@ -69,6 +72,31 @@ exports['given a presence'] = {
     done();
   },
 
+  'setting status sets overall expiry to maxPersistence' : function(done) {
+    var presence = this.presence, client = this.client;
+
+    Persistence.expire = function(scope, expiry) {
+      assert.equal(presence.name, scope);
+      assert.equal(expiry, 12 * 60 * 60);
+      done();
+    }
+
+    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
+  },
+
+  'autopublish must renew the expiry to maxPersistence' : function(done) {
+    var presence = this.presence, client = this.client;
+
+    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
+    Persistence.expire = function(scope, expiry) {
+      assert.equal(presence.name, scope);
+      assert.equal(expiry, 12 * 60 * 60);
+      done();
+    }
+    presence._xserver.timeouts();
+
+  },
+
   'setting status twice does not cause duplicate notifications': function(done) {
     // see also: presence_monitor.test.js / test with the same name
     var presence = this.presence, client = this.client;
@@ -86,7 +114,7 @@ exports['given a presence'] = {
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal(2, calls);
+    assert.equal(2, calls); //One for client, one for user
     // added to _local ONCE
     assert.ok(presence._xserver.hasUser(1));
     done();
