@@ -3,12 +3,17 @@ var Resource = require('../../resource.js'),
     LocalManager = require('./local_manager.js'),
     logging = require('minilog')('presence');
 
+var def_options = {
+  policy: { maxPersistence: 12 * 60 * 60 } // 12 hours in seconds
+};
+
 function Presence(name, parent, options) {
-  Resource.call(this, name, parent, options);
+  var merged = Resource.apply_defaults(options, def_options);
+  Resource.call(this, name, parent, merged);
   var self = this;
   this.type = 'presence';
 
-  this._xserver = new LocalManager(this.name);
+  this._xserver = new LocalManager(this.name, this.options.policy);
   this._xserver.on('user_online', function(userId, userType) {
     logging.debug('user_online', userId, userType);
     var value = {};
