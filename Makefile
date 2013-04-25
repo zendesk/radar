@@ -15,7 +15,7 @@ TESTS_ALL = $(find . -type f -name '*.test.js' | grep -v 'node_modules' | sort)
 REPORTER = spec
 
 test:
-	@export radar_log=-* && sudo -E ./node_modules/.bin/mocha \
+	@export radar_log=-* && ./node_modules/.bin/mocha \
 		--ui exports \
 		--reporter $(REPORTER) \
 		--slow 2000ms \
