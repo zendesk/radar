@@ -5,9 +5,10 @@ var Set = require('../../map.js'),
     Persistence = require('../../persistence.js'),
     logging = require('minilog')('presence');
 
-function LocalManager(scope) {
+function LocalManager(scope, policy) {
   var self = this;
   this.scope = scope;
+  this.policy = policy;
   // client lists are simple sets
   this.localClients = new Set();
   // user lists are sets of arrays
@@ -79,6 +80,14 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, callback)
     pmessage = JSON.stringify(message);
   this.localClients.add(clientId, message);
   Persistence.persistHash(this.scope, userId + '.' + clientId, pmessage);
+
+  //Set an overall expiration here. If we get killed/crash/etc we will not leave an undead key
+  //in redis. This is renewed every time we persist, so no worries of expiring before
+  //usage ends.
+  if(this.policy && this.policy.maxPersistence) {
+    Persistence.expire(this.scope, this.policy.maxPersistence);
+  }
+
   Persistence.publish(this.scope, pmessage, callback);
 };
 
