@@ -6,7 +6,7 @@ var def_options = {
 };
 
 function Status(name, parent, options) {
-  merged = Resource.apply_defaults(options, def_options);
+  var merged = Resource.apply_defaults(options, def_options);
   Resource.call(this, name, parent, merged);
   this.type = 'status';
 }

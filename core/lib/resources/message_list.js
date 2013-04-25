@@ -9,7 +9,7 @@ var def_options = {
 // after being the last user.
 
 function MessageList(name, parent, options) {
-  merged = Resource.apply_defaults(options, def_options);
+  var merged = Resource.apply_defaults(options, def_options);
   Resource.call(this, name, parent, merged);
   this.type = 'message';
 }
