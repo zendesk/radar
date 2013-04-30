@@ -63,7 +63,7 @@ Server.prototype.attach = function(server, configuration) {
     };
 
     // event: client connected
-    logging.debug('#connect', client.id);
+    logging.info('#connect', client.id);
     client.send(JSON.stringify({
       server: hostname, cid: client.id
     }));
@@ -74,7 +74,7 @@ Server.prototype.attach = function(server, configuration) {
     });
     client.on('close', function() {
       // event: client disconnected
-      logging.debug('#disconnect', client.id);
+      logging.info('#disconnect', client.id);
       for (var name in self.channels) {
         var channel = self.channels[name];
         if (channel.subscribers[client.id]) {
