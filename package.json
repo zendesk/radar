@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.0.4", 
+  "version": "0.0.4",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "main": "index.js",
   "keywords": [
@@ -16,7 +16,7 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
-    "engine.io": "0.3.5",
+    "engine.io": "0.2.x",
     "miniee": "0.0.5",
     "redis": "0.7.3",
     "heartbeat": "git://github.com/mixu/heartbeat.git#1b9dce4d1809166cd4e33d09f195209237922137",
