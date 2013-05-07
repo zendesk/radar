@@ -87,14 +87,14 @@ exports['Radar api tests'] = {
   'can get a message scope': function(done) {
 
     var message_type = {
-      expr: new RegExp('^(message):(.+)$'),
+      expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
       auth: false,
       policy: { cache: true, maxAgeSeconds: 30 }
     }
     Type.register('message', message_type);
 
-    var name = 'message:/test/chat/1',
+    var name = 'message:/setStatus/chat/1',
         opts = Type.getByExpression(name),
         msgList = new MessageList(name, {}, opts);
 
@@ -104,7 +104,7 @@ exports['Radar api tests'] = {
     });
 
     Client.get('/node/radar/message')
-      .data({ accountName: 'test', scope: 'chat/1' })
+      .data({ accountName: 'setStatus', scope: 'chat/1' })
       .end(function(error, response) {
         assert.deepEqual({key:"foo", value: 'bar'}, JSON.parse(response[0]));
         done();
@@ -115,25 +115,25 @@ exports['Radar api tests'] = {
   'can set a message scope': function(done) {
 
     var message_type = {
-      expr: new RegExp('^(message):(.+)$'),
+      expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
       auth: false,
       policy: { cache: true, maxAgeSeconds: 30 }
     }
     Type.register('message', message_type);
 
-    var name = 'message:/test/chat/2',
+    var name = 'message:/setStatus/chat/2',
         opts = Type.getByExpression(name),
         msgList = new MessageList(name, {}, opts);
 
 
     Client.post('/node/radar/message')
-      .data({ accountName: 'test', scope: 'chat/2', value: 'hello' })
+      .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })
       .end(function(error, response) {
         assert.deepEqual({}, response);
 
         Client.get('/node/radar/message')
-        .data({ accountName: 'test', scope: 'chat/2' })
+        .data({ accountName: 'setStatus', scope: 'chat/2' })
         .end(function(error, response) {
           assert.deepEqual('hello', JSON.parse(response[0]).value);
           done();
