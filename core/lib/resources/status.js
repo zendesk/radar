@@ -41,7 +41,9 @@ Status.prototype.setStatus = function(client, message, sendAck) {
 
 Status.prototype._setStatus = function(scope, message, policy, callback) {
   Persistence.persistHash(scope, message.key, message.value);
-  Persistence.expire(scope, policy.maxPersistence);
+  if(policy && policy.maxPersistence) {
+    Persistence.expire(scope, policy.maxPersistence);
+  }
   Persistence.publish(scope, JSON.stringify(message), callback);
 };
 
