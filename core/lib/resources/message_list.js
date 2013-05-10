@@ -30,7 +30,9 @@ MessageList.prototype.publish = function(client, message, sendAck) {
 MessageList.prototype._publish = function(name, policy, message, callback) {
   if(policy && policy.cache) {
     Persistence.persistOrdered(name, JSON.stringify(message));
-    Persistence.expire(name, policy.maxPersistence);
+    if(policy.maxPersistence) {
+      Persistence.expire(name, policy.maxPersistence);
+    }
   }
   Persistence.publish(name, JSON.stringify(message), callback);
 };
@@ -48,7 +50,9 @@ MessageList.prototype.sync = function(client) {
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
-  Persistence.expire(name, policy.maxPersistence);
+  if(policy && policy.maxPersistence) {
+    Persistence.expire(name, policy.maxPersistence);
+  }
   Persistence.readOrderedWithScores(name, policy, callback);
 };
 
@@ -57,7 +61,7 @@ MessageList.prototype.unsubscribe = function(client, sendAck) {
   // note that since this is not synchronized across multiple backend servers, it is possible
   // for a channel that is subscribed elsewhere to have a TTL set on it again. The assumption is that the
   // TTL is so long that any normal workflow will terminate before it is triggered.
-  if (this.options.policy.cache) {
+  if (this.options && this.options.policy && this.options.policy.cache && this.options.policy.maxPersistence) {
     Persistence.expire(this.name, this.options.policy.maxPersistence);
   }
 };

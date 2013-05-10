@@ -12,7 +12,7 @@ var fs = require('fs'),
 
     Type = require('../../core').Type,
     Status = require('../../core').Status,
-
+    MessageList = require('../../core').MessageList,
     logging = require('minilog')('test');
 
 var subdomain = 'support',
@@ -60,6 +60,86 @@ exports['Radar api tests'] = {
         assert.deepEqual({"foo":"bar"}, response);
         done();
       });
+  },
+
+  // POST /radar/status { accountName: 'test', scope: 'ticket/1' }
+  'can set a status scope': function(done) {
+    var name = 'status:/test/ticket/2',
+        opts = Type.getByExpression(name),
+        status = new Status(name, {}, opts);
+
+    Client.post('/node/radar/status')
+      .data({ accountName: 'test', scope: 'ticket/2', key: 'foo', value: 'bar' })
+      .end(function(error, response) {
+        assert.deepEqual({}, response);
+
+        Client.get('/node/radar/status')
+        .data({ accountName: 'test', scope: 'ticket/2' })
+        .end(function(error, response) {
+          assert.deepEqual({"foo":"bar"}, response);
+          done();
+        });
+      });
+
+  },
+
+  // GET /radar/message?accountName=test&scope=chat/1
+  'can get a message scope': function(done) {
+
+    var message_type = {
+      expr: new RegExp('^message:/setStatus/(.+)$'),
+      type: 'message',
+      auth: false,
+      policy: { cache: true, maxAgeSeconds: 30 }
+    }
+    Type.register('message', message_type);
+
+    var name = 'message:/setStatus/chat/1',
+        opts = Type.getByExpression(name),
+        msgList = new MessageList(name, {}, opts);
+
+    msgList.publish({},{
+      key: 'foo',
+      value: 'bar'
+    });
+
+    Client.get('/node/radar/message')
+      .data({ accountName: 'setStatus', scope: 'chat/1' })
+      .end(function(error, response) {
+        assert.deepEqual({key:"foo", value: 'bar'}, JSON.parse(response[0]));
+        done();
+      });
+  },
+
+  // POST /radar/message { accountName:'test', scope:'ticket/1' }
+  'can set a message scope': function(done) {
+
+    var message_type = {
+      expr: new RegExp('^message:/setStatus/(.+)$'),
+      type: 'message',
+      auth: false,
+      policy: { cache: true, maxAgeSeconds: 30 }
+    }
+    Type.register('message', message_type);
+
+    var name = 'message:/setStatus/chat/2',
+        opts = Type.getByExpression(name),
+        msgList = new MessageList(name, {}, opts);
+
+
+    Client.post('/node/radar/message')
+      .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })
+      .end(function(error, response) {
+        assert.deepEqual({}, response);
+
+        Client.get('/node/radar/message')
+        .data({ accountName: 'setStatus', scope: 'chat/2' })
+        .end(function(error, response) {
+          assert.deepEqual('hello', JSON.parse(response[0]).value);
+          done();
+        });
+      });
+
   },
 
   'given a fake PresenceMonitor': {

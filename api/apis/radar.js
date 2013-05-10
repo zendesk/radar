@@ -15,13 +15,16 @@ function setStatus(req, res, re, data) {
     return res.end();
   }
   if(!q || !q.accountName || !q.scope || !q.key || !q.value) { return res.end('{}'); }
-  Status.prototype._setStatus('status:/'+q.accountName+'/'+q.scope,
+  var resourceName = 'status:/'+q.accountName+'/'+q.scope,
+      opts = Type.getByExpression(resourceName);
+
+  Status.prototype._setStatus(resourceName,
     {
       op: 'set',
       to: 'status:/'+q.accountName+'/'+q.scope,
       key: q.key,
       value: q.value,
-    }, function(replies) {
+    }, opts.policy || {}, function(replies) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
       res.end('{}');
