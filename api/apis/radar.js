@@ -23,7 +23,7 @@ function setStatus(req, res, re, data) {
       op: 'set',
       to: 'status:/'+q.accountName+'/'+q.scope,
       key: q.key,
-      value: q.value,
+      value: q.value
     }, opts.policy || {}, function(replies) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
