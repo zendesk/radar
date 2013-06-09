@@ -18,13 +18,15 @@ function setStatus(req, res, re, data) {
   var resourceName = 'status:/'+q.accountName+'/'+q.scope,
       opts = Type.getByExpression(resourceName);
 
+  var s = new Status(resourceName, {}, opts);
+
   Status.prototype._setStatus(resourceName,
     {
       op: 'set',
       to: 'status:/'+q.accountName+'/'+q.scope,
       key: q.key,
       value: q.value,
-    }, opts.policy || {}, function(replies) {
+    }, s.options.policy || {}, function(replies) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
       res.end('{}');
@@ -50,7 +52,9 @@ function setMessage(req, res, re, data) {
   if(!q || !q.accountName || !q.scope || !q.value) { return res.end('{}'); }
   var resourceName = 'message:/'+q.accountName+'/'+q.scope,
       opts = Type.getByExpression(resourceName);
-  MessageList.prototype._publish(resourceName, opts.policy || {},
+  var m = new MessageList(resourceName, {}, opts);
+
+  MessageList.prototype._publish(resourceName, m.options.policy || {},
     {
       op: 'publish',
       to: 'message:/'+q.accountName+'/'+q.scope,
