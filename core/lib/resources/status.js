@@ -1,5 +1,6 @@
 var Resource = require('../resource.js'),
-    Persistence = require('../persistence.js');
+    Persistence = require('../persistence.js'),
+    logging = require('minilog')('core');
 
 var def_options = {
   policy: { maxPersistence: 12 * 60 * 60 } // 12 hours in seconds
@@ -43,6 +44,9 @@ Status.prototype._setStatus = function(scope, message, policy, callback) {
   Persistence.persistHash(scope, message.key, message.value);
   if(policy && policy.maxPersistence) {
     Persistence.expire(scope, policy.maxPersistence);
+  } else {
+    logging.warn("resource created without ttl :"+scope)
+    logging.warn("resource policy was :"+JSON.stringify(policy))
   }
   Persistence.publish(scope, JSON.stringify(message), callback);
 };
