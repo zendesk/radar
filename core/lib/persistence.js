@@ -140,6 +140,10 @@ Persistence.expire = function(key, seconds) {
   redis().expire(key, seconds, Persistence.handler);
 };
 
+Persistence.ttl = function(key, callback) {
+  redis().ttl(key, callback);
+};
+
 Persistence.deleteHash = function(hash, key) {
   logging.info('deleteHash:', hash, key);
   redis().hdel(hash, key, Persistence.handler);

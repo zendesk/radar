@@ -58,7 +58,10 @@ exports['Radar api tests'] = {
       .data({ accountName: 'test', scope: 'ticket/1' })
       .end(function(error, response) {
         assert.deepEqual({"foo":"bar"}, response);
-        done();
+        Persistence.ttl("status:/test/ticket/1", function(err, reply) {
+          assert.ok((parseInt(reply, 10) > 0));
+          done();
+        });
       });
   },
 
@@ -77,7 +80,10 @@ exports['Radar api tests'] = {
         .data({ accountName: 'test', scope: 'ticket/2' })
         .end(function(error, response) {
           assert.deepEqual({"foo":"bar"}, response);
-          done();
+          Persistence.ttl("status:/test/ticket/2", function(err, reply) {
+            assert.ok((parseInt(reply, 10) > 0));
+            done();
+          });
         });
       });
 
@@ -136,7 +142,10 @@ exports['Radar api tests'] = {
         .data({ accountName: 'setStatus', scope: 'chat/2' })
         .end(function(error, response) {
           assert.deepEqual('hello', JSON.parse(response[0]).value);
-          done();
+          Persistence.ttl("message:/setStatus/chat/2", function(err, reply) {
+            assert.ok((parseInt(reply, 10) > 0));
+            done();
+          });
         });
       });
 
