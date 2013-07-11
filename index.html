@@ -65,7 +65,7 @@
 </ul>
 <h2>What is Radar and how is it different from (Socket.io|Sockjs|Faye|Meteor)?</h2>
 <p>Radar is built on top of <a href="https://github.com/learnboost/engine.io">Engine.io</a>, the next generation backend for Socket.io. It uses Redis for backend storage, though the assumption is that this is only for storing currently active data.</p>
-<p>Radar basically solves a number of real-world problems that need to solved, and it reduces the need for specialized backend services by providing good primitive operations.</p>
+<p>Radar basically solves a number of real-world problems that need to be solved, and it reduces the need for specialized backend services by providing good primitive operations.</p>
 <ul class="list">
 <li><p>Radar has higher level APIs that cover basic use cases such as presence, persisted message channels. Many push notification frameworks only expose message passing and do not explicitly handle having multiple backend servers, leaving the implementation for their users. Radar provides higher level constructs, so that you are for example:</p>
 <ul class="list">
@@ -227,11 +227,11 @@ radar_client info {&quot;op&quot;:&quot;sync&quot;,&quot;to&quot;:&quot;message:
 <pre>var Type = require(&#39;radar&#39;).core.Type;
 
 Type.register(&#39;chatMessage&#39;, {
-    expr: new RegExp(&#39;^message:/.+/chat/(.+){{content}}#39;),
+    expr: new RegExp(&#39;^message:/.+/chat/.+$&#39;),
     type: &#39;message&#39;,
     policy: { cache: true, maxCount: 300 }
 });</pre>
-<p>Here, we&#39;re specifying a new type of channel - it is applied to chanlles that match the regular expression. The <code>policy</code> key defines that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300 messages (see the server docs for the other options).</p>
+<p>Here, we&#39;re specifying a new type of channel - it is applied to channels that match the regular expression. The <code>policy</code> key defines that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300 messages (see the server docs for the other options).</p>
 <p>Once you do this and restart the server, you&#39;ll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history. Since the persistence policy is determined via a RegExp, you can set different policies for different use cases.</p>
 <h3>8. Creating a chat - presence resource</h3>
 <p>OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.</p>

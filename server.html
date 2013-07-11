@@ -107,7 +107,7 @@ Radar.attach(server, configuration);</pre>
 <p>Each policy has a name, and a set of properties. <code>my_types.js</code> could contain something like this:</p>
 <pre>module.exports = {
   chat_messages: {
-    expr: new RegExp(&#39;^message:/.+/chat/.+{{content}}#39;),
+    expr: new RegExp(&#39;^message:/.+/chat/.+$&#39;),
     type: &#39;message&#39;,
     policy: { cache: true },
     auth: function(message) {
