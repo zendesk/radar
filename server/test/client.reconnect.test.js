@@ -22,9 +22,9 @@ exports['reconnect: given a server and two connected clients'] = {
         tasks = 0;
     function next() { tasks++ && (tasks == 3) && done(); }
     common.startRadar(8009, this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009})
+      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009, upgrade: false})
                     .once('ready', next).alloc('test');
-      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009})
+      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009, upgrade: false})
                     .once('ready', next).alloc('test');
     });
     Persistence.delWildCard('*:/test/*', next);
@@ -39,14 +39,14 @@ exports['reconnect: given a server and two connected clients'] = {
   'after a connection, create one subscription of each type, then disconnect. all subs should be restored and "reconnected" event': function(done) {
     this.timeout(30000);
     var self = this,
-        client = this.client, client2 = this.client2,
-        eioClientId = this.client.manager.socket.id,
+        client = this.client,
+        eioClientId = this.client._socket.id,
         beforeDisconnect = [],
         afterDisconnect = [],
         clientEvents = [];
 
     client.once('disconnected', function() { clientEvents.push('disconnected'); });
-    client.once('reconnected', function() { clientEvents.push('reconnected'); });
+    client.once('connected', function() { clientEvents.push('connected'); });
     client.once('ready', function() { clientEvents.push('ready'); });
 
     function checkEvents(arr) {
@@ -73,13 +73,13 @@ exports['reconnect: given a server and two connected clients'] = {
 
                   if(afterDisconnect.length == 3) {
                     setTimeout(function() {
-                      console.log(beforeDisconnect, afterDisconnect, clientEvents);
+                      //console.log(beforeDisconnect, afterDisconnect, clientEvents);
                       // assert that the subscriptions were established and re-established
                       assert.ok(checkEvents(beforeDisconnect));
                       assert.ok(checkEvents(afterDisconnect));
                       // assert that the client events were fired
                       assert.equal(clientEvents[0], 'disconnected');
-                      assert.equal(clientEvents[1], 'reconnected');
+                      assert.equal(clientEvents[1], 'connected');
                       assert.equal(clientEvents[2], 'ready');
                       done();
                     }, 500)
@@ -117,16 +117,16 @@ exports['reconnect: given a server and two connected clients'] = {
 
     setTimeout(function() {
       common.endRadar(self, function() {
-        client2.message('foo').publish('2');
         common.startRadar(8009, self, function(){
-          client2.message('foo').publish('3');
-          setTimeout(function() {
-            assert.equal(messages.length, 3);
-            assert.ok(messages.some(function(m) { return m.value == '1';}));
-            assert.ok(messages.some(function(m) { return m.value == '2';}));
-            assert.ok(messages.some(function(m) { return m.value == '3';}));
-            done();
-          }, 5000); // need wait here since reconnect is 2sec
+          client.once('ready', function() {
+            client2.message('foo').publish('2');
+            setTimeout(function() {
+              assert.equal(messages.length, 2);
+              assert.ok(messages.some(function(m) { return m.value == '1';}));
+              assert.ok(messages.some(function(m) { return m.value == '2';}));
+              done();
+            }, 5000); // need wait here since reconnect is 2sec
+          });
         });
       });
     }, 500); // allow time for messages to be delivered

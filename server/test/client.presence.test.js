@@ -29,9 +29,9 @@ exports['presence: given a server and two connected clients'] = {
       }
     }
     common.startRadar(8000, this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8000})
+      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8000, upgrade: false })
                     .on('ready', next).alloc('test');
-      self.client2 = new Client().configure({ userId: 222, userType: 0, accountName: 'test', port: 8000})
+      self.client2 = new Client().configure({ userId: 222, userType: 0, accountName: 'test', port: 8000, upgrade: false })
                     .on('ready', next).alloc('test');
     });
     Persistence.delWildCard('*:/test/*', next);
@@ -69,7 +69,7 @@ exports['presence: given a server and two connected clients'] = {
           assert.deepEqual(notifications[0].value, { '123': 0 });
           assert.equal(notifications[1].op, 'client_online');
           assert.equal(notifications[1].value.userId, 123);
-          assert.equal(notifications[1].value.clientId, client.manager.socket.id);
+          assert.equal(notifications[1].value.clientId, client._socket.id);
           done();
         });
       });
@@ -97,7 +97,7 @@ exports['presence: given a server and two connected clients'] = {
             assert.deepEqual(notifications[0].value, { '123': 0 });
             assert.equal(notifications[1].op, 'client_online');
             assert.equal(notifications[1].value.userId, 123);
-            assert.equal(notifications[1].value.clientId, client.manager.socket.id);
+            assert.equal(notifications[1].value.clientId, client._socket.id);
             getCounter++;
           });
         }, 800);
@@ -126,6 +126,7 @@ exports['presence: given a server and two connected clients'] = {
       // disconnect client 1 - ensure that this happens later the online
       setTimeout(function() {
         client.dealloc('test');
+        client.manager.close();
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
           client2.presence('chat/1/participants').get(function(message) {

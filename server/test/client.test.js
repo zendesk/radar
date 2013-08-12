@@ -102,7 +102,7 @@ exports['given a server'] = {
         client.presence('ticket/33').get({ version: 2 }, function(message) {
           assert.equal('get', message.op);
           var expected = {"123":{"clients":{},"userType":0}};
-          expected['123'].clients[client.manager.socket.id] = {};
+          expected['123'].clients[client._socket.id] = {};
           assert.deepEqual(message.value, expected);
           done();
         });
@@ -120,7 +120,7 @@ exports['given a server'] = {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
         var expected = {"123":{"clients":{},"userType":0}};
-        expected['123'].clients[client.manager.socket.id] = {};
+        expected['123'].clients[client._socket.id] = {};
         assert.deepEqual(message.value, expected);
         done();
       });

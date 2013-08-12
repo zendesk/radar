@@ -14,11 +14,11 @@ exports['given two clients'] = {
     var self = this, tasks = 0;
     function next() { tasks++ && (tasks == 4) && done(); }
     this.client = new Client()
-                  .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001})
+                  .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
                   .once('ready', function() { self.client.message('test').subscribe(next); })
                   .alloc('test');
     this.client2 = new Client()
-                  .configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001})
+                  .configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
                   .once('ready', next).alloc('test');
 
     Persistence.del('status:/dev/voice/status', next);
