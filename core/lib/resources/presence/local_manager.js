@@ -63,7 +63,7 @@ LocalManager.prototype.hasClient = function(clientId) {
   return this.remoteManager.hasClient(clientId) || this.localClients.has(clientId);
 };
 
-LocalManager.prototype.addLocal = function(clientId, userId, userType, callback) {
+LocalManager.prototype.addLocal = function(clientId, userId, userType, userData, callback) {
   this.userTypes.add(userId, userType);
   if(!this.hasUser(userId)) {
     this.emit('user_online', userId, userType);
@@ -74,8 +74,12 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, callback)
   this.localUsers.push(userId, clientId);
   // persist local
   var message = {
-      userId: userId, userType: userType,
-      clientId: clientId, online: true, at: new Date().getTime()
+      userId: userId,
+      userType: userType,
+      userData: userData,
+      clientId: clientId,
+      online: true,
+      at: Date.now()
     },
     pmessage = JSON.stringify(message);
   this.localClients.add(clientId, message);
@@ -195,13 +199,9 @@ LocalManager.prototype.getClientsOnline = function() {
       result = this.remoteManager.getClientsOnline();
   // merge with the local users for the API response
   function processMessage(message) {
-    if(!result[message.userId]) {
-      result[message.userId] = { clients: { } , userType: message.userType };
-      result[message.userId].clients[message.clientId] = {};
-    } else {
-      result[message.userId].clients[message.clientId] = {};
-    }
-  };
+    result[message.userId] = result[message.userId] || { clients: { } , userType: message.userType };
+    result[message.userId].clients[message.clientId] = message.userData || {};
+  }
   this.localClients.forEach(function(cid){
     processMessage(self.localClients.get(cid));
   });

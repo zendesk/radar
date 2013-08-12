@@ -79,18 +79,16 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
     message = client; // client and sendAck are optional
   }
   var self = this,
-      userId = message.key,
-      userType = message.type,
-      isOnline = (message.value != 'offline');
+      userId = message.key;
 
   function ackCheck() {
     sendAck && self.ack(client, sendAck);
   }
 
-  if(isOnline) {
+  if(message.value != 'offline') {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this._xserver.addLocal(client.id, userId, userType, ackCheck);
+    this._xserver.addLocal(client.id, userId, message.type, message.userData || null, ackCheck);
   } else {
     // remove from local
     this._xserver.removeLocal(client.id, userId, ackCheck);
