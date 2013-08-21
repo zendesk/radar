@@ -23,18 +23,18 @@ RemoteManager.prototype.hasClient = function(clientId) {
   return this.remoteClients.has(clientId);
 };
 
-RemoteManager.prototype.queueIfNew = function(clientId, userId) {
+RemoteManager.prototype.queueIfNew = function(clientId, userId, userData) {
   var self = this,
       result = [],
       userType = this.userTypes.get(userId);
   if(!this.hasUser(userId)) {
     result.push(function() {
-      self.emit('user_online', userId, userType);
+      self.emit('user_online', userId, userType, userData);
     });
   }
   if(!this.hasClient(clientId)) {
     result.push(function() {
-      self.emit('client_online', clientId, userId, userType);
+      self.emit('client_online', clientId, userId, userType, userData);
     });
   }
   return result;
@@ -57,7 +57,7 @@ RemoteManager.prototype.message = function(message, skipTimeouts) {
   // to process messages, we'll set each
   this.userTypes.add(uid, userType);
   if(isOnline && !isExpired) {
-    var emits = this.queueIfNew(cid, uid);
+    var emits = this.queueIfNew(cid, uid, message.userData);
 
     this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
@@ -129,9 +129,9 @@ RemoteManager.prototype.fullRead = function(callback) {
     // process all messages in one go before updating subscribers to avoid
     // sending multiple messages
     Object.keys(replies).forEach(function(key) {
-      var data = replies[key];
+      var data = replies[key], message;
       try {
-        var message = JSON.parse(data);
+        message = JSON.parse(data);
         if(message.constructor !== Object) {
           throw new Error('JSON parse result is not an Object');
         }
@@ -148,7 +148,7 @@ RemoteManager.prototype.fullRead = function(callback) {
 
     self.timeouts();
 
-    callback && callback(self.getOnline());
+    if (callback) callback(self.getOnline());
   });
 };
 

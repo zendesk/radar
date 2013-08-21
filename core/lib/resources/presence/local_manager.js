@@ -35,10 +35,10 @@ function LocalManager(scope, policy) {
     }
   });
 
-  this.remoteManager.on('client_online', function(clientId, userId, userType) {
+  this.remoteManager.on('client_online', function(clientId, userId, userType, userData) {
     // if the clientId is not in the local set, emit it
     if(!self.localClients.has(clientId)) {
-      self.emit('client_online', clientId, userId, userType);
+      self.emit('client_online', clientId, userId, userType, userData);
     }
   });
 
@@ -66,10 +66,10 @@ LocalManager.prototype.hasClient = function(clientId) {
 LocalManager.prototype.addLocal = function(clientId, userId, userType, userData, callback) {
   this.userTypes.add(userId, userType);
   if(!this.hasUser(userId)) {
-    this.emit('user_online', userId, userType);
+    this.emit('user_online', userId, userType, userData);
   }
   if(!this.hasClient(clientId)) {
-    this.emit('client_online', clientId, userId);
+    this.emit('client_online', clientId, userId, userData);
   }
   this.localUsers.push(userId, clientId);
   // persist local

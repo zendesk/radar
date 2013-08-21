@@ -14,14 +14,15 @@ function Presence(name, parent, options) {
   this.type = 'presence';
 
   this._xserver = new LocalManager(this.name, this.options.policy);
-  this._xserver.on('user_online', function(userId, userType) {
+  this._xserver.on('user_online', function(userId, userType, userData) {
     logging.info('user_online', userId, userType);
     var value = {};
     value[userId] = userType;
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'online',
-      value: value
+      value: value,
+      userData: userData,
     }));
   });
   this._xserver.on('user_offline', function(userId, userType) {
@@ -34,14 +35,15 @@ function Presence(name, parent, options) {
       value: value
     }));
   });
-  this._xserver.on('client_online', function(clientId, userId) {
+  this._xserver.on('client_online', function(clientId, userId, userData) {
     logging.info('client_online', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_online',
       value: {
         userId: userId,
-        clientId: clientId
+        clientId: clientId,
+        userData: userData,
       }
     }));
   });
@@ -88,7 +90,7 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
   if(message.value != 'offline') {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this._xserver.addLocal(client.id, userId, message.type, message.userData || null, ackCheck);
+    this._xserver.addLocal(client.id, userId, message.type, message.userData, ackCheck);
   } else {
     // remove from local
     this._xserver.removeLocal(client.id, userId, ackCheck);
