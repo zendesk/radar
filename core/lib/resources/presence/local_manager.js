@@ -38,7 +38,7 @@ function LocalManager(scope, policy) {
   this.remoteManager.on('client_online', function(clientId, userId, userType, userData) {
     // if the clientId is not in the local set, emit it
     if(!self.localClients.has(clientId)) {
-      self.emit('client_online', clientId, userId, userType, userData);
+      self.emit('client_online', clientId, userId, userData);
     }
   });
 
