@@ -38,7 +38,7 @@ function LocalManager(scope, policy) {
   this.remoteManager.on('client_online', function(clientId, userId, userType, userData) {
     // if the clientId is not in the local set, emit it
     if(!self.localClients.has(clientId)) {
-      self.emit('client_online', clientId, userId, userData);
+      self.emit('client_online', clientId, userId, userType, userData);
     }
   });
 
@@ -69,7 +69,7 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, userData,
     this.emit('user_online', userId, userType, userData);
   }
   if(!this.hasClient(clientId)) {
-    this.emit('client_online', clientId, userId, userData);
+    this.emit('client_online', clientId, userId, userType, userData);
   }
   this.localUsers.push(userId, clientId);
   // persist local
@@ -146,9 +146,12 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
     // note: do not delete the hash key yet.
     // the slow path should apply here
     // e.g. users should only be dropped when the at value expires
-    var message = JSON.stringify({
-      userId: userId, userType: this.userTypes.get(userId),
-      clientId: clientId, online: false, at: new Date().getTime()
+    message = JSON.stringify({
+      userId: userId,
+      userType: this.userTypes.get(userId),
+      clientId: clientId,
+      online: false,
+      at: Date.now()
     });
     Persistence.persistHash(this.scope, userId + '.' + clientId, message);
     Persistence.publish(this.scope, message);

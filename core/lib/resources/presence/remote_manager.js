@@ -42,7 +42,7 @@ RemoteManager.prototype.queueIfNew = function(clientId, userId, userData) {
 
 // for receiving messages from Redis
 RemoteManager.prototype.message = function(message, skipTimeouts) {
-  var maxAge = new Date().getTime() - 45 * 1000,
+  var maxAge = Date.now() - 45 * 1000,
       isOnline = message.online,
       isExpired = (message.at < maxAge),
       uid = message.userId,
@@ -77,7 +77,7 @@ RemoteManager.prototype.message = function(message, skipTimeouts) {
 // expire existing remote users, causes removeRemote() calls
 RemoteManager.prototype.timeouts = function() {
   var self = this,
-      maxAge = new Date().getTime() - 45 * 1000,
+      maxAge = Date.now() - 45 * 1000,
       // need to snapshot here so that we can detect which ones are missing
       oldKeys = this.remoteUsers.keys();
 
@@ -116,7 +116,7 @@ RemoteManager.prototype.timeouts = function() {
 // perform a full read and return who is online
 RemoteManager.prototype.fullRead = function(callback) {
   var self = this,
-      maxAge = new Date().getTime() - 50 * 1000;
+      maxAge = Date.now() - 50 * 1000;
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.name);
   Persistence.readHashAll(this.name, function(replies) {

@@ -35,7 +35,7 @@ function Presence(name, parent, options) {
       value: value
     }));
   });
-  this._xserver.on('client_online', function(clientId, userId, userData) {
+  this._xserver.on('client_online', function(clientId, userId, userType, userData) {
     logging.info('client_online', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
@@ -71,9 +71,8 @@ Presence.prototype = new Resource();
 Presence.prototype.redisIn = function(data) {
   try {
     var message = JSON.parse(data);
+    this._xserver.remoteMessage(message);
   } catch(e) { return; }
-
-  this._xserver.remoteMessage(message);
 };
 
 Presence.prototype.setStatus = function(client, message, sendAck) {
