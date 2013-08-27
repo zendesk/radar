@@ -23,18 +23,18 @@ RemoteManager.prototype.hasClient = function(clientId) {
   return this.remoteClients.has(clientId);
 };
 
-RemoteManager.prototype.queueIfNew = function(clientId, userId) {
+RemoteManager.prototype.queueIfNew = function(clientId, userId, userData) {
   var self = this,
       result = [],
       userType = this.userTypes.get(userId);
   if(!this.hasUser(userId)) {
     result.push(function() {
-      self.emit('user_online', userId, userType);
+      self.emit('user_online', userId, userType, userData);
     });
   }
   if(!this.hasClient(clientId)) {
     result.push(function() {
-      self.emit('client_online', clientId, userId, userType);
+      self.emit('client_online', clientId, userId, userType, userData);
     });
   }
   return result;
@@ -42,7 +42,7 @@ RemoteManager.prototype.queueIfNew = function(clientId, userId) {
 
 // for receiving messages from Redis
 RemoteManager.prototype.message = function(message, skipTimeouts) {
-  var maxAge = new Date().getTime() - 45 * 1000,
+  var maxAge = Date.now() - 45 * 1000,
       isOnline = message.online,
       isExpired = (message.at < maxAge),
       uid = message.userId,
@@ -57,7 +57,7 @@ RemoteManager.prototype.message = function(message, skipTimeouts) {
   // to process messages, we'll set each
   this.userTypes.add(uid, userType);
   if(isOnline && !isExpired) {
-    var emits = this.queueIfNew(cid, uid);
+    var emits = this.queueIfNew(cid, uid, message.userData);
 
     this.remoteUsers.push(uid, cid);
     this.remoteClients.add(cid, message);
@@ -77,7 +77,7 @@ RemoteManager.prototype.message = function(message, skipTimeouts) {
 // expire existing remote users, causes removeRemote() calls
 RemoteManager.prototype.timeouts = function() {
   var self = this,
-      maxAge = new Date().getTime() - 45 * 1000,
+      maxAge = Date.now() - 45 * 1000,
       // need to snapshot here so that we can detect which ones are missing
       oldKeys = this.remoteUsers.keys();
 
@@ -116,7 +116,7 @@ RemoteManager.prototype.timeouts = function() {
 // perform a full read and return who is online
 RemoteManager.prototype.fullRead = function(callback) {
   var self = this,
-      maxAge = new Date().getTime() - 50 * 1000;
+      maxAge = Date.now() - 50 * 1000;
   // sync scope presence
   logging.debug('Persistence.readHashAll', this.name);
   Persistence.readHashAll(this.name, function(replies) {
@@ -129,9 +129,9 @@ RemoteManager.prototype.fullRead = function(callback) {
     // process all messages in one go before updating subscribers to avoid
     // sending multiple messages
     Object.keys(replies).forEach(function(key) {
-      var data = replies[key];
+      var data = replies[key], message;
       try {
-        var message = JSON.parse(data);
+        message = JSON.parse(data);
         if(message.constructor !== Object) {
           throw new Error('JSON parse result is not an Object');
         }
@@ -148,7 +148,7 @@ RemoteManager.prototype.fullRead = function(callback) {
 
     self.timeouts();
 
-    callback && callback(self.getOnline());
+    if (callback) callback(self.getOnline());
   });
 };
 
@@ -164,19 +164,15 @@ RemoteManager.prototype.getOnline = function() {
 RemoteManager.prototype.getClientsOnline = function() {
   var result = {}, self = this;
   function processMessage(message) {
-    if(!result[message.userId]) {
-      result[message.userId] = { clients: { } , userType: message.userType };
-      result[message.userId].clients[message.clientId] = {};
-    } else {
-      result[message.userId].clients[message.clientId] = {};
-    }
-  };
+    result[message.userId] = result[message.userId] || { clients: {} , userType: message.userType };
+    result[message.userId].clients[message.clientId] = message.userData || {};
+  }
 
   this.remoteClients.forEach(function(cid) {
     processMessage(self.remoteClients.get(cid));
   });
   return result;
-}
+};
 
 
 RemoteManager.setBackend = function(backend) {

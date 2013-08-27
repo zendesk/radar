@@ -14,14 +14,15 @@ function Presence(name, parent, options) {
   this.type = 'presence';
 
   this._xserver = new LocalManager(this.name, this.options.policy);
-  this._xserver.on('user_online', function(userId, userType) {
+  this._xserver.on('user_online', function(userId, userType, userData) {
     logging.info('user_online', userId, userType);
     var value = {};
     value[userId] = userType;
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'online',
-      value: value
+      value: value,
+      userData: userData,
     }));
   });
   this._xserver.on('user_offline', function(userId, userType) {
@@ -34,14 +35,15 @@ function Presence(name, parent, options) {
       value: value
     }));
   });
-  this._xserver.on('client_online', function(clientId, userId) {
+  this._xserver.on('client_online', function(clientId, userId, userType, userData) {
     logging.info('client_online', clientId, userId);
     self.broadcast(JSON.stringify({
       to: self.name,
       op: 'client_online',
       value: {
         userId: userId,
-        clientId: clientId
+        clientId: clientId,
+        userData: userData,
       }
     }));
   });
@@ -69,9 +71,8 @@ Presence.prototype = new Resource();
 Presence.prototype.redisIn = function(data) {
   try {
     var message = JSON.parse(data);
+    this._xserver.remoteMessage(message);
   } catch(e) { return; }
-
-  this._xserver.remoteMessage(message);
 };
 
 Presence.prototype.setStatus = function(client, message, sendAck) {
@@ -79,18 +80,16 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
     message = client; // client and sendAck are optional
   }
   var self = this,
-      userId = message.key,
-      userType = message.type,
-      isOnline = (message.value != 'offline');
+      userId = message.key;
 
   function ackCheck() {
     sendAck && self.ack(client, sendAck);
   }
 
-  if(isOnline) {
+  if(message.value != 'offline') {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this._xserver.addLocal(client.id, userId, userType, ackCheck);
+    this._xserver.addLocal(client.id, userId, message.type, message.userData, ackCheck);
   } else {
     // remove from local
     this._xserver.removeLocal(client.id, userId, ackCheck);

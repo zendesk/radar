@@ -382,8 +382,40 @@ exports['given a presence'] = {
     assert.deepEqual(local[0], { to: 'aaa', op: 'offline', value: { '123': 0 } });
 
     presence.broadcast = oldBroadcast;
-  }
+  },
 
+  'userData should be stored on an incoming message': function() {
+    var persistHash = Persistence.persistHash, called = false;
+
+    Persistence.persistHash = function(name, key, value) {
+      called = true;
+      var json = JSON.parse(value);
+      assert.deepEqual(json.userData, { test: 1 });
+    };
+
+    this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+
+    assert.ok(called);
+    Persistence.persistHash = persistHash;
+  },
+
+  'userData should be included as the value of a client in a presence response': function() {
+    var data = {
+          clients: {},
+          userType: 2,
+        },
+        fakeClient = {
+          send: function(string) {
+            var json = JSON.parse(string);
+            assert.deepEqual(json.value[123], data);
+          }
+        };
+
+    data.clients[this.client.id] = { test: 1 };
+
+    this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+    this.presence.getStatus(fakeClient, { options: { version: 2 } });
+  }
 };
 
 // if this module is the script being run, then run the tests:
