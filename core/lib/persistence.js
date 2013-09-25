@@ -121,9 +121,9 @@ Persistence.readHash = function(hash, key, callback) {
   redis().hget(hash, key, function (err, replies) {
     if(err) throw new Error(err);
       if(replies) {
-    Object.keys(replies).forEach(function(attr) {
-      replies[attr] = JSON.parse(replies[attr]);
-    });
+        Object.keys(replies).forEach(function(attr) {
+          replies[attr] = JSON.parse(replies[attr]);
+        });
       }
     callback(replies);
   });
