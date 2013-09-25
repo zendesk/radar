@@ -1,6 +1,6 @@
 var assert = require('assert'),
 
-  Persistence = require('../../lib/persistence.js');
+Persistence = require('../../lib/persistence.js');
 
 var redis = require('redis');
 
