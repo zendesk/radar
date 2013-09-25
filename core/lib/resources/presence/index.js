@@ -68,9 +68,8 @@ function Presence(name, parent, options) {
 
 Presence.prototype = new Resource();
 
-Presence.prototype.redisIn = function(data) {
+Presence.prototype.redisIn = function(message) {
   try {
-    var message = data;
     this._xserver.remoteMessage(message);
   } catch(e) { return; }
 };

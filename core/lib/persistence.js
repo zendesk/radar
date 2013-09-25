@@ -117,24 +117,16 @@ Persistence.del = function(key, callback) {
   redis().del(key, callback);
 };
 
-Persistence.readHash = function(hash, key, callback) {
-  redis().hget(hash, key, function (err, replies) {
-    if(err) throw new Error(err);
-      if(replies) {
-        Object.keys(replies).forEach(function(attr) {
-          replies[attr] = JSON.parse(replies[attr]);
-        });
-      }
-    callback(replies);
-  });
-};
-
 Persistence.readHashAll = function(hash, callback) {
   redis().hgetall(hash, function (err, replies) {
     if(err) throw new Error(err);
     if(replies) {
       Object.keys(replies).forEach(function(attr) {
-        replies[attr] = JSON.parse(replies[attr]);
+        try {
+          replies[attr] = JSON.parse(replies[attr]);
+        } catch(parseError) {
+          logging.error(parseError)
+        }
       });
     }
     callback(replies);

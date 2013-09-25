@@ -233,7 +233,7 @@ exports['given a server'] = {
     client.message('test').subscribe();
   },
 
-  'message: can publish()': function(done) {
+  'message: can publish([Object])': function(done) {
     var client = this.client;
     // test.expect(2);
     var message = { state: 'other'};
@@ -246,6 +246,24 @@ exports['given a server'] = {
         return true;
       }
       return false;
+    });
+    client.message('test').subscribe().publish(message);
+  },
+
+  'message: can publish([String])': function(done) {
+    var client = this.client;
+    // test.expect(2);
+    var message = '{ "state": "other"}';
+
+    client.message('test').when(function(msg) {
+
+      assert.equal('message:/dev/test', msg.to);
+
+      assert.equal("string", typeof msg.value);
+      assert.equal('{ "state": "other"}', msg.value);
+
+      done();
+
     });
     client.message('test').subscribe().publish(message);
   },
