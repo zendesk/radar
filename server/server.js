@@ -44,6 +44,7 @@ Server.prototype.attach = function(server, configuration) {
   }
 
   this.subscriber.on('message', function(name, data) {
+    data = JSON.parse(data);
     logging.debug('#redis_in', name, data);
     if (self.channels[name]) {
       self.channels[name].redisIn(data);
@@ -59,14 +60,14 @@ Server.prototype.attach = function(server, configuration) {
     // for audit purposes
     client.send = function(data) {
       Audit.send(client);
-      oldSend.call(client, data);
+      oldSend.call(client, JSON.stringify(data));
     };
 
     // event: client connected
     logging.info('#connect', client.id);
-    client.send(JSON.stringify({
+    client.send({
       server: hostname, cid: client.id
-    }));
+    });
 
     client.on('message', function(data) {
       Audit.receive(client);
@@ -125,10 +126,10 @@ Server.prototype.message = function(client, data) {
   // auth check
   if(res && res.options && res.options.auth) {
     if(typeof res.options.auth !== 'function' || !res.options.auth(message, client)) {
-      client.send(JSON.stringify({
+      client.send({
         op: 'err',
         value: 'auth'
-      }));
+      });
       logging.error('#auth_invalid', data);
       return;
     }

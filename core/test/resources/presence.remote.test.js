@@ -44,12 +44,12 @@ exports['given a presence monitor'] = {
         });
         // remote and local messages are treated differently
         // namely, remote messages about local clients cannot trigger the fast path
-        presence.redisIn(JSON.stringify({ online: false, userId: 123, clientId: 'aab', userType: 0, at: 0}));
+        presence.redisIn({ online: false, userId: 123, clientId: 'aab', userType: 0, at: 0});
         // manually trigger the disconnect processing
         presence._xserver._processDisconnects();
       });
     });
-    presence.redisIn(JSON.stringify({ online: true, userId: 123, clientId: 'aab', userType: 0, at: new Date().getTime()}));
+    presence.redisIn({ online: true, userId: 123, clientId: 'aab', userType: 0, at: new Date().getTime()});
   },
 
   'messages from Redis are not broadcast, only changes in status are': function() {
@@ -63,56 +63,56 @@ exports['given a presence monitor'] = {
       updates.push([false, userId, userType]);
     });
 
-    this.presence.redisIn(JSON.stringify({
+    this.presence.redisIn({
       userId: 123,
       userType: 2,
       clientId: 'aab',
       online: true,
       at: new Date().getTime()
-    }));
+    });
     assert.equal(1, updates.length);
     assert.deepEqual([true, 123, 2], updates[0]);
 
     // receiving the same info twice should have no effect
-    this.presence.redisIn(JSON.stringify({
+    this.presence.redisIn({
       userId: 123,
       userType: 2,
       clientId: 'aab',
       online: true,
       at: new Date().getTime()
-    }));
+    });
     assert.equal(1, updates.length);
 
     // if we receive a online message for a different client, send it
-    this.presence.redisIn(JSON.stringify({
+    this.presence.redisIn({
       userId: 345,
       userType: 0,
       clientId: 'ccc',
       online: true,
       at: new Date().getTime()
-    }));
+    });
 
     assert.equal(2, updates.length);
     assert.deepEqual([true, 345, 0], updates[1]);
 
     // do not send notifications for users that were never online
-    this.presence.redisIn(JSON.stringify({
+    this.presence.redisIn({
       userId: 456,
       userType: 2,
       clientId: 'bbb',
       online: false,
       at: new Date().getTime()
-    }));
+    });
     assert.equal(2, updates.length);
 
     // do send changes to user that were online
-    this.presence.redisIn(JSON.stringify({
+    this.presence.redisIn({
       userId: 123,
       userType: 2,
       clientId: 'aab',
       online: false,
       at: new Date().getTime()
-    }));
+    });
     assert.equal(3, updates.length);
     assert.deepEqual([false, 123, 2], updates[2]);
   },
@@ -126,8 +126,8 @@ exports['given a presence monitor'] = {
       calls++;
     });
 
-    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
-    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, at: new Date().getTime()}));
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
 
     assert.equal(1, calls);
     done();
@@ -142,8 +142,8 @@ exports['given a presence monitor'] = {
       calls++;
     });
 
-    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
-    presence.redisIn(JSON.stringify({ online: true, userId: '123', userType: 0, clientId: 'aab', at: new Date().getTime()}));
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', at: new Date().getTime()});
 
     assert.equal(1, calls);
     done();
@@ -152,8 +152,8 @@ exports['given a presence monitor'] = {
   'full reads consider users with a recent online key as online and users without a key as offline': function(done) {
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}
       });
     };
     var users = {};
@@ -172,8 +172,8 @@ exports['given a presence monitor'] = {
     // this may happen if the server gets terminated, so the key is never deleted properly...
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()},
       });
     };
     this.presence.fullRead(function(online) {
@@ -185,12 +185,12 @@ exports['given a presence monitor'] = {
   'full reads cause change events based on what was previously known': function(done) {
     var presence = this.presence;
     // make 123 online
-    presence.redisIn(JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()}));
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
 
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: JSON.stringify({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000}),
-        124: JSON.stringify({ online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}),
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()},
       });
     };
     var added = {}, removed = {};
@@ -215,11 +215,11 @@ exports['given a presence monitor'] = {
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
         // so, one clientId disconnected and another connected - at the same timestamp: user should be considered to be online
-        '200.aaz': JSON.stringify({ online: true, userId: 200, userType: 2, clientId: 'aaz', at: new Date().getTime()}),
-        '200.sss': JSON.stringify({ online: false, userId: 200, userType: 2, clientId: 'sss', at: new Date().getTime()}),
-        '200.1a': JSON.stringify({ online: false, userId: 200, userType: 2, clientId: '1a', at: new Date().getTime()}),
-        '201.aaq': JSON.stringify({ online: false, userId: 201, userType: 4, clientId: 'aaq', at: new Date().getTime()}),
-        '201.www': JSON.stringify({ online: true, userId: 201, userType: 4, clientId: 'www', at: new Date().getTime()}),
+        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', at: new Date().getTime()},
+        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', at: new Date().getTime()},
+        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', at: new Date().getTime()},
+        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', at: new Date().getTime()},
+        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', at: new Date().getTime()},
       });
     };
 

@@ -77,10 +77,10 @@ Resource.prototype.redisIn = function(data) {
 
 Resource.prototype.ack = function(client, sendAck) {
   logging.debug('#client_send_ack', client.id, sendAck);
-  client.send(JSON.stringify({
+  client.send({
     op: 'ack',
     value: sendAck
-  }));
+  });
 }
 
 Resource.setBackend = function(backend) { Persistence = backend; };

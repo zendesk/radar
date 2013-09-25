@@ -92,7 +92,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 };
 
 Persistence.persistOrdered = function(key, value, callback) {
-  redis().zadd(key, new Date().getTime(), value, callback);
+  redis().zadd(key, new Date().getTime(), JSON.stringify(value), callback);
 };
 
 Persistence.delWildCard = function(expr, callback) {
@@ -120,6 +120,11 @@ Persistence.del = function(key, callback) {
 Persistence.readHash = function(hash, key, callback) {
   redis().hget(hash, key, function (err, replies) {
     if(err) throw new Error(err);
+      if(replies) {
+    Object.keys(replies).forEach(function(attr) {
+      replies[attr] = JSON.parse(replies[attr]);
+    });
+      }
     callback(replies);
   });
 };
@@ -127,13 +132,18 @@ Persistence.readHash = function(hash, key, callback) {
 Persistence.readHashAll = function(hash, callback) {
   redis().hgetall(hash, function (err, replies) {
     if(err) throw new Error(err);
+    if(replies) {
+      Object.keys(replies).forEach(function(attr) {
+        replies[attr] = JSON.parse(replies[attr]);
+      });
+    }
     callback(replies);
   });
 };
 
 Persistence.persistHash = function(hash, key, value) {
   logging.info('persistHash:', hash, key, value);
-  redis().hset(hash, key, value, Persistence.handler);
+  redis().hset(hash, key, JSON.stringify(value), Persistence.handler);
 };
 
 Persistence.expire = function(key, seconds) {
@@ -151,7 +161,7 @@ Persistence.deleteHash = function(hash, key) {
 
 Persistence.publish = function(key, value, callback) {
   logging.info('Redis pub:', key, value);
-  redis().publish(key, value, callback);
+  redis().publish(key, JSON.stringify(value), callback);
 };
 
 Persistence.disconnect = function(callback) {

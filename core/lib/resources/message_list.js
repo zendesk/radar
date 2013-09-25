@@ -29,23 +29,23 @@ MessageList.prototype.publish = function(client, message, sendAck) {
 
 MessageList.prototype._publish = function(name, policy, message, callback) {
   if(policy && policy.cache) {
-    Persistence.persistOrdered(name, JSON.stringify(message));
+    Persistence.persistOrdered(name, message);
     if(policy.maxPersistence) {
       Persistence.expire(name, policy.maxPersistence);
     }
   }
-  Persistence.publish(name, JSON.stringify(message), callback);
+  Persistence.publish(name, message, callback);
 };
 
 MessageList.prototype.sync = function(client) {
   var self = this;
   MessageList.prototype._sync(this.name, this.options.policy, function(replies) {
-    client.send(JSON.stringify({
+    client.send({
       op: 'sync',
       to: self.name,
       value: replies,
       time: new Date().getTime()
-    }));
+    });
   });
 };
 

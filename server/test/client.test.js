@@ -134,7 +134,7 @@ exports['given a server'] = {
 // - .unsubscribe(ack)
 // - .sync(callback)
 
-  'status: can set(value)': function(done) {
+  'status: can set(string_value)': function(done) {
     Radar.once('set', function(client, message) {
       assert.equal('set', message.op);
       assert.equal('foo', message.value);
@@ -148,15 +148,15 @@ exports['given a server'] = {
     var client = this.client;
     Radar.once('set', function(ignore, message) {
       assert.equal('set', message.op);
-      assert.deepEqual({ hello: "world" }, JSON.parse(message.value));
+      assert.deepEqual({ hello: "world" }, message.value);
       assert.equal(123, message.key);
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual( { hello: "world" }, JSON.parse(message.value['123']));
+        assert.deepEqual( { hello: "world" }, message.value['123']);
         done();
       });
     });
-    this.client.status('voice/status').set(JSON.stringify({ hello: "world" }));
+    this.client.status('voice/status').set({ hello: "world" });
   },
 
   'status: can get()': function(done) {
@@ -170,7 +170,7 @@ exports['given a server'] = {
       client.status('voice/status').set('bar');
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
-        assert.equal(JSON.stringify({ 123: 'bar'}), JSON.stringify(message.value));
+        assert.deepEqual({ 123: 'bar'}, message.value);
         done();
       });
     });
@@ -205,7 +205,7 @@ exports['given a server'] = {
       client.status('voice/status').sync(function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
-        assert.equal(JSON.stringify({ 123: 'foo'}), JSON.stringify(message.value));
+        assert.deepEqual({ 123: 'foo'}, message.value);
         done();
       });
     });
@@ -254,7 +254,7 @@ exports['given a server'] = {
     var client = this.client,
         message = { foo: 'bar' },
         assertions = 0;
-    Persistence.persistOrdered('message:/dev/test', JSON.stringify(message), function() {
+    Persistence.persistOrdered('message:/dev/test', message, function() {
       client.message('test').on(function(msg) {
         assert.equal('bar', msg.foo);
         assertions++;
