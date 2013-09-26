@@ -47,8 +47,10 @@ Server.prototype.attach = function(server, configuration) {
     try {
       data = JSON.parse(data);
     } catch(parseError) {
-      logging.error(parseError);
+      logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
+      return;
     }
+
     logging.debug('#redis_in', name, data);
     if (self.channels[name]) {
       self.channels[name].redisIn(data);

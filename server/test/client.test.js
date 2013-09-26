@@ -134,7 +134,7 @@ exports['given a server'] = {
 // - .unsubscribe(ack)
 // - .sync(callback)
 
-  'status: can set(string_value)': function(done) {
+  'status: can set([String])': function(done) {
     Radar.once('set', function(client, message) {
       assert.equal('set', message.op);
       assert.equal('foo', message.value);
@@ -144,7 +144,7 @@ exports['given a server'] = {
     this.client.status('voice/status').set('foo');
   },
 
-  'status: can set(JSON object)': function(done) {
+  'status: can set([Object])': function(done) {
     var client = this.client;
     Radar.once('set', function(ignore, message) {
       assert.equal('set', message.op);
@@ -159,7 +159,7 @@ exports['given a server'] = {
     this.client.status('voice/status').set({ hello: "world" });
   },
 
-  'status: can get()': function(done) {
+  'status: can get([String])': function(done) {
     var client = this.client;
 
     this.client.status('voice/status').set('foo');
@@ -171,6 +171,23 @@ exports['given a server'] = {
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
         assert.deepEqual({ 123: 'bar'}, message.value);
+        done();
+      });
+    });
+  },
+
+  'status: can get([Object])': function(done) {
+    var client = this.client;
+
+    this.client.status('voice/status').set({'foo': 'bar'});
+
+    client.status('voice/status').get(function(message) {
+      assert.equal('get', message.op);
+      assert.deepEqual({ 123: {'foo': 'bar'}}, message.value);
+      client.status('voice/status').set({'foo2': 'bar2'});
+      client.status('voice/status').get(function(message) {
+        assert.equal('get', message.op);
+        assert.deepEqual({ 123: {'foo2': 'bar2'}}, message.value);
         done();
       });
     });
@@ -268,7 +285,23 @@ exports['given a server'] = {
     client.message('test').subscribe().publish(message);
   },
 
-  'message: can sync()': function(done) {
+  'message: can sync([String])': function(done) {
+    var client = this.client,
+        message = "foobar",
+        assertions = 0;
+    Persistence.persistOrdered('message:/dev/test', message, function() {
+      client.message('test').on(function(msg) {
+        assert.equal('foobar', msg);
+        assertions++;
+      }).sync('test');
+      setTimeout(function() {
+        assert.equal(1, assertions);
+        done();
+      }, 50);
+    });
+  },
+
+  'message: can sync([Object])': function(done) {
     var client = this.client,
         message = { foo: 'bar' },
         assertions = 0;

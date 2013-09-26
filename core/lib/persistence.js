@@ -50,26 +50,6 @@ Persistence.applyPolicy = function(multi, key, policy) {
   }
 };
 
-Persistence.readOrdered = function(key, policy, callback) {
-  var multi = redis().multi();
-
-  switch(arguments.length) {
-    case 3:
-      policy && Persistence.applyPolicy(multi, key, policy);
-      break;
-    case 2:
-      callback = policy; // policy is optional
-  }
-
-  // sync up to 100 messages, starting from the newest
-  multi.zrange(key, -100, -1, function (err, replies) {
-    logging.info(key+' '+replies.length + " items to sync");
-    callback(replies);
-  });
-
-  multi.exec();
-};
-
 Persistence.readOrderedWithScores = function(key, policy, callback) {
   var multi = redis().multi();
 
@@ -85,6 +65,9 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
   multi.zrange(key, -100, -1, 'WITHSCORES', function (err, replies) {
     if(err) throw new Error(err);
     logging.info(key+' '+ (replies.length /2) + " items to sync");
+
+    // (nherment) TODO: deserialize
+
     callback(replies);
   });
 
@@ -92,6 +75,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 };
 
 Persistence.persistOrdered = function(key, value, callback) {
+  console.log("\n> "+JSON.stringify(value))
   redis().zadd(key, new Date().getTime(), JSON.stringify(value), callback);
 };
 
@@ -125,7 +109,8 @@ Persistence.readHashAll = function(hash, callback) {
         try {
           replies[attr] = JSON.parse(replies[attr]);
         } catch(parseError) {
-          logging.error(parseError)
+          logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
+          delete replies[attr]
         }
       });
     }

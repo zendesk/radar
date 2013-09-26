@@ -22,14 +22,17 @@ exports['given a resource'] = {
     done();
   },
 
-  'non JSON redis string should be returned as is (ie. corrupted data is not throwing error)': function(done) {
+  'non JSON redis string should be filtered out (ie. do not return corrupted data)': function(done) {
 
-    client.del("foo")
-    client.hset("foo", "bar1", "this string should be stringified when inside redis");
+    var key = "persistence.test"
 
-    Persistence.readHashAll("foo", function(result) {
-      assert.deepEqual({bar1: "this string should be stringified when inside redis"}, result)
-      done()
+    client.del(key);
+    client.hset(key, "bar1", "this string should be filtered out");
+    client.hset(key, "bar2", "\"this string should be returned\"");
+
+    Persistence.readHashAll(key, function(result) {
+      assert.deepEqual({bar2: "this string should be returned"}, result);
+      done();
     })
 
   }
