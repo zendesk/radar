@@ -44,15 +44,17 @@ Server.prototype.attach = function(server, configuration) {
   }
 
   this.subscriber.on('message', function(name, data) {
-    try {
-      data = JSON.parse(data);
-    } catch(parseError) {
-      logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
-      return;
-    }
 
     logging.debug('#redis_in', name, data);
     if (self.channels[name]) {
+
+      try {
+        data = JSON.parse(data);
+      } catch(parseError) {
+        logging.error("Corrupted key value in redis [" + name + "]. " + parseError.message + ": "+ parseError.stack);
+        return;
+      }
+
       self.channels[name].redisIn(data);
     } else {
       logging.warn('#message_not_handled', name, data);
