@@ -75,7 +75,6 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 };
 
 Persistence.persistOrdered = function(key, value, callback) {
-  console.log("\n> "+JSON.stringify(value))
   redis().zadd(key, new Date().getTime(), JSON.stringify(value), callback);
 };
 
