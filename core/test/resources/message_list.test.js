@@ -98,7 +98,7 @@ exports['given a message list resource'] = {
     var message = this.message;
     assert.equal(message.options.policy.maxPersistence, 14 * 24 * 60 * 60);
     done();
-  },
+  }
 };
 
 // if this module is the script being run, then run the tests:

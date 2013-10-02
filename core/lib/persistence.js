@@ -66,7 +66,9 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
     if(err) throw new Error(err);
     logging.info(key+' '+ (replies.length /2) + " items to sync");
 
-    // (nherment) TODO: deserialize
+    // (nherment) TODO: deserialize the result here because it is being serialized in persistOrdered()
+    // The problem is that radar_client currently deserializes the response.
+    // We need to make the client not deserialize the response so that we can deserialize it here.
 
     callback(replies);
   });

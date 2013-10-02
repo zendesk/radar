@@ -8,18 +8,12 @@ var client;
 
 exports['given a resource'] = {
 
-  before: function(done) {
+  before: function() {
     client = redis.createClient();
-    done();
   },
 
-  after: function(done) {
+  after: function() {
     client.end();
-    done();
-  },
-
-  beforeEach: function(done) {
-    done();
   },
 
   'non JSON redis string should be filtered out (ie. do not return corrupted data)': function(done) {
@@ -37,10 +31,3 @@ exports['given a resource'] = {
 
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}
