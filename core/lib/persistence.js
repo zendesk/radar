@@ -27,7 +27,7 @@ function redis() {
   return client;
 }
 
-function Persistence() { };
+function Persistence() { }
 
 Persistence.setConfig = function(config) {
   configuration = config;
@@ -111,7 +111,7 @@ Persistence.readHashAll = function(hash, callback) {
           replies[attr] = JSON.parse(replies[attr]);
         } catch(parseError) {
           logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
-          delete replies[attr]
+          delete replies[attr];
         }
       });
     }
