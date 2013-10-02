@@ -116,8 +116,11 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
   // persist local
   Persistence.deleteHash(this.scope, userId + '.' + clientId);
   Persistence.publish(this.scope, JSON.stringify({
-    userId: userId, userType: userType,
-    clientId: clientId, online: false, at: 0
+    userId: userId,
+    userType: userType,
+    clientId: clientId,
+    online: false,
+    at: 0
   }), callback);
 };
 
@@ -174,8 +177,8 @@ LocalManager.prototype.processLocal = function() {
       // list is only updated after the grace period
       if(!self.localClients.has(clientId)) { return; }
       userId = parseInt(userId, 10);
-      logging.debug('Autopub - set online', 'userId:', userId, 'clientId:', clientId);
-      self.addLocal(clientId, userId, self.userTypes.get(userId));
+      logging.debug('Autopub - set online', 'userId:', userId, 'clientId:', clientId, 'message:', self.localClients.get(clientId));
+      self.addLocal(clientId, userId, self.userTypes.get(userId), self.localClients.get(clientId).userData);
     });
   });
 };
