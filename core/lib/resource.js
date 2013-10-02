@@ -81,7 +81,7 @@ Resource.prototype.ack = function(client, sendAck) {
     op: 'ack',
     value: sendAck
   });
-}
+};
 
 Resource.setBackend = function(backend) { Persistence = backend; };
 
