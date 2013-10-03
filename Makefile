@@ -1,5 +1,6 @@
 TESTS += api/test/radar.test.js
 
+TESTS += core/test/resources/persistence.test.js
 TESTS += core/test/resources/message_list.test.js
 TESTS += core/test/resources/presence.test.js
 TESTS += core/test/resources/presence.remote.test.js

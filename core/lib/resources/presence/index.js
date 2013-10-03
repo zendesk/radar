@@ -18,26 +18,26 @@ function Presence(name, parent, options) {
     logging.info('user_online', userId, userType);
     var value = {};
     value[userId] = userType;
-    self.broadcast(JSON.stringify({
+    self.broadcast({
       to: self.name,
       op: 'online',
       value: value,
       userData: userData,
-    }));
+    });
   });
   this._xserver.on('user_offline', function(userId, userType) {
     logging.info('user_offline', userId, userType);
     var value = {};
     value[userId] = userType;
-    self.broadcast(JSON.stringify({
+    self.broadcast({
       to: self.name,
       op: 'offline',
       value: value
-    }));
+    });
   });
   this._xserver.on('client_online', function(clientId, userId, userType, userData) {
     logging.info('client_online', clientId, userId);
-    self.broadcast(JSON.stringify({
+    self.broadcast({
       to: self.name,
       op: 'client_online',
       value: {
@@ -45,18 +45,18 @@ function Presence(name, parent, options) {
         clientId: clientId,
         userData: userData,
       }
-    }));
+    });
   });
   this._xserver.on('client_offline', function(clientId, userId) {
     logging.info('client_offline', clientId, userId);
-    self.broadcast(JSON.stringify({
+    self.broadcast({
       to: self.name,
       op: 'client_offline',
       value: {
         userId: userId,
         clientId: clientId
       }
-    }), clientId);
+    }, clientId);
   });
 
   // add parent callback
@@ -68,9 +68,8 @@ function Presence(name, parent, options) {
 
 Presence.prototype = new Resource();
 
-Presence.prototype.redisIn = function(data) {
+Presence.prototype.redisIn = function(message) {
   try {
-    var message = JSON.parse(data);
     this._xserver.remoteMessage(message);
   } catch(e) { return; }
 };
@@ -111,19 +110,19 @@ Presence.prototype.sync = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
     if(message.options && message.options.version == 2) {
-      client.send(JSON.stringify({
+      client.send({
         op: 'get',
         to: self.name,
         value: self._xserver.getClientsOnline()
-      }));
+      });
     } else {
       // will be deprecated when syncs no longer need to use "online" to look like
       // regular messages
-      client.send(JSON.stringify({
+      client.send({
         op: 'online',
         to: self.name,
         value: online
-      }));
+      });
     }
   });
 };
@@ -133,17 +132,17 @@ Presence.prototype.getStatus = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
     if(message.options && message.options.version == 2) {
-      client.send(JSON.stringify({
+      client.send({
         op: 'get',
         to: self.name,
         value: self._xserver.getClientsOnline()
-      }));
+      });
     } else {
-      client.send(JSON.stringify({
+      client.send({
         op: 'get',
         to: self.name,
         value: online
-      }));
+      });
     }
   });
 };
