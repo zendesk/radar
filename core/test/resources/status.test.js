@@ -42,8 +42,7 @@ exports['given a status resource'] = {
     };
 
     this.status.getStatus({
-      send: function(payload) {
-        var msg = JSON.parse(payload);
+      send: function(msg) {
         assert.equal('get', msg.op);
         assert.equal('aaa', msg.to);
         assert.deepEqual([1, 2], msg.value);
@@ -79,8 +78,7 @@ exports['given a status resource'] = {
 
     status.sync({
       id: 123,
-      send: function(payload) {
-        var msg = JSON.parse(payload);
+      send: function(msg) {
         // check subscription
         assert.ok(status.subscribers['123']);
         // check message

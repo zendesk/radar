@@ -41,9 +41,8 @@ exports['given a presence'] = {
 
   'can set status to online and offline': function(done) {
     var presence = this.presence, client = this.client;
-    Persistence.publish = function(scope, data) {
-      var m = JSON.parse(data),
-          online = m.online,
+    Persistence.publish = function(scope, m) {
+      var online = m.online,
           userId = m.userId,
           userType = m.userType;
         assert.equal(1, userId);
@@ -55,9 +54,8 @@ exports['given a presence'] = {
     // also added to _local
     assert.ok(presence._xserver.hasUser(1));
 
-    Persistence.publish = function(scope, data) {
-      var m = JSON.parse(data),
-          online = m.online,
+    Persistence.publish = function(scope, m) {
+      var online = m.online,
           userId = m.userId,
           userType = m.userType;
       // immediate notification is sent
@@ -101,9 +99,8 @@ exports['given a presence'] = {
     // see also: presence_monitor.test.js / test with the same name
     var presence = this.presence, client = this.client;
     var calls = 0;
-    Persistence.publish = function(scope, data) {
-      var m = JSON.parse(data),
-          online = m.online,
+    Persistence.publish = function(scope, m) {
+      var online = m.online,
           userId = m.userId,
           userType = m.userType;
       assert.equal(1, userId);
@@ -157,23 +154,23 @@ exports['given a presence'] = {
       this.remote = [];
       this.local = [];
       Persistence.publish = function(scope, data) {
-        self.remote.push(JSON.parse(data));
+        self.remote.push(data);
       };
 
       this.oldBroadcast = this.presence.broadcast;
       this.presence.broadcast = function(data, except) {
         self.oldBroadcast.call(self.presence, data, except);
-        self.local.push(JSON.parse(data));
+        self.local.push(data);
       };
 
       Server.server.clients[this.client.id] = this.client;
       Server.server.clients[this.client2.id] = this.client2;
       this.messages = {};
-      this.client.send = function(json) {
-        (self.messages[self.client.id] || (self.messages[self.client.id] = [])).push(JSON.parse(json));
+      this.client.send = function(msg) {
+        (self.messages[self.client.id] || (self.messages[self.client.id] = [])).push(msg);
       };
-      this.client2.send = function(json) {
-        (self.messages[self.client2.id] || (self.messages[self.client2.id] = [])).push(JSON.parse(json));
+      this.client2.send = function(msg) {
+        (self.messages[self.client2.id] || (self.messages[self.client2.id] = [])).push(msg);
       };
     },
 
@@ -331,9 +328,8 @@ exports['given a presence'] = {
     var presence = this.presence, client = this.client;
 
     var notifications = [];
-    Persistence.publish = function(scope, data) {
-      var m = JSON.parse(data),
-          online = m.online,
+    Persistence.publish = function(scope, m) {
+      var online = m.online,
           userId = m.userId,
           userType = m.userType;
       notifications.push({ userId: userId, userType: userType, online: online });
@@ -366,11 +362,11 @@ exports['given a presence'] = {
     var remote = [],
         local = [];
     Persistence.publish = function(scope, data) {
-      remote.push(JSON.parse(data));
+      remote.push(data);
     };
     var oldBroadcast = presence.broadcast;
     presence.broadcast = function(data) {
-      local.push(JSON.parse(data));
+      local.push(data);
     };
     // and the autopublish runs
     presence._xserver.timeouts();
@@ -389,8 +385,7 @@ exports['given a presence'] = {
 
     Persistence.persistHash = function(name, key, value) {
       called = true;
-      var json = JSON.parse(value);
-      assert.deepEqual(json.userData, { test: 1 });
+      assert.deepEqual(value.userData, { test: 1 });
     };
 
     this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
@@ -405,9 +400,8 @@ exports['given a presence'] = {
           userType: 2,
         },
         fakeClient = {
-          send: function(string) {
-            var json = JSON.parse(string);
-            assert.deepEqual(json.value[123], data);
+          send: function(msg) {
+            assert.deepEqual(msg.value[123], data);
           }
         };
 

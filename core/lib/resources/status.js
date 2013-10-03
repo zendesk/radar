@@ -18,11 +18,11 @@ Status.prototype = new Resource();
 Status.prototype.getStatus = function(client) {
   var self = this;
   Status.prototype._getStatus(this.name, function(replies) {
-    client.send(JSON.stringify({
+    client.send({
       op: 'get',
       to: self.name,
       value: replies
-    }));
+    });
   });
 };
 
@@ -48,7 +48,7 @@ Status.prototype._setStatus = function(scope, message, policy, callback) {
     logging.warn("resource created without ttl :"+scope)
     logging.warn("resource policy was :"+JSON.stringify(policy))
   }
-  Persistence.publish(scope, JSON.stringify(message), callback);
+  Persistence.publish(scope, message, callback);
 };
 
 Status.prototype.sync = function(client) {

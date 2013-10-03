@@ -34,7 +34,7 @@ exports['given a message list resource'] = {
   'publish causes a publish': function(done) {
     var publishCalled = false;
     FakePersistence.publish = function(key, message) {
-      assert.equal(JSON.stringify('hello world'), message);
+      assert.equal('hello world', message);
       publishCalled = true;
     };
 
@@ -46,7 +46,7 @@ exports['given a message list resource'] = {
   'publish causes a broadcast and a write, if persistent': function(done) {
     var publishCalled = false, persistCalled = false;
     FakePersistence.publish = function(key, message) {
-      assert.equal(JSON.stringify('hello world'), message);
+      assert.equal('hello world', message);
       publishCalled = true;
     };
     FakePersistence.persistOrdered = function() {
@@ -83,8 +83,7 @@ exports['given a message list resource'] = {
 
     message.sync({
       id: 123,
-      send: function(payload) {
-        var msg = JSON.parse(payload);
+      send: function(msg) {
         // check message
         assert.equal('sync', msg.op);
         assert.equal('aab', msg.to);
@@ -99,7 +98,7 @@ exports['given a message list resource'] = {
     var message = this.message;
     assert.equal(message.options.policy.maxPersistence, 14 * 24 * 60 * 60);
     done();
-  },
+  }
 };
 
 // if this module is the script being run, then run the tests:

@@ -158,16 +158,16 @@ exports['Radar api tests'] = {
 
       var messages = {
         'presence:/test/ticket/1': {
-          '1.1000': JSON.stringify({
+          '1.1000': {
             userId: 1, userType: 0,
             clientId: 1000, online: true, at: new Date().getTime()
-          })
+          }
         },
         'presence:/test/ticket/2': {
-          '2.1001': JSON.stringify({
+          '2.1001': {
             userId: 2, userType: 4,
             clientId: 1001, online: true, at: new Date().getTime()
-          })
+          }
         }
       };
 

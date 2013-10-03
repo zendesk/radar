@@ -80,10 +80,9 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, userData,
       clientId: clientId,
       online: true,
       at: Date.now()
-    },
-    pmessage = JSON.stringify(message);
+    }
   this.localClients.add(clientId, message);
-  Persistence.persistHash(this.scope, userId + '.' + clientId, pmessage);
+  Persistence.persistHash(this.scope, userId + '.' + clientId, message);
 
   //Set an overall expiration here. If we get killed/crash/etc we will not leave an undead key
   //in redis. This is renewed every time we persist, so no worries of expiring before
@@ -92,7 +91,7 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, userData,
     Persistence.expire(this.scope, this.policy.maxPersistence);
   }
 
-  Persistence.publish(this.scope, pmessage, callback);
+  Persistence.publish(this.scope, message, callback);
 };
 
 // note: this is the fast path (e.g. graceful only)
@@ -115,10 +114,10 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
 
   // persist local
   Persistence.deleteHash(this.scope, userId + '.' + clientId);
-  Persistence.publish(this.scope, JSON.stringify({
+  Persistence.publish(this.scope, {
     userId: userId, userType: userType,
     clientId: clientId, online: false, at: 0
-  }), callback);
+  }, callback);
 };
 
 // causes removeLocal() calls
@@ -146,13 +145,13 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
     // note: do not delete the hash key yet.
     // the slow path should apply here
     // e.g. users should only be dropped when the at value expires
-    message = JSON.stringify({
+    message = {
       userId: userId,
       userType: this.userTypes.get(userId),
       clientId: clientId,
       online: false,
       at: Date.now()
-    });
+    };
     Persistence.persistHash(this.scope, userId + '.' + clientId, message);
     Persistence.publish(this.scope, message);
   }

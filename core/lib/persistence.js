@@ -27,7 +27,7 @@ function redis() {
   return client;
 }
 
-function Persistence() { };
+function Persistence() { }
 
 Persistence.setConfig = function(config) {
   configuration = config;
@@ -50,26 +50,6 @@ Persistence.applyPolicy = function(multi, key, policy) {
   }
 };
 
-Persistence.readOrdered = function(key, policy, callback) {
-  var multi = redis().multi();
-
-  switch(arguments.length) {
-    case 3:
-      policy && Persistence.applyPolicy(multi, key, policy);
-      break;
-    case 2:
-      callback = policy; // policy is optional
-  }
-
-  // sync up to 100 messages, starting from the newest
-  multi.zrange(key, -100, -1, function (err, replies) {
-    logging.info(key+' '+replies.length + " items to sync");
-    callback(replies);
-  });
-
-  multi.exec();
-};
-
 Persistence.readOrderedWithScores = function(key, policy, callback) {
   var multi = redis().multi();
 
@@ -85,6 +65,11 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
   multi.zrange(key, -100, -1, 'WITHSCORES', function (err, replies) {
     if(err) throw new Error(err);
     logging.info(key+' '+ (replies.length /2) + " items to sync");
+
+    // (nherment) TODO: deserialize the result here because it is being serialized in persistOrdered()
+    // The problem is that radar_client currently deserializes the response.
+    // We need to make the client not deserialize the response so that we can deserialize it here.
+
     callback(replies);
   });
 
@@ -92,7 +77,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 };
 
 Persistence.persistOrdered = function(key, value, callback) {
-  redis().zadd(key, new Date().getTime(), value, callback);
+  redis().zadd(key, new Date().getTime(), JSON.stringify(value), callback);
 };
 
 Persistence.delWildCard = function(expr, callback) {
@@ -117,23 +102,26 @@ Persistence.del = function(key, callback) {
   redis().del(key, callback);
 };
 
-Persistence.readHash = function(hash, key, callback) {
-  redis().hget(hash, key, function (err, replies) {
-    if(err) throw new Error(err);
-    callback(replies);
-  });
-};
-
 Persistence.readHashAll = function(hash, callback) {
   redis().hgetall(hash, function (err, replies) {
     if(err) throw new Error(err);
+    if(replies) {
+      Object.keys(replies).forEach(function(attr) {
+        try {
+          replies[attr] = JSON.parse(replies[attr]);
+        } catch(parseError) {
+          logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
+          delete replies[attr];
+        }
+      });
+    }
     callback(replies);
   });
 };
 
 Persistence.persistHash = function(hash, key, value) {
   logging.info('persistHash:', hash, key, value);
-  redis().hset(hash, key, value, Persistence.handler);
+  redis().hset(hash, key, JSON.stringify(value), Persistence.handler);
 };
 
 Persistence.expire = function(key, seconds) {
@@ -151,7 +139,7 @@ Persistence.deleteHash = function(hash, key) {
 
 Persistence.publish = function(key, value, callback) {
   logging.info('Redis pub:', key, value);
-  redis().publish(key, value, callback);
+  redis().publish(key, JSON.stringify(value), callback);
 };
 
 Persistence.disconnect = function(callback) {

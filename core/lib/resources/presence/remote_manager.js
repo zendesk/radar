@@ -129,16 +129,7 @@ RemoteManager.prototype.fullRead = function(callback) {
     // process all messages in one go before updating subscribers to avoid
     // sending multiple messages
     Object.keys(replies).forEach(function(key) {
-      var data = replies[key], message;
-      try {
-        message = JSON.parse(data);
-        if(message.constructor !== Object) {
-          throw new Error('JSON parse result is not an Object');
-        }
-      } catch(err) {
-        logging.error('Persistence full read: invalid message', data, err);
-        return callback && callback({});
-      }
+      var message = replies[key];
       // remove expired keys
       if(message.at < maxAge) {
         Persistence.deleteHash(self.name, key);
