@@ -88,7 +88,7 @@ Persistence.delWildCard = function(expr, callback) {
       return callback();
     }
     results.forEach(function(key) {
-      redis().del(key, function() {
+      Persistence.del(key, function() {
         counter++;
         if (counter == results.length) {
           callback();
@@ -99,6 +99,7 @@ Persistence.delWildCard = function(expr, callback) {
 };
 
 Persistence.del = function(key, callback) {
+  logging.info('deleting', key);
   redis().del(key, callback);
 };
 

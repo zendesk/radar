@@ -1,21 +1,19 @@
 var common = require('./common.js'),
     assert = require('assert'),
     http = require('http'),
-
-    Radar = require('../server.js'),
+    verbose = false,
     Persistence = require('../../core').Persistence,
     Client = require('radar_client').constructor,
-    logging = require('minilog')('test');
+    logging = require('minilog')('test'),
+    client, client2;
 
 http.globalAgent.maxSockets = 10000;
 
-var enabled = false;
-/*
+if (verbose) {
 var Minilog = require('minilog');
 Minilog.pipe(Minilog.backends.nodeConsole)
-  .filter(function() { return enabled; })
   .format(Minilog.backends.nodeConsole.formatWithStack);
-*/
+}
 
 exports['presence: given a server and two connected clients'] = {
 
@@ -29,29 +27,35 @@ exports['presence: given a server and two connected clients'] = {
       }
     }
     common.startRadar(8000, this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8000, upgrade: false })
-                    .on('ready', next).alloc('test');
-      self.client2 = new Client().configure({ userId: 222, userType: 0, accountName: 'test', port: 8000, upgrade: false })
-                    .on('ready', next).alloc('test');
+      client = new Client().configure({
+        userId: 123,
+        userType: 0,
+        accountName: 'test',
+        port: 8000,
+        upgrade: false,
+        userData: { name: 'tester' }
+      }).on('ready', next).alloc('test');
+
+      client2 = new Client().configure({
+        userId: 222,
+        userType: 0,
+        accountName: 'test',
+        port: 8000,
+        upgrade: false,
+        userData: { name: 'tester2' }
+      }).on('ready', next).alloc('test');
     });
     Persistence.delWildCard('*:/test/*', next);
   },
 
   afterEach: function(done) {
-    this.client.dealloc('test');
-    this.client2.dealloc('test');
+    client.dealloc('test');
+    client2.dealloc('test');
     common.endRadar(this, done);
   },
 
-/*
-  after: function(done) {
-    Persistence.disconnect(done);
-  },
-*/
-
   'a presence can be set to online and subscribers will be updated': function(done) {
-    var client = this.client, client2 = this.client2,
-        notifications = [];
+    var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
     client2.presence('chat/1/participants').on(function(message){
@@ -76,10 +80,30 @@ exports['presence: given a server and two connected clients'] = {
     });
   },
 
+  'userData will persist when a presence is updated': function(done) {
+    this.timeout(40*1000);
+    var scope = 'chat/1/participants';
+
+    client.presence(scope).set('online', function() {
+      var presence = client2.presence(scope).sync({version: 2}, function sync(message) {
+        assert.equal(message.op, 'get');
+        assert.deepEqual(message.to, 'presence:/test/' + scope);
+        assert.equal(message.value['123'].userType, 0);
+        assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
+
+        setTimeout(function() {
+          presence.get({version:2}, function(message) {
+            sync(message);
+            done();
+          });
+        }, 30000);
+      });
+    });
+  },
+
   'calling fullSync multiple times does not alter the result if users remain connected': function(done) {
     this.timeout(35*1000);
-    var client = this.client, client2 = this.client2,
-        notifications = [], getCounter = 0;
+    var notifications = [], getCounter = 0;
     client2.presence('chat/1/participants').on(function(message){
       notifications.push(message);
     }).subscribe(function() {
@@ -113,12 +137,11 @@ exports['presence: given a server and two connected clients'] = {
   'a presence will not be set to offline during the grace period but will be offline after it': function(done) {
     enabled = true;
     this.timeout(18*1000);
-    var client = this.client, client2 = this.client2,
-        notifications = [];
+    var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
     client2.presence('chat/1/participants').on(function(message){
-//      logging.info('Receive message', message);
+      logging.info('Receive message', message);
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
@@ -160,9 +183,3 @@ exports['presence: given a server and two connected clients'] = {
 
 };
 
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--bail', '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}

@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "main": "index.js",
   "keywords": [
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "git://github.com/zendesk/radar_client.git#v0.2.14"
+    "radar_client": "git://github.com/zendesk/radar_client.git#v0.2.15"
   },
   "scripts": {
     "start": "node server.js",
