@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "git://github.com/zendesk/radar_client.git#v0.2.16"
+    "radar_client": "git://github.com/zendesk/radar_client.git#v0.2.17"
   },
   "scripts": {
     "start": "node server.js",
