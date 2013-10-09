@@ -56,7 +56,7 @@ exports['reconnect: given a server and two connected clients'] = {
     }
 
     // using the fact that messages are emitted to our advantage
-    Radar.on('subscribe', function(c, message) {
+    common.radar().on('subscribe', function(c, message) {
       if(eioClientId == c.id) {
         beforeDisconnect.push(message);
 
@@ -68,7 +68,7 @@ exports['reconnect: given a server and two connected clients'] = {
             common.endRadar(self, function() {
               common.startRadar(8009, self, function(){
                 // re-establish listener
-                Radar.on('subscribe', function(c, message) {
+                common.radar().on('subscribe', function(c, message) {
                   afterDisconnect.push(message);
 
                   if(afterDisconnect.length == 3) {

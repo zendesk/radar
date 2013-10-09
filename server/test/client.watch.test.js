@@ -6,7 +6,9 @@ var common = require('./common.js'),
     Client = require('radar_client').constructor;
 
 exports['given two clients'] = {
-  before: function(done) { common.startRadar(8001, this, done); },
+  before: function(done) {
+    common.startRadar(8001, this, done);
+  },
 
   after: function(done) {
     common.endRadar(this, function() {});

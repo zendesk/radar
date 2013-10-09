@@ -1,7 +1,6 @@
 var common = require('./common.js'),
     assert = require('assert'),
 
-    Radar = require('../server.js'),
     Persistence = require('../../core').Persistence,
     Client = require('radar_client').constructor;
 
@@ -45,7 +44,7 @@ exports['given a server'] = {
 // - .sync(callback)
   'presence: can set("online")': function(done) {
     var client = this.client;
-    Radar.once('set', function(socket, message) {
+    common.radar().once('set', function(socket, message) {
       assert.equal('set', message.op);
       assert.equal('online', message.value);
       assert.equal(123, message.key);
@@ -62,7 +61,7 @@ exports['given a server'] = {
 
   'presence: can set("offline")': function(done) {
     var client = this.client;
-    Radar.once('set', function(socket, message) {
+    common.radar().once('set', function(socket, message) {
       assert.equal('set', message.op);
       assert.equal('offline', message.value);
       assert.equal(123, message.key);
@@ -135,7 +134,7 @@ exports['given a server'] = {
 // - .sync(callback)
 
   'status: can set([String])': function(done) {
-    Radar.once('set', function(client, message) {
+    common.radar().once('set', function(client, message) {
       assert.equal('set', message.op);
       assert.equal('foo', message.value);
       assert.equal(123, message.key);
@@ -146,7 +145,7 @@ exports['given a server'] = {
 
   'status: can set([Object])': function(done) {
     var client = this.client;
-    Radar.once('set', function(ignore, message) {
+    common.radar().once('set', function(ignore, message) {
       assert.equal('set', message.op);
       assert.deepEqual({ hello: "world" }, message.value);
       assert.equal(123, message.key);
@@ -237,7 +236,7 @@ exports['given a server'] = {
   'message: can subscribe()': function(done) {
     var client = this.client;
     // test.expect(2);
-    Radar.when('subscribe', function(client, msg) {
+    common.radar().when('subscribe', function(client, msg) {
       var match = (msg.op == 'subscribe' && msg.to == 'message:/dev/test');
       if (match) {
         assert.equal('subscribe', msg.op);

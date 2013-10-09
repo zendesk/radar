@@ -41,7 +41,7 @@ exports['given two clients'] = {
         assert.equal(message.state, msg.value.state);
         assertions += 2;
       });
-      Radar.once('subscribe', function(c, msg) {
+      common.radar().once('subscribe', function(c, msg) {
         client.message('test').publish(message);
         setTimeout(function() {
           assert.equal(4, assertions);
@@ -93,7 +93,7 @@ exports['given two clients'] = {
 
     // test.numAssertions = 3;
     client2.once('ready', function() {
-      Radar.once('subscribe', function(c, msg) {
+      common.radar().once('subscribe', function(c, msg) {
         client.message('test').publish(message);
       });
       client2.message('test').on(function(msg) {
@@ -110,7 +110,7 @@ exports['given two clients'] = {
           assert.ok(true);
         }
       });
-      Radar.once('unsubscribe', function(c, msg) {
+      common.radar().once('unsubscribe', function(c, msg) {
         client.message('test').publish(message2);
         setTimeout(function() {
           client.message('test').removeAllListeners();
