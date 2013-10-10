@@ -2,18 +2,28 @@ var http = require('http'),
 
     eio = require('engine.io'),
 
-    Radar = require('../server.js');
+    RadarServer = new require('../server.js');
 
 http.globalAgent.maxSockets = 10000;
+
+var radar
 
 module.exports = {
   // starts a Radar server at the given port
   startRadar: function(port, context, done) {
     context.server = http.createServer(function(req, res) { res.end('Running.'); });
     context.serverStarted = true;
-    Radar.attach(context.server, eio);
-    context.server.listen(port, done);
+    radar = new RadarServer();
+    radar.attach(context.server, eio);
+    context.server.listen(port, function() {
+      done()
+    });
   },
+
+  radar: function() {
+    return radar;
+  },
+
   // ends the Radar server
   endRadar: function(context, done) {
     if(!context.serverStarted) return done();
@@ -21,7 +31,7 @@ module.exports = {
       context.serverStarted = false;
       done();
     });
-    Radar.terminate();
+    radar.terminate();
     context.server.close();
   }
 }

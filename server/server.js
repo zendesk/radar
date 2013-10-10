@@ -8,7 +8,8 @@ var redis = require('redis'),
     Heartbeat = require('heartbeat'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
-    Audit = require('./audit.js');
+    Audit = require('./audit.js'),
+    DefaultEngineIO = require('engine.io');
 
 // Parse JSON
 function parseJSON(data) {
@@ -26,14 +27,17 @@ function Server() {
   this.subs = {};
 
   this.timer = new Heartbeat().interval(15000);
+
 }
 
 MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(server, configuration) {
-  var self = this,
-      engine = require('engine.io');
+  var self = this;
+  var engine = DefaultEngineIO;
+  var engineConf;
+
   configuration || (configuration = {});
   configuration.redis_port || (configuration.redis_port = 6379);
   configuration.redis_host || (configuration.redis_host = 'localhost');
@@ -61,7 +65,15 @@ Server.prototype.attach = function(server, configuration) {
     }
   });
 
-  var server = this.server = engine.attach(server);
+
+  if(configuration.engineio) {
+    engine = configuration.engineio.module;
+    engineConf = configuration.engineio.conf;
+
+    self.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : "default";
+  }
+
+  var server = this.server = engine.attach(server, engineConf);
 
   server.on('connection', function(client) {
     var oldSend = client.send;
@@ -208,4 +220,4 @@ Server.prototype.terminate = function() {
   this.subscriber.quit();
 };
 
-module.exports = new Server();
+module.exports = Server;
