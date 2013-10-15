@@ -9,7 +9,7 @@ var redisLib = require('redis'),
 var client, isConnecting = false;
 
 function redis() {
-  if(client == undefined || !client.connected){
+  if(!client || !client.connected){
     if(client && !client.connected && isConnecting) {
       logging.info('Not reinitializing client, as a connect is in progress');
       return client;
@@ -55,7 +55,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 
   switch(arguments.length) {
     case 3:
-      policy && Persistence.applyPolicy(multi, key, policy);
+      if (policy) Persistence.applyPolicy(multi, key, policy);
       break;
     case 2:
       callback = policy; // policy is optional
@@ -64,7 +64,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
   // sync up to 100 messages, starting from the newest
   multi.zrange(key, -100, -1, 'WITHSCORES', function (err, replies) {
     if(err) throw new Error(err);
-    logging.info(key+' '+ (replies.length /2) + " items to sync");
+    logging.info(key+' '+ (replies.length /2) + ' items to sync');
 
     // (nherment) TODO: deserialize the result here because it is being serialized in persistOrdered()
     // The problem is that radar_client currently deserializes the response.
@@ -84,7 +84,7 @@ Persistence.delWildCard = function(expr, callback) {
   redis().keys(expr, function(err, results) {
     if(err) throw new Error(err);
     var counter = 0;
-    if(results.length == 0) {
+    if(!results.length) {
       return callback();
     }
     results.forEach(function(key) {
@@ -111,7 +111,7 @@ Persistence.readHashAll = function(hash, callback) {
         try {
           replies[attr] = JSON.parse(replies[attr]);
         } catch(parseError) {
-          logging.error("Corrupted key value in redis [" + hash + "][" + attr + "]. " + parseError.message + ": "+ parseError.stack);
+          logging.error('Corrupted key value in redis [' + hash + '][' + attr + ']. ' + parseError.message + ': '+ parseError.stack);
           delete replies[attr];
         }
       });
@@ -146,10 +146,10 @@ Persistence.publish = function(key, value, callback) {
 Persistence.disconnect = function(callback) {
   if(client) {
     client.quit(function() {
-      setTimeout(function() { callback && callback(); }, 1);
+      if (callback) process.nextTick(callback);
     });
   } else {
-    setTimeout(function() { callback && callback(); }, 1);
+    if (callback) process.nextTick(callback);
   }
 };
 
@@ -165,6 +165,10 @@ Persistence.handler = function(err) {
 
 Persistence.incrby = function(key, incr) {
   redis().incrby(key, incr, Persistence.handler);
+};
+
+Persistence.select = function(index) {
+  redis().select(index, Persistence.handler);
 };
 
 module.exports = Persistence;

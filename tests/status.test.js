@@ -1,7 +1,6 @@
 var assert = require('assert'),
-
-    Status = require('../../lib/resources/status.js'),
-    Persistence = require('../../lib/persistence.js');
+    Status = require('../core/lib/resources/status.js'),
+    Persistence = require('../core/lib/persistence.js');
 
 var FakePersistence = {
   read: function() {},
@@ -10,7 +9,7 @@ var FakePersistence = {
 };
 
 var Radar = {
-  broadcast: function(subscribers, message) { }
+  broadcast: function() { }
 };
 
 

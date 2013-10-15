@@ -1,8 +1,6 @@
 var common = require('./common.js'),
     assert = require('assert'),
-
-    Radar = require('../server.js'),
-    Persistence = require('../../core').Persistence,
+    Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor;
 
 exports['given two clients'] = {
@@ -17,7 +15,7 @@ exports['given two clients'] = {
 
   beforeEach: function(done) {
     var tasks = 0;
-    function next() { tasks++ && (tasks == 4) && done(); }
+    function next() { tasks++; if (tasks == 4) done(); }
     this.client = new Client().configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001 })
                   .once('ready', next).alloc('test');
     this.client2 = new Client().configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001 })
@@ -67,7 +65,7 @@ exports['given two clients'] = {
         assert.equal('online', message.op);
         assert.deepEqual({ '246': 0 }, message.value);
         client.presence('ticket/21').unsubscribe(function() {
-          client.once('presence:/dev/ticket/21', function(message) {
+          client.once('presence:/dev/ticket/21', function() {
             assert.ok(false); // should not receive message
           });
           client2.presence('ticket/21').set('offline');
@@ -122,7 +120,7 @@ exports['given two clients'] = {
         assert.equal('246', message.key);
         assert.equal('foo', message.value);
         client.status('voice/status').unsubscribe(function() {
-          client.once('presence:/dev/voice/status', function(message) {
+          client.once('presence:/dev/voice/status', function() {
             assert.ok(false); // should not receive message
           });
           client2.status('voice/status').set('bar');

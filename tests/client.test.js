@@ -1,20 +1,11 @@
 var common = require('./common.js'),
     assert = require('assert'),
-
-    Persistence = require('../../core').Persistence,
+    Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor;
 
 exports['given a server'] = {
 
   before: function(done) {
-    var Minilog = require('minilog');
-    /*
-    Minilog.pipe(Minilog.backends.nodeConsole)
-      .format(Minilog.backends.nodeConsole.formatWithStack);
-
-    require('radar_client')._log
-      .pipe(Minilog.backends.nodeConsole);
-    */
     common.startRadar(8002, this, done);
   },
 
@@ -25,7 +16,7 @@ exports['given a server'] = {
 
   beforeEach: function(done) {
     var tasks = 0;
-    function next() { tasks++ && (tasks == 2) && done(); }
+    function next() { tasks++; if (tasks == 2) done(); }
     this.client = new Client()
       .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8002})
       .alloc('test', next);
@@ -100,7 +91,7 @@ exports['given a server'] = {
       client.presence('ticket/33').set('online', function() {
         client.presence('ticket/33').get({ version: 2 }, function(message) {
           assert.equal('get', message.op);
-          var expected = {"123":{"clients":{},"userType":0}};
+          var expected = {123:{clients:{},userType:0}};
           expected['123'].clients[client._socket.id] = {};
           assert.deepEqual(message.value, expected);
           done();
@@ -118,7 +109,7 @@ exports['given a server'] = {
       client.presence('ticket/213').sync({ version: 2 }, function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
-        var expected = {"123":{"clients":{},"userType":0}};
+        var expected = {123:{clients:{},userType:0}};
         expected['123'].clients[client._socket.id] = {};
         assert.deepEqual(message.value, expected);
         done();
@@ -147,15 +138,15 @@ exports['given a server'] = {
     var client = this.client;
     common.radar().once('set', function(ignore, message) {
       assert.equal('set', message.op);
-      assert.deepEqual({ hello: "world" }, message.value);
+      assert.deepEqual({ hello: 'world' }, message.value);
       assert.equal(123, message.key);
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual( { hello: "world" }, message.value['123']);
+        assert.deepEqual( { hello: 'world' }, message.value['123']);
         done();
       });
     });
-    this.client.status('voice/status').set({ hello: "world" });
+    this.client.status('voice/status').set({ hello: 'world' });
   },
 
   'status: can get([String])': function(done) {
@@ -217,7 +208,7 @@ exports['given a server'] = {
   'status: can sync()': function(done) {
     var client = this.client;
 
-    this.client.status('voice/status').set('foo', function(ack) {
+    this.client.status('voice/status').set('foo', function() {
       client.status('voice/status').sync(function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
@@ -275,7 +266,7 @@ exports['given a server'] = {
 
       assert.equal('message:/dev/test', msg.to);
 
-      assert.equal("string", typeof msg.value);
+      assert.equal('string', typeof msg.value);
       assert.equal('{ "state": "other"}', msg.value);
 
       done();
@@ -286,7 +277,7 @@ exports['given a server'] = {
 
   'message: can sync([String])': function(done) {
     var client = this.client,
-        message = "foobar",
+        message = 'foobar',
         assertions = 0;
     Persistence.persistOrdered('message:/dev/test', message, function() {
       client.message('test').on(function(msg) {

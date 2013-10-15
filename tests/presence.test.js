@@ -1,10 +1,8 @@
 var assert = require('assert'),
-
     Heartbeat = require('heartbeat'),
     MiniEE = require('miniee'),
-
-    Persistence = require('../../lib/persistence.js'),
-    Presence = require('../../lib/resources/presence'),
+    Persistence = require('../core/lib/persistence.js'),
+    Presence = require('../core/lib/resources/presence'),
     logging = require('minilog')('test');
 
 var Server = {

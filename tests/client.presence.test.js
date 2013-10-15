@@ -2,7 +2,7 @@ var common = require('./common.js'),
     assert = require('assert'),
     http = require('http'),
     verbose = false,
-    Persistence = require('../../core').Persistence,
+    Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
     client, client2;
@@ -18,8 +18,7 @@ Minilog.pipe(Minilog.backends.nodeConsole)
 exports['presence: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
-    var self = this,
-        tasks = 0;
+    var tasks = 0;
     function next() {
       tasks++;
       if (tasks == 3) {
