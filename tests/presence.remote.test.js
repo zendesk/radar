@@ -1,12 +1,11 @@
 var assert = require('assert'),
     Heartbeat = require('heartbeat'),
-
-    Persistence = require('../../lib/persistence.js'),
-    Presence = require('../../lib/resources/presence');
+    Persistence = require('../core/lib/persistence.js'),
+    Presence = require('../core/lib/resources/presence');
 
 var Server = {
   timer: new Heartbeat().interval(1500),
-  broadcast: function(subscribers, message) { },
+  broadcast: function() { },
   terminate: function() { Server.timer.clear(); },
   destroy: function() {},
   server: {

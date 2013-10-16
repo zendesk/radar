@@ -1,26 +1,15 @@
 var common = require('./common.js'),
     assert = require('assert'),
-
-    Radar = require('../server.js'),
-    Persistence = require('../../core').Persistence,
+    Radar = require('../server/server.js'),
+    Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor;
 
 exports['reconnect: given a server and two connected clients'] = {
 
-/*
-  before: function(done) {
-    var Minilog = require('minilog');
-    require('radar_client')._log
-      .pipe(Minilog.backends.nodeConsole)
-      .format(Minilog.backends.nodeConsole.formatWithStack);
-    done();
-  },
-*/
-
   beforeEach: function(done) {
     var self = this,
         tasks = 0;
-    function next() { tasks++ && (tasks == 3) && done(); }
+    function next() { tasks++; if (tasks == 3) done(); }
     common.startRadar(8009, this, function(){
       self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009, upgrade: false})
                     .once('ready', next).alloc('test');

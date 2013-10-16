@@ -1,24 +1,13 @@
-var fs = require('fs'),
-    http = require('http'),
-    https = require('https'),
+var http = require('http'),
     assert = require('assert'),
-
-    Api = require('../api.js'),
-    RadarApi = require('../apis/radar.js'),
-    ClientScope = require('../lib/client'),
-    Persistence = require('../../core').Persistence,
-
-    RemoteManager = require('../../core').RemoteManager,
-
-    Type = require('../../core').Type,
-    Status = require('../../core').Status,
-    MessageList = require('../../core').MessageList,
-    logging = require('minilog')('test');
-
-var subdomain = 'support',
-    frontend,
-    backend,
-    routes;
+    Api = require('../api/api.js'),
+    ClientScope = require('../api/lib/client'),
+    Persistence = require('../core').Persistence,
+    RemoteManager = require('../core').RemoteManager,
+    Type = require('../core').Type,
+    Status = require('../core').Status,
+    MessageList = require('../core').MessageList,
+    frontend;
 
 var Client = new ClientScope({
   secure: false,
@@ -57,8 +46,8 @@ exports['Radar api tests'] = {
     Client.get('/node/radar/status')
       .data({ accountName: 'test', scope: 'ticket/1' })
       .end(function(error, response) {
-        assert.deepEqual({"foo":"bar"}, response);
-        Persistence.ttl("status:/test/ticket/1", function(err, reply) {
+        assert.deepEqual({foo:'bar'}, response);
+        Persistence.ttl('status:/test/ticket/1', function(err, reply) {
           assert.ok((parseInt(reply, 10) > 0));
           done();
         });
@@ -67,10 +56,6 @@ exports['Radar api tests'] = {
 
   // POST /radar/status { accountName: 'test', scope: 'ticket/1' }
   'can set a status scope': function(done) {
-    var name = 'status:/test/ticket/2',
-        opts = Type.getByExpression(name),
-        status = new Status(name, {}, opts);
-
     Client.post('/node/radar/status')
       .data({ accountName: 'test', scope: 'ticket/2', key: 'foo', value: 'bar' })
       .end(function(error, response) {
@@ -79,8 +64,8 @@ exports['Radar api tests'] = {
         Client.get('/node/radar/status')
         .data({ accountName: 'test', scope: 'ticket/2' })
         .end(function(error, response) {
-          assert.deepEqual({"foo":"bar"}, response);
-          Persistence.ttl("status:/test/ticket/2", function(err, reply) {
+          assert.deepEqual({foo:'bar'}, response);
+          Persistence.ttl('status:/test/ticket/2', function(err, reply) {
             assert.ok((parseInt(reply, 10) > 0));
             done();
           });
@@ -97,7 +82,8 @@ exports['Radar api tests'] = {
       type: 'message',
       auth: false,
       policy: { cache: true, maxAgeSeconds: 30 }
-    }
+    };
+
     Type.register('message', message_type);
 
     var name = 'message:/setStatus/chat/1',
@@ -112,7 +98,7 @@ exports['Radar api tests'] = {
     Client.get('/node/radar/message')
       .data({ accountName: 'setStatus', scope: 'chat/1' })
       .end(function(error, response) {
-        assert.deepEqual({key:"foo", value: 'bar'}, JSON.parse(response[0]));
+        assert.deepEqual({key:'foo', value: 'bar'}, JSON.parse(response[0]));
         done();
       });
   },
@@ -125,13 +111,9 @@ exports['Radar api tests'] = {
       type: 'message',
       auth: false,
       policy: { cache: true, maxAgeSeconds: 30 }
-    }
+    };
+
     Type.register('message', message_type);
-
-    var name = 'message:/setStatus/chat/2',
-        opts = Type.getByExpression(name),
-        msgList = new MessageList(name, {}, opts);
-
 
     Client.post('/node/radar/message')
       .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })
@@ -142,7 +124,7 @@ exports['Radar api tests'] = {
         .data({ accountName: 'setStatus', scope: 'chat/2' })
         .end(function(error, response) {
           assert.deepEqual('hello', JSON.parse(response[0]).value);
-          Persistence.ttl("message:/setStatus/chat/2", function(err, reply) {
+          Persistence.ttl('message:/setStatus/chat/2', function(err, reply) {
             assert.ok((parseInt(reply, 10) > 0));
             done();
           });
@@ -188,7 +170,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scope: 'ticket/1' })
         .end(function(error, response) {
-          assert.deepEqual({"1": 0 }, response);
+          assert.deepEqual({'1': 0 }, response);
           done();
         });
     },
@@ -197,7 +179,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2' })
         .end(function(error, response) {
-          assert.deepEqual({ "ticket/1": {"1": 0 }, "ticket/2":{"2": 4}}, response);
+          assert.deepEqual({ 'ticket/1': {'1': 0 }, 'ticket/2':{'2': 4}}, response);
           done();
         });
     },
@@ -206,7 +188,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scope: 'ticket/1', version: 2 })
         .end(function(error, response) {
-          assert.deepEqual( {"1":{"clients":{"1000":{}},"userType":0}}, response);
+          assert.deepEqual( {'1':{'clients':{'1000':{}},'userType':0}}, response);
           done();
         });
     },
@@ -215,7 +197,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2', version: 2 })
         .end(function(error, response) {
-          assert.deepEqual({ "ticket/1": {"1":{"clients":{"1000":{}},"userType":0}}, "ticket/2":{"2":{"clients":{"1001":{}},"userType":4}}}, response);
+          assert.deepEqual({ 'ticket/1': {'1':{'clients':{'1000':{}},'userType':0}}, 'ticket/2':{'2':{'clients':{'1001':{}},'userType':4}}}, response);
           done();
         });
     },
