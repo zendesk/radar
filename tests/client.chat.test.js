@@ -1,8 +1,7 @@
 var common = require('./common.js'),
     assert = require('assert'),
-
-    Radar = require('../server.js'),
-    Persistence = require('../../core').Persistence,
+    Radar = require('../server/server.js'),
+    Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor;
 
 exports['given two clients'] = {

@@ -1,12 +1,13 @@
 var http = require('http'),
-
     eio = require('engine.io'),
+    Persistence = require('../core/lib/persistence'),
+    RadarServer = new require('../server/server.js'),
+    radar;
 
-    RadarServer = new require('../server.js');
+// use a different db for testing
+Persistence.select(1);
 
 http.globalAgent.maxSockets = 10000;
-
-var radar
 
 module.exports = {
   // starts a Radar server at the given port
@@ -16,7 +17,7 @@ module.exports = {
     radar = new RadarServer();
     radar.attach(context.server, eio);
     context.server.listen(port, function() {
-      done()
+      done();
     });
   },
 
@@ -29,9 +30,9 @@ module.exports = {
     if(!context.serverStarted) return done();
     context.server.on('close', function() {
       context.serverStarted = false;
-      done();
+      Persistence.delWildCard('*', done);
     });
     radar.terminate();
     context.server.close();
   }
-}
+};

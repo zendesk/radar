@@ -1,6 +1,8 @@
 var assert = require('assert'),
-    MessageList = require('../../lib/resources/message_list.js'),
-    Persistence = require('../../lib/persistence.js');
+    MessageList = require('../core/lib/resources/message_list.js'),
+    Persistence = require('../core/lib/persistence.js');
+
+require('./common.js');
 
 var FakePersistence = {
   read: function() {},
@@ -10,28 +12,25 @@ var FakePersistence = {
 };
 
 var Radar = {
-  broadcast: function(subscribers, message) { }
+  broadcast: function() { }
 };
 
 
 exports['given a message list resource'] = {
 
-  before: function(done) {
+  before: function() {
     MessageList.setBackend(FakePersistence);
-    done();
   },
 
-  after: function(done) {
+  after: function() {
     MessageList.setBackend(Persistence);
-    done();
   },
 
-  beforeEach: function(done) {
+  beforeEach: function() {
     this.message = new MessageList('aaa', Radar, {});
-    done();
   },
 
-  'publish causes a publish': function(done) {
+  'publish causes a publish': function() {
     var publishCalled = false;
     FakePersistence.publish = function(key, message) {
       assert.equal('hello world', message);
@@ -40,10 +39,9 @@ exports['given a message list resource'] = {
 
     this.message.publish('hello world');
     assert.ok(publishCalled);
-    done();
   },
 
-  'publish causes a broadcast and a write, if persistent': function(done) {
+  'publish causes a broadcast and a write, if persistent': function() {
     var publishCalled = false, persistCalled = false;
     FakePersistence.publish = function(key, message) {
       assert.equal('hello world', message);
@@ -52,27 +50,25 @@ exports['given a message list resource'] = {
     FakePersistence.persistOrdered = function() {
       persistCalled = true;
     };
-    var message = new MessageList('aab', Radar, { policy : { cache : true } })
+    var message = new MessageList('aab', Radar, { policy : { cache : true } });
     message.publish('hello world');
     assert.ok(publishCalled);
     assert.ok(persistCalled);
-    done();
   },
 
-  'set expire to maxPersistence on a publish, if persistent': function(done) {
+  'set expire to maxPersistence on a publish, if persistent': function() {
     var expiryTime;
     FakePersistence.expire = function(name, expiry) {
       expiryTime = expiry;
     };
-    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } })
+    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } });
     message.publish('hello world');
     assert.equal(expiryTime, 24 * 60 * 60);
-    done();
   },
 
   'sync causes a read, and renews expiry': function(done) {
     var expiryTime;
-    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } })
+    var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } });
     FakePersistence.readOrderedWithScores = function(key, value, callback) {
       assert.equal('aab', key);
       callback([1, 2]);
@@ -94,10 +90,9 @@ exports['given a message list resource'] = {
     });
   },
 
-  'sets a default option for maxPersistence': function(done) {
+  'sets a default option for maxPersistence': function() {
     var message = this.message;
     assert.equal(message.options.policy.maxPersistence, 14 * 24 * 60 * 60);
-    done();
   }
 };
 
