@@ -146,10 +146,10 @@ Persistence.publish = function(key, value, callback) {
 Persistence.disconnect = function(callback) {
   if(client) {
     client.quit(function() {
-      if (callback) process.nextTick(callback);
+      if (callback) setImmediate(callback);
     });
   } else {
-    if (callback) process.nextTick(callback);
+    if (callback) setImmediate(callback);
   }
 };
 
