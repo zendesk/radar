@@ -1,5 +1,5 @@
 var assert = require('assert'),
-    Heartbeat = require('heartbeat'),
+    Heartbeat = require('heartbeater'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence');
 
