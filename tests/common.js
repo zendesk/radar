@@ -5,19 +5,22 @@ var http = require('http'),
     radar;
 
 // use a different db for testing
-Persistence.select(1);
+Persistence.setConfig({redis_port:27000, redis_host:'localhost'});
+//Persistence.select(1);
 
 http.globalAgent.maxSockets = 10000;
 
 module.exports = {
   // starts a Radar server at the given port
   startRadar: function(port, context, done) {
-    context.server = http.createServer(function(req, res) { res.end('Running.'); });
-    context.serverStarted = true;
-    radar = new RadarServer();
-    radar.attach(context.server, eio);
-    context.server.listen(port, function() {
-      done();
+    Persistence.connect(function() {
+      context.server = http.createServer(function(req, res) { res.end('Running.'); });
+      context.serverStarted = true;
+      radar = new RadarServer();
+      radar.attach(context.server, {redis_port:27000});
+      context.server.listen(port, function() {
+        done();
+      });
     });
   },
 

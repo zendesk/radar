@@ -1,4 +1,4 @@
-var redis = require('redis'),
+var redis = require('redis-sentinel-client'),
 
     MiniEventEmitter = require('miniee'),
     Type = require('../core').Type,
@@ -39,7 +39,7 @@ Server.prototype.attach = function(server, configuration) {
   var engineConf;
 
   configuration || (configuration = {});
-  configuration.redis_port || (configuration.redis_port = 6379);
+  configuration.redis_port || (configuration.redis_port = 27000);
   configuration.redis_host || (configuration.redis_host = 'localhost');
   require('../core').Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
@@ -123,6 +123,7 @@ Server.prototype.attach = function(server, configuration) {
 
 // Process a message
 Server.prototype.message = function(client, data) {
+  var self =this;
   var message = parseJSON(data);
 
   // audit messages
@@ -141,7 +142,18 @@ Server.prototype.message = function(client, data) {
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
 
-  var res = this.resource(message.to);
+  var subscribed = false, emitted = false;
+  var emitOp = function(messageop, client, message) {
+    if(subscribed && !emitted) {
+      emitted = true;
+      logging.debug("emitting "+messageop);
+      self.emit(messageop, client, message);
+    }
+  };
+  var res = this.resource(message.to, function() {
+    subscribed = true;
+    emitOp(message.op, client, message);
+  });
 
   // auth check
   if(res && res.options && res.options.auth) {
@@ -176,11 +188,12 @@ Server.prototype.message = function(client, data) {
       break;
   }
 
-  this.emit(message.op, client, message);
+  emitOp(message.op, client, message);
 };
 
 // Get or create channel by name
-Server.prototype.resource = function(name) {
+Server.prototype.resource = function(name, subscribed) {
+  var self = this;
   if (!this.channels[name]) {
     var opts = Type.getByExpression(name);
     switch(opts.type) {
@@ -196,8 +209,18 @@ Server.prototype.resource = function(name) {
     }
     logging.info('#redis_subscribe', name);
     this.subs[name] = true;
-    this.subscriber.subscribe(name);
+    logging.debug("Subscribing to "+name);
+    self.channels[name].subscribeTime = Date.now();
+    this.subscriber.subscribe(name, function(err) {
+      if(self.channels[name]) {
+        self.channels[name].subscribeDone = true;
+        self.channels[name].subscribeTime = Date.now() - self.channels[name].subscribeTime;
+        console.log(err, 'subscribed to '+name+'; took '+self.channels[name].subscribeTime+'ms');
+      }
+      subscribed && subscribed(name);
+    });
   }
+  this.channels[name].subscribeDone && subscribed && subscribed(name);
   return this.channels[name];
 };
 

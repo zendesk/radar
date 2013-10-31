@@ -2,7 +2,13 @@ var common = require('./common.js'),
     assert = require('assert'),
     Radar = require('../server/server.js'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor;
+    verbose = false,
+    Client = require('radar_client').constructor,
+    Minilog = require('minilog'),
+    logging = require('minilog')('test');
+if(verbose) {
+  Minilog.pipe(Minilog.backends.nodeConsole);
+}
 
 exports['reconnect: given a server and two connected clients'] = {
 
@@ -102,23 +108,27 @@ exports['reconnect: given a server and two connected clients'] = {
       messages.push(msg);
     }).sync();
 
-    client2.message('foo').publish('1');
 
     setTimeout(function() {
-      common.endRadar(self, function() {
-        common.startRadar(8009, self, function(){
-          client.once('ready', function() {
-            client2.message('foo').publish('2');
-            setTimeout(function() {
-              assert.equal(messages.length, 2);
-              assert.ok(messages.some(function(m) { return m.value == '1';}));
-              assert.ok(messages.some(function(m) { return m.value == '2';}));
-              done();
-            }, 5000); // need wait here since reconnect is 2sec
+      client2.message('foo').publish('1');
+      setTimeout(function() {
+        common.endRadar(self, function() {
+          common.startRadar(8009, self, function(){
+            client.once('ready', function() {
+              client2.message('foo').publish('2');
+              setTimeout(function() {
+                logging.debug(messages);
+                assert.equal(messages.length, 2);
+                assert.ok(messages.some(function(m) { return m.value == '1';}));
+                assert.ok(messages.some(function(m) { return m.value == '2';}));
+                done();
+              }, 5000); // need wait here since reconnect is 2sec
+            });
           });
         });
-      });
-    }, 500); // allow time for messages to be delivered
+      }, 500); // allow time for messages to be delivered
+    }, 500);
+
   }
 
 };

@@ -1,16 +1,20 @@
 var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
-    redis = require('redis'),
+    redis = require('redis-sentinel-client'),
     client;
 
 exports['given a resource'] = {
 
-  before: function() {
-    client = redis.createClient();
+  before: function(done) {
+    Persistence.setConfig({redis_port:27000, redis_host:'localhost'});
+    Persistence.connect(function() {
+      client = redis.createClient(27000, 'localhost');
+      done();
+    });
   },
 
   after: function() {
-    client.end();
+    //client.end();
   },
 
   'non JSON redis string should be filtered out (ie. do not return corrupted data)': function(done) {

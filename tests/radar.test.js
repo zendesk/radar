@@ -17,6 +17,7 @@ var Client = new ClientScope({
 
 exports['Radar api tests'] = {
   before: function(done) {
+    Persistence.setConfig({redis_port:27000, redis_host:'localhost'});
     // create frontend server
     frontend = http.createServer(function(req, res){ res.end('404 error');});
     Api.attach(frontend);

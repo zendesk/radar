@@ -2,7 +2,7 @@ var http = require('http'),
 
     configuration = {
       redis_host: 'localhost',
-      redis_port: 6379,
+      redis_port: 27000,
       port: 8000
     },
     Radar = require('./server/server.js'),

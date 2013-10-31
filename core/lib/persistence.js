@@ -1,4 +1,4 @@
-var redisLib = require('redis'),
+var redisLib = require('redis-sentinel-client'),
     logging = require('minilog')('persistence'),
     // defaults
     configuration = {
@@ -8,6 +8,7 @@ var redisLib = require('redis'),
 
 var client, isConnecting = false;
 
+var connectTime = 0;
 function redis() {
   if(!client || !client.connected){
     if(client && !client.connected && isConnecting) {
@@ -15,11 +16,14 @@ function redis() {
       return client;
     }
     isConnecting = true;
+    connectTime = Date.now();
     client = redisLib.createClient(configuration.redis_port, configuration.redis_host);
     if (configuration.redis_auth) {
       client.auth(configuration.redis_auth);
     }
     client.once('ready', function() {
+      connectTime = Date.now() - connectTime;
+      console.log('Redis client ready. '+connectTime+'ms');
       isConnecting = false;
     });
     logging.info('Created new Redis client.');
@@ -28,6 +32,20 @@ function redis() {
 }
 
 function Persistence() { }
+
+Persistence.connect = function(done) {
+  var client = redis(),
+      callbackCalled = false,
+      callback = function() {
+        if(!callbackCalled){
+          callbackCalled = true;
+          if(done) done();
+        }
+      };
+
+ client.once('ready', callback);
+ if(client.connected) callback();
+}
 
 Persistence.setConfig = function(config) {
   configuration = config;
