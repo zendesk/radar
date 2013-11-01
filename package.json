@@ -19,12 +19,11 @@
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
     "redis": "0.7.3",
-    "heartbeat": "git://github.com/mixu/heartbeat.git#1b9dce4d1809166cd4e33d09f195209237922137",
     "minilog": "0.1.0"
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "git://github.com/zendesk/radar_client.git#v0.2.17"
+    "radar_client": "0.2.17"
   },
   "scripts": {
     "start": "node server.js",
