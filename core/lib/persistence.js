@@ -19,6 +19,9 @@ function redis() {
     if (configuration.redis_auth) {
       client.auth(configuration.redis_auth);
     }
+    if (configuration.db) {
+      client.select(configuration.db);
+    }
     client.once('ready', function() {
       isConnecting = false;
     });
