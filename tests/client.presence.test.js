@@ -10,9 +10,9 @@ var common = require('./common.js'),
 http.globalAgent.maxSockets = 10000;
 
 if (verbose) {
-var Minilog = require('minilog');
-Minilog.pipe(Minilog.backends.nodeConsole)
-  .format(Minilog.backends.nodeConsole.formatWithStack);
+  var Minilog = require('minilog');
+  Minilog.pipe(Minilog.backends.nodeConsole)
+    .format(Minilog.backends.nodeConsole.formatWithStack);
 }
 
 exports['presence: given a server and two connected clients'] = {

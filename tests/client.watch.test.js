@@ -29,7 +29,7 @@ exports['given two clients'] = {
     this.client2.dealloc('test');
   },
 
-    'can subscribe a presence scope': function(done) {
+  'can subscribe a presence scope': function(done) {
     var client = this.client, client2 = this.client2;
 
     var messages = [];
@@ -133,10 +133,3 @@ exports['given two clients'] = {
     });
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}

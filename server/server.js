@@ -148,7 +148,8 @@ Server.prototype.message = function(client, data) {
     if(typeof res.options.auth !== 'function' || !res.options.auth(message, client)) {
       client.send({
         op: 'err',
-        value: 'auth'
+        value: 'auth',
+        origin: message
       });
       logging.error('#auth_invalid', data);
       return;
