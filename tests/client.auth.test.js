@@ -1,7 +1,6 @@
 var http = require('http'),
   assert = require('assert'),
   Radar = require('../server/server.js'),
-  Persistence = require('../core').Persistence,
   verbose = false,
   Client = require('radar_client').constructor,
   Type = require('../core').Type,
@@ -16,8 +15,8 @@ if (verbose) {
 var configuration = {
   redis_host: 'localhost',
   redis_port: 6379,
-  port: 8000
-}
+  port: 8124
+};
 
 exports['auth: given a server and a client'] = {
   before: function(done) {
@@ -35,32 +34,32 @@ exports['auth: given a server and a client'] = {
   },
 
   after: function(done) {
-    this.server.close();
     this.radar.terminate();
-    Persistence.disconnect();
+    this.server.close();
     done();
   },
 
   beforeEach: function(done) {
     this.client = new Client().configure({
-      userId: 123,
+      userId: 111,
       userType: 0,
-      accountName: 'test',
+      accountName: 'client_auth',
       port: configuration.port,
       upgrade: false,
-      userData: { name: 'tester' }
+      userData: { name: 'tester0' }
     }).on('ready', done).alloc('test');
   },
 
   afterEach: function() {
     this.client.dealloc('test');
+    this.client.manager.close();
   },
 
   // GET /radar/message?accountName=test&scope=chat/1
   'failed authentication should return the original message': function(done) {
 
     Type.register('message', {
-      expr: new RegExp('.*'),
+      expr: new RegExp('^message:/client_auth/test$'),
       type: 'message',
       auth: function(message, client) {
         return false;
@@ -74,17 +73,10 @@ exports['auth: given a server and a client'] = {
     this.client.on('err', function(message) {
       assert.ok(message.origin);
       assert.equal(message.origin.op, 'publish');
-      assert.equal(message.origin.to, 'message:/test/test');
+      assert.equal(message.origin.to, 'message:/client_auth/test');
       assert.deepEqual(message.origin.value, originalMessage);
       done();
     });
 
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--bail', '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}
