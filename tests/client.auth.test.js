@@ -5,9 +5,7 @@ var http = require('http'),
   verbose = false,
   Client = require('radar_client').constructor,
   Type = require('../core').Type,
-  Status = require('../core').Status,
-  MessageList = require('../core').MessageList,
-  frontend;
+  Status = require('../core').Status;
 
 if (verbose) {
   var Minilog = require('minilog');
