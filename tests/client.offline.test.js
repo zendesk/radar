@@ -50,23 +50,23 @@ exports['presence: given a server and two connected clients'] = {
   afterEach: function(done) {
     client1.dealloc('test');
     client2.dealloc('test');
-    common.endRadar(this, done);
+    common.endRadar(this, function(){
+
+    });
+    done()
   },
 
   'presence state should only be sent once to clients (slow path)': function(done) {
     // wait more than the 15 seconds so that we're sure the expected behaviour
     // isn't affected by the disconnect queue
-    this.timeout(17 * 1000);
+    this.timeout(30 * 1000);
     var messagesCount = {};
 
-    console.log('client1: '+ client1._socket.id)
-    console.log('client2: '+ client2._socket.id)
-
     setTimeout(function() {
-//      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
-//      assert.ok(messagesCount['online'], "expected online event but did not get it");
-//      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
-//      assert.ok(messagesCount['offline'], "expected offline event but did not get it");
+      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
+      assert.ok(messagesCount['online'], "expected online event but did not get it");
+      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
+      assert.ok(messagesCount['offline'], "expected offline event but did not get it");
       done();
     }, 16 * 1000);
 
@@ -80,49 +80,49 @@ exports['presence: given a server and two connected clients'] = {
         messagesCount[messageHash] ++;
       }
 
-//      assert(messagesCount[messageHash] <= 1, "expected the following operation to be received only once: " + messageHash);
+      assert(messagesCount[messageHash] <= 1, "expected the following operation to be received only once: " + messageHash);
 
     }).subscribe(function() {
       client1.presence('chat/1/participants').set('online');
       setTimeout(function() {
         client1.dealloc('test');
-//        client1.manager.close();
+        client1.manager.close();
       }, 500);
     });
   },
 
-//  'presence state should only be sent once to clients (fast path)': function(done) {
-//    this.timeout(3 * 1000);
-//    var messagesCount = {};
-//
-//
-//    setTimeout(function() {
-//      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
-//      assert.ok(messagesCount['online'], "expected online event but did not get it");
-//      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
-//      assert.ok(messagesCount['offline'], "expected offline event but did not get it");
-//      done();
-//    }, 2 * 1000);
-//
-//
-//    client2.presence('chat/1/participants').on(function(message){
-//      logging.info('Receive message', message);
-//      var messageHash = message.op;
-//      if(!messagesCount[messageHash]) {
-//        messagesCount[messageHash] = 1;
-//      } else {
-//        messagesCount[messageHash] ++;
-//      }
-//
-//      assert(messagesCount[messageHash] <= 1, "expected the following operation to be received only once: " + messageHash);
-//
-//    }).subscribe(function() {
-//      client1.presence('chat/1/participants').set('online');
-//      setTimeout(function() {
-//        client1.presence('chat/1/participants').set('offline');
-//      }, 500);
-//    });
-//  }
+  'presence state should only be sent once to clients (fast path)': function(done) {
+    this.timeout(3 * 1000);
+    var messagesCount = {};
+
+
+    setTimeout(function() {
+      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
+      assert.ok(messagesCount['online'], "expected online event but did not get it");
+      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
+      assert.ok(messagesCount['offline'], "expected offline event but did not get it");
+      done();
+    }, 2 * 1000);
+
+
+    client2.presence('chat/1/participants').on(function(message){
+      logging.info('Receive message', message);
+      var messageHash = message.op;
+      if(!messagesCount[messageHash]) {
+        messagesCount[messageHash] = 1;
+      } else {
+        messagesCount[messageHash] ++;
+      }
+
+      assert(messagesCount[messageHash] <= 1, "expected the following operation to be received only once: " + messageHash);
+
+    }).subscribe(function() {
+      client1.presence('chat/1/participants').set('online');
+      setTimeout(function() {
+        client1.presence('chat/1/participants').set('offline');
+      }, 500);
+    });
+  }
 
 };
 

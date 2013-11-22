@@ -1,7 +1,7 @@
 var common = require('./common.js'),
     assert = require('assert'),
     http = require('http'),
-    verbose = true,
+    verbose = false,
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
@@ -112,8 +112,8 @@ exports['presence: given a server and two connected clients'] = {
         var foo = setInterval(function() {
           client2.presence('chat/1/participants').get(function(message) {
             // both should show client 1 as online
-            assert.equal('get', message.op)
-            assert.deepEqual({ '123': 0 }, message.value)
+            assert.equal('get', message.op);
+            assert.deepEqual({ '123': 0 }, message.value);
 
             assert.equal(notifications.length, 2);
             assert.equal(notifications[0].op, 'online');
@@ -177,32 +177,6 @@ exports['presence: given a server and two connected clients'] = {
           });
         }, 13*1000);
       }, 5);
-    });
-  },
-
-  'presence state should only be sent once to clients': function(done) {
-    this.timeout(18 * 1000);
-
-    var timeout = setTimeout(done, 17 * 1000);
-
-    var messagesCount = {};
-
-    client2.presence('chat/1/participants').on(function(message){
-      logging.info('Receive message', message);
-      var messageHash = message.op;
-      if(!messagesCount[messageHash]) {
-        messagesCount[messageHash] = 1;
-      } else {
-        messagesCount[messageHash] ++;
-      }
-
-      assert(messagesCount[messageHash] <= 1, "expected the following operation to be received only once: " + messageHash);
-
-    }).subscribe(function() {
-        client1.presence('chat/1/participants').set('online');
-        setTimeout(function() {
-          client1.presence('chat/1/participants').set('offline');
-        }, 500);
     });
   }
 
