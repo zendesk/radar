@@ -45,6 +45,8 @@ function LocalManager(scope, policy) {
   this.remoteManager.on('client_offline', function(clientId, userId, userType) {
     if(!self.localClients.has(clientId)) {
       self.emit('client_offline', clientId, userId, userType);
+    } else {
+      this.localClients.remove(clientId);
     }
   });
 
@@ -99,12 +101,9 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
   var userType = this.userTypes.get(userId);
   // fast path allows us to do the delete right away
   this.localUsers.removeItem(userId, clientId);
-  this.localClients.remove(clientId);
 
   // order is significant (so that client_offline is emitted before user_offline)
-  if(!this.hasClient(clientId)) {
-    this.emit('client_offline', clientId, userId);
-  }
+  this.emit('client_offline', clientId, userId);
 
   // fast path doesn't set a disconnect queue item
   if(!this.hasUser(userId)) {
@@ -133,12 +132,10 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
   if(userId) {
     // remove from local - if in local at all
     this.localUsers.removeItem(userId, clientId);
-    this.localClients.remove(clientId);
 
     // order is significant (so that client_offline is emitted before user_offline)
-    if(!this.hasClient(clientId)) {
-      this.emit('client_offline', clientId, userId);
-    }
+    this.emit('client_offline', clientId, userId);
+
     logging.info('user_offline (queue)', userId, clientId);
     // slow path
     // the disconnect queue needs to be at this level, so that

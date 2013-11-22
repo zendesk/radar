@@ -5,7 +5,7 @@ var common = require('./common.js'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
-    client, client2;
+    client1, client2;
 
 http.globalAgent.maxSockets = 10000;
 
@@ -26,7 +26,7 @@ exports['presence: given a server and two connected clients'] = {
       }
     }
     common.startRadar(8000, this, function(){
-      client = new Client().configure({
+      client1 = new Client().configure({
         userId: 123,
         userType: 0,
         accountName: 'test',
@@ -48,7 +48,7 @@ exports['presence: given a server and two connected clients'] = {
   },
 
   afterEach: function(done) {
-    client.dealloc('test');
+    client1.dealloc('test');
     client2.dealloc('test');
     common.endRadar(this, done);
   },
@@ -61,7 +61,7 @@ exports['presence: given a server and two connected clients'] = {
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online', function() {
+        client1.presence('chat/1/participants').set('online', function() {
         client2.presence('chat/1/participants').get(function(message) {
           // both should show client 1 as online
           assert.equal('get', message.op);
@@ -72,7 +72,7 @@ exports['presence: given a server and two connected clients'] = {
           assert.deepEqual(notifications[0].value, { '123': 0 });
           assert.equal(notifications[1].op, 'client_online');
           assert.equal(notifications[1].value.userId, 123);
-          assert.equal(notifications[1].value.clientId, client._socket.id);
+          assert.equal(notifications[1].value.clientId, client1._socket.id);
           done();
         });
       });
@@ -83,12 +83,12 @@ exports['presence: given a server and two connected clients'] = {
     this.timeout(40*1000);
     var scope = 'chat/1/participants';
 
-    client.presence(scope).set('online', function() {
+    client1.presence(scope).set('online', function() {
       var presence = client2.presence(scope).sync({version: 2}, function sync(message) {
         assert.equal(message.op, 'get');
         assert.deepEqual(message.to, 'presence:/test/' + scope);
         assert.equal(message.value['123'].userType, 0);
-        assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
+        assert.deepEqual(message.value['123'].clients[client1.currentClientId()], { name: 'tester' });
 
         setTimeout(function() {
           presence.get({version:2}, function(message) {
@@ -107,20 +107,20 @@ exports['presence: given a server and two connected clients'] = {
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online', function() {
+        client1.presence('chat/1/participants').set('online', function() {
 
         var foo = setInterval(function() {
           client2.presence('chat/1/participants').get(function(message) {
             // both should show client 1 as online
-            assert.equal('get', message.op)
-            assert.deepEqual({ '123': 0 }, message.value)
+            assert.equal('get', message.op);
+            assert.deepEqual({ '123': 0 }, message.value);
 
             assert.equal(notifications.length, 2);
             assert.equal(notifications[0].op, 'online');
             assert.deepEqual(notifications[0].value, { '123': 0 });
             assert.equal(notifications[1].op, 'client_online');
             assert.equal(notifications[1].value.userId, 123);
-            assert.equal(notifications[1].value.clientId, client._socket.id);
+            assert.equal(notifications[1].value.clientId, client1._socket.id);
             getCounter++;
           });
         }, 800);
@@ -144,11 +144,11 @@ exports['presence: given a server and two connected clients'] = {
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online');
+        client1.presence('chat/1/participants').set('online');
       // disconnect client 1 - ensure that this happens later the online
       setTimeout(function() {
-        client.dealloc('test');
-        client.manager.close();
+        client1.dealloc('test');
+        client1.manager.close();
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
           client2.presence('chat/1/participants').get(function(message) {
