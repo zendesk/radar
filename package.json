@@ -26,7 +26,8 @@
     "radar_client": "0.2.18"
   },
   "scripts": {
-    "start": "node server.js",
-    "test": "make test"
+    "start": "npm run check-modules; node server.js",
+    "test": "npm run check-modules; make test",
+    "check-modules": "[ ./package.json -nt ./node_modules ] && $(rm -rf node_modules && npm install) || echo 'Modules are up to date'"
   }
 }
