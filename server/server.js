@@ -151,7 +151,7 @@ Server.prototype.message = function(client, data) {
         value: 'auth',
         origin: message
       });
-      logging.error('#auth_invalid', data);
+      logging.warn('#auth_invalid', data);
       return;
     }
   }
