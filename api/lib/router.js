@@ -3,7 +3,7 @@ var url = require('url'),
 
 function Router() {
   this.urlMap = [];
-};
+}
 
 // Route an incoming API request
 Router.prototype.route = function(req, res) {
