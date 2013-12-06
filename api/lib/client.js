@@ -8,7 +8,7 @@ var https = require('https'),
 function Scope(defaults) {
   // clone Client.def. We don't want to change the defaults when we modify options further.
   this.defaults = JSON.parse(JSON.stringify(defaults));
-};
+}
 
 Scope.prototype.get = function(path) {
   var c = new Client();

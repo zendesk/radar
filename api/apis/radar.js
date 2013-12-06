@@ -31,7 +31,7 @@ function setStatus(req, res, re, data) {
       res.setHeader('Cache-Control', 'no-cache');
       res.end('{}');
   });
-};
+}
 
 // curl -k "https://localhost/radar/status?accountName=test&scope=ticket/1"
 function getStatus(req, res) {
@@ -42,7 +42,7 @@ function getStatus(req, res) {
     res.setHeader('Cache-Control', 'no-cache');
     res.end(JSON.stringify(replies));
   });
-};
+}
 
 function setMessage(req, res, re, data) {
   var q = {};
@@ -64,7 +64,7 @@ function setMessage(req, res, re, data) {
       res.setHeader('Cache-Control', 'no-cache');
       res.end('{}');
   });
-};
+}
 
 function getMessage(req, res) {
   var parts = url.parse(req.url, true),
@@ -77,7 +77,7 @@ function getMessage(req, res) {
     res.setHeader('Cache-Control', 'no-cache');
     res.end(JSON.stringify(replies));
   });
-};
+}
 
 // curl -k "https://localhost/radar/presence?accountName=test&scope=ticket/1"
 // Version 1:
@@ -125,7 +125,7 @@ function getPresence(req, res) {
       });
     });
   }
-};
+}
 
 module.exports = {
   setStatus: setStatus,
