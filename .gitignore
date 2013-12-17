@@ -1,4 +1,3 @@
-node_modules/
 client/dist
 .bundle/
 vendor/bundle/

@@ -30,6 +30,6 @@
     "start": "node server.js",
     "pretest": "npm run check-modules",
     "test": "make test",
-    "check-modules": "[ ./package.json -nt ./node_modules ] && $(rm -rf node_modules && npm install) || echo 'Modules are up to date'"
+    "check-modules": "[ ./package.json -nt ./node_modules ] && $(npm rebuild && npm update) || echo 'Modules are up to date'"
   }
 }
