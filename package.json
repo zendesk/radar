@@ -3,6 +3,20 @@
   "description": "Realtime apps with a high level API based on engine.io",
   "version": "0.1.6",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
+  "contributors": [
+    {
+      "name": "Sam Shull",
+      "url": "http://github.com/samshull"
+    },
+    {
+      "name": "Vanchi Koduvayur",
+      "url": "https://github.com/vanchi-zendesk"
+    },
+    {
+      "name": "Nicolas Herment",
+      "url": "https://github.com/nherment"
+    }
+  ],
   "main": "index.js",
   "keywords": [
     "realtime",
