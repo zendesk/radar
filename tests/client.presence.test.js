@@ -79,6 +79,21 @@ exports['presence: given a server and two connected clients'] = {
     });
   },
 
+  'syncing a presence should automatically subscribe to that resource': function(done) {
+    client2.presence('test/state').on(function(message) {
+      if (message.op == 'client_online') {
+        assert.deepEqual(message.value, {
+          userId: client.configuration('userId'),
+          clientId: client.currentClientId(),
+          userData: client.configuration('userData')
+        });
+        done();
+      }
+    }).sync();
+
+    client.presence('test/state').set('online');
+  },
+
   'userData will persist when a presence is updated': function(done) {
     this.timeout(40*1000);
     var scope = 'chat/1/participants';

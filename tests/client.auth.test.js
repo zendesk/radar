@@ -1,16 +1,10 @@
 var http = require('http'),
   assert = require('assert'),
   Radar = require('../server/server.js'),
-  verbose = false,
   Client = require('radar_client').constructor,
-  Type = require('../core').Type,
-  Status = require('../core').Status;
+  Type = require('../core').Type;
 
-if (verbose) {
-  var Minilog = require('minilog');
-  Minilog.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
-}
+require('./common.js');
 
 var configuration = {
   redis_host: 'localhost',
@@ -35,8 +29,7 @@ exports['auth: given a server and a client'] = {
 
   after: function(done) {
     this.radar.terminate();
-    this.server.close();
-    done();
+    this.server.close(done);
   },
 
   beforeEach: function(done) {
@@ -58,15 +51,14 @@ exports['auth: given a server and a client'] = {
   // GET /radar/message?accountName=test&scope=chat/1
   'failed authentication should return the original message': function(done) {
 
-    Type.register('message', {
-      expr: new RegExp('^message:/client_auth/test$'),
-      type: 'message',
-      auth: function(message, client) {
-        return false;
-      }
-    });
+    Type.add([{
+      name: 'client_auth',
+      expression: /^message:\/client_auth\/test$/,
+      type: 'MessageList',
+      authorize: function() { return false; }
+    }]);
 
-    var originalMessage = { hello: "world", timestamp: Date.now()};
+    var originalMessage = { hello: 'world', timestamp: Date.now()};
 
     this.client.message('test').publish(originalMessage);
 

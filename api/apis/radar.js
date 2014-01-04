@@ -4,79 +4,104 @@ var url = require('url'),
     RemoteManager = require('../../core').RemoteManager,
     Type = require('../../core').Type,
     hostname = require('os').hostname();
+
+function jsonResponse(response, object) {
+  response.setHeader('Content-type', 'application/json');
+  response.setHeader('Cache-Control', 'no-cache');
+  response.end(JSON.stringify(object));
+}
+
+function parseData(response, data, ResourceType) {
+  var parameters = data;
+
+  if (typeof data == 'string') {
+    try {
+      parameters = JSON.parse(data);
+    } catch(e) {
+      parameters = false;
+    }
+  }
+
+  if(!parameters || !parameters.accountName || !parameters.scope) {
+    return jsonResponse(response, {});
+  }
+
+  var resourceName = ResourceType.prototype.type + ':/' + parameters.accountName + '/' + parameters.scope,
+      options = Type.getByExpression(resourceName),
+      resource = new ResourceType(resourceName, {}, options);
+
+  resource.accountName = parameters.accountName;
+  resource.scope = parameters.scope;
+
+  resource.key = parameters.key;
+  resource.value = parameters.value;
+
+  return resource;
+}
+
 // Note that Firefox needs a application/json content type or it will show a warning
 
 // curl -k -H "Content-Type: application/json" -X POST -d '{"accountName":"test","scope":"ticket/1","key":"greeting","value":"hello"}' https://localhost/radar/status
 function setStatus(req, res, re, data) {
-  var q = {};
-  try {
-    q = JSON.parse(data);
-  } catch(e) {
-    return res.end();
+  var status = parseData(res, data, Status);
+
+  if (status) {
+    if (!status.key || !status.value) {
+      return jsonResponse(res, {});
+    }
+
+    status._set(status.name,
+      {
+        op: 'set',
+        to: status.name,
+        key: status.key,
+        value: status.value,
+      }, status.options.policy || {}, function() {
+        jsonResponse(res, {});
+    });
   }
-  if(!q || !q.accountName || !q.scope || !q.key || !q.value) { return res.end('{}'); }
-  var resourceName = 'status:/'+q.accountName+'/'+q.scope,
-      opts = Type.getByExpression(resourceName);
-
-  var s = new Status(resourceName, {}, opts);
-
-  Status.prototype._setStatus(resourceName,
-    {
-      op: 'set',
-      to: 'status:/'+q.accountName+'/'+q.scope,
-      key: q.key,
-      value: q.value,
-    }, s.options.policy || {}, function(replies) {
-      res.setHeader('Content-type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.end('{}');
-  });
 }
 
 // curl -k "https://localhost/radar/status?accountName=test&scope=ticket/1"
 function getStatus(req, res) {
   var parts = url.parse(req.url, true),
-      q = parts.query;
-  Status.prototype._getStatus('status:/'+q.accountName+'/'+q.scope, function(replies) {
-    res.setHeader('Content-type', 'application/json');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.end(JSON.stringify(replies));
-  });
+      status = parseData(res, parts.query, Status);
+
+  if (status) {
+    status._get('status:/' + status.accountName + '/' + status.scope, function(replies) {
+      jsonResponse(res, replies);
+    });
+  }
 }
 
 function setMessage(req, res, re, data) {
-  var q = {};
-  try {
-    q = JSON.parse(data);
-  } catch(e) { return res.end(); }
-  if(!q || !q.accountName || !q.scope || !q.value) { return res.end('{}'); }
-  var resourceName = 'message:/'+q.accountName+'/'+q.scope,
-      opts = Type.getByExpression(resourceName);
-  var m = new MessageList(resourceName, {}, opts);
+  var message = parseData(res, data, MessageList);
 
-  MessageList.prototype._publish(resourceName, m.options.policy || {},
-    {
-      op: 'publish',
-      to: 'message:/'+q.accountName+'/'+q.scope,
-      value: q.value
-    }, function() {
-      res.setHeader('Content-type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.end('{}');
-  });
+  if (message) {
+    if (!message.value) {
+      return jsonResponse(res, {});
+    }
+
+    message._publish(message.name, message.options.policy || {},
+      {
+        op: 'publish',
+        to: 'message:/' + message.accountName + '/' + message.scope,
+        value: message.value
+      }, function() {
+        jsonResponse(res, {});
+    });
+  }
 }
 
 function getMessage(req, res) {
   var parts = url.parse(req.url, true),
-      q = parts.query;
-  if(!q || !q.accountName || !q.scope) { return res.end(); }
-  var resourceName = 'message:/'+q.accountName+'/'+q.scope,
-      opts = Type.getByExpression(resourceName);
-  MessageList.prototype._sync(resourceName, opts.policy || {}, function(replies) {
-    res.setHeader('Content-type', 'application/json');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.end(JSON.stringify(replies));
-  });
+      message = parseData(res, parts.query, MessageList);
+
+  if (message) {
+    message._sync(message.name, message.options.policy || {}, function(replies) {
+      jsonResponse(res, replies);
+    });
+  }
 }
 
 // curl -k "https://localhost/radar/presence?accountName=test&scope=ticket/1"

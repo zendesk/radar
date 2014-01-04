@@ -37,7 +37,7 @@ exports['given a message list resource'] = {
       publishCalled = true;
     };
 
-    this.message.publish('hello world');
+    this.message.publish({}, 'hello world');
     assert.ok(publishCalled);
   },
 
@@ -51,7 +51,7 @@ exports['given a message list resource'] = {
       persistCalled = true;
     };
     var message = new MessageList('aab', Radar, { policy : { cache : true } });
-    message.publish('hello world');
+    message.publish({}, 'hello world');
     assert.ok(publishCalled);
     assert.ok(persistCalled);
   },
@@ -62,7 +62,7 @@ exports['given a message list resource'] = {
       expiryTime = expiry;
     };
     var message = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } });
-    message.publish('hello world');
+    message.publish({}, 'hello world');
     assert.equal(expiryTime, 24 * 60 * 60);
   },
 
@@ -87,7 +87,7 @@ exports['given a message list resource'] = {
         assert.equal(expiryTime, 24 * 60 * 60);
         done();
       }
-    });
+    }, {});
   },
 
   'sets a default option for maxPersistence': function() {
@@ -95,10 +95,3 @@ exports['given a message list resource'] = {
     assert.equal(message.options.policy.maxPersistence, 14 * 24 * 60 * 60);
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}
