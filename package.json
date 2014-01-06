@@ -44,6 +44,6 @@
     "start": "node server.js",
     "pretest": "npm run check-modules",
     "test": "make test",
-    "check-modules": "[ ./package.json -nt ./node_modules ] && $(rm -rf node_modules && npm install) || echo 'Modules are up to date'"
+    "check-modules": "if [ -z \"$SKIP_PACAKGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi"
   }
 }
