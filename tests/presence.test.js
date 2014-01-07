@@ -46,26 +46,30 @@ exports['given a presence'] = {
         assert.equal(1, userId);
         assert.equal(2, userType);
         assert.equal(true, online);
+      presence.redisIn(m);
     };
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
     // also added to _local
-    assert.ok(presence._xserver.hasUser(1));
+
+    assert.ok(presence._presenceManager.isUserConnected(1));
 
     Persistence.publish = function(scope, m) {
       var online = m.online,
-          userId = m.userId,
-          userType = m.userType;
+        userId = m.userId,
+        userType = m.userType;
       // immediate notification is sent
       assert.equal(1, userId);
       assert.equal(2, userType);
       assert.equal(false, online);
+      presence.redisIn(m);
     };
 
     presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
     // removed from _local
-    assert.ok(!presence._xserver.hasUser(1));
+    assert.ok(!presence._presenceManager.isUserConnected(1));
     done();
+
   },
 
   'setting status sets overall expiry to maxPersistence' : function(done) {
@@ -83,13 +87,13 @@ exports['given a presence'] = {
   'autopublish must renew the expiry to maxPersistence' : function(done) {
     var presence = this.presence, client = this.client;
 
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
     Persistence.expire = function(scope, expiry) {
       assert.equal(presence.name, scope);
       assert.equal(expiry, 12 * 60 * 60);
       done();
     }
-    presence._xserver.timeouts();
+
+    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
 
   },
 
@@ -104,39 +108,48 @@ exports['given a presence'] = {
       assert.equal(1, userId);
       assert.equal(2, userType);
       assert.equal(true, online);
+      presence.redisIn(m);
       calls++;
     };
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal(2, calls); //One for client, one for user
+    assert.equal(1, calls);
     // added to _local ONCE
-    assert.ok(presence._xserver.hasUser(1));
+    assert.ok(presence._presenceManager.isUserConnected(1));
     done();
   },
 
 
   'users that disconnect ungracefully are added to the list of waiting items, no duplicates': function(done) {
+    this.timeout(17000);
+
     var presence = this.presence, client = this.client, client2 = new MiniEE();
     client2.id = counter++;
 
-    Persistence.publish = function(scope, data) { };
+    Persistence.publish = function(scope, m) {
+      presence.redisIn(m);
+    };
 
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
-
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 0);
+    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client);
-    // disconnect is queued
-    assert.ok(presence._xserver._disconnectQueue._queue[1]);
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
     presence.setStatus(client2, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client2);
-    // no duplicates
-    assert.ok(presence._xserver._disconnectQueue._queue[1]);
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
-    done();
+
+    var userOfflineNotifCount = 0;
+    var timeout = setTimeout(function() {
+      assert.equal(userOfflineNotifCount, 1);
+      presence.broadcast = oldBroadCast;
+      done();
+    }, 16000);
+
+    var oldBroadCast = presence.broadcast;
+
+    presence.broadcast = function() {
+      userOfflineNotifCount++
+    };
   },
 
   'when two connections have the same user, a disconnect is only queued after both disconnect but client disconnects are exposed': {
@@ -144,16 +157,19 @@ exports['given a presence'] = {
     beforeEach: function() {
       this.client2 = new MiniEE();
       this.client2.id = counter++;
-      this.presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
-      this.presence.setStatus(this.client2, { key: 1, type: 2, value: 'online' } );
 
       var self = this;
 
       this.remote = [];
       this.local = [];
+
       Persistence.publish = function(scope, data) {
         self.remote.push(data);
+        self.presence.redisIn(data);
       };
+
+      this.presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
+      this.presence.setStatus(this.client2, { key: 1, type: 2, value: 'online' } );
 
       this.oldBroadcast = this.presence.broadcast;
       this.presence.broadcast = function(data, except) {
@@ -180,30 +196,28 @@ exports['given a presence'] = {
       var presence = this.presence, client = this.client, client2 = this.client2;
 
       presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
-      // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
 
-      assert.equal(this.remote.length, 2);
+      assert.equal(this.remote.length, 3);
       // a client_offline should be sent for CID 1
       assert.equal(this.remote[0].userId, 1);
       assert.equal(this.remote[0].clientId, client.id);
-      assert.equal(this.remote[0].online, false);
+      assert.equal(this.remote[0].online, true);
       // a autopublish renewal should be sent remotely for UID 1 (CID 2)
       assert.equal(this.remote[1].userId, 1);
       assert.equal(this.remote[1].clientId, client2.id);
       assert.equal(this.remote[1].online, true);
 
-      presence.setStatus(client2, { key: 1, type: 2, value: 'offline' } );
-      // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
-
-      assert.equal(this.remote.length, 3);
-      // there should be a client_offline notification for CID 2
       assert.equal(this.remote[2].userId, 1);
-      assert.equal(this.remote[2].clientId, client2.id);
+      assert.equal(this.remote[2].clientId, client.id);
       assert.equal(this.remote[2].online, false);
+
+      presence.setStatus(client2, { key: 1, type: 2, value: 'offline' } );
+
+      assert.equal(this.remote.length, 4);
+      // there should be a client_offline notification for CID 2
+      assert.equal(this.remote[3].userId, 1);
+      assert.equal(this.remote[3].clientId, client2.id);
+      assert.equal(this.remote[3].online, false);
 
       // check local broadcast
       assert.equal(this.local.length, 3);
@@ -225,17 +239,16 @@ exports['given a presence'] = {
       assert.equal(this.messages[this.client2.id].length, 2);
     },
 
-    'ungraceful disconnects': function() {
+    'ungraceful disconnects': function(done) {
+      this.timeout(16*1000)
       var presence = this.presence, client = this.client, client2 = this.client2;
 
       presence.unsubscribe(client);
       // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
 
-      assert.equal(this.remote.length, 2);
+      assert.equal(this.remote.length, 3);
       // a client_offline should be sent for CID 1
-      assert.equal(this.remote[0].online, false);
+      assert.equal(this.remote[0].online, true);
       assert.equal(this.remote[0].userId, 1);
       assert.equal(this.remote[0].clientId, client.id);
       // a autopublish renewal should be sent remotely for UID 1 (CID 2)
@@ -243,48 +256,54 @@ exports['given a presence'] = {
       assert.equal(this.remote[1].userId, 1);
       assert.equal(this.remote[1].clientId, client2.id);
 
+      assert.equal(this.remote[2].online, false);
+      assert.equal(this.remote[2].userId, 1);
+      assert.equal(this.remote[2].clientId, client.id);
+
       presence.unsubscribe(client2);
       // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
 
-      assert.equal(this.remote.length, 3);
+      assert.equal(this.remote.length, 4);
       // there should be a client_offline notification for CID 2
-      assert.equal(this.remote[2].userId, 1);
-      assert.equal(this.remote[2].clientId, client2.id);
-      assert.equal(this.remote[2].online, false);
+      assert.equal(this.remote[3].userId, 1);
+      assert.equal(this.remote[3].clientId, client2.id);
+      assert.equal(this.remote[3].online, false);
 
-      // check local broadcast
-      assert.equal(this.local.length, 3);
-      // there should be a client_offline notification for CID 1
-      assert.equal(this.local[0].op, 'client_offline');
-      assert.equal(this.local[0].value.userId, 1);
-      assert.equal(this.local[0].value.clientId, this.client.id);
-      // there should be a client_offline notification for CID 2
-      assert.equal(this.local[1].op, 'client_offline');
-      assert.equal(this.local[1].value.userId, 1);
-      assert.equal(this.local[1].value.clientId, this.client2.id);
-      // there should be a broadcast for a offline notification for UID 1
-      assert.equal(this.local[2].op, 'offline');
-      assert.deepEqual(this.local[2].value, { 1: 2 });
+      var self = this;
 
-      // only CID 2 receives any messages
-      // = one message for the CID1 disconnect, after which no messages are delivered
-      assert.equal(typeof this.messages[this.client.id], 'undefined');
-      assert.equal(this.messages[this.client2.id].length, 1);
+      setTimeout(function() {
+        // check local broadcast
+        assert.equal(self.local.length, 3, JSON.stringify(self.local));
+        // there should be a client_offline notification for CID 1
+        assert.equal(self.local[0].op, 'client_offline');
+        assert.equal(self.local[0].value.userId, 1);
+        assert.equal(self.local[0].value.clientId, self.client.id);
+        // there should be a client_offline notification for CID 2
+        assert.equal(self.local[1].op, 'client_offline');
+        assert.equal(self.local[1].value.userId, 1);
+        assert.equal(self.local[1].value.clientId, self.client2.id);
+        // there should be a broadcast for a offline notification for UID 1
+        assert.equal(self.local[2].op, 'offline');
+        assert.deepEqual(self.local[2].value, { 1: 2 });
+
+        // only CID 2 receives any messages
+        // = one message for the CID1 disconnect, after which no messages are delivered
+        assert.equal(typeof self.messages[self.client.id], 'undefined');
+        assert.equal(self.messages[self.client2.id].length, 1);
+
+        done();
+
+      }, 15100);
+
     },
 
     'one does a ungraceful disconnect, the other one does a explicit disconnect': function() {
       var presence = this.presence, client = this.client, client2 = this.client2;
 
       presence.unsubscribe(client);
-      // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
 
-      assert.equal(this.remote.length, 2);
-      // a client_offline should be sent for CID 1
-      assert.equal(this.remote[0].online, false);
+      assert.equal(this.remote.length, 3);
+      assert.equal(this.remote[0].online, true);
       assert.equal(this.remote[0].userId, 1);
       assert.equal(this.remote[0].clientId, client.id);
       // a autopublish renewal should be sent remotely for UID 1 (CID 2)
@@ -292,10 +311,12 @@ exports['given a presence'] = {
       assert.equal(this.remote[1].userId, 1);
       assert.equal(this.remote[1].clientId, client2.id);
 
+      // a client_offline should be sent for CID 1
+      assert.equal(this.remote[2].online, false);
+      assert.equal(this.remote[2].userId, 1);
+      assert.equal(this.remote[2].clientId, client.id);
+
       presence.setStatus(this.client2, { key: 1, type: 2, value: 'offline' } );
-      // and the autopublish runs
-      presence._xserver.timeouts();
-      presence._xserver._processDisconnects();
 
       // check local broadcast
       assert.equal(this.local.length, 3);
@@ -333,49 +354,53 @@ exports['given a presence'] = {
       notifications.push({ userId: userId, userType: userType, online: online });
     };
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
-    presence._xserver.timeouts();
+
     assert.ok(notifications.length > 0); // ideally, only one message, but given the timeouts() processing >1 is also OK
     assert.equal(1, notifications[0].userId);
     done();
   },
 
-  'users that are queued to disconnect and are still gone are gone, users that reconnect are excluded': function() {
+  'users that are queued to disconnect and are still gone are gone, users that reconnect are excluded': function(done) {
+    this.timeout(16*1000);
+
     var presence = this.presence, client = this.client, client2 = new MiniEE();
     client2.id = counter++;
+
+    var remote = [],
+      local = [];
+    Persistence.publish = function(scope, data) {
+      remote.push(data);
+      presence.redisIn(data);
+    };
+
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 0);
     presence.unsubscribe(client);
-    // disconnect is queued
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 1);
 
     presence.setStatus(client2, { key: 123, type: 0, value: 'online' } );
     presence.unsubscribe(client2);
-    // disconnect is queued
-    assert.equal(Object.keys(presence._xserver._disconnectQueue._queue).length, 2);
 
     // now client 1 reconnects
     presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
 
-    var remote = [],
-        local = [];
-    Persistence.publish = function(scope, data) {
-      remote.push(data);
-    };
     var oldBroadcast = presence.broadcast;
     presence.broadcast = function(data) {
       local.push(data);
     };
-    // and the autopublish runs
-    presence._xserver.timeouts();
-    presence._xserver._processDisconnects();
-    // client 1 should emit periodic online and 123 should have emitted offline
-    // one autopublish message
-    assert.ok(remote.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));
-    // one broadcast of a user offline
-    assert.deepEqual(local[0], { to: 'aaa', op: 'offline', value: { '123': 0 } });
 
-    presence.broadcast = oldBroadcast;
+    setTimeout(function() {
+      // client 1 should emit periodic online and 123 should have emitted offline
+      // one autopublish message
+      assert.ok(remote.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online == true; } ));
+      // one broadcast of a user offline
+      assert.deepEqual(local[0], { to: 'aaa', op: 'offline', value: { '123': 0 } });
+
+      presence.broadcast = oldBroadcast;
+
+      done();
+
+    }, 15050);
+
   },
 
   'userData should be stored on an incoming message': function() {
@@ -392,27 +417,30 @@ exports['given a presence'] = {
     Persistence.persistHash = persistHash;
   },
 
-  'userData should be included as the value of a client in a presence response': function() {
+  'userData should be included as the value of a client in a presence response': function(done) {
+    var self = this;
     var data = {
-          clients: {},
-          userType: 2,
-        },
-        fakeClient = {
-          send: function(msg) {
-            assert.deepEqual(msg.value[123], data);
-          }
-        };
+      clientsCount: 1,
+      clients: {},
+      userType: 2,
+    };
+
+    Persistence.publish = function(scope, data) {
+      self.presence.redisIn(data);
+    };
+
+    var fakeClient = {
+      send: function(msg) {
+        assert.deepEqual(msg.value[123], data);
+        done();
+      }
+    };
 
     data.clients[this.client.id] = { test: 1 };
 
     this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
-    this.presence.getStatus(fakeClient, { options: { version: 2 } });
+    setTimeout(function() {
+      self.presence.getStatus(fakeClient, { options: { version: 2 } });
+    }, 50);
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}

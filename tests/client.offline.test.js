@@ -122,6 +122,46 @@ exports['presence: given a server and two connected clients'] = {
         client1.presence('chat/1/participants').set('offline');
       }, 500);
     });
+  },
+
+  'presence state can switch back to client_online after a client_offline': function(done) {
+    this.timeout(3 * 1000);
+    var messagesCount = {};
+
+
+    setTimeout(function() {
+      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
+      assert.ok(messagesCount['online'], "expected online event but did not get it");
+      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
+      assert.ok(messagesCount['offline'], "expected offline event but did not get it");
+      assert.ok(messagesCount['client_offline'] === 1, "expected [client_offline] event to be received only once");
+      assert.ok(messagesCount['offline'] === 1, "expected [offline] event to be received only once");
+      assert.ok(messagesCount['client_online'] == 2, "expected client_online event #2 but did not get it");
+      assert.ok(messagesCount['online'] == 2, "expected online event #2 but did not get it");
+      done();
+    }, 2 * 1000);
+
+
+    client2.presence('chat/1/participants').on(function(message) {
+      logging.info('Receive message', message);
+      var messageHash = message.op;
+      if(!messagesCount[messageHash]) {
+        messagesCount[messageHash] = 1;
+      } else {
+        messagesCount[messageHash] ++;
+      }
+
+    }).subscribe(function() {
+        client1.presence('chat/1/participants').set('online');
+        setTimeout(function() {
+          client1.presence('chat/1/participants').set('offline');
+
+          setTimeout(function() {
+            client1.presence('chat/1/participants').set('online');
+
+          }, 500);
+        }, 500);
+      });
   }
 
 };
