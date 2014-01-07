@@ -4,6 +4,9 @@ var logger = require('minilog')('presence_manager');
 
 var PresenceTimeoutManager = require('./presence_timeout_manager.js');
 
+var DATA_EXPIRY     = 50 * 1000;
+var OFFLINE_EXPIRY  = 15 * 1000;
+
 function PresenceManager(scope, persistence, eventBus, policy) {
   events.EventEmitter.call(this);
 
@@ -58,7 +61,7 @@ function PresenceManager(scope, persistence, eventBus, policy) {
         self.emit('user_offline', userId, clientId, userType);
       } else {
         logger.info('scheduled offline', userId)
-        timeoutManager.schedule(userId, 15 * 1000);
+        timeoutManager.schedule(userId, OFFLINE_EXPIRY);
       }
     }
 
@@ -175,11 +178,14 @@ PresenceManager.prototype.fullRead = function(callback) {
       if(result && result.length > 0) {
 
         self._users = {};
+        var staleTimeThreshold = Date.now() - DATA_EXPIRY;
 
         for(var key in result) {
           if(result.hasOwnProperty(key)) {
-            self._add(result[key].userId, result[key].clientId, result[key].userData);
-            self._setUserType(result[key].userId, result[key].userType);
+            if(result[key].at && result[key].at > staleTimeThreshold) {
+              self._add(result[key].userId, result[key].clientId, result[key].userData);
+              self._setUserType(result[key].userId, result[key].userType);
+            }
           }
         }
       }
