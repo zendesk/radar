@@ -50,11 +50,10 @@ PresenceManager.prototype._attach = function(eventBus) {
       if(timeoutManager.has(userId)) {
         logger.info('cancelling scheduled offline', userId);
         timeoutManager.cancel(userId);
-        self.emit('client_online', userId, clientId, userType, userData);
       } else {
         self.emit('user_online', userId, clientId, userType, userData);
-        self.emit('client_online', userId, clientId, userType, userData);
       }
+      self.emit('client_online', userId, clientId, userType, userData);
     }
     self._add(userId, clientId, userType, userData);
   });
