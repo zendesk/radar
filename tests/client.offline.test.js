@@ -15,7 +15,7 @@ if (verbose) {
     .format(Minilog.backends.nodeConsole.formatWithStack);
 }
 
-exports['presence: given a server and two connected clients'] = {
+exports['offline presence test: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
     var tasks = 0;
@@ -143,7 +143,7 @@ exports['presence: given a server and two connected clients'] = {
 
 
     client2.presence('chat/1/participants').on(function(message) {
-      logging.info('Receive message', message);
+      logging.debug('Received message', message);
       var messageHash = message.op;
       if(!messagesCount[messageHash]) {
         messagesCount[messageHash] = 1;

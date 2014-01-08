@@ -3,7 +3,7 @@ var assert = require('assert');
 
 var timeoutManager;
 
-exports['presence: given a server and two connected clients'] = {
+exports['presence timeout manager'] = {
 
 
 
@@ -11,9 +11,13 @@ exports['presence: given a server and two connected clients'] = {
     timeoutManager = new PresenceTimeoutManager();
   },
 
+  'afterEach': function() {
+    timeoutManager.removeAllListeners();
+  },
+
   'timeout should fire at least after the given delay': function(done) {
 
-    this.timeout(500)
+    this.timeout(500);
 
     var now = Date.now();
     timeoutManager.once('timeout', function(key) {
@@ -21,7 +25,6 @@ exports['presence: given a server and two connected clients'] = {
         assert((now + 400) <= Date.now() );
         done();
       }
-      timeoutManager.removeListener('timeout', arguments.callee.caller);
     });
 
     timeoutManager.schedule('key1', 400);
@@ -36,7 +39,6 @@ exports['presence: given a server and two connected clients'] = {
     var now = Date.now();
     timeoutManager.once('timeout', function(key) {
       if(key === 'key2') {
-        timeoutManager.removeAllListeners();
         throw new Error('the trigger was cancelled and should not have fired');
       }
     });
@@ -64,7 +66,6 @@ exports['presence: given a server and two connected clients'] = {
         timeoutCount ++;
       }
       if(timeoutCount === 2) {
-        timeoutManager.removeAllListeners();
         done()
       }
     });
@@ -93,7 +94,6 @@ exports['presence: given a server and two connected clients'] = {
         timeoutCount ++;
       }
       if(timeoutCount === 2) {
-        timeoutManager.removeListener('timeout', arguments.callee.caller);
         done();
       }
     });
@@ -101,6 +101,39 @@ exports['presence: given a server and two connected clients'] = {
     timeoutManager.schedule('key5', 200);
     timeoutManager.schedule('key6', 300);
     timeoutManager.schedule('key7', 400);
+  },
+
+  'schedule, cancel, schedule a timeout should fire once and at the last scheduled time': function(done) {
+
+    this.timeout(500);
+
+    var now = Date.now();
+    timeoutManager.on('timeout', function(key) {
+      if(key === 'key8') {
+        assert( (now + 400) <= Date.now() );
+        done();
+      }
+    });
+
+    timeoutManager.schedule('key8', 200);
+    timeoutManager.cancel('key8');
+    timeoutManager.schedule('key8', 400);
+  },
+
+  'it should be possible to store data and have it back on timeout': function(done) {
+
+    this.timeout(500);
+
+    var now = Date.now();
+    timeoutManager.once('timeout', function(key, data) {
+      if(key === 'key1') {
+        assert((now + 400) <= Date.now() );
+        assert.deepEqual(data, {'white': 'cat'});
+        done();
+      }
+    });
+
+    timeoutManager.schedule('key1', 400, {'white': 'cat'});
   },
 
 

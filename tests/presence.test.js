@@ -1,14 +1,12 @@
 var assert = require('assert'),
-    Heartbeat = require('../core/lib/Heartbeat.js'),
     MiniEE = require('miniee'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence'),
     logging = require('minilog')('test');
 
 var Server = {
-  timer: new Heartbeat().interval(1500),
   broadcast: function(subscribers, message) { },
-  terminate: function() { Server.timer.clear(); },
+  terminate: function() { },
   destroy: function() {},
   server: {
     clients: { }
@@ -27,7 +25,6 @@ exports['given a presence'] = {
     this.client.id = counter++;
     Server.channels = { };
     Server.channels[this.presence.name] = this.presence;
-    Server.timer.clear();
     done();
   },
 
@@ -48,10 +45,10 @@ exports['given a presence'] = {
         assert.equal(true, online);
       presence.redisIn(m);
     };
+
     presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
 
     // also added to _local
-
     assert.ok(presence._presenceManager.isUserConnected(1));
 
     Persistence.publish = function(scope, m) {
@@ -431,7 +428,10 @@ exports['given a presence'] = {
 
     var fakeClient = {
       send: function(msg) {
-        assert.deepEqual(msg.value[123], data);
+
+        assert.ok(msg.value[123]);
+        assert.strictEqual(msg.value[123].userType, data.userType);
+        assert.deepEqual(msg.value[123].clients, data.clients);
         done();
       }
     };
@@ -442,5 +442,88 @@ exports['given a presence'] = {
     setTimeout(function() {
       self.presence.getStatus(fakeClient, { options: { version: 2 } });
     }, 50);
-  }
+  },
+
+  'client_online is sent after a client glitch (short online->offline->online)': function(done) {
+    var messagesCount = {};
+
+    var self = this;
+    Persistence.publish = function(scope, data) {
+      self.presence.redisIn(data);
+    };
+
+    function message(id) {
+      if(!messagesCount[id]) {
+        messagesCount[id] = 1;
+      } else {
+        messagesCount[id] ++;
+      }
+    }
+
+    self.presence._presenceManager.on('user_online', function() {
+      message('user_online');
+    });
+    self.presence._presenceManager.on('client_online', function() {
+      message('client_online');
+    });
+    self.presence._presenceManager.on('user_offline', function() {
+      message('user_offline');
+    });
+    self.presence._presenceManager.on('client_offline', function() {
+      message('client_offline');
+    });
+
+    setTimeout(function() {
+      assert.ok(messagesCount['client_online'], "expected client_online event but did not get it");
+
+      assert.ok(messagesCount['user_online'], "expected online event but did not get it");
+      assert.ok(messagesCount['user_online'] === 1, "expected [online] event to be received only once");
+
+      assert.ok(messagesCount['client_offline'], "expected client_offline event but did not get it");
+      assert.ok(messagesCount['client_offline'] === 1, "expected [client_offline] event to be received only once");
+
+      assert.ok(!messagesCount['user_offline'], "did not expect user_offline event");
+
+      assert.ok(messagesCount['client_online'] === 2, "expected client_online event #2 but did not get it");
+
+      done();
+    }, 500);
+
+    self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+
+    setTimeout(function() {
+      self.presence.unsubscribe(self.client);
+
+      setTimeout(function() {
+        self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+      }, 100);
+    }, 100);
+  },
+
+  'client loosing connection should not cause user offline (soft offline)': function(done) {
+    var self = this;
+
+    Persistence.publish = function(scope, data) {
+      self.presence.redisIn(data);
+    };
+
+    var expectedClients = {};
+    expectedClients[self.client.id] = {};
+
+    var fakeClient = {
+      send: function(msg) {
+        assert.ok(msg.value[123]); // user is still online
+        assert.deepEqual(msg.value[123].clients, {}); // but no client is connected
+        done();
+      }
+    };
+
+    self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online' });
+    setTimeout(function() {
+      self.presence.unsubscribe(self.client);
+      setTimeout(function() {
+        self.presence.getStatus(fakeClient, { options: { version: 2 } });
+      }, 200);
+    }, 200);
+  },
 };

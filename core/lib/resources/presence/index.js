@@ -15,8 +15,8 @@ function Presence(name, parent, options) {
   var self = this;
   this.type = 'presence';
 
-  this._redisWrapper = new EventEmitter();
-  this._presenceManager = new PresenceManager(name, Persistence, this._redisWrapper, this.options.policy);
+  this._redisEventBus = new EventEmitter();
+  this._presenceManager = new PresenceManager(name, Persistence, this._redisEventBus, this.options.policy);
 
   this._presenceManager.on('user_online', function(userId, clientId, userType, data) {
     logging.info('user_online', userId, clientId, userType);
@@ -74,7 +74,7 @@ Presence.prototype.redisIn = function(message) {
     // messages expire after 45 seconds
     if(message.at >= maxAge) {
       var eventName = message.online ? 'client_online' : 'client_offline';
-      this._redisWrapper.emit(eventName, message.userId, message.clientId, message.userType, message.userData, message.hard);
+      this._redisEventBus.emit(eventName, message.userId, message.clientId, message.userType, message.userData, message.hard);
     }
   }
 };
@@ -105,7 +105,6 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
 Presence.prototype.unsubscribe = function(client, sendAck) {
   var self = this;
 
-  // TODO: use the correct userType ?
   this._presenceManager.offline(userClientMap[client.id], client.id, /*userType*/undefined, /*data*/undefined, /*hard*/false);
   delete userClientMap[client.id];
   Resource.prototype.unsubscribe.call(this, client, sendAck);
@@ -117,28 +116,25 @@ Presence.prototype.sync = function(client, message) {
 
 // this is a full sync of the online status from Redis
 Presence.prototype.getStatus = function(client, message) {
-  var self = this;
-//  this.fullRead(function() {
-    var users = self._presenceManager.getUsers();
-    if(message.options && message.options.version == 2) {
-      client.send({
-        op: 'get',
-        to: self.name,
-        value: users
-      });
-    } else {
-      var usersWithType = {};
-      for(var userId in users) {
-        usersWithType[userId] = users[userId].userType;
-      }
-
-      client.send({
-        op: 'get',
-        to: self.name,
-        value: usersWithType
-      });
+  var users = this._presenceManager.getUsers();
+  if(message.options && message.options.version == 2) {
+    client.send({
+      op: 'get',
+      to: this.name,
+      value: users
+    });
+  } else {
+    var usersWithType = {};
+    for(var userId in users) {
+      usersWithType[userId] = users[userId].userType;
     }
-//  });
+
+    client.send({
+      op: 'get',
+      to: this.name,
+      value: usersWithType
+    });
+  }
 };
 
 Presence.prototype.broadcast = function(message, except) {

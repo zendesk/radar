@@ -91,9 +91,12 @@ exports['given a server'] = {
       client.presence('ticket/33').set('online', function() {
         client.presence('ticket/33').get({ version: 2 }, function(message) {
           assert.equal('get', message.op);
-          var expected = {123:{clientsCount: 1, clients:{},userType:0}};
+          var expected = {123:{clients:{},userType:0}};
           expected['123'].clients[client._socket.id] = {};
-          assert.deepEqual(message.value, expected);
+          assert.ok(message.value);
+          assert.ok(message.value['123']);
+          assert.strictEqual(message.value['123'].userType, expected['123'].userType);
+          assert.deepEqual(message.value['123'].clients, expected['123'].clients);
           done();
         });
       });
@@ -109,9 +112,12 @@ exports['given a server'] = {
       client.presence('ticket/213').sync({ version: 2 }, function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
-        var expected = {123:{clientsCount: 1, clients:{},userType:0}};
+        var expected = {123:{clients:{},userType:0}};
         expected['123'].clients[client._socket.id] = {};
-        assert.deepEqual(message.value, expected);
+        assert.ok(message.value);
+        assert.ok(message.value['123']);
+        assert.strictEqual(message.value['123'].userType, expected['123'].userType);
+        assert.deepEqual(message.value['123'].clients, expected['123'].clients);
         done();
       });
     });

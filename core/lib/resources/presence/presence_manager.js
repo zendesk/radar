@@ -17,10 +17,21 @@ function PresenceManager(scope, persistence, eventBus, policy) {
     this._policy = policy;
   }
 
-  var timeoutManager = new PresenceTimeoutManager();
-
   this._users = {};
-  // TODO: fullRead on init
+
+  this.fullRead(function() {
+  });
+  self._attach(eventBus);
+
+}
+
+util.inherits(PresenceManager, events.EventEmitter);
+
+PresenceManager.prototype._attach = function(eventBus) {
+
+  var self = this;
+
+  var timeoutManager = new PresenceTimeoutManager();
 
   timeoutManager.on('timeout', function(userId) {
     if(!self.isUserConnected(userId)) {
@@ -37,15 +48,15 @@ function PresenceManager(scope, persistence, eventBus, policy) {
     // TODO: client online should fire whenever a new client comes online, not only when a new user comes online
     if(!self.isUserConnected(userId)) {
       if(timeoutManager.has(userId)) {
-        logger.info('cancelling scheduled offline', userId)
+        logger.info('cancelling scheduled offline', userId);
         timeoutManager.cancel(userId);
+        self.emit('client_online', userId, clientId, userType, userData);
       } else {
         self.emit('user_online', userId, clientId, userType, userData);
         self.emit('client_online', userId, clientId, userType, userData);
       }
     }
-    self._add(userId, clientId, userData);
-
+    self._add(userId, clientId, userType, userData);
   });
 
   eventBus.on('client_offline', function(userId, clientId, userType, userData, hard) {
@@ -60,34 +71,23 @@ function PresenceManager(scope, persistence, eventBus, policy) {
         self._removeUser(userId);
         self.emit('user_offline', userId, clientId, userType);
       } else {
-        logger.info('scheduled offline', userId)
+        logger.info('scheduled offline', userId);
         timeoutManager.schedule(userId, OFFLINE_EXPIRY);
       }
     }
 
   });
-
 }
 
-util.inherits(PresenceManager, events.EventEmitter);
-
-PresenceManager.prototype._setUserType = function(userId, userType) {
+PresenceManager.prototype._add = function(userId, clientId, userType, userData) {
   if(!this._users[userId]) {
     this._users[userId] = {
       clientsCount: 0,
       clients: {}
     };
   }
+  this._users[userId].lastTouch = Date.now();
   this._users[userId].userType = userType;
-}
-
-PresenceManager.prototype._add = function(userId, clientId, userData) {
-  if(!this._users[userId]) {
-    this._users[userId] = {
-      clientsCount: 0,
-      clients: {}
-    };
-  }
   this._users[userId].clientsCount ++;
   this._users[userId].clients[clientId] = userData || {};
 }
@@ -106,22 +106,20 @@ PresenceManager.prototype._removeUser = function(userId) {
 }
 
 PresenceManager.prototype.userExists = function(userId) {
-  return  !!this._users[userId];
+  return  this._users.hasOwnProperty(userId);
 }
 
 PresenceManager.prototype.isUserConnected = function(userId) {
-  return  (this._users[userId] && this._users[userId].clientsCount > 0);
+  return  (this._users.hasOwnProperty(userId) && this._users[userId].clientsCount > 0);
 }
 
 PresenceManager.prototype.exists = function(userId, clientId) {
-  return this._users[userId] && this._users[userId].clients[clientId];
+  return this._users.hasOwnProperty(userId) && this._users[userId].clients[clientId];
 }
 
 PresenceManager.prototype.online = function(userId, clientId, userType, data, callback) {
 
-  logger.debug('online', this._scope, userId, clientId, userType, data)
-
-  this._setUserType(userId, userType);
+  logger.debug('online', this._scope, userId, clientId, userType, data);
 
   var message = {
     userId: userId,
@@ -150,7 +148,7 @@ PresenceManager.prototype.online = function(userId, clientId, userType, data, ca
 
 PresenceManager.prototype.offline = function(userId, clientId, userType, data, hard, callback) {
 
-  logger.debug('offline', this._scope, userId, clientId, userType, hard)
+  logger.debug('offline', this._scope, userId, clientId, userType, hard);
   this._persistence.deleteHash(this._scope, userId + '.' + clientId);
 
   this._persistence.publish(this._scope, {
@@ -171,26 +169,34 @@ PresenceManager.prototype.getUsers = function() {
 
 PresenceManager.prototype.fullRead = function(callback) {
   var self = this;
-  this._persistence.readHashAll(this._scope, function(err, result) {
-    if(err) {
-      callback(err);
-    } else {
-      if(result && result.length > 0) {
+  var readStartTimestamp = Date.now();
+  this._persistence.readHashAll(this._scope, function(result) {
+    if(result && result.length > 0) {
+      var oldUsers = self._users;
+      self._users = {};
+      var staleTimeThreshold = Date.now() - DATA_EXPIRY;
 
-        self._users = {};
-        var staleTimeThreshold = Date.now() - DATA_EXPIRY;
+      for(var key in result) {
+        if(result.hasOwnProperty(key)) {
+          if(result[key].at && result[key].at > staleTimeThreshold) {
 
-        for(var key in result) {
-          if(result.hasOwnProperty(key)) {
-            if(result[key].at && result[key].at > staleTimeThreshold) {
-              self._add(result[key].userId, result[key].clientId, result[key].userData);
-              self._setUserType(result[key].userId, result[key].userType);
-            }
+            var userId = result[key].userId;
+            var clientId = result[key].clientId;
+            var userType = result[key].userType;
+            var userData = result[key].userData;
+
+            self._add(userId, clientId, userType, userData);
           }
         }
       }
-      callback();
+
+      for(var userId in oldUsers) {
+        if(oldUsers.hasOwnProperty(userId) && oldUsers[userId].lastTouch > readStartTimestamp) {
+          self._users[userId] = oldUsers[userId];
+        }
+      }
     }
+    callback();
   });
 };
 

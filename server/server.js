@@ -5,7 +5,6 @@ var redis = require('redis'),
     Status = require('../core').Status,
     MessageList = require('../core').MessageList,
     Presence = require('../core').Presence,
-    Heartbeat = require('../core/lib/Heartbeat.js'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
     Audit = require('./audit.js'),
@@ -25,8 +24,6 @@ function Server() {
   this.channels = {};
   this.subscriber = null;
   this.subs = {};
-
-  this.timer = new Heartbeat().interval(15000);
 
 }
 
@@ -104,8 +101,6 @@ Server.prototype.attach = function(server, configuration) {
       }
     });
   });
-
-  this.timer.start();
 
   setInterval(Audit.totals, 1 * 60 * 1000); // each minute
 
@@ -216,7 +211,6 @@ Server.prototype.terminate = function() {
     self.destroy(name);
   });
 
-  this.timer.clear();
   this.server.close();
   this.subscriber.quit();
 };
