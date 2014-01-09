@@ -111,7 +111,27 @@ Presence.prototype.unsubscribe = function(client, sendAck) {
 };
 
 Presence.prototype.sync = function(client, message) {
-  this.getStatus(client, message);
+  var users = this._presenceManager.getUsers();
+  if(message.options && message.options.version == 2) {
+    client.send({
+      op: 'get',
+      to: this.name,
+      value: users
+    });
+  } else {
+    var usersWithType = {};
+    for(var userId in users) {
+      usersWithType[userId] = users[userId].userType;
+    }
+
+    // will be deprecated when syncs no longer need to use "online" to look like
+    // regular messages
+    client.send({
+      op: 'online',
+      to: this.name,
+      value: usersWithType
+    });
+  }
 };
 
 // this is a full sync of the online status from Redis
