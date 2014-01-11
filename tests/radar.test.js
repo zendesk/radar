@@ -9,6 +9,8 @@ var http = require('http'),
     MessageList = require('../core').MessageList,
     frontend;
 
+require('./common.js');
+
 var Client = new ClientScope({
   secure: false,
   host: 'localhost',
@@ -21,15 +23,12 @@ exports['Radar api tests'] = {
     frontend = http.createServer(function(req, res){ res.end('404 error');});
     Api.attach(frontend);
 
-    frontend.listen(8123, function() {
-      done();
-    });
+    frontend.listen(8123, done);
   },
 
   after: function(done) {
     frontend.close();
-    Persistence.disconnect();
-    done();
+    Persistence.disconnect(done);
   },
 
   // GET /radar/status?accountName=test&scope=ticket/1
@@ -38,7 +37,7 @@ exports['Radar api tests'] = {
         opts = Type.getByExpression(name),
         status = new Status(name, {}, opts);
 
-    status.setStatus({
+    status.set({}, {
       key: 'foo',
       value: 'bar'
     });
@@ -108,9 +107,12 @@ exports['Radar api tests'] = {
 
     var message_type = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
-      type: 'message',
+      type: 'MessageList',
       auth: false,
-      policy: { cache: true, maxAgeSeconds: 30 }
+      policy: {
+        cache: true,
+        maxAgeSeconds: 300
+      }
     };
 
     Type.register('message', message_type);
@@ -141,14 +143,20 @@ exports['Radar api tests'] = {
       var messages = {
         'presence:/test/ticket/1': {
           '1.1000': {
-            userId: 1, userType: 0,
-            clientId: 1000, online: true, at: new Date().getTime()
+            userId: 1,
+            userType: 0,
+            clientId: 1000,
+            online: true,
+            at: Date.now()
           }
         },
         'presence:/test/ticket/2': {
           '2.1001': {
-            userId: 2, userType: 4,
-            clientId: 1001, online: true, at: new Date().getTime()
+            userId: 2,
+            userType: 4,
+            clientId: 1001,
+            online: true,
+            at: Date.now()
           }
         }
       };
@@ -203,10 +211,3 @@ exports['Radar api tests'] = {
     },
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--bail', '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}

@@ -3,15 +3,22 @@ var Resource = require('../../resource.js'),
     LocalManager = require('./local_manager.js'),
     logging = require('minilog')('presence');
 
-var def_options = {
-  policy: { maxPersistence: 12 * 60 * 60 } // 12 hours in seconds
+var default_options = {
+  policy: {
+    maxPersistence: 12 * 60 * 60 // 12 hours in seconds
+  }
 };
 
 function Presence(name, parent, options) {
-  var merged = Resource.apply_defaults(options, def_options);
-  Resource.call(this, name, parent, merged);
+  Resource.call(this, name, parent, options, default_options);
+  this.setup();
+}
+
+Presence.prototype = new Resource();
+Presence.prototype.type = 'presence';
+
+Presence.prototype.setup = function() {
   var self = this;
-  this.type = 'presence';
 
   this._xserver = new LocalManager(this.name, this.options.policy);
   this._xserver.on('user_online', function(userId, userType, userData) {
@@ -64,9 +71,7 @@ function Presence(name, parent, options) {
     self._xserver.timeouts();
   };
   this.parent.timer.add( this.parentCallback );
-}
-
-Presence.prototype = new Resource();
+};
 
 Presence.prototype.redisIn = function(message) {
   try {
@@ -74,15 +79,12 @@ Presence.prototype.redisIn = function(message) {
   } catch(e) { return; }
 };
 
-Presence.prototype.setStatus = function(client, message, sendAck) {
-  if(arguments.length == 1) {
-    message = client; // client and sendAck are optional
-  }
+Presence.prototype.set = function(client, message) {
   var self = this,
       userId = message.key;
 
   function ackCheck() {
-    sendAck && self.ack(client, sendAck);
+    self.ack(client, message.ack);
   }
 
   if(message.value != 'offline') {
@@ -95,15 +97,14 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
   }
 };
 
-Presence.prototype.unsubscribe = function(client, sendAck) {
-  var self = this;
+Presence.prototype.unsubscribe = function(client, message) {
   this._xserver.disconnectLocal(client.id);
   // garbage collect if the set of subscribers is empty
   if (Object.keys(this.subscribers).length == 1) {
     this.parent.timer.remove(this.parentCallback);
   }
   // call parent
-  Resource.prototype.unsubscribe.call(this, client, sendAck);
+  Resource.prototype.unsubscribe.call(this, client, message);
 };
 
 Presence.prototype.sync = function(client, message) {
@@ -125,10 +126,11 @@ Presence.prototype.sync = function(client, message) {
       });
     }
   });
+  this.subscribe(client, message);
 };
 
 // this is a full sync of the online status from Redis
-Presence.prototype.getStatus = function(client, message) {
+Presence.prototype.get = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
     if(message.options && message.options.version == 2) {

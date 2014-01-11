@@ -1,7 +1,9 @@
 var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor;
+    minilog = require('minilog'),
+    Client = require('radar_client').constructor,
+    Tracker = require('callback_tracker');
 
 exports['given a server'] = {
 
@@ -10,21 +12,25 @@ exports['given a server'] = {
   },
 
   after: function(done) {
-    common.endRadar(this, function() {});
-    Persistence.disconnect(done);
+    common.endRadar(this, function() {
+      Persistence.disconnect(done);
+    });
   },
 
   beforeEach: function(done) {
-    var tasks = 0;
-    function next() { tasks++; if (tasks == 2) done(); }
-    this.client = new Client()
-      .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8002})
-      .alloc('test', next);
-    Persistence.delWildCard('*:/dev/*', next);
-  },
+    var track = Tracker.create('beforeEach', done);
 
-  afterEach: function() {
-//    this.client.dealloc('test');
+    this.client = new Client().configure({
+      userId: 123,
+      userType: 0,
+      accountName: 'dev',
+      port: 8002,
+      upgrade: false
+    }).alloc('test', track('client alloc'));
+
+    this.client._logger = minilog('client.test');
+
+    Persistence.delWildCard('*:/dev/*', track('remove redis entries'));
   },
 
 // Presence tests
@@ -41,7 +47,7 @@ exports['given a server'] = {
       assert.equal(123, message.key);
       client.presence('ticket/21').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual(message.value, { 123: 0});
+        assert.deepEqual(message.value, { 123: 0 });
         client.presence('ticket/21').set('offline', function() {
           done();
         });

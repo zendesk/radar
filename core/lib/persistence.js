@@ -32,6 +32,14 @@ function redis() {
 
 function Persistence() { }
 
+Persistence.redis = function(value) {
+  if (value) {
+    client = value;
+  } else {
+    return redis();
+  }
+};
+
 Persistence.setConfig = function(config) {
   configuration = config;
 };
@@ -45,7 +53,7 @@ Persistence.applyPolicy = function(multi, key, policy) {
   }
 
   if(policy.maxAgeSeconds) {
-    var maxScore = new Date().getTime()-policy.maxAgeSeconds * 1000;
+    var maxScore = Date.now()-policy.maxAgeSeconds * 1000;
     multi.zremrangebyscore(key, 0, maxScore, function(err, res) {
       logging.info('Enforce max age ('+key+'): '+new Date(maxScore).toUTCString()+' removed '+res);
       if(err) throw new Error(err);
@@ -80,7 +88,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 };
 
 Persistence.persistOrdered = function(key, value, callback) {
-  redis().zadd(key, new Date().getTime(), JSON.stringify(value), callback);
+  redis().zadd(key, Date.now(), JSON.stringify(value), callback);
 };
 
 Persistence.delWildCard = function(expr, callback) {
@@ -129,6 +137,7 @@ Persistence.persistHash = function(hash, key, value) {
 };
 
 Persistence.expire = function(key, seconds) {
+  logging.info('expire', key, seconds);
   redis().expire(key, seconds, Persistence.handler);
 };
 
@@ -148,11 +157,9 @@ Persistence.publish = function(key, value, callback) {
 
 Persistence.disconnect = function(callback) {
   if(client) {
-    client.quit(function() {
-      if (callback) setImmediate(callback);
-    });
-  } else {
-    if (callback) setImmediate(callback);
+    client.quit(callback);
+  } else if (callback) {
+    setImmediate(callback);
   }
 };
 

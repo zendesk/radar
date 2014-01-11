@@ -2,6 +2,8 @@ var assert = require('assert'),
     Status = require('../core/lib/resources/status.js'),
     Persistence = require('../core/lib/persistence.js');
 
+require('./common.js');
+
 var FakePersistence = {
   read: function() {},
   publish: function() {},
@@ -15,22 +17,19 @@ var Radar = {
 
 exports['given a status resource'] = {
 
-  before: function(done) {
+  before: function() {
     Status.setBackend(FakePersistence);
-    done();
   },
 
-  after: function(done) {
+  after: function() {
     Status.setBackend(Persistence);
-    done();
   },
 
-  beforeEach: function(done) {
+  beforeEach: function() {
     this.status = new Status('aaa', Radar, {});
     FakePersistence.readHashAll = function() {};
     FakePersistence.persistHash = function() {};
     FakePersistence.expire = function() {};
-    done();
   },
 
   'can get the current status': function(done) {
@@ -40,7 +39,7 @@ exports['given a status resource'] = {
       callback([1, 2]);
     };
 
-    this.status.getStatus({
+    this.status.get({
       send: function(msg) {
         assert.equal('get', msg.op);
         assert.equal('aaa', msg.to);
@@ -56,7 +55,7 @@ exports['given a status resource'] = {
       assert.equal('online', value);
       done();
     };
-    this.status.setStatus({ key: 123, value: 'online' });
+    this.status.set({}, { key: 123, value: 'online' });
   },
 
   'can set status to offline': function(done) {
@@ -65,7 +64,7 @@ exports['given a status resource'] = {
       assert.equal('offline', value);
       done();
     };
-    this.status.setStatus({ key: 123, value: 'offline' });
+    this.status.set({}, { key: 123, value: 'offline' });
   },
 
   'sync causes a read and a subscription': function(done) {
@@ -114,26 +113,19 @@ exports['given a status resource'] = {
         cache : true,
         another : false
       },
-      base : "string here"
+      base : 'string here'
     };
 
-    var status = new Status("aaa", Radar, options);
+    var status = new Status('aaa', Radar, options);
     assert.equal(status.options.policy.maxPersistence, 24 * 60 * 60);
     assert.equal(status.options.policy.cache, true);
     assert.equal(status.options.policy.another, false);
-    assert.equal(status.options.base, "string here");
+    assert.equal(status.options.base, 'string here');
 
     FakePersistence.expire = function(key, persistence) {
       assert.equal(24 * 60 * 60, persistence);
       done();
-    }
-    status.setStatus({ key: 123, value: 'online' });
+    };
+    status.set({}, { key: 123, value: 'online' });
   }
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}

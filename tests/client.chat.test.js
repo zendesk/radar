@@ -1,8 +1,8 @@
 var common = require('./common.js'),
     assert = require('assert'),
-    Radar = require('../server/server.js'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor;
+    Client = require('radar_client').constructor,
+    Tracker = require('callback_tracker');
 
 exports['given two clients'] = {
   before: function(done) { common.startRadar(8001, this, done); },
@@ -10,18 +10,17 @@ exports['given two clients'] = {
   after: function(done) { common.endRadar(this, function() { Persistence.disconnect(done); }); },
 
   beforeEach: function(done) {
-    var self = this, tasks = 0;
-    function next() { tasks++ && (tasks == 4) && done(); }
+    var self = this, track = Tracker.create('before each', done);
     this.client = new Client()
                   .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
-                  .once('ready', function() { self.client.message('test').subscribe(next); })
+                  .once('ready', track('client 1 ready', function() { self.client.message('test').subscribe(track('client 1 subscribe')); }))
                   .alloc('test');
     this.client2 = new Client()
                   .configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
-                  .once('ready', next).alloc('test');
+                  .once('ready', track('client 2 ready')).alloc('test');
 
-    Persistence.del('status:/dev/voice/status', next);
-    Persistence.del('presence:/dev/ticket/21', next);
+    Persistence.del('status:/dev/voice/status', track('remove status'));
+    Persistence.del('presence:/dev/ticket/21', track('remove presence'));
   },
 
     // sending a message should only send to each subscriber, but only once
@@ -40,7 +39,7 @@ exports['given two clients'] = {
         assert.equal(message.state, msg.value.state);
         assertions += 2;
       });
-      common.radar().once('subscribe', function(c, msg) {
+      common.radar().once('subscribe', function() {
         client.message('test').publish(message);
         setTimeout(function() {
           assert.equal(4, assertions);
@@ -92,7 +91,7 @@ exports['given two clients'] = {
 
     // test.numAssertions = 3;
     client2.once('ready', function() {
-      common.radar().once('subscribe', function(c, msg) {
+      common.radar().once('subscribe', function() {
         client.message('test').publish(message);
       });
       client2.message('test').on(function(msg) {
@@ -109,7 +108,7 @@ exports['given two clients'] = {
           assert.ok(true);
         }
       });
-      common.radar().once('unsubscribe', function(c, msg) {
+      common.radar().once('unsubscribe', function() {
         client.message('test').publish(message2);
         setTimeout(function() {
           client.message('test').removeAllListeners();

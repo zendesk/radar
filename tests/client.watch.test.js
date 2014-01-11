@@ -16,9 +16,9 @@ exports['given two clients'] = {
   beforeEach: function(done) {
     var tasks = 0;
     function next() { tasks++; if (tasks == 4) done(); }
-    this.client = new Client().configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001 })
+    this.client = new Client().configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001, upgrade: false })
                   .once('ready', next).alloc('test');
-    this.client2 = new Client().configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001 })
+    this.client2 = new Client().configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001, upgrade: false })
                   .once('ready', next).alloc('test');
     Persistence.del('presence:/dev/ticket/21', next);
     Persistence.del('status:/dev/voice/status', next);

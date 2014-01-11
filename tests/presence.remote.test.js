@@ -3,6 +3,8 @@ var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence');
 
+require('./common.js');
+
 var Server = {
   timer: new Heartbeat().interval(1500),
   broadcast: function() { },
@@ -48,7 +50,7 @@ exports['given a presence monitor'] = {
         presence._xserver._processDisconnects();
       });
     });
-    presence.redisIn({ online: true, userId: 123, clientId: 'aab', userType: 0, at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: 123, clientId: 'aab', userType: 0, at: Date.now()});
   },
 
   'messages from Redis are not broadcast, only changes in status are': function() {
@@ -67,7 +69,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      at: new Date().getTime()
+      at: Date.now()
     });
     assert.equal(1, updates.length);
     assert.deepEqual([true, 123, 2], updates[0]);
@@ -78,7 +80,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      at: new Date().getTime()
+      at: Date.now()
     });
     assert.equal(1, updates.length);
 
@@ -88,7 +90,7 @@ exports['given a presence monitor'] = {
       userType: 0,
       clientId: 'ccc',
       online: true,
-      at: new Date().getTime()
+      at: Date.now()
     });
 
     assert.equal(2, updates.length);
@@ -100,7 +102,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'bbb',
       online: false,
-      at: new Date().getTime()
+      at: Date.now()
     });
     assert.equal(2, updates.length);
 
@@ -110,7 +112,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: false,
-      at: new Date().getTime()
+      at: Date.now()
     });
     assert.equal(3, updates.length);
     assert.deepEqual([false, 123, 2], updates[2]);
@@ -125,8 +127,8 @@ exports['given a presence monitor'] = {
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, at: Date.now()});
 
     assert.equal(1, calls);
     done();
@@ -141,8 +143,8 @@ exports['given a presence monitor'] = {
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
-    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
+    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', at: Date.now()});
 
     assert.equal(1, calls);
     done();
@@ -151,8 +153,8 @@ exports['given a presence monitor'] = {
   'full reads consider users with a recent online key as online and users without a key as offline': function(done) {
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()}
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()}
       });
     };
     var users = {};
@@ -171,8 +173,8 @@ exports['given a presence monitor'] = {
     // this may happen if the server gets terminated, so the key is never deleted properly...
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()},
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now() - 50 * 1000},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()},
       });
     };
     this.presence.fullRead(function(online) {
@@ -184,12 +186,12 @@ exports['given a presence monitor'] = {
   'full reads cause change events based on what was previously known': function(done) {
     var presence = this.presence;
     // make 123 online
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
 
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: new Date().getTime() - 50 * 1000},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: new Date().getTime()},
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now() - 50 * 1000},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()},
       });
     };
     var added = {}, removed = {};
@@ -214,11 +216,11 @@ exports['given a presence monitor'] = {
     FakePersistence.readHashAll = function(scope, callback) {
       callback({
         // so, one clientId disconnected and another connected - at the same timestamp: user should be considered to be online
-        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', at: new Date().getTime()},
-        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', at: new Date().getTime()},
-        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', at: new Date().getTime()},
-        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', at: new Date().getTime()},
-        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', at: new Date().getTime()},
+        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', at: Date.now()},
+        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', at: Date.now()},
+        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', at: Date.now()},
+        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', at: Date.now()},
+        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', at: Date.now()},
       });
     };
 
@@ -239,10 +241,3 @@ exports['given a presence monitor'] = {
   }
 
 };
-
-// if this module is the script being run, then run the tests:
-if (module == require.main) {
-  var mocha = require('child_process').spawn('mocha', [ '--colors', '--ui', 'exports', '--reporter', 'spec', __filename ]);
-  mocha.stdout.pipe(process.stdout);
-  mocha.stderr.pipe(process.stderr);
-}
