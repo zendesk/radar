@@ -94,8 +94,8 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
 
   if(message.value != 'offline') {
     userClientMap[client.id] = userId;
-    this._presenceManager.online(userId, client.id, message.type, message.userData, ackCheck);
     this.subscribe(client);
+    this._presenceManager.online(userId, client.id, message.type, message.userData, ackCheck);
   } else {
     delete userClientMap[client.id];
     this._presenceManager.offline(userId, client.id, message.type, message.userData, /*hard*/true, ackCheck);

@@ -39,7 +39,7 @@ exports['presence timeout manager'] = {
     var now = Date.now();
     timeoutManager.once('timeout', function(key) {
       if(key === 'key2') {
-        throw new Error('the trigger was cancelled and should not have fired');
+        assert.fail('the trigger was cancelled and should not have fired');
       }
     });
 
@@ -126,15 +126,49 @@ exports['presence timeout manager'] = {
 
     var now = Date.now();
     timeoutManager.once('timeout', function(key, data) {
-      if(key === 'key1') {
+      if(key === 'key9') {
         assert((now + 400) <= Date.now() );
         assert.deepEqual(data, {'white': 'cat'});
         done();
       }
     });
 
-    timeoutManager.schedule('key1', 400, {'white': 'cat'});
+    timeoutManager.schedule('key9', 400, {'white': 'cat'});
   },
+
+  'scheduling a timeout twice should fire it once at the latest defined time (t1 > t2)': function(done) {
+
+    this.timeout(500);
+
+    var now = Date.now();
+
+    timeoutManager.on('timeout', function(key) {
+      if(key === 'key10') {
+        assert((now + 400) <= Date.now() );
+      }
+      done()
+    });
+
+    timeoutManager.schedule('key10', 1000);
+    timeoutManager.schedule('key10', 400);
+  },
+
+  'scheduling a timeout twice should fire it once at the latest defined time (t1 < t2)': function(done) {
+
+    this.timeout(500);
+
+    var now = Date.now();
+
+    timeoutManager.on('timeout', function(key) {
+      if(key === 'key11') {
+        assert((now + 400) <= Date.now() );
+      }
+      done()
+    });
+
+    timeoutManager.schedule('key11', 200);
+    timeoutManager.schedule('key11', 400);
+  }
 
 
 };
