@@ -28,6 +28,7 @@ server = http.createServer(p404);
 Api.attach(server);
 
 // Radar server
-Radar.attach(server, configuration);
+var radar = new Radar();
+radar.attach(server, configuration);
 
 server.listen(configuration.port);
