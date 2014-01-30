@@ -4,16 +4,23 @@ var PresenceManager = require('./presence_manager.js');
 var logging = require('minilog')('presence');
 var EventEmitter = require('events').EventEmitter;
 
-var def_options = {
-  policy: { maxPersistence: 12 * 60 * 60 } // 12 hours in seconds
+var default_options = {
+  policy: {
+    maxPersistence: 12 * 60 * 60 // 12 hours in seconds
+  }
 };
 
 
 function Presence(name, parent, options) {
-  var merged = Resource.apply_defaults(options, def_options);
-  Resource.call(this, name, parent, merged);
+  Resource.call(this, name, parent, options, default_options);
+  this.setup(name);
+}
+
+Presence.prototype = new Resource();
+Presence.prototype.type = 'presence';
+
+Presence.prototype.setup = function(name) {
   var self = this;
-  this.type = 'presence';
 
   this._redisEventBus = new EventEmitter();
   this._presenceManager = new PresenceManager(name, Persistence, this._redisEventBus, this.options.policy);
@@ -63,9 +70,7 @@ function Presence(name, parent, options) {
     }, clientId);
   });
 
-}
-
-Presence.prototype = new Resource();
+};
 
 Presence.prototype.redisIn = function(message) {
   if(message) {
@@ -81,7 +86,7 @@ Presence.prototype.redisIn = function(message) {
 
 var userClientMap = {};
 
-Presence.prototype.setStatus = function(client, message, sendAck) {
+Presence.prototype.set = function(client, message, sendAck) {
   if(arguments.length == 1) {
     message = client; // client and sendAck are optional
   }
@@ -89,7 +94,7 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
       userId = message.key;
 
   function ackCheck() {
-    sendAck && self.ack(client, sendAck);
+    self.ack(client, message.ack);
   }
 
   if(message.value != 'offline') {
@@ -102,12 +107,11 @@ Presence.prototype.setStatus = function(client, message, sendAck) {
   }
 };
 
-Presence.prototype.unsubscribe = function(client, sendAck) {
-  var self = this;
+Presence.prototype.unsubscribe = function(client, message) {
 
   this._presenceManager.offline(userClientMap[client.id], client.id, /*userType*/undefined, /*data*/undefined, /*hard*/false);
   delete userClientMap[client.id];
-  Resource.prototype.unsubscribe.call(this, client, sendAck);
+  Resource.prototype.unsubscribe.call(this, client, message);
 };
 
 Presence.prototype.sync = function(client, message) {
@@ -132,10 +136,11 @@ Presence.prototype.sync = function(client, message) {
       value: usersWithType
     });
   }
+  this.subscribe(client, message);
 };
 
 // this is a full sync of the online status from Redis
-Presence.prototype.getStatus = function(client, message) {
+Presence.prototype.get = function(client, message) {
   var users = this._presenceManager.getUsers();
   if(message.options && message.options.version == 2) {
     client.send({

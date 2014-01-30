@@ -1,11 +1,12 @@
 var assert = require('assert'),
     MiniEE = require('miniee'),
     Persistence = require('../core/lib/persistence.js'),
-    Presence = require('../core/lib/resources/presence'),
-    logging = require('minilog')('test');
+    Presence = require('../core/lib/resources/presence');
+
+require('./common.js');
 
 var Server = {
-  broadcast: function(subscribers, message) { },
+  broadcast: function() { },
   terminate: function() { },
   destroy: function() {},
   server: {
@@ -35,7 +36,7 @@ exports['given a presence'] = {
 
 
   'can set status to online and offline': function(done) {
-    var presence = this.presence, client = this.client;
+    var presence = this.presence;
     Persistence.publish = function(scope, m) {
       var online = m.online,
           userId = m.userId,
@@ -45,8 +46,7 @@ exports['given a presence'] = {
         assert.equal(true, online);
       presence.redisIn(m);
     };
-
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
+    presence.set(this.client, { key: 1, type: 2, value: 'online' } );
 
     // also added to _local
     assert.ok(presence._presenceManager.isUserConnected(1));
@@ -62,7 +62,7 @@ exports['given a presence'] = {
       presence.redisIn(m);
     };
 
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
+    presence.set(this.client, { key: 1, type: 2, value: 'offline' } );
     // removed from _local
     assert.ok(!presence._presenceManager.isUserConnected(1));
     done();
@@ -70,33 +70,34 @@ exports['given a presence'] = {
   },
 
   'setting status sets overall expiry to maxPersistence' : function(done) {
-    var presence = this.presence, client = this.client;
+    var presence = this.presence;
 
     Persistence.expire = function(scope, expiry) {
       assert.equal(presence.name, scope);
       assert.equal(expiry, 12 * 60 * 60);
       done();
-    }
+    };
 
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
+    presence.set(this.client, { key: 1, type: 2, value: 'online' });
   },
 
   'autopublish must renew the expiry to maxPersistence' : function(done) {
-    var presence = this.presence, client = this.client;
+    var presence = this.presence;
 
+    presence.set(this.client, { key: 1, type: 2, value: 'online' });
     Persistence.expire = function(scope, expiry) {
       assert.equal(presence.name, scope);
       assert.equal(expiry, 12 * 60 * 60);
       done();
-    }
+    };
 
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' });
+    presence.set(this.client, { key: 1, type: 2, value: 'online' });
 
   },
 
   'setting status twice does not cause duplicate notifications': function(done) {
     // see also: presence_monitor.test.js / test with the same name
-    var presence = this.presence, client = this.client;
+    var presence = this.presence;
     var calls = 0;
     Persistence.publish = function(scope, m) {
       var online = m.online,
@@ -108,8 +109,8 @@ exports['given a presence'] = {
       presence.redisIn(m);
       calls++;
     };
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
-    presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
+    presence.set(this.client, { key: 1, type: 2, value: 'online' } );
+    presence.set(this.client, { key: 1, type: 2, value: 'online' } );
 
     assert.equal(1, calls);
     // added to _local ONCE
@@ -128,10 +129,10 @@ exports['given a presence'] = {
       presence.redisIn(m);
     };
 
-    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
+    presence.set(client, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client);
 
-    presence.setStatus(client2, { key: 1, type: 2, value: 'online' } );
+    presence.set(client2, { key: 1, type: 2, value: 'online' } );
     presence.unsubscribe(client2);
 
 
@@ -165,8 +166,8 @@ exports['given a presence'] = {
         self.presence.redisIn(data);
       };
 
-      this.presence.setStatus(this.client, { key: 1, type: 2, value: 'online' } );
-      this.presence.setStatus(this.client2, { key: 1, type: 2, value: 'online' } );
+      this.presence.set(this.client, { key: 1, type: 2, value: 'online' } );
+      this.presence.set(this.client2, { key: 1, type: 2, value: 'online' } );
 
       this.oldBroadcast = this.presence.broadcast;
       this.presence.broadcast = function(data, except) {
@@ -192,7 +193,7 @@ exports['given a presence'] = {
     'explicit disconnects': function() {
       var presence = this.presence, client = this.client, client2 = this.client2;
 
-      presence.setStatus(this.client, { key: 1, type: 2, value: 'offline' } );
+      presence.set(this.client, { key: 1, type: 2, value: 'offline' } );
 
       assert.equal(this.remote.length, 3);
       // a client_offline should be sent for CID 1
@@ -208,7 +209,7 @@ exports['given a presence'] = {
       assert.equal(this.remote[2].clientId, client.id);
       assert.equal(this.remote[2].online, false);
 
-      presence.setStatus(client2, { key: 1, type: 2, value: 'offline' } );
+      presence.set(client2, { key: 1, type: 2, value: 'offline' } );
 
       assert.equal(this.remote.length, 4);
       // there should be a client_offline notification for CID 2
@@ -313,7 +314,7 @@ exports['given a presence'] = {
       assert.equal(this.remote[2].userId, 1);
       assert.equal(this.remote[2].clientId, client.id);
 
-      presence.setStatus(this.client2, { key: 1, type: 2, value: 'offline' } );
+      presence.set(this.client2, { key: 1, type: 2, value: 'offline' } );
 
       // check local broadcast
       assert.equal(this.local.length, 3);
@@ -336,10 +337,6 @@ exports['given a presence'] = {
     }
   },
 
-  'when a user is on two servers, and goes explicitly offline on one, the other one should remain online': function(done) {
-    done();
-  },
-
   'local users are written to Redis periodically': function(done) {
     var presence = this.presence, client = this.client;
 
@@ -350,7 +347,7 @@ exports['given a presence'] = {
           userType = m.userType;
       notifications.push({ userId: userId, userType: userType, online: online });
     };
-    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
+    presence.set(client, { key: 1, type: 2, value: 'online' } );
 
     assert.ok(notifications.length > 0); // ideally, only one message, but given the timeouts() processing >1 is also OK
     assert.equal(1, notifications[0].userId);
@@ -370,15 +367,15 @@ exports['given a presence'] = {
       presence.redisIn(data);
     };
 
-    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
+    presence.set(client, { key: 1, type: 2, value: 'online' } );
 
     presence.unsubscribe(client);
 
-    presence.setStatus(client2, { key: 123, type: 0, value: 'online' } );
+    presence.set(client2, { key: 123, type: 0, value: 'online' } );
     presence.unsubscribe(client2);
 
     // now client 1 reconnects
-    presence.setStatus(client, { key: 1, type: 2, value: 'online' } );
+    presence.set(client, { key: 1, type: 2, value: 'online' } );
 
     var oldBroadcast = presence.broadcast;
     presence.broadcast = function(data) {
@@ -408,7 +405,7 @@ exports['given a presence'] = {
       assert.deepEqual(value.userData, { test: 1 });
     };
 
-    this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+    this.presence.set(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
 
     assert.ok(called);
     Persistence.persistHash = persistHash;
@@ -438,9 +435,9 @@ exports['given a presence'] = {
 
     data.clients[this.client.id] = { test: 1 };
 
-    this.presence.setStatus(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+    this.presence.set(this.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
     setTimeout(function() {
-      self.presence.getStatus(fakeClient, { options: { version: 2 } });
+      self.presence.get(fakeClient, { options: { version: 2 } });
     }, 50);
   },
 
@@ -489,13 +486,13 @@ exports['given a presence'] = {
       done();
     }, 500);
 
-    self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+    self.presence.set(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
 
     setTimeout(function() {
       self.presence.unsubscribe(self.client);
 
       setTimeout(function() {
-        self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
+        self.presence.set(self.client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
       }, 100);
     }, 100);
   },
@@ -518,11 +515,11 @@ exports['given a presence'] = {
       }
     };
 
-    self.presence.setStatus(self.client, { type: 2, key: 123, value: 'online' });
+    self.presence.set(self.client, { type: 2, key: 123, value: 'online' });
     setTimeout(function() {
       self.presence.unsubscribe(self.client);
       setTimeout(function() {
-        self.presence.getStatus(fakeClient, { options: { version: 2 } });
+        self.presence.get(fakeClient, { options: { version: 2 } });
       }, 200);
     }, 200);
   },

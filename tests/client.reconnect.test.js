@@ -2,27 +2,31 @@ var common = require('./common.js'),
     assert = require('assert'),
     Radar = require('../server/server.js'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor;
+    Client = require('radar_client').constructor,
+    Tracker = require('callback_tracker');
 
 exports['reconnect: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
     var self = this,
-        tasks = 0;
-    function next() { tasks++; if (tasks == 3) done(); }
+        track = Tracker.create('beforeEach reconnect', done);
+
     common.startRadar(8009, this, function(){
       self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009, upgrade: false})
-                    .once('ready', next).alloc('test');
+                    .once('ready', track('first client ready')).alloc('test');
       self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009, upgrade: false})
-                    .once('ready', next).alloc('test');
+                    .once('ready', track('second client configured')).alloc('test');
     });
-    Persistence.delWildCard('*:/test/*', next);
   },
 
   afterEach: function(done) {
     this.client.dealloc('test');
     this.client2.dealloc('test');
-    common.endRadar(this, function() { Persistence.disconnect(done); });
+    common.endRadar(this, function() {
+      Persistence.delWildCard('*:/test/*', function() {
+        Persistence.disconnect(done);
+      });
+    });
   },
 
   'after a connection, create one subscription of each type, then disconnect. all subs should be restored and "reconnected" event': function(done) {

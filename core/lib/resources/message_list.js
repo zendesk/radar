@@ -1,33 +1,33 @@
 var Resource = require('../resource.js'),
-    Persistence = require('../persistence.js');
+    Persistence = require('../persistence.js'),
+    logger = require('minilog')('radar:message_list');
 
-var def_options = {
-  policy: { maxPersistence: 14 * 24 * 60 * 60 } // 2 weeks in seconds
+var default_options = {
+  policy: {
+    maxPersistence: 14 * 24 * 60 * 60 // 2 weeks in seconds
+  }
 };
 // Every time we use this channel, we prolong expiry to maxPersistence
 // This includes even the final unsubscribe, in case a client decides to rejoin
 // after being the last user.
 
 function MessageList(name, parent, options) {
-  var merged = Resource.apply_defaults(options, def_options);
-  Resource.call(this, name, parent, merged);
-  this.type = 'message';
+  Resource.call(this, name, parent, options, default_options);
 }
 
 MessageList.prototype = new Resource();
+MessageList.prototype.type = 'message';
 
 // Publish to Redis
-MessageList.prototype.publish = function(client, message, sendAck) {
+MessageList.prototype.publish = function(client, message) {
   var self = this;
-  if(arguments.length == 1) {
-    message = client; // client and sendAck are optional
-  }
-  MessageList.prototype._publish(this.name, this.options.policy, message, function() {
-    sendAck && self.ack(client, sendAck);
+  this._publish(this.name, this.options.policy, message, function() {
+    self.ack(client, message.ack);
   });
 };
 
 MessageList.prototype._publish = function(name, policy, message, callback) {
+  logger.debug('_publish', name, policy, message);
   if(policy && policy.cache) {
     Persistence.persistOrdered(name, message);
     if(policy.maxPersistence) {
@@ -37,16 +37,17 @@ MessageList.prototype._publish = function(name, policy, message, callback) {
   Persistence.publish(name, message, callback);
 };
 
-MessageList.prototype.sync = function(client) {
-  var self = this;
-  MessageList.prototype._sync(this.name, this.options.policy, function(replies) {
+MessageList.prototype.sync = function(client, message) {
+  var name = this.name;
+  this._sync(name, this.options.policy, function(replies) {
     client.send({
       op: 'sync',
-      to: self.name,
+      to: name,
       value: replies,
-      time: new Date().getTime()
+      time: Date.now()
     });
   });
+  this.subscribe(client, message);
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
@@ -56,8 +57,8 @@ MessageList.prototype._sync = function(name, policy, callback) {
   Persistence.readOrderedWithScores(name, policy, callback);
 };
 
-MessageList.prototype.unsubscribe = function(client, sendAck) {
-  Resource.prototype.unsubscribe.call(this, client, sendAck);
+MessageList.prototype.unsubscribe = function(client, message) {
+  Resource.prototype.unsubscribe.call(this, client, message);
   // note that since this is not synchronized across multiple backend servers, it is possible
   // for a channel that is subscribed elsewhere to have a TTL set on it again. The assumption is that the
   // TTL is so long that any normal workflow will terminate before it is triggered.

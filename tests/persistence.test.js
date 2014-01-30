@@ -3,10 +3,16 @@ var assert = require('assert'),
     redis = require('redis'),
     client;
 
+require('./common.js');
+
 exports['given a resource'] = {
 
-  before: function() {
-    client = redis.createClient();
+  before: function(done) {
+    client = redis.createClient(6379, 'localhost');
+    Persistence.redis(client);
+    client.on('ready', function() {
+      done();
+    });
   },
 
   after: function() {
@@ -17,13 +23,15 @@ exports['given a resource'] = {
 
     var key = 'persistence.test';
 
-    client.del(key);
-    client.hset(key, 'bar1', 'this string should be filtered out');
-    client.hset(key, 'bar2', '"this string should be returned"');
-
-    Persistence.readHashAll(key, function(result) {
-      assert.deepEqual({bar2: 'this string should be returned'}, result);
-      done();
+    client.del(key, function() {
+      client.hset(key, 'bar1', 'this string should be filtered out', function() {
+        client.hset(key, 'bar2', '"this string should be returned"', function() {
+          Persistence.readHashAll(key, function(result) {
+            assert.deepEqual({ bar2: 'this string should be returned' }, result);
+            done();
+          });
+        });
+      });
     });
 
   },

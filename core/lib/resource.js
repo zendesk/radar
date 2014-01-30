@@ -17,53 +17,63 @@ Resources
 
 */
 
-function Resource(name, parent, options) {
-  this.name = name
-  this.subscribers = {};
-  this.parent = parent;
-  this.type = 'default';
-  this.options = options;
+function recursiveMerge(target) {
+  Array.prototype.slice.call(arguments, 1).forEach(function(source) {
+    if (source) {
+      Object.keys(source).forEach(function(name) {
+        if (target[name]) {
+          // extend the object if it is an Object
+          if (target[name] === Object(target[name])) {
+            target[name] = recursiveMerge(target[name], source[name]);
+          }
+        } else {
+          target[name] = source[name];
+        }
+      });
+    }
+  });
+
+  return target;
 }
 
-//helper to merge options and defaults
-Resource.apply_defaults = function(options, def_options) {
-  options = options || {};
+function Resource(name, parent, options, default_options) {
+  this.name = name;
+  this.subscribers = {};
+  this.parent = parent;
+  this.options = recursiveMerge({}, options || {}, default_options || {});
+}
 
-  var merge_into = function(original, defaults) {
-    Object.keys(defaults).forEach(function(key) {
-      if(typeof(defaults[key]) === 'object') {
-        original[key] = original[key] || {};
-        merge_into(original[key], defaults[key]);
-      }
-      else {
-        if(original[key] == undefined) {
-          original[key] = defaults[key];
-        }
-      }
-    });
-  };
-
-  merge_into(options, def_options);
-  return(options);
-};
+Resource.prototype.type = 'default';
 
 // Add a subscriber (Engine.io client)
-Resource.prototype.subscribe = function(client, sendAck) {
+Resource.prototype.subscribe = function(client, message) {
   this.subscribers[client.id] = true;
-  logging.debug('#res_subscribe', this.name, client.id, this.subscribers, sendAck);
-  sendAck && this.ack(client, sendAck);
+  logging.debug('#res_subscribe', this.name, client.id, this.subscribers, message && message.ack);
+  this.ack(client, message && message.ack);
 };
 
 // Remove a subscriber (Engine.io client)
-Resource.prototype.unsubscribe = function(client, sendAck) {
+Resource.prototype.unsubscribe = function(client, message) {
   delete this.subscribers[client.id];
+
   logging.debug('#res_unsubscribe', this.name, client.id);
-  if (Object.keys(this.subscribers).length == 0) {
+
+  if (!Object.keys(this.subscribers).length) {
     logging.debug('Destroying resource', this.name, this.subscribers);
     this.parent.destroy(this.name);
   }
-  sendAck && this.ack(client, sendAck);
+
+  this.ack(client, message && message.ack);
 };
+
+var noop = function(name) {
+  return function() {
+    logging.error('#undefined_method called for resource', name, this.name);
+  };
+};
+'get set sync publish'.split(' ').forEach(function(method) {
+  Resource.prototype[method] = noop(method);
+});
 
 // send to Engine.io clients
 Resource.prototype.redisIn = function(data) {
@@ -71,18 +81,46 @@ Resource.prototype.redisIn = function(data) {
   logging.debug('#res_in', this.name, this.subscribers, data);
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    client && client.send(data);
+    if (client && client.send) {
+      client.send(data);
+    }
   });
 };
 
 Resource.prototype.ack = function(client, sendAck) {
-  logging.debug('#client_send_ack', client.id, sendAck);
-  client.send({
-    op: 'ack',
-    value: sendAck
-  });
+  if (client && client.send && sendAck) {
+    logging.debug('#client_send_ack', client.id, sendAck);
+
+    client.send({
+      op: 'ack',
+      value: sendAck
+    });
+  }
 };
 
-Resource.setBackend = function(backend) { Persistence = backend; };
+Resource.prototype.authorize = function(message, client) {
+  var authorize = this.options.auth || this.options.authorize;
+  if (authorize && authorize(message, client) === false) {
+    return false;
+  }
+  return true;
+};
+
+Resource.prototype.handleMessage = function(client, message) {
+  switch(message.op) {
+    case 'subscribe':
+    case 'unsubscribe':
+    case 'get':
+    case 'sync':
+    case 'set':
+    case 'publish':
+      this[message.op](client, message);
+      break;
+  }
+};
+
+Resource.setBackend = function(backend) {
+  Persistence = backend;
+};
 
 module.exports = Resource;

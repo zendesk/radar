@@ -4,6 +4,14 @@ var http = require('http'),
     RadarServer = new require('../server/server.js'),
     radar;
 
+if (process.env.verbose) {
+  var Minilog = require('minilog');
+  Minilog.pipe(Minilog.backends.nodeConsole)
+    .format(Minilog.backends.nodeConsole.formatWithStack);
+}
+
+require('long-stack-traces');
+
 // use a different db for testing
 Persistence.select(1);
 

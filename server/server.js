@@ -1,10 +1,6 @@
 var redis = require('redis'),
-
     MiniEventEmitter = require('miniee'),
-    Type = require('../core').Type,
-    Status = require('../core').Status,
-    MessageList = require('../core').MessageList,
-    Presence = require('../core').Presence,
+    Core = require('../core'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
     Audit = require('./audit.js'),
@@ -24,96 +20,94 @@ function Server() {
   this.channels = {};
   this.subscriber = null;
   this.subs = {};
-
 }
 
 MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(server, configuration) {
-  var self = this;
   var engine = DefaultEngineIO;
   var engineConf;
 
-  configuration || (configuration = {});
-  configuration.redis_port || (configuration.redis_port = 6379);
-  configuration.redis_host || (configuration.redis_host = 'localhost');
-  require('../core').Persistence.setConfig(configuration);
+  configuration = configuration || {};
+  configuration.redis_port = configuration.redis_port || 6379;
+  configuration.redis_host = configuration.redis_host || 'localhost';
+
+  Core.Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
+
   if (configuration.redis_auth) {
     this.subscriber.auth(configuration.redis_auth);
   }
 
-  this.subscriber.on('message', function(name, data) {
-
-    logging.debug('#redis_in', name, data);
-    if (self.channels[name]) {
-
-      try {
-        data = JSON.parse(data);
-      } catch(parseError) {
-        logging.error("Corrupted key value in redis [" + name + "]. " + parseError.message + ": "+ parseError.stack);
-        return;
-      }
-
-      self.channels[name].redisIn(data);
-    } else {
-      logging.warn('#message_not_handled', name, data);
-    }
-  });
-
+  this.subscriber.on('message', this.handleMessage.bind(this));
 
   if(configuration.engineio) {
     engine = configuration.engineio.module;
     engineConf = configuration.engineio.conf;
 
-    self.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : "default";
+    this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
   }
 
-  var server = this.server = engine.attach(server, engineConf);
+  this.server = engine.attach(server, engineConf);
 
-  server.on('connection', function(client) {
-    var oldSend = client.send;
-    // for audit purposes
-    client.send = function(data) {
-      Audit.send(client);
-      oldSend.call(client, JSON.stringify(data));
-    };
+  this.server.on('connection', this.onClientConnection.bind(this));
 
-    // event: client connected
-    logging.info('#connect', client.id);
-    client.send({
-      server: hostname, cid: client.id
-    });
+  setInterval(Audit.totals, 60 * 1000); // each minute
 
-    client.on('message', function(data) {
-      Audit.receive(client);
-      self.message(client, data);
-    });
-    client.on('close', function() {
-      // event: client disconnected
-      logging.info('#disconnect', client.id);
-      for (var name in self.channels) {
-        var channel = self.channels[name];
-        if (channel.subscribers[client.id]) {
-          channel.unsubscribe(client, false);
-        }
+  logging.debug('#server_start ' + new Date().toString());
+};
+
+Server.prototype.onClientConnection = function(client) {
+  var self = this;
+  var oldSend = client.send;
+  // for audit purposes
+  client.send = function(data) {
+    Audit.send(client);
+    oldSend.call(client, JSON.stringify(data));
+  };
+
+  // event: client connected
+  logging.info('#connect', client.id);
+
+  client.send({
+    server: hostname,
+    cid: client.id
+  });
+
+  client.on('message', function(data) {
+    Audit.receive(client);
+    self.message(client, data);
+  });
+
+  client.on('close', function() {
+    // event: client disconnected
+    logging.info('#disconnect', client.id);
+
+    Object.keys(self.channels).forEach(function(name) {
+      var channel = self.channels[name];
+      if (channel.subscribers[client.id]) {
+        channel.unsubscribe(client, false);
       }
     });
   });
+};
 
-  setInterval(Audit.totals, 1 * 60 * 1000); // each minute
+Server.prototype.handleMessage = function(name, data) {
+  logging.debug('#redis_in', name, data);
 
-  // event: server started
-  logging.debug(' ');
-  logging.debug(' ');
-  logging.debug(' ');
-  logging.debug(' ');
-  logging.debug('#server_start ' + new Date().toString());
-  logging.debug(' ');
-  logging.debug(' ');
-  logging.debug(' ');
-  logging.debug(' ');
+  if (this.channels[name]) {
+    try {
+      data = JSON.parse(data);
+    } catch(parseError) {
+      logging.error('Corrupted key value [' + name + ']. ' + parseError.message + ': '+ parseError.stack);
+      return;
+    }
+
+    this.channels[name].redisIn(data);
+  } else {
+    logging.warn('#message_not_handled', name, data);
+  }
 };
 
 // Process a message
@@ -128,71 +122,43 @@ Server.prototype.message = function(client, data) {
 
   // format check
   if(!message || !message.op || !message.to) {
-    logging.warn('#message_rejected', (client && client.id ? client.id : ''), data);
+    logging.warn('#message_rejected', (client && client.id), data);
     return;
   }
-  logging.info('#message_received', (client && client.id ? client.id : ''), message,
+
+  logging.info('#message_received', (client && client.id), message,
      (this.channels[message.to] ? 'exists' : 'not instantiated'),
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
 
-  var res = this.resource(message.to);
+  var resource = this.resource(message.to);
 
-  // auth check
-  if(res && res.options && res.options.auth) {
-    if(typeof res.options.auth !== 'function' || !res.options.auth(message, client)) {
-      client.send({
-        op: 'err',
-        value: 'auth',
-        origin: message
-      });
-      logging.warn('#auth_invalid', data);
-      return;
-    }
+  if (resource && resource.authorize(message, client, data)) {
+    resource.handleMessage(client, message);
+    this.emit(message.op, client, message);
+  } else {
+    logging.warn('#auth_invalid', data);
+    client.send({
+      op: 'err',
+      value: 'auth',
+      origin: message
+    });
   }
-
-  switch(message.op) {
-    case 'get':
-      res.getStatus && res.getStatus(client, message);
-      break;
-    case 'set':
-      res.setStatus && res.setStatus(client, message, message.ack || false);
-      break;
-    case 'sync':
-      res.sync && res.sync(client, message);
-      // also subscribe
-    case 'subscribe':
-      res.subscribe(client, message.ack || false);
-      break;
-    case 'unsubscribe':
-      res.unsubscribe(client, message.ack || false);
-      break;
-    case 'publish':
-      res.publish && res.publish(client, message, message.ack || false);
-      break;
-  }
-
-  this.emit(message.op, client, message);
 };
 
 // Get or create channel by name
 Server.prototype.resource = function(name) {
   if (!this.channels[name]) {
-    var opts = Type.getByExpression(name);
-    switch(opts.type) {
-      case 'status':
-        this.channels[name] = new Status(name, this, opts);
-        break;
-      case 'presence':
-        this.channels[name] = new Presence(name, this, opts);
-        break;
-      case 'message':
-        this.channels[name] = new MessageList(name, this, opts);
-        break;
+    var definition = Core.Type.getByExpression(name);
+
+    if (definition && Core.Resources[definition.type]) {
+      this.channels[name] = new Core.Resources[definition.type](name, this, definition);
+      logging.info('#redis_subscribe', name);
+      this.subs[name] = true;
+      this.subscriber.subscribe(name);
+    } else {
+      logging.error('#unknown_type', name, definition);
     }
-    logging.info('#redis_subscribe', name);
-    this.subs[name] = true;
-    this.subscriber.subscribe(name);
   }
   return this.channels[name];
 };

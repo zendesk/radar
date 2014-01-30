@@ -1,8 +1,22 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
+  "contributors": [
+    {
+      "name": "Sam Shull",
+      "url": "http://github.com/samshull"
+    },
+    {
+      "name": "Vanchi Koduvayur",
+      "url": "https://github.com/vanchi-zendesk"
+    },
+    {
+      "name": "Nicolas Herment",
+      "url": "https://github.com/nherment"
+    }
+  ],
   "main": "index.js",
   "keywords": [
     "realtime",
@@ -19,17 +33,29 @@
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
     "redis": "0.7.3",
-    "minilog": "0.1.0"
+    "minilog": "0.1.0",
+    "callback_tracker": "*",
+    "underscore": "*"
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.2.18"
+    "radar_client": "0.2.18",
+    "long-stack-traces": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",
     "start": "node server.js",
+
+    "check-modules": "if [ -z \"$SKIP_PACAKGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
+
     "pretest": "npm run check-modules",
-    "test": "make test",
-    "check-modules": "[ ./package.json -nt ./node_modules ] && $(rm -rf node_modules && npm install) || echo 'Modules are up to date'"
+    "test": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
+
+    "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
+    "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
+    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
+
+    "reset-stats": "redis-cli KEYS 'radar:/audit/*' | xargs redis-cli DEL",
+    "read-stats": "/opt/redis/redis-cli KEYS 'radar:/audit/*' | xargs --verbose -n 1 /opt/redis/redis-cli GET"
   }
 }
