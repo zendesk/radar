@@ -10,7 +10,6 @@ var default_options = {
   }
 };
 
-
 function Presence(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
   this.setup(name);
