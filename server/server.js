@@ -39,7 +39,7 @@ Server.prototype.attach = function(server, configuration) {
   var engineConf;
 
   configuration || (configuration = {});
-  configuration.redis_port || (configuration.redis_port = 27000);
+  configuration.redis_port || (configuration.redis_port = 26379);
   configuration.redis_host || (configuration.redis_host = 'localhost');
   require('../core').Persistence.setConfig(configuration);
   this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);

@@ -15,7 +15,7 @@ var Server = {
   }
 };
 
-Persistence.setConfig({redis_port:27000, redis_host:'localhost'});
+Persistence.setConfig({redis_port:26379, redis_host:'localhost'});
 var counter = 1000,
     oldExpire = Persistence.expire,
     oldPublish = Persistence.publish;

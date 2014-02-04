@@ -6,9 +6,9 @@ var assert = require('assert'),
 exports['given a resource'] = {
 
   before: function(done) {
-    Persistence.setConfig({redis_port:27000, redis_host:'localhost'});
+    Persistence.setConfig({redis_port:26379, redis_host:'localhost'});
     Persistence.connect(function() {
-      client = redis.createClient(27000, 'localhost');
+      client = redis.createClient(26379, 'localhost');
       done();
     });
   },
