@@ -4,7 +4,7 @@ var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence');
 
-require('./common.js');
+var configuration = require('./common.js').configuration;
 
 var Server = {
   timer: new Heartbeat().interval(1500),
@@ -21,6 +21,9 @@ var counter = 1000,
     oldPublish = Persistence.publish;
 
 exports['given a presence'] = {
+  before: function(){
+    Persistence.setConfig(configuration);
+  },
 
   beforeEach: function(done) {
     this.presence = new Presence('aaa', Server, {});

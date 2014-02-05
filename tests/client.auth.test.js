@@ -4,13 +4,7 @@ var http = require('http'),
   Client = require('radar_client').constructor,
   Type = require('../core').Type;
 
-require('./common.js');
-
-var configuration = {
-  redis_host: 'localhost',
-  redis_port: 6379,
-  port: 8124
-};
+var configuration = require('./common.js').configuration;
 
 exports['auth: given a server and a client'] = {
   before: function(done) {
