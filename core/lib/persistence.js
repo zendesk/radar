@@ -6,43 +6,97 @@ var redisLib = require('redis'),
       redis_port: 6379
     };
 
-var client, isConnecting = false;
+function Persistence() { }
 
-function redis() {
-  if(!client || !client.connected){
-    if(client && !client.connected && isConnecting) {
-      logging.info('Not reinitializing client, as a connect is in progress');
-      return client;
-    }
-    isConnecting = true;
+var client, subscriber,
+    client_connected = false,
+    subscriber_connected = false;
+
+Persistence.connect = function(done) {
+
+  if(client_connected && subscriber_connected) {
+    done('already connected'); //already connected
+    return;
+  }
+  //create a client (read/write)
+  if(!client) {
     client = redisLib.createClient(configuration.redis_port, configuration.redis_host);
     if (configuration.redis_auth) {
       client.auth(configuration.redis_auth);
     }
-    if (configuration.db) {
+
+    if(configuration.db) {
       client.select(configuration.db);
     }
+    logging.info('Created a new Redis client.');
+  }
+
+  //create a pubsub client
+  if(!subscriber) {
+    subscriber = redisLib.createClient(configuration.redis_port, configuration.redis_host);
+    if (configuration.redis_auth) {
+      subscriber.auth(configuration.redis_auth);
+    }
+    logging.info('Created a new Redis subscriber.');
+  }
+
+
+  if(!client_connected) {
     client.once('ready', function() {
-      isConnecting = false;
+      client_connected = true;
+      if(client_connected && subscriber_connected) {
+        done();
+      }
     });
-    logging.info('Created new Redis client.');
+  }
+
+  if(!subscriber_connected) {
+    subscriber.once('ready', function() {
+      subscriber_connected = true;
+      if(client_connected && subscriber_connected) {
+        done();
+      }
+    });
+  }
+
+};
+
+function redis() {
+  if(!client || !client_connected) {
+    throw new Error("Not connected to redis");
   }
   return client;
 }
 
-function Persistence() { }
+function pubsub() {
+  if(!subscriber || !subscriber_connected) {
+    throw new Error("Not connected to redis");
+  }
+  return subscriber;
+}
 
 Persistence.redis = function(value) {
   if (value) {
     client = value;
+    client_connected = true;
   } else {
     return redis();
   }
 };
 
+Persistence.pubsub = function(value) {
+  if(value) {
+    subscriber = value;
+    subscriber_connected = true;
+  } else {
+    return pubsub();
+  }
+}
+
 Persistence.setConfig = function(config) {
   configuration = config;
 };
+
 
 Persistence.applyPolicy = function(multi, key, policy) {
   if(policy.maxCount) {
@@ -156,11 +210,36 @@ Persistence.publish = function(key, value, callback) {
 };
 
 Persistence.disconnect = function(callback) {
-  if(client) {
-    client.quit(callback);
-  } else if (callback) {
-    setImmediate(callback);
+  var done = function() {
+    if(!client && !client_connected &&
+       !subscriber && !subscriber_connected &&
+       callback) {
+         callback();
+       }
   }
+
+  if(client || subscriber) {
+    if(client && client.connected) {
+      var res = client.quit(function() {
+        logging.debug("client has quit");
+        client = client_connected = false;
+        done();
+      });
+    } else {
+      client = client_connected = false;
+    }
+
+    if(subscriber && subscriber.connected) {
+      res= subscriber.quit(function() {
+        logging.debug("pubsub has quit");
+        subscriber = subscriber_connected = false;
+        done();
+      });
+    } else {
+      subscriber = subscriber_connected = false;
+    }
+  }else
+    done();
 };
 
 Persistence.keys = function(key, callback) {

@@ -2,32 +2,27 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     minilog = require('minilog'),
+    configuration = require('./configuration.js'),
     Client = require('radar_client').constructor,
     Tracker = require('callback_tracker');
 
 exports['given a server'] = {
 
   before: function(done) {
-    common.startRadar(8002, this, done);
+    common.startRadar(this, done);
   },
 
-  after: function(done) {
+  after: function() {
     common.endRadar(this, function() {
-      Persistence.disconnect(done);
+      Persistence.disconnect();
+      done();
     });
   },
 
   beforeEach: function(done) {
     var track = Tracker.create('beforeEach', done);
 
-    this.client = new Client().configure({
-      userId: 123,
-      userType: 0,
-      accountName: 'dev',
-      port: 8002,
-      upgrade: false
-    }).alloc('test', track('client alloc'));
-
+    this.client = common.getClient('dev', 123, 0, {}, track('client ready'));
     this.client._logger = minilog('client.test');
 
     Persistence.delWildCard('*:/dev/*', track('remove redis entries'));
@@ -199,10 +194,7 @@ exports['given a server'] = {
     this.timeout(10000);
 
     var client = this.client;
-    var client2 = new Client()
-      .configure({ userId: 234, userType: 0, accountName: 'dev', port: 8002})
-      .alloc('test', function() {
-
+    var client2 = common.getClient('dev', 234, 0, {}, function() {
         client2.status('voice/status')
           .once(function(message) {
             assert.equal('set', message.op);

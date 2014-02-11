@@ -5,6 +5,8 @@ var common = require('./common.js'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
+    configuration = require('./configuration.js'),
+    Tracker = require('callback_tracker'),
     client, client2;
 
 http.globalAgent.maxSockets = 10000;
@@ -18,33 +20,11 @@ if (verbose) {
 exports['presence: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
-    var tasks = 0;
-    function next() {
-      tasks++;
-      if (tasks == 3) {
-        done();
-      }
-    }
-    common.startRadar(8000, this, function(){
-      client = new Client().configure({
-        userId: 123,
-        userType: 0,
-        accountName: 'test',
-        port: 8000,
-        upgrade: false,
-        userData: { name: 'tester' }
-      }).on('ready', next).alloc('test');
-
-      client2 = new Client().configure({
-        userId: 222,
-        userType: 0,
-        accountName: 'test',
-        port: 8000,
-        upgrade: false,
-        userData: { name: 'tester2' }
-      }).on('ready', next).alloc('test');
+    var track =  Tracker.create('before each', done);
+    common.startRadar(this, function(){
+      client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
+      client2 = common.getClient('test', 222, 0, { name: 'tester2' }, track('client 2 ready'));
     });
-    Persistence.delWildCard('*:/test/*', next);
   },
 
   afterEach: function(done) {
@@ -97,18 +77,21 @@ exports['presence: given a server and two connected clients'] = {
   'userData will persist when a presence is updated': function(done) {
     this.timeout(40*1000);
     var scope = 'chat/1/participants';
+    var verify = function(message) {
+      assert.equal(message.op, 'get');
+      assert.deepEqual(message.to, 'presence:/test/' + scope);
+      assert.ok(message.value['123']);
+      assert.equal(message.value['123'].userType, 0);
+      assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
+    }
 
     client.presence(scope).set('online', function() {
-      var presence = client2.presence(scope).sync({version: 2}, function sync(message) {
-        assert.equal(message.op, 'get');
-        assert.deepEqual(message.to, 'presence:/test/' + scope);
-        assert.ok(message.value['123']);
-        assert.equal(message.value['123'].userType, 0);
-        assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
+      var presence = client2.presence(scope).sync({version: 2}, function(message) {
+        verify(message);
 
         setTimeout(function() {
           presence.get({version:2}, function(message) {
-            sync(message);
+            verify(message);
             done();
           });
         }, 30000);

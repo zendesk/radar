@@ -3,14 +3,14 @@ var assert = require('assert'),
     redis = require('redis'),
     client;
 
-var configuration = require('./common.js').configuration;
+var configuration = require('./configuration.js');
 
 exports['given a resource'] = {
 
   before: function(done) {
     client = redis.createClient(configuration.redis_port, configuration.redis_host);
-    Persistence.redis(client);
-    client.on('ready', function() {
+    client.once('ready', function() {
+      Persistence.redis(client);
       done();
     });
   },

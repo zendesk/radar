@@ -2,22 +2,21 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
+    configuration = require('./configuration.js'),
     Tracker = require('callback_tracker');
 
 exports['given two clients'] = {
-  before: function(done) { common.startRadar(8001, this, done); },
+  before: function(done) { common.startRadar(this, done); },
 
-  after: function(done) { common.endRadar(this, function() { Persistence.disconnect(done); }); },
+  after: function(done) { common.endRadar(this, done); },
 
   beforeEach: function(done) {
     var self = this, track = Tracker.create('before each', done);
-    this.client = new Client()
-                  .configure({ userId: 123, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
-                  .once('ready', track('client 1 ready', function() { self.client.message('test').subscribe(track('client 1 subscribe')); }))
-                  .alloc('test');
-    this.client2 = new Client()
-                  .configure({ userId: 246, userType: 0, accountName: 'dev', port: 8001, upgrade: false})
-                  .once('ready', track('client 2 ready')).alloc('test');
+    this.client = common.getClient('dev', 123, 0, {}, track('client 1 ready', function() {
+      self.client.message('test').subscribe(track('client 1 subscribe'));
+    }));
+
+    this.client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
 
     Persistence.del('status:/dev/voice/status', track('remove status'));
     Persistence.del('presence:/dev/ticket/21', track('remove presence'));

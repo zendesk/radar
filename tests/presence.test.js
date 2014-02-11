@@ -3,7 +3,7 @@ var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence');
 
-var configuration = require('./common.js').configuration;
+var configuration = require('./configuration.js');
 
 var Server = {
   broadcast: function() { },
@@ -19,8 +19,9 @@ var counter = 1000,
     oldPublish = Persistence.publish;
 
 exports['given a presence'] = {
-  before: function(){
+  before: function(done){
     Persistence.setConfig(configuration);
+    Persistence.connect(done);
   },
 
   beforeEach: function(done) {

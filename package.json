@@ -47,7 +47,6 @@
     "start": "node server.js",
 
     "check-modules": "if [ -z \"$SKIP_PACAKGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
-
     "pretest": "npm run check-modules",
     "test": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
 

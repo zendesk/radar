@@ -25,20 +25,21 @@ function Server() {
 MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
-Server.prototype.attach = function(server, configuration) {
-  var engine = DefaultEngineIO;
-  var engineConf;
+Server.prototype.attach = function(http_server, configuration) {
 
   configuration = configuration || {};
   configuration.redis_port = configuration.redis_port || 6379;
   configuration.redis_host = configuration.redis_host || 'localhost';
 
   Core.Persistence.setConfig(configuration);
-  this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
+  Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
+};
 
-  if (configuration.redis_auth) {
-    this.subscriber.auth(configuration.redis_auth);
-  }
+Server.prototype._setup = function(http_server, configuration) {
+  var engine = DefaultEngineIO,
+      engineConf;
+
+  this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this.handleMessage.bind(this));
 
@@ -49,14 +50,14 @@ Server.prototype.attach = function(server, configuration) {
     this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
   }
 
-  this.server = engine.attach(server, engineConf);
-
+  this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
 
   setInterval(Audit.totals, 60 * 1000); // each minute
 
   logging.debug('#server_start ' + new Date().toString());
-};
+  this.emit('ready');
+}
 
 Server.prototype.onClientConnection = function(client) {
   var self = this;
@@ -112,7 +113,8 @@ Server.prototype.handleMessage = function(name, data) {
 
 // Process a message
 Server.prototype.message = function(client, data) {
-  var message = parseJSON(data);
+  var self = this,
+      message = parseJSON(data);
 
   // audit messages
   if(message.to == 'audit') {
@@ -134,8 +136,16 @@ Server.prototype.message = function(client, data) {
   var resource = this.resource(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    resource.handleMessage(client, message);
-    this.emit(message.op, client, message);
+    logging.info('#redis_subscribe', resource.name);
+    this.subs[resource.name] = true;
+    this.subscriber.subscribe(resource.name, function(err) {
+      if(!err) {
+        resource.handleMessage(client, message);
+        self.emit(message.op, client, message);
+      } else {
+        logging.error('could not subscribe to redis resource', resource.name);
+      }
+    });
   } else {
     logging.warn('#auth_invalid', data);
     client.send({
@@ -153,9 +163,6 @@ Server.prototype.resource = function(name) {
 
     if (definition && Core.Resources[definition.type]) {
       this.channels[name] = new Core.Resources[definition.type](name, this, definition);
-      logging.info('#redis_subscribe', name);
-      this.subs[name] = true;
-      this.subscriber.subscribe(name);
     } else {
       logging.error('#unknown_type', name, definition);
     }
@@ -171,14 +178,14 @@ Server.prototype.destroy = function(name) {
   this.subscriber.unsubscribe(name);
 };
 
-Server.prototype.terminate = function() {
+Server.prototype.terminate = function(done) {
   var self = this;
   Object.keys(this.channels).forEach(function(name) {
     self.destroy(name);
   });
 
   this.server.close();
-  this.subscriber.quit();
+  Core.Persistence.disconnect(done);
 };
 
 module.exports = Server;
