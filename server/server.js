@@ -25,17 +25,17 @@ function Server() {
 MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
-Server.prototype.attach = function(server, configuration) {
+Server.prototype.attach = function(http_server, configuration) {
 
   configuration = configuration || {};
   configuration.redis_port = configuration.redis_port || 6379;
   configuration.redis_host = configuration.redis_host || 'localhost';
 
   Core.Persistence.setConfig(configuration);
-  Core.Persistence.connect(this._setup.bind(this, server, configuration));
+  Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
 };
 
-Server.prototype._setup = function(server, configuration) {
+Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
 
@@ -50,7 +50,7 @@ Server.prototype._setup = function(server, configuration) {
     this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
   }
 
-  this.server = engine.attach(server, engineConf);
+  this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
 
   setInterval(Audit.totals, 60 * 1000); // each minute
