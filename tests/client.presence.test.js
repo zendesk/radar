@@ -102,6 +102,7 @@ exports['presence: given a server and two connected clients'] = {
       var presence = client2.presence(scope).sync({version: 2}, function sync(message) {
         assert.equal(message.op, 'get');
         assert.deepEqual(message.to, 'presence:/test/' + scope);
+        assert.ok(message.value['123']);
         assert.equal(message.value['123'].userType, 0);
         assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
 
@@ -194,6 +195,5 @@ exports['presence: given a server and two connected clients'] = {
       }, 5);
     });
   }
-
 };
 
