@@ -117,7 +117,8 @@ Server.prototype.handleMessage = function(name, data) {
 
 // Process a message
 Server.prototype.message = function(client, data) {
-  var message = parseJSON(data);
+  var self = this,
+      message = parseJSON(data);
 
   // audit messages
   if(message.to == 'audit') {
@@ -139,8 +140,16 @@ Server.prototype.message = function(client, data) {
   var resource = this.resource(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    resource.handleMessage(client, message);
-    this.emit(message.op, client, message);
+    logging.info('#redis_subscribe', resource.name);
+    this.subs[resource.name] = true;
+    this.subscriber.subscribe(resource.name, function(err) {
+      if(!err) {
+        resource.handleMessage(client, message);
+        self.emit(message.op, client, message);
+      } else {
+        logging.error('could not subscribe to redis resource', resource.name);
+      }
+    });
   } else {
     logging.warn('#auth_invalid', data);
     client.send({
@@ -158,9 +167,6 @@ Server.prototype.resource = function(name) {
 
     if (definition && Core.Resources[definition.type]) {
       this.channels[name] = new Core.Resources[definition.type](name, this, definition);
-      logging.info('#redis_subscribe', name);
-      this.subs[name] = true;
-      this.subscriber.subscribe(name);
     } else {
       logging.error('#unknown_type', name, definition);
     }
