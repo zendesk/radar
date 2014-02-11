@@ -224,28 +224,28 @@ Persistence.disconnect = function(callback) {
        }
   }
 
-  if(client && client.connected) {
-    var res = client.quit(function() {
-      logging.debug("client has quit");
-      client = false;
-      client_connected = false;
-      done();
-    });
-  } else {
-    client = client_connected = false;
-  }
+  if(client || subscriber) {
+    if(client && client.connected) {
+      var res = client.quit(function() {
+        logging.debug("client has quit");
+        client = client_connected = false;
+        done();
+      });
+    } else {
+      client = client_connected = false;
+    }
 
-  if(subscriber && subscriber.connected) {
-    res= subscriber.quit(function() {
-      logging.debug("pubsub has quit");
-      subscriber = false;
-      subscriber_connected = false;
-      done();
-    });
-  } else {
-    subscriber = subscriber_connected = false;
-  }
-  done();
+    if(subscriber && subscriber.connected) {
+      res= subscriber.quit(function() {
+        logging.debug("pubsub has quit");
+        subscriber = subscriber_connected = false;
+        done();
+      });
+    } else {
+      subscriber = subscriber_connected = false;
+    }
+  }else
+    done();
 };
 
 Persistence.keys = function(key, callback) {

@@ -12,13 +12,11 @@ exports['given two clients'] = {
 
   beforeEach: function(done) {
     var self = this, track = Tracker.create('before each', done);
-    this.client = new Client()
-                  .configure({ userId: 123, userType: 0, accountName: 'dev', port: configuration.port, upgrade: false})
-                  .once('ready', track('client 1 ready', function() { self.client.message('test').subscribe(track('client 1 subscribe')); }))
-                  .alloc('test');
-    this.client2 = new Client()
-                  .configure({ userId: 246, userType: 0, accountName: 'dev', port: configuration.port, upgrade: false})
-                  .once('ready', track('client 2 ready')).alloc('test');
+    this.client = common.getClient('dev', 123, 0, {}, track('client 1 ready', function() {
+      self.client.message('test').subscribe(track('client 1 subscribe'));
+    }));
+
+    this.client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
 
     Persistence.del('status:/dev/voice/status', track('remove status'));
     Persistence.del('presence:/dev/ticket/21', track('remove presence'));

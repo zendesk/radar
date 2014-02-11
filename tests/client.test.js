@@ -22,14 +22,7 @@ exports['given a server'] = {
   beforeEach: function(done) {
     var track = Tracker.create('beforeEach', done);
 
-    this.client = new Client().configure({
-      userId: 123,
-      userType: 0,
-      accountName: 'dev',
-      port: configuration.port,
-      upgrade: false
-    }).alloc('test', track('client alloc'));
-
+    this.client = common.getClient('dev', 123, 0, {}, track('client ready'));
     this.client._logger = minilog('client.test');
 
     Persistence.delWildCard('*:/dev/*', track('remove redis entries'));
@@ -195,10 +188,7 @@ exports['given a server'] = {
     this.timeout(10000);
 
     var client = this.client;
-    var client2 = new Client()
-      .configure({ userId: 234, userType: 0, accountName: 'dev', port: configuration.port})
-      .alloc('test', function() {
-
+    var client2 = common.getClient('dev', 234, 0, {}, function() {
         client2.status('voice/status')
           .once(function(message) {
             assert.equal('set', message.op);

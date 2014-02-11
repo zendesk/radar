@@ -3,44 +3,21 @@ var http = require('http'),
   Radar = require('../server/server.js'),
   Client = require('radar_client').constructor,
   Type = require('../core').Type,
+  common = require('./common.js'),
   configuration = require('./configuration.js');
 
 exports['auth: given a server and a client'] = {
-  before: function(done) {
-
-    // create frontend server
-    this.server = http.createServer(function(req, res) {
-      res.end('404 error');
-    });
-    this.radar = new Radar();
-    this.radar.attach(this.server, configuration);
-
-    this.server.listen(configuration.port, function() {
-      done();
-    });
-  },
-
-  after: function(done) {
-    var self = this;
-    this.radar.terminate(function() {
-      self.server.close(done);
-    });
-  },
-
   beforeEach: function(done) {
-    this.client = new Client().configure({
-      userId: 111,
-      userType: 0,
-      accountName: 'client_auth',
-      port: configuration.port,
-      upgrade: false,
-      userData: { name: 'tester0' }
-    }).on('ready', done).alloc('test');
+    var self = this;
+    common.startRadar(this, function() {
+      self.client = common.getClient('client_auth', 111, 0,
+        { name: 'tester0' }, done);
+    });
   },
 
-  afterEach: function() {
+  afterEach: function(done) {
     this.client.dealloc('test');
-    this.client.manager.close();
+    common.endRadar(this, done);
   },
 
   // GET /radar/message?accountName=test&scope=chat/1

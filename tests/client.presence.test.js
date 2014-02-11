@@ -22,23 +22,8 @@ exports['presence: given a server and two connected clients'] = {
   beforeEach: function(done) {
     var track =  Tracker.create('before each', done);
     common.startRadar(this, function(){
-      client = new Client().configure({
-        userId: 123,
-        userType: 0,
-        accountName: 'test',
-        port: configuration.port,
-        upgrade: false,
-        userData: { name: 'tester' }
-      }).on('ready', track('client 1 ready')).alloc('test');
-
-      client2 = new Client().configure({
-        userId: 222,
-        userType: 0,
-        accountName: 'test',
-        port: configuration.port,
-        upgrade: false,
-        userData: { name: 'tester2' }
-      }).on('ready', track('client 2 ready')).alloc('test');
+      client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
+      client2 = common.getClient('test', 222, 0, { name: 'tester2' }, track('client 2 ready'));
     });
   },
 

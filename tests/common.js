@@ -1,8 +1,10 @@
 var http = require('http'),
+    logging = require('minilog')('common'),
     eio = require('engine.io'),
     Persistence = require('../core/lib/persistence'),
     RadarServer = new require('../server/server.js'),
     configuration = require('./configuration.js'),
+    Client = require('radar_client').constructor,
     radar;
 
 if (process.env.verbose) {
@@ -37,20 +39,41 @@ module.exports = {
 
   // ends the Radar server
   endRadar: function(context, done) {
+    logging.info("in endRadar");
     context.server.on('close', function() {
+      logging.info("server closed");
       context.serverStarted = false;
       done();
     });
     Persistence.delWildCard('*', function() {
       radar.terminate(function() {
+        logging.info("radar terminated");
         if(!context.serverStarted) {
+          logging.info("server terminated");
           done();
         }
-        else
-          context.server.close();
+        else {
+          logging.info("closing server");
+          var val = context.server.close();
+          if(!val) {
+            context.serverStarted = false;
+            done();
+          }
+        }
       });
     });
   },
 
+  getClient: function(account, userId, userType, userData, done) {
+      var client = new Client().configure({
+        userId: userId,
+        userType: userType,
+        accountName: account,
+        port: configuration.port,
+        upgrade: false,
+        userData: userData,
+      }).once('ready', done).alloc('test');
+      return client;
+  },
   configuration: configuration
 };

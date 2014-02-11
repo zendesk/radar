@@ -13,10 +13,8 @@ exports['reconnect: given a server and two connected clients'] = {
         track = Tracker.create('beforeEach reconnect', done);
 
     common.startRadar(this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: configuration.port, upgrade: false})
-                    .once('ready', track('first client ready')).alloc('test');
-      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: configuration.port, upgrade: false})
-                    .once('ready', track('second client configured')).alloc('test');
+      self.client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
+      self.client2 = common.getClient('test', 246, 0, { name: 'tester2' }, track('client 2 ready'));
     });
   },
 
