@@ -6,12 +6,6 @@ var redisLib = require('redis'),
       redis_port: 6379
     };
 
-if(false) {
-  var Minilog = require('minilog');
-  Minilog.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
-}
-
 function Persistence() { }
 
 var client, subscriber,

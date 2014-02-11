@@ -42,8 +42,12 @@ module.exports = {
     logging.info("in endRadar");
     context.server.on('close', function() {
       logging.info("server closed");
-      context.serverStarted = false;
-      done();
+      if(context.serverStarted) {
+        clearTimeout(context.serverTimeout);
+        logging.info("Calling done, close event");
+        context.serverStarted = false;
+        done();
+      }
     });
     Persistence.delWildCard('*', function() {
       radar.terminate(function() {
@@ -54,11 +58,17 @@ module.exports = {
         }
         else {
           logging.info("closing server");
+          logging.info(context.server._connections);
           var val = context.server.close();
-          if(!val) {
-            context.serverStarted = false;
-            done();
-          }
+          context.serverTimeout = setTimeout(function() {
+            //failsafe, because server.close does not always
+            //throw the close event within time.
+            if(context.serverStarted) {
+              context.serverStarted = false;
+              logging.info("Calling done, timeout");
+              done();
+            }
+          }, 1000);
         }
       });
     });
