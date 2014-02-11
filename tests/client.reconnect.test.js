@@ -1,6 +1,7 @@
 var common = require('./common.js'),
     assert = require('assert'),
     Radar = require('../server/server.js'),
+    configuration = require('./configuration.js'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     Tracker = require('callback_tracker');
@@ -11,10 +12,10 @@ exports['reconnect: given a server and two connected clients'] = {
     var self = this,
         track = Tracker.create('beforeEach reconnect', done);
 
-    common.startRadar(8009, this, function(){
-      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: 8009, upgrade: false})
+    common.startRadar(this, function(){
+      self.client = new Client().configure({ userId: 123, userType: 0, accountName: 'test', port: configuration.port, upgrade: false})
                     .once('ready', track('first client ready')).alloc('test');
-      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: 8009, upgrade: false})
+      self.client2 = new Client().configure({ userId: 246, userType: 2, accountName: 'test', port: configuration.port, upgrade: false})
                     .once('ready', track('second client configured')).alloc('test');
     });
   },
@@ -22,11 +23,7 @@ exports['reconnect: given a server and two connected clients'] = {
   afterEach: function(done) {
     this.client.dealloc('test');
     this.client2.dealloc('test');
-    common.endRadar(this, function() {
-      Persistence.delWildCard('*:/test/*', function() {
-        Persistence.disconnect(done);
-      });
-    });
+    common.endRadar(this, done);
   },
 
   'after a connection, create one subscription of each type, then disconnect. all subs should be restored and "reconnected" event': function(done) {
@@ -59,7 +56,7 @@ exports['reconnect: given a server and two connected clients'] = {
           setTimeout(function() {
             //console.log('Shutting down the server');
             common.endRadar(self, function() {
-              common.startRadar(8009, self, function(){
+              common.startRadar(self, function(){
                 // re-establish listener
                 common.radar().on('subscribe', function(c, message) {
                   afterDisconnect.push(message);
@@ -110,7 +107,7 @@ exports['reconnect: given a server and two connected clients'] = {
 
     setTimeout(function() {
       common.endRadar(self, function() {
-        common.startRadar(8009, self, function(){
+        common.startRadar(self, function(){
           client.once('ready', function() {
             client2.message('foo').publish('2');
             setTimeout(function() {

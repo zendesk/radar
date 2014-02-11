@@ -5,6 +5,8 @@ var common = require('./common.js'),
   Persistence = require('../core').Persistence,
   Client = require('radar_client').constructor,
   logging = require('minilog')('test'),
+  Tracker = require('callback_tracker'),
+  configuration = require('./configuration.js'),
   client1, client2;
 
 http.globalAgent.maxSockets = 10000;
@@ -18,42 +20,32 @@ if (verbose) {
 exports['presence: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
-    var tasks = 0;
-    function next() {
-      tasks++;
-      if (tasks == 3) {
-        done();
-      }
-    }
-    common.startRadar(8000, this, function(){
+    var track = Tracker.create('before each', done);
+    common.startRadar(this, function(){
       client1 = new Client().configure({
         userId: 123,
         userType: 0,
         accountName: 'test',
-        port: 8000,
+        port: configuration.port,
         upgrade: false,
         userData: { name: 'tester' }
-      }).on('ready', next).alloc('test');
+      }).on('ready', track('client 1 ready')).alloc('test');
 
       client2 = new Client().configure({
         userId: 222,
         userType: 0,
         accountName: 'test',
-        port: 8000,
+        port: configuration.port,
         upgrade: false,
         userData: { name: 'tester2' }
-      }).on('ready', next).alloc('test');
+      }).on('ready', track('client 2 ready')).alloc('test');
     });
-    Persistence.delWildCard('*:/test/*', next);
   },
 
   afterEach: function(done) {
     client1.dealloc('test');
     client2.dealloc('test');
-    common.endRadar(this, function(){
-
-    });
-    done()
+    common.endRadar(this,done);
   },
 
   'presence state can switch back to client_online after a client_offline': function(done) {

@@ -9,7 +9,7 @@ var http = require('http'),
     MessageList = require('../core').MessageList,
     frontend;
 
-var configuration = require('./common.js').configuration;
+var configuration = require('./configuration.js');
 
 var Client = new ClientScope({
   secure: false,
@@ -20,11 +20,13 @@ var Client = new ClientScope({
 exports['Radar api tests'] = {
   before: function(done) {
     Persistence.setConfig(configuration);
-    // create frontend server
-    frontend = http.createServer(function(req, res){ res.end('404 error');});
-    Api.attach(frontend);
+    Persistence.connect(function() {
+      // create frontend server
+      frontend = http.createServer(function(req, res){ res.end('404 error');});
+      Api.attach(frontend);
 
-    frontend.listen(8123, done);
+      frontend.listen(8123, done);
+    });
   },
 
   after: function(done) {

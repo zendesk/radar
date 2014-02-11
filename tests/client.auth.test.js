@@ -2,9 +2,8 @@ var http = require('http'),
   assert = require('assert'),
   Radar = require('../server/server.js'),
   Client = require('radar_client').constructor,
-  Type = require('../core').Type;
-
-var configuration = require('./common.js').configuration;
+  Type = require('../core').Type,
+  configuration = require('./configuration.js');
 
 exports['auth: given a server and a client'] = {
   before: function(done) {
@@ -22,8 +21,10 @@ exports['auth: given a server and a client'] = {
   },
 
   after: function(done) {
-    this.radar.terminate();
-    this.server.close(done);
+    var self = this;
+    this.radar.terminate(function() {
+      self.server.close(done);
+    });
   },
 
   beforeEach: function(done) {

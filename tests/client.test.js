@@ -2,18 +2,20 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     minilog = require('minilog'),
+    configuration = require('./configuration.js'),
     Client = require('radar_client').constructor,
     Tracker = require('callback_tracker');
 
 exports['given a server'] = {
 
   before: function(done) {
-    common.startRadar(8002, this, done);
+    common.startRadar(this, done);
   },
 
-  after: function(done) {
+  after: function() {
     common.endRadar(this, function() {
-      Persistence.disconnect(done);
+      Persistence.disconnect();
+      done();
     });
   },
 
@@ -24,7 +26,7 @@ exports['given a server'] = {
       userId: 123,
       userType: 0,
       accountName: 'dev',
-      port: 8002,
+      port: configuration.port,
       upgrade: false
     }).alloc('test', track('client alloc'));
 
@@ -194,7 +196,7 @@ exports['given a server'] = {
 
     var client = this.client;
     var client2 = new Client()
-      .configure({ userId: 234, userType: 0, accountName: 'dev', port: 8002})
+      .configure({ userId: 234, userType: 0, accountName: 'dev', port: configuration.port})
       .alloc('test', function() {
 
         client2.status('voice/status')

@@ -29,19 +29,20 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(server, configuration) {
-  var engine = DefaultEngineIO;
-  var engineConf;
 
   configuration = configuration || {};
   configuration.redis_port = configuration.redis_port || 6379;
   configuration.redis_host = configuration.redis_host || 'localhost';
 
   Core.Persistence.setConfig(configuration);
-  this.subscriber = redis.createClient(configuration.redis_port, configuration.redis_host);
+  Core.Persistence.connect(this._setup.bind(this, server, configuration));
+};
 
-  if (configuration.redis_auth) {
-    this.subscriber.auth(configuration.redis_auth);
-  }
+Server.prototype._setup = function(server, configuration) {
+  var engine = DefaultEngineIO,
+      engineConf;
+
+  this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this.handleMessage.bind(this));
 
@@ -53,15 +54,14 @@ Server.prototype.attach = function(server, configuration) {
   }
 
   this.server = engine.attach(server, engineConf);
-
   this.server.on('connection', this.onClientConnection.bind(this));
 
   this.timer.start();
-
   setInterval(Audit.totals, 60 * 1000); // each minute
 
   logging.debug('#server_start ' + new Date().toString());
-};
+  this.emit('ready');
+}
 
 Server.prototype.onClientConnection = function(client) {
   var self = this;
@@ -176,7 +176,7 @@ Server.prototype.destroy = function(name) {
   this.subscriber.unsubscribe(name);
 };
 
-Server.prototype.terminate = function() {
+Server.prototype.terminate = function(done) {
   var self = this;
   Object.keys(this.channels).forEach(function(name) {
     self.destroy(name);
@@ -184,7 +184,7 @@ Server.prototype.terminate = function() {
 
   this.timer.clear();
   this.server.close();
-  this.subscriber.quit();
+  Core.Persistence.disconnect(done);
 };
 
 module.exports = Server;
