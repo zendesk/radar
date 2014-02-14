@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+echo $PWD
+echo "starting redis1"
+redis-server ./redis1.conf --loglevel verbose
+sleep 1
+redis-cli -p 6379 ping
+echo "starting redis2"
+redis-server ./redis2.conf --loglevel verbose
+sleep 1
+redis-cli -p 6380 ping
+echo "starting redis3"
+redis-server ./redis3.conf --loglevel verbose
+sleep 1
+redis-cli -p 6381 ping
+
+echo "starting sentinel1"
+redis-server ./sentinel1.conf --sentinel --loglevel verbose
+echo "starting sentinel2"
+redis-server ./sentinel2.conf --sentinel --loglevel verbose
+echo "starting sentinel3"
+redis-server ./sentinel3.conf --sentinel --loglevel verbose
+
+echo "testing sentinel1"
+redis-cli -p 26379 sentinel master mymaster

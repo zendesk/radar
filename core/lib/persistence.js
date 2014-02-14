@@ -1,4 +1,5 @@
 var redisLib = require('redis'),
+    sentinelLib = require('redis-sentinel-client'),
     logging = require('minilog')('persistence'),
     // defaults
     configuration = {
@@ -12,6 +13,26 @@ var client, subscriber,
     client_connected = false,
     subscriber_connected = false;
 
+function redisConnect(redisPort, redisHost, redisAuth) {
+    var client = redisLib.createClient(redisPort, redisHost);
+    if (redisAuth) {
+      client.auth(redisAuth);
+    }
+
+    logging.info('Created a new Redis client.');
+    return client;
+}
+
+function sentinelConnect(sentinelPort, sentinelHost, masterName, redisAuth) {
+    var client = sentinelLib.createClient(sentinelPort, sentinelHost, {
+      auth_pass: redisAuth,
+      masterName: masterName
+    });
+
+    logging.info('Created a new Redis client.');
+    return client;
+}
+
 Persistence.connect = function(done) {
 
   if(client_connected && subscriber_connected) {
@@ -20,15 +41,16 @@ Persistence.connect = function(done) {
   }
   //create a client (read/write)
   if(!client) {
-    client = redisLib.createClient(configuration.redis_port, configuration.redis_host);
-    if (configuration.redis_auth) {
-      client.auth(configuration.redis_auth);
+    if(configuration.sentinel_port) {
+      client = sentinelConnect(configuration.sentinel_port,
+          configuration.sentinel_host,
+          configuration.sentinel_master,
+          configuration.redis_auth);
+    } else {
+      client = redisConnect(configuration.redis_port,
+          configuration.redis_host,
+          configuration.redis_auth);
     }
-
-    if(configuration.db) {
-      client.select(configuration.db);
-    }
-    logging.info('Created a new Redis client.');
   }
 
   //create a pubsub client
@@ -45,7 +67,11 @@ Persistence.connect = function(done) {
     client.once('ready', function() {
       client_connected = true;
       if(client_connected && subscriber_connected) {
-        done();
+        if(configuration.db) {
+          client.select(configuration.db, done);
+        } else {
+          done();
+        }
       }
     });
   }
