@@ -2,25 +2,25 @@
 set -e
 
 echo $PWD
-echo "starting redis1"
-redis-server ./redis1.conf --loglevel verbose
-sleep 1
-redis-cli -p 6379 ping
-echo "starting redis2"
-redis-server ./redis2.conf --loglevel verbose
-sleep 1
-redis-cli -p 6380 ping
-echo "starting redis3"
-redis-server ./redis3.conf --loglevel verbose
-sleep 1
-redis-cli -p 6381 ping
+for i in redis1 redis2 redis3
+do
+    echo "starting $i"
+    cp ./$i.conf.example ./$i.conf
+    redis-server ./$i.conf --loglevel verbose
+done
 
-echo "starting sentinel1"
-redis-server ./sentinel1.conf --sentinel --loglevel verbose
-echo "starting sentinel2"
-redis-server ./sentinel2.conf --sentinel --loglevel verbose
-echo "starting sentinel3"
-redis-server ./sentinel3.conf --sentinel --loglevel verbose
+for i in 6379 6380 6381
+do
+    sleep 1
+    redis-cli -p $i ping
+done
+
+for i in sentinel1 sentinel2 sentinel3
+do
+    echo "starting $i"
+    cp ./$i.conf.example ./$i.conf
+    redis-server ./$i.conf --sentinel --loglevel verbose
+done
 
 echo "testing sentinel1"
 redis-cli -p 26379 sentinel master mymaster
