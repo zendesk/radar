@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo $PWD
+cd tests/sentinel
 for i in redis1 redis2 redis3
 do
     echo "starting $i"
@@ -24,3 +24,4 @@ done
 
 echo "testing sentinel1"
 redis-cli -p 26379 sentinel master mymaster
+cd ../../

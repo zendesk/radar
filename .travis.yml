@@ -5,7 +5,6 @@ node_js:
 before_install:
     - sudo apt-get install redis-server
     - redis-server --version
-    - cd ./tests/sentinel && ./start_sentinel && cd ../../  2>&1
 
 notifications:
   flowdock:

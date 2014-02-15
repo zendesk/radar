@@ -47,9 +47,14 @@
     "prestart": "npm run check-modules",
     "start": "node server.js",
 
-    "check-modules": "if [ -z \"$SKIP_PACAKGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
-    "pretest": "npm run check-modules",
-    "test": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
+    "check-modules": "if [ -z \"$SKIP_PACKAGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
+    "pretest": "npm run check-modules && npm run start-sentinel",
+    "start-sentinel": "./start_sentinel",
+    "copy-redis-config": "cp tests/redis-configuration.js.example tests/configuration.js",
+    "copy-sentinel-config": "cp tests/sentinel-configuration.js.example tests/configuration.js",
+    "test-redis": "npm run copy-redis-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
+    "test-sentinel": "npm run copy-sentinel-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
+    "test": "npm run test-redis && npm run test-sentinel",
 
     "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
