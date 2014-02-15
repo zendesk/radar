@@ -36,7 +36,7 @@ function sentinelConnect(sentinelPort, sentinelHost, masterName, redisAuth) {
 Persistence.connect = function(done) {
 
   if(client_connected && subscriber_connected) {
-    done('already connected'); //already connected
+    done(); //already connected
     return;
   }
   //create a client (read/write)
