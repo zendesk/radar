@@ -55,7 +55,6 @@
     "test-redis": "npm run copy-redis-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
     "test-sentinel": "npm run copy-sentinel-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
     "test": "npm run test-redis && npm run test-sentinel",
-
     "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
