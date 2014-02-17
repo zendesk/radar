@@ -5,7 +5,7 @@ cd tests/sentinel
 for i in redis1 redis2 redis3
 do
     echo "starting $i"
-    cp ./$i.conf.example ./$i.conf
+    cp -f ./$i.conf.example ./$i.conf
     redis-server ./$i.conf --loglevel verbose
 done
 
@@ -18,7 +18,7 @@ done
 for i in sentinel1 sentinel2 sentinel3
 do
     echo "starting $i"
-    cp ./$i.conf.example ./$i.conf
+    cp -f ./$i.conf.example ./$i.conf
     redis-server ./$i.conf --sentinel --loglevel verbose
 done
 
