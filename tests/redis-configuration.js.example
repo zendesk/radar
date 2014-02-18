@@ -1,0 +1,6 @@
+module.exports = {
+  port: 8001,
+  db: 1,
+  redis_port: 6379,
+  redis_host: 'localhost'
+};

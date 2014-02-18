@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+cd tests/sentinel
+for i in redis1 redis2 redis3
+do
+    echo "starting $i"
+    cp -f ./$i.conf.example ./$i.conf
+    redis-server ./$i.conf --loglevel verbose
+done
+
+for i in 6379 6380 6381
+do
+    sleep 1
+    redis-cli -p $i ping
+done
+
+for i in sentinel1 sentinel2 sentinel3
+do
+    echo "starting $i"
+    cp -f ./$i.conf.example ./$i.conf
+    redis-server ./$i.conf --sentinel --loglevel verbose
+done
+
+echo "testing sentinel1"
+redis-cli -p 26379 sentinel master mymaster
+cd ../../

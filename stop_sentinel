@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+cd tests/sentinel
+for i in sentinel1 sentinel2 sentinel3 redis1 redis2 redis3
+do
+    echo "stopping $i"
+    kill -TERM `cat $i.pid`
+done
+cd ../../
