@@ -141,6 +141,10 @@ Persistence.applyPolicy = function(multi, key, policy) {
   }
 };
 
+Persistence.exists = function(key, callback) {
+  redis().exists(key, callback);
+};
+
 Persistence.readOrderedWithScores = function(key, policy, callback) {
   var multi = redis().multi();
 
