@@ -36,7 +36,7 @@ function sentinelConnect(sentinelPort, sentinelHost, masterName, redisAuth) {
 Persistence.connect = function(done) {
 
   if(client_connected && subscriber_connected) {
-    done(); //already connected
+    if(done) done(); //already connected
     return;
   }
   //create a client (read/write)
@@ -70,7 +70,7 @@ Persistence.connect = function(done) {
         if(configuration.db) {
           client.select(configuration.db, done);
         } else {
-          done();
+          if(done) done();
         }
       }
     });
@@ -80,7 +80,7 @@ Persistence.connect = function(done) {
     subscriber.once('ready', function() {
       subscriber_connected = true;
       if(client_connected && subscriber_connected) {
-        done();
+        if(done) done();
       }
     });
   }
