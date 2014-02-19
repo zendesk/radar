@@ -94,10 +94,7 @@ exports['given a server'] = {
           assert.equal('get', message.op);
           var expected = {123:{clients:{},userType:0}};
           expected['123'].clients[client._socket.id] = {};
-          assert.ok(message.value);
-          assert.ok(message.value['123']);
-          assert.strictEqual(message.value['123'].userType, expected['123'].userType);
-          assert.deepEqual(message.value['123'].clients, expected['123'].clients);
+          assert.deepEqual(message.value, expected);
           done();
         });
       });
@@ -115,10 +112,7 @@ exports['given a server'] = {
         assert.equal('get', message.op);
         var expected = {123:{clients:{},userType:0}};
         expected['123'].clients[client._socket.id] = {};
-        assert.ok(message.value);
-        assert.ok(message.value['123']);
-        assert.strictEqual(message.value['123'].userType, expected['123'].userType);
-        assert.deepEqual(message.value['123'].clients, expected['123'].clients);
+        assert.deepEqual(message.value, expected);
         done();
       });
     });

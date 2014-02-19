@@ -1,6 +1,8 @@
 var redis = require('redis'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
+    Type = Core.Type,
+    Heartbeat = require('../core/lib/Heartbeat.js'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
     Audit = require('./audit.js'),
@@ -20,6 +22,7 @@ function Server() {
   this.channels = {};
   this.subscriber = null;
   this.subs = {};
+  this.timer = new Heartbeat().interval(15000);
 }
 
 MiniEventEmitter.mixin(Server);
@@ -52,6 +55,8 @@ Server.prototype._setup = function(http_server, configuration) {
 
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
+
+  this.timer.start();
 
   setInterval(Audit.totals, 60 * 1000); // each minute
 
@@ -159,7 +164,7 @@ Server.prototype.message = function(client, data) {
 // Get or create channel by name
 Server.prototype.resource = function(name) {
   if (!this.channels[name]) {
-    var definition = Core.Type.getByExpression(name);
+    var definition = Type.getByExpression(name);
 
     if (definition && Core.Resources[definition.type]) {
       this.channels[name] = new Core.Resources[definition.type](name, this, definition);
@@ -184,6 +189,7 @@ Server.prototype.terminate = function(done) {
     self.destroy(name);
   });
 
+  this.timer.clear();
   this.server.close();
   Core.Persistence.disconnect(done);
 };
