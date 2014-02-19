@@ -4,6 +4,7 @@ var redis = require('redis'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
     Audit = require('./audit.js'),
+    ServerPresence = require('./server_presence.js'),
     DefaultEngineIO = require('engine.io');
 
 // Parse JSON
@@ -52,6 +53,8 @@ Server.prototype._setup = function(http_server, configuration) {
 
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
+
+  ServerPresence.setup(configuration.port);
 
   setInterval(Audit.totals, 60 * 1000); // each minute
 
