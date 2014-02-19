@@ -5,6 +5,7 @@ var Resource = require('./lib/resource.js'),
 
 module.exports = {
   Persistence: require('./lib/persistence.js'),
+  ServerPresence: require('./lib/server_presence.js'),
   Type: require('./lib/type.js'),
   Map: require('./lib/map.js'),
   RemoteManager: require('./lib/resources/presence/remote_manager'),
