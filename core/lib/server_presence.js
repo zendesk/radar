@@ -1,5 +1,5 @@
-var Core = require('../core'),
-    logging = require('minilog')('server:server_presence');
+var Persistence = require('./persistence.js'),
+    logging = require('minilog')('server_presence');
 
 var radarServerExpiry = 15*1000,
     serverPresenceId, port, heartbeat,
@@ -9,8 +9,8 @@ function keepAlive() {
   var scope = prefix + getServerPresenceId();
 
   logging.info("keep-alive ", scope, new Date());
-  Core.Persistence.persistHash(scope, 'last_seen_at', Date.now());
-  Core.Persistence.expire(scope, 2*radarServerExpiry/1000);
+  Persistence.persistHash(scope, 'last_seen_at', Date.now());
+  Persistence.expire(scope, 2*radarServerExpiry/1000);
 }
 
 function getServerPresenceId() {
@@ -24,7 +24,7 @@ function getServerPresenceId() {
 }
 
 function fetchServerPresence(id, callback) {
-  Core.Persistence.exists(prefix+id, callback);
+  Persistence.exists(prefix+id, callback);
 }
 
 module.exports = {

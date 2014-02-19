@@ -4,7 +4,7 @@ var redis = require('redis'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
     Audit = require('./audit.js'),
-    ServerPresence = require('./server_presence.js'),
+    ServerPresence = Core.ServerPresence,
     DefaultEngineIO = require('engine.io');
 
 // Parse JSON
