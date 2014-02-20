@@ -88,7 +88,6 @@ exports['presence: given a server and two connected clients'] = {
     client.presence(scope).set('online', function() {
       var presence = client2.presence(scope).sync({version: 2}, function(message) {
         verify(message);
-
         setTimeout(function() {
           presence.get({version:2}, function(message) {
             verify(message);
@@ -178,5 +177,6 @@ exports['presence: given a server and two connected clients'] = {
       }, 5);
     });
   }
+
 };
 
