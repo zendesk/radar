@@ -55,9 +55,15 @@ Persistence.connect = function(done) {
 
   //create a pubsub client
   if(!subscriber) {
-    subscriber = redisLib.createClient(configuration.redis_port, configuration.redis_host);
-    if (configuration.redis_auth) {
-      subscriber.auth(configuration.redis_auth);
+    if(configuration.sentinel_port) {
+      subscriber = sentinelConnect(configuration.sentinel_port,
+          configuration.sentinel_host,
+          configuration.sentinel_master,
+          configuration.redis_auth);
+    } else {
+      subscriber = redisConnect(configuration.redis_port,
+          configuration.redis_host,
+          configuration.redis_auth);
     }
     logging.info('Created a new Redis subscriber.');
   }
