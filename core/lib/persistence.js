@@ -9,29 +9,49 @@ var redisLib = require('redis'),
 
 function Persistence() { }
 
+function redisConnect(redisPort, redisHost, redisAuth) {
+  var client = redisLib.createClient(redisPort, redisHost);
+  if (redisAuth) {
+    client.auth(redisAuth);
+  }
+
+  logging.info('Created a new Redis client.');
+  return client;
+}
+
+function sentinelConnect(sentinel_config, redisAuth) {
+  var client,
+      sentinelMaster = sentinel_config.id,
+      sentinels = sentinel_config.sentinels,
+      index, sentinelHost, sentinelPort;
+
+  if(!sentinels || !sentinels.length) {
+    throw new Error("Provide a valid sentinel cluster configuration ");
+  }
+
+  //Pick a random sentinel for now.
+  //Only one is supported by redis-sentinel-client,
+  //if it's down, let's hope the next round catches the right one.
+  index = Math.floor(Math.random()*sentinels.length);
+  sentinelHost = sentinels[index].host;
+  sentinelPort = sentinels[index].port;
+
+  if(!sentinelPort || !sentinelHost) {
+    throw new Error("Provide a valid sentinel cluster configuration ");
+  }
+
+  client = sentinelLib.createClient(sentinelPort, sentinelHost, {
+    auth_pass: redisAuth,
+    masterName: sentinelMaster
+  });
+
+  logging.info('Created a new Redis client.');
+  return client;
+}
+
 var client, subscriber,
     client_connected = false,
     subscriber_connected = false;
-
-function redisConnect(redisPort, redisHost, redisAuth) {
-    var client = redisLib.createClient(redisPort, redisHost);
-    if (redisAuth) {
-      client.auth(redisAuth);
-    }
-
-    logging.info('Created a new Redis client.');
-    return client;
-}
-
-function sentinelConnect(sentinelPort, sentinelHost, masterName, redisAuth) {
-    var client = sentinelLib.createClient(sentinelPort, sentinelHost, {
-      auth_pass: redisAuth,
-      masterName: masterName
-    });
-
-    logging.info('Created a new Redis client.');
-    return client;
-}
 
 Persistence.connect = function(done) {
 
@@ -41,10 +61,8 @@ Persistence.connect = function(done) {
   }
   //create a client (read/write)
   if(!client) {
-    if(configuration.sentinel_port) {
-      client = sentinelConnect(configuration.sentinel_port,
-          configuration.sentinel_host,
-          configuration.sentinel_master,
+    if(configuration.sentinel_config) {
+      client = sentinelConnect(configuration.sentinel_config,
           configuration.redis_auth);
     } else {
       client = redisConnect(configuration.redis_port,
@@ -55,10 +73,8 @@ Persistence.connect = function(done) {
 
   //create a pubsub client
   if(!subscriber) {
-    if(configuration.sentinel_port) {
-      subscriber = sentinelConnect(configuration.sentinel_port,
-          configuration.sentinel_host,
-          configuration.sentinel_master,
+    if(configuration.sentinel_config) {
+      subscriber = sentinelConnect(configuration.sentinel_config,
           configuration.redis_auth);
     } else {
       subscriber = redisConnect(configuration.redis_port,
