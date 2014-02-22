@@ -1,7 +1,21 @@
 module.exports = {
   port: 8001,
   db: 1,
-  sentinel_port: 26379,
-  sentinel_host: 'localhost',
-  sentinel_master: 'mymaster'
+  sentinel_config: {
+    id: 'mymaster',
+    sentinels: [
+        {
+            host: 'localhost',
+            port: 26379
+        },
+        {
+            host: 'localhost',
+            port: 26380
+        },
+        {
+            host: 'localhost',
+            port: 26381
+        }
+    ]
+  }
 };
