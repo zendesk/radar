@@ -1,3 +1,7 @@
+### v0.2.3
+
+Bugfix: remove audit.js module to eliminate memory leak
+
 ### v0.2.2
 
 Updated sentinel configuration: multiple sentinel hosts/ports
