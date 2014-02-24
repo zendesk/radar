@@ -5,7 +5,6 @@ var redis = require('redis'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
-    Audit = require('./audit.js'),
     DefaultEngineIO = require('engine.io');
 
 // Parse JSON
@@ -58,7 +57,6 @@ Server.prototype._setup = function(http_server, configuration) {
 
   this.timer.start();
 
-  setInterval(Audit.totals, 60 * 1000); // each minute
 
   logging.debug('#server_start ' + new Date().toString());
   this.emit('ready');
@@ -67,9 +65,9 @@ Server.prototype._setup = function(http_server, configuration) {
 Server.prototype.onClientConnection = function(client) {
   var self = this;
   var oldSend = client.send;
-  // for audit purposes
+
+  // always send data as json
   client.send = function(data) {
-    Audit.send(client);
     oldSend.call(client, JSON.stringify(data));
   };
 
@@ -82,7 +80,6 @@ Server.prototype.onClientConnection = function(client) {
   });
 
   client.on('message', function(data) {
-    Audit.receive(client);
     self.message(client, data);
   });
 
@@ -120,12 +117,6 @@ Server.prototype.handleMessage = function(name, data) {
 Server.prototype.message = function(client, data) {
   var self = this,
       message = parseJSON(data);
-
-  // audit messages
-  if(message.to == 'audit') {
-    Audit.log(client, message);
-    return;
-  }
 
   // format check
   if(!message || !message.op || !message.to) {
