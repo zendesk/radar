@@ -5,6 +5,8 @@ node_js:
 before_install:
     - sudo apt-get install redis-server
     - redis-server --version
+script:
+    - verbose=1 npm test
 
 notifications:
   flowdock:
