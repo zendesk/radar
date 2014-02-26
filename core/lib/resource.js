@@ -100,7 +100,7 @@ Resource.prototype.ack = function(client, sendAck) {
 
 Resource.prototype.authorize = function(message, client) {
   var authorize = this.options.auth || this.options.authorize;
-  if (authorize && authorize(message, client) === false) {
+  if (authorize && authorize.call(this.options, message, client) === false) {
     return false;
   }
   return true;
