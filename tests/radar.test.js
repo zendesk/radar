@@ -82,7 +82,7 @@ exports['Radar api tests'] = {
     var message_type = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
-      auth: false,
+      authProvider: false,
       policy: { cache: true, maxAgeSeconds: 30 }
     };
 
@@ -111,7 +111,7 @@ exports['Radar api tests'] = {
     var message_type = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'MessageList',
-      auth: false,
+      authProvider: false,
       policy: {
         cache: true,
         maxAgeSeconds: 300

@@ -99,9 +99,9 @@ Resource.prototype.ack = function(client, sendAck) {
 };
 
 Resource.prototype.authorize = function(message, client) {
-  var authorize = this.options.auth || this.options.authorize;
-  if (authorize && authorize.call(this.options, message, client) === false) {
-    return false;
+  var authProvider = this.options.authProvider;
+  if (authProvider && authProvider.authorize) {
+    return authProvider.authorize(this.options, message, client);
   }
   return true;
 };

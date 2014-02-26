@@ -27,7 +27,9 @@ exports['auth: given a server and a client'] = {
       name: 'client_auth',
       expression: /^message:\/client_auth\/test$/,
       type: 'MessageList',
-      authorize: function() { return false; }
+      authProvider: {
+        authorize: function() { return false; }
+      }
     }]);
 
     var originalMessage = { hello: 'world', timestamp: Date.now()};
