@@ -146,7 +146,6 @@ exports['presence: given a server and two connected clients'] = {
       // disconnect client 1 - ensure that this happens later the online
       setTimeout(function() {
         client.dealloc('test');
-        client.manager.close();
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
           client2.presence('chat/1/participants').get(function(message) {
