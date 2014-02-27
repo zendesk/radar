@@ -1,3 +1,7 @@
+### v0.3.0
+
+Harmonize the auth mechanism around the use of an authProvider
+
 ### v0.2.3
 
 Bugfix: remove audit.js module to eliminate memory leak
