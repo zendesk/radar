@@ -22,10 +22,13 @@ exports['given a server'] = {
   beforeEach: function(done) {
     var track = Tracker.create('beforeEach', done);
 
+    Persistence.delWildCard('*', track('remove redis entries'));
     this.client = common.getClient('dev', 123, 0, {}, track('client ready'));
     this.client._logger = minilog('client.test');
 
-    Persistence.delWildCard('*:/dev/*', track('remove redis entries'));
+  },
+  afterEach: function() {
+    this.client.dealloc('test');
   },
 
 // Presence tests
@@ -153,35 +156,39 @@ exports['given a server'] = {
   'status: can get([String])': function(done) {
     var client = this.client;
 
-    this.client.status('voice/status').set('foo');
-
-    client.status('voice/status').get(function(message) {
-      assert.equal('get', message.op);
-      assert.deepEqual({ 123: 'foo'}, message.value);
-      client.status('voice/status').set('bar');
+    this.client.status('voice/status').set('foo', function(){
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual({ 123: 'bar'}, message.value);
-        done();
+        assert.deepEqual({ 123: 'foo'}, message.value);
+        client.status('voice/status').set('bar', function() {
+          client.status('voice/status').get(function(message) {
+            assert.equal('get', message.op);
+            assert.deepEqual({ 123: 'bar'}, message.value);
+            done();
+          });
+        });
       });
     });
+
   },
 
   'status: can get([Object])': function(done) {
     var client = this.client;
 
-    this.client.status('voice/status').set({'foo': 'bar'});
-
-    client.status('voice/status').get(function(message) {
-      assert.equal('get', message.op);
-      assert.deepEqual({ 123: {'foo': 'bar'}}, message.value);
-      client.status('voice/status').set({'foo2': 'bar2'});
+    client.status('voice/status').set({'foo': 'bar'}, function() {
       client.status('voice/status').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual({ 123: {'foo2': 'bar2'}}, message.value);
-        done();
+        assert.deepEqual({ 123: {'foo': 'bar'}}, message.value);
+        client.status('voice/status').set({'foo2': 'bar2'}, function(){
+          client.status('voice/status').get(function(message) {
+            assert.equal('get', message.op);
+            assert.deepEqual({ 123: {'foo2': 'bar2'}}, message.value);
+            done();
+          });
+        });
       });
     });
+
   },
 
   'status: can subscribe()': function(done) {
@@ -194,6 +201,7 @@ exports['given a server'] = {
             assert.equal('set', message.op);
             assert.equal('foo', message.value);
             assert.equal('123', message.key);
+            client2.dealloc('test');
             done();
           })
           .subscribe(function() {
@@ -285,7 +293,7 @@ exports['given a server'] = {
       setTimeout(function() {
         assert.equal(1, assertions);
         done();
-      }, 50);
+      }, 100);
     });
   },
 
@@ -301,7 +309,7 @@ exports['given a server'] = {
       setTimeout(function() {
         assert.equal(1, assertions);
         done();
-      }, 50);
+      }, 100);
     });
   }
 };

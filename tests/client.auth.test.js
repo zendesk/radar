@@ -4,14 +4,18 @@ var http = require('http'),
   Client = require('radar_client').constructor,
   Type = require('../core').Type,
   common = require('./common.js'),
+  Tracker = require('callback_tracker'),
+  Persistence = require('../core/lib/persistence.js'),
   configuration = require('./configuration.js');
 
 exports['auth: given a server and a client'] = {
   beforeEach: function(done) {
-    var self = this;
+    var self = this,
+        track = Tracker.create('before each', done);
     common.startRadar(this, function() {
+      Persistence.delWildCard('*', track('cleanup redis'));
       self.client = common.getClient('client_auth', 111, 0,
-        { name: 'tester0' }, done);
+        { name: 'tester0' }, track('client ready'));
     });
   },
 

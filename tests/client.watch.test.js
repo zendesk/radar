@@ -19,8 +19,7 @@ exports['given two clients'] = {
     var track = Tracker.create('beforeEach', done);
     this.client = common.getClient('dev', 123, 0, {}, track('client 1 ready'));
     this.client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
-    Persistence.del('presence:/dev/ticket/21', track('delete presence'));
-    Persistence.del('status:/dev/voice/status', track('delete status'));
+    Persistence.delWildCard('*', track('cleanup redis'));
   },
 
   afterEach: function() {

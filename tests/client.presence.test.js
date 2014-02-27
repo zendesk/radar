@@ -22,6 +22,7 @@ exports['presence: given a server and two connected clients'] = {
   beforeEach: function(done) {
     var track =  Tracker.create('before each', done);
     common.startRadar(this, function(){
+      Persistence.delWildCard("*", track('cleanup redis'));
       client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
       client2 = common.getClient('test', 222, 0, { name: 'tester2' }, track('client 2 ready'));
     });
@@ -146,7 +147,6 @@ exports['presence: given a server and two connected clients'] = {
       // disconnect client 1 - ensure that this happens later the online
       setTimeout(function() {
         client.dealloc('test');
-        client.manager.close();
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
           client2.presence('chat/1/participants').get(function(message) {

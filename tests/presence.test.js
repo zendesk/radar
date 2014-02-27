@@ -4,6 +4,7 @@ var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
     Presence = require('../core/lib/resources/presence');
 
+require('./common.js'); //for verbose
 var configuration = require('./configuration.js');
 
 var Server = {
@@ -27,13 +28,17 @@ exports['given a presence'] = {
   },
 
   beforeEach: function(done) {
-    this.presence = new Presence('aaa', Server, {});
-    this.client = new MiniEE();
-    this.client.id = counter++;
-    Server.channels = { };
-    Server.channels[this.presence.name] = this.presence;
-    Server.timer.clear();
-    done();
+    var self = this;
+
+    Persistence.delWildCard('*', function() {
+      self.presence = new Presence('aaa', Server, {});
+      self.client = new MiniEE();
+      self.client.id = counter++;
+      Server.channels = { };
+      Server.channels[self.presence.name] = self.presence;
+      Server.timer.clear();
+      done();
+    });
   },
 
   afterEach: function(){

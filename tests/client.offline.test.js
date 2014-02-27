@@ -22,6 +22,7 @@ exports['presence: given a server and two connected clients'] = {
   beforeEach: function(done) {
     var track = Tracker.create('before each', done);
     common.startRadar(this, function(){
+      Persistence.delWildCard('*', track('cleanup redis'));
       client1 = common.getClient('test', 123, 0, {}, track('client 1 ready'));
       client2 = common.getClient('test', 222, 0, {}, track('client 2 ready'));
     });
