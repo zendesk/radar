@@ -1,4 +1,4 @@
-### v0.2.4
+### v0.3.0
 
 Harmonize the auth mechanism around the use of an authProvider
 
