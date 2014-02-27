@@ -9,6 +9,7 @@ var http = require('http'),
     MessageList = require('../core').MessageList,
     frontend;
 
+require('./common.js'); //verbose
 var configuration = require('./configuration.js');
 
 var Client = new ClientScope({
@@ -27,6 +28,10 @@ exports['Radar api tests'] = {
 
       frontend.listen(8123, done);
     });
+  },
+
+  beforeEach: function(done){
+    Persistence.delWildCard('*', done);
   },
 
   after: function(done) {

@@ -22,7 +22,7 @@ exports['given a server'] = {
   beforeEach: function(done) {
     var track = Tracker.create('beforeEach', done);
 
-    Persistence.delWildCard('*:/dev/*', track('remove redis entries'));
+    Persistence.delWildCard('*', track('remove redis entries'));
     this.client = common.getClient('dev', 123, 0, {}, track('client ready'));
     this.client._logger = minilog('client.test');
 

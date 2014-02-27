@@ -11,7 +11,7 @@ exports['given a resource'] = {
     client = redis.createClient(configuration.redis_port, configuration.redis_host);
     client.once('ready', function() {
       Persistence.redis(client);
-      done();
+      Persistence.delWildCard('*', done);
     });
   },
 

@@ -18,8 +18,7 @@ exports['given two clients'] = {
 
     this.client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
 
-    Persistence.del('status:/dev/voice/status', track('remove status'));
-    Persistence.del('presence:/dev/ticket/21', track('remove presence'));
+    Persistence.delWildCard('*', track('cleanup redis'));
   },
 
     // sending a message should only send to each subscriber, but only once
