@@ -1,3 +1,7 @@
+### v0.3.1
+
+Workaround minilog bug (stop printing objects with circular references)
+
 ### v0.3.0
 
 Harmonize the auth mechanism around the use of an authProvider
