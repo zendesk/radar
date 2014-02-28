@@ -6,6 +6,9 @@ before_install:
     - sudo apt-get install redis-server
     - redis-server --version
 
+script:
+    - verbose=1 npm test
+
 notifications:
   flowdock:
     secure: GzhfVfSDKQtvfCaHHh2AYTLn/kWOUvHK+SM44AfWX10pwQXCicSR5kx7jMIDrU//0+T2CP/m1EJDnK15CTix+vRJLTwybgc4b8NOl0XmnZXVcW+4i8uhKnXA3bm6+dgVxvUCwNy69dbk7H7CkyFZOzJcZCVliiRBZcbj41uwMqc=
