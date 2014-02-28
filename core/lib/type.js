@@ -27,12 +27,12 @@ function getByExpression(name) {
       definition = Types[i];
       expression = definition.expression || definition.expr;
       if (!expression) {
-        logger.error('There is a type definition without an expression.', definition);
+        logger.error('There is a type definition without an expression.', i, definition.name);
         continue;
       }
 
       if(expression.test && expression.test(name) || expression === name) {
-        logger.debug('found', name, definition);
+        logger.debug('found', name);
         return definition;
       }
     }
