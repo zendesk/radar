@@ -14,6 +14,33 @@ Installing from scratch:
 - npm install
 - npm start
 
+Installing from NPM:
+
+- Install and start redis
+- Install a 0.10.x or better branch of Node, look in http://nodejs.org/dist/
+- npm init
+- npm install --save radar
+- create a file called index.js with the contents:
+```
+  var http = require('http');
+  var Radar = require('radar').server;
+  var Api = require('radar').api;
+
+  var httpServer = http.createServer(function(req, res) {
+    res.end('Nothing here.');
+  });
+
+  // Radar API
+  Api.attach(httpServer);
+
+  // Radar server
+  var radar = new Radar();
+  radar.attach(httpServer, { redis_host: 'localhost', redis_port: 6379 });
+
+  httpServer.listen(8000);
+```
+- node index.js
+
 ## Copyright and License
 
 Copyright 2012, Zendesk Inc.
