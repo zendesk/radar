@@ -22,7 +22,7 @@ Status.prototype.get = function(client) {
     client.send({
       op: 'get',
       to: name,
-      value: replies
+      value: replies || {}
     });
   });
 };
