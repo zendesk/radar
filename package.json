@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -46,7 +46,6 @@
   "scripts": {
     "prestart": "npm run check-modules",
     "start": "node server.js",
-
     "check-modules": "if [ -z \"$SKIP_PACKAGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
     "pretest": "npm run check-modules && npm run start-sentinel",
     "start-sentinel": "./start_sentinel",
@@ -55,11 +54,10 @@
     "test-redis": "npm run copy-redis-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
     "test-sentinel": "npm run copy-sentinel-config && ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
     "test": "npm run test-redis && npm run test-sentinel",
-    "posttest":"./stop_sentinel",
+    "posttest": "./stop_sentinel",
     "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 2000ms --bail \"$TEST\"",
-
     "reset-stats": "redis-cli KEYS 'radar:/audit/*' | xargs redis-cli DEL",
     "read-stats": "/opt/redis/redis-cli KEYS 'radar:/audit/*' | xargs --verbose -n 1 /opt/redis/redis-cli GET"
   }
