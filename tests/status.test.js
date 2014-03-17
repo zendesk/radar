@@ -49,6 +49,23 @@ exports['given a status resource'] = {
     });
   },
 
+  'changes the status to an empty object if the result is null': function(done) {
+
+    FakePersistence.readHashAll = function(key, callback) {
+      assert.equal('aaa', key);
+      callback(null);
+    };
+
+    this.status.get({
+      send: function(msg) {
+        assert.equal('get', msg.op);
+        assert.equal('aaa', msg.to);
+        assert.deepEqual({}, msg.value);
+        done();
+      }
+    });
+  },
+
   'can set status to online': function(done) {
     FakePersistence.persistHash = function(hash, key, value) {
       assert.equal('123', key);
