@@ -1,3 +1,7 @@
+### v0.3.2
+Use appropriate file for API require
+Never send a null value in a get response for a status
+
 ### v0.3.1
 
 Workaround minilog bug (stop printing objects with circular references)
