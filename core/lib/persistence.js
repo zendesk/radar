@@ -139,7 +139,7 @@ Persistence.pubsub = function(value) {
   } else {
     return pubsub();
   }
-}
+};
 
 Persistence.setConfig = function(config) {
   configuration = config;
@@ -149,7 +149,7 @@ Persistence.setConfig = function(config) {
 Persistence.applyPolicy = function(multi, key, policy) {
   if(policy.maxCount) {
     multi.zremrangebyrank(key, 0, -policy.maxCount-1, function(err, res) {
-      logging.info('Enforce max count: '+(0-policy.maxCount-1)+' removed '+res);
+      logging.debug('Enforce max count: '+(0-policy.maxCount-1)+' removed '+res);
       if(err) throw new Error(err);
     });
   }
@@ -157,7 +157,7 @@ Persistence.applyPolicy = function(multi, key, policy) {
   if(policy.maxAgeSeconds) {
     var maxScore = Date.now()-policy.maxAgeSeconds * 1000;
     multi.zremrangebyscore(key, 0, maxScore, function(err, res) {
-      logging.info('Enforce max age ('+key+'): '+new Date(maxScore).toUTCString()+' removed '+res);
+      logging.debug('Enforce max age ('+key+'): '+new Date(maxScore).toUTCString()+' removed '+res);
       if(err) throw new Error(err);
     });
   }
@@ -177,7 +177,7 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
   // sync up to 100 messages, starting from the newest
   multi.zrange(key, -100, -1, 'WITHSCORES', function (err, replies) {
     if(err) throw new Error(err);
-    logging.info(key+' '+ (replies.length /2) + ' items to sync');
+    logging.debug(key+' '+ (replies.length /2) + ' items to sync');
 
     // (nherment) TODO: deserialize the result here because it is being serialized in persistOrdered()
     // The problem is that radar_client currently deserializes the response.
@@ -234,12 +234,12 @@ Persistence.readHashAll = function(hash, callback) {
 };
 
 Persistence.persistHash = function(hash, key, value) {
-  logging.info('persistHash:', hash, key, value);
+  logging.debug('persistHash:', hash, key, value);
   redis().hset(hash, key, JSON.stringify(value), Persistence.handler);
 };
 
 Persistence.expire = function(key, seconds) {
-  logging.info('expire', key, seconds);
+  logging.debug('expire', key, seconds);
   redis().expire(key, seconds, Persistence.handler);
 };
 
@@ -248,12 +248,12 @@ Persistence.ttl = function(key, callback) {
 };
 
 Persistence.deleteHash = function(hash, key) {
-  logging.info('deleteHash:', hash, key);
+  logging.debug('deleteHash:', hash, key);
   redis().hdel(hash, key, Persistence.handler);
 };
 
 Persistence.publish = function(key, value, callback) {
-  logging.info('Redis pub:', key, value);
+  logging.debug('Redis pub:', key, value);
   redis().publish(key, JSON.stringify(value), callback);
 };
 
@@ -264,12 +264,12 @@ Persistence.disconnect = function(callback) {
        callback) {
          callback();
        }
-  }
+  };
 
   if(client || subscriber) {
     if(client && client.connected) {
-      var res = client.quit(function() {
-        logging.debug("client has quit");
+      client.quit(function() {
+        logging.info("client has quit");
         client = client_connected = false;
         done();
       });
@@ -278,8 +278,8 @@ Persistence.disconnect = function(callback) {
     }
 
     if(subscriber && subscriber.connected) {
-      res= subscriber.quit(function() {
-        logging.debug("pubsub has quit");
+      subscriber.quit(function() {
+        logging.info("pubsub has quit");
         subscriber = subscriber_connected = false;
         done();
       });
