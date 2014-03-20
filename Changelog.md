@@ -1,3 +1,6 @@
+### v0.3.3
+reduce verbosity of Persistence.js
+
 ### v0.3.2
 Use appropriate file for API require
 Never send a null value in a get response for a status
