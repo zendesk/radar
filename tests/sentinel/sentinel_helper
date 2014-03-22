@@ -8,12 +8,14 @@ command=$1
 case "$command" in
     "start" )
         echo "starting redis:6380"
+        touch ./redis/redis.log
         redis-server ./conf/redis.conf --loglevel verbose
 
         sleep 1
         redis-cli -p 6380 ping
 
         echo "starting sentinel:26380"
+        touch ./sentinel/sentinel.log
         redis-server ./conf/sentinel.conf --sentinel --loglevel verbose
         redis-cli -p 26380 ping
         ;;
