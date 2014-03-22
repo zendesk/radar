@@ -7,7 +7,7 @@ services:
 
 script:
     - redis-server --version
-    - verbose=1 npm test
+    - npm test
 
 notifications:
   flowdock:
