@@ -2,9 +2,9 @@ var assert = require('assert'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
     MiniEE = require('miniee'),
     Persistence = require('../core/lib/persistence.js'),
+    Common = require('./common.js'),
     Presence = require('../core/lib/resources/presence');
 
-require('./common.js'); //for verbose
 var configuration = require('./configuration.js');
 
 var Server = {
@@ -23,8 +23,7 @@ var counter = 1000,
 
 exports['given a presence'] = {
   before: function(done){
-    Persistence.setConfig(configuration);
-    Persistence.connect(done);
+    Common.startPersistence(done);
   },
 
   beforeEach: function(done) {
@@ -44,6 +43,10 @@ exports['given a presence'] = {
   afterEach: function(){
     Persistence.expire = oldExpire;
     Persistence.publish = oldPublish;
+  },
+
+  after: function(done) {
+    Common.endPersistence(done);
   },
 
 

@@ -1,150 +1,62 @@
-var redisLib = require('redis'),
-    sentinelLib = require('redis-sentinel-client'),
-    logging = require('minilog')('persistence'),
+var logging = require('minilog')('persistence'),
+    ConnectionHelper = require('./connection_helper.js'),
     // defaults
-    configuration = {
-      redis_host: 'localhost',
-      redis_port: 6379
-    };
+    connectionName = 'default',
+    connection = {},
+    configuration = {};
 
 function Persistence() { }
 
-function redisConnect(redisPort, redisHost, redisAuth) {
-  var client = redisLib.createClient(redisPort, redisHost);
-  if (redisAuth) {
-    client.auth(redisAuth);
-  }
-
-  logging.info('Created a new Redis client.');
-  return client;
-}
-
-function sentinelConnect(sentinel_config, redisAuth) {
-  var client,
-      sentinelMaster = sentinel_config.id,
-      sentinels = sentinel_config.sentinels,
-      index, sentinelHost, sentinelPort;
-
-  if(!sentinels || !sentinels.length) {
-    throw new Error("Provide a valid sentinel cluster configuration ");
-  }
-
-  //Pick a random sentinel for now.
-  //Only one is supported by redis-sentinel-client,
-  //if it's down, let's hope the next round catches the right one.
-  index = Math.floor(Math.random()*sentinels.length);
-  sentinelHost = sentinels[index].host;
-  sentinelPort = sentinels[index].port;
-
-  if(!sentinelPort || !sentinelHost) {
-    throw new Error("Provide a valid sentinel cluster configuration ");
-  }
-
-  client = sentinelLib.createClient(sentinelPort, sentinelHost, {
-    auth_pass: redisAuth,
-    masterName: sentinelMaster
-  });
-
-  logging.info('Created a new Redis client.');
-  return client;
-}
-
-var client, subscriber,
-    client_connected = false,
-    subscriber_connected = false;
-
 Persistence.connect = function(done) {
-
-  if(client_connected && subscriber_connected) {
-    done(); //already connected
-    return;
-  }
-  //create a client (read/write)
-  if(!client) {
-    if(configuration.sentinel_config) {
-      client = sentinelConnect(configuration.sentinel_config,
-          configuration.redis_auth);
-    } else {
-      client = redisConnect(configuration.redis_port,
-          configuration.redis_host,
-          configuration.redis_auth);
+  var config = {};
+  if(configuration && configuration.connection_settings && configuration.use_connection) {
+    config = configuration.connection_settings[configuration.use_connection];
+    if(!config) {
+      throw new Error("Invalid configuration: connection_settings: "+configuration  + " use_connection: "+ connectionName);
     }
+  } else {
+    config.redis_host = configuration.redis_host || 'localhost';
+    config.redis_port = configuration.redis_port || 6379;
   }
 
-  //create a pubsub client
-  if(!subscriber) {
-    if(configuration.sentinel_config) {
-      subscriber = sentinelConnect(configuration.sentinel_config,
-          configuration.redis_auth);
-    } else {
-      subscriber = redisConnect(configuration.redis_port,
-          configuration.redis_host,
-          configuration.redis_auth);
-    }
-    logging.info('Created a new Redis subscriber.');
-  }
-
-
-  if(!client_connected) {
-    client.once('ready', function() {
-      client_connected = true;
-      if(client_connected && subscriber_connected) {
-        if(configuration.db) {
-          client.select(configuration.db, done);
-        } else {
-          done();
-        }
-      }
-    });
-  }
-
-  if(!subscriber_connected) {
-    subscriber.once('ready', function() {
-      subscriber_connected = true;
-      if(client_connected && subscriber_connected) {
-        done();
-      }
-    });
-  }
-
+  connection = ConnectionHelper.connection(connectionName, config);
+  connection.establish(done);
 };
 
 function redis() {
-  if(!client || !client_connected) {
-    throw new Error("Not connected to redis");
+  if(!connection.client || !connection.client.connected) {
+    throw new Error("Client: Not connected to redis");
   }
-  return client;
+  return connection.client;
 }
 
 function pubsub() {
-  if(!subscriber || !subscriber_connected) {
-    throw new Error("Not connected to redis");
+  if(!connection.subscriber || !connection.subscriber.connected) {
+    throw new Error("Pubsub: Not connected to redis");
   }
-  return subscriber;
+  return connection.subscriber;
 }
 
 Persistence.redis = function(value) {
   if (value) {
-    client = value;
-    client_connected = true;
-  } else {
-    return redis();
+    connection.client = value;
   }
+  return redis();
 };
 
 Persistence.pubsub = function(value) {
   if(value) {
-    subscriber = value;
-    subscriber_connected = true;
-  } else {
-    return pubsub();
+    connection.subscriber = value;
   }
+  return pubsub();
 };
 
 Persistence.setConfig = function(config) {
   configuration = config;
+  if(config && config.use_connection && config.connection_settings) {
+    connectionName = config.use_connection;
+  }
 };
-
 
 Persistence.applyPolicy = function(multi, key, policy) {
   if(policy.maxCount) {
@@ -258,36 +170,7 @@ Persistence.publish = function(key, value, callback) {
 };
 
 Persistence.disconnect = function(callback) {
-  var done = function() {
-    if(!client && !client_connected &&
-       !subscriber && !subscriber_connected &&
-       callback) {
-         callback();
-       }
-  };
-
-  if(client || subscriber) {
-    if(client && client.connected) {
-      client.quit(function() {
-        logging.info("client has quit");
-        client = client_connected = false;
-        done();
-      });
-    } else {
-      client = client_connected = false;
-    }
-
-    if(subscriber && subscriber.connected) {
-      subscriber.quit(function() {
-        logging.info("pubsub has quit");
-        subscriber = subscriber_connected = false;
-        done();
-      });
-    } else {
-      subscriber = subscriber_connected = false;
-    }
-  }else
-    done();
+  connection.teardown(callback);
 };
 
 Persistence.keys = function(key, callback) {

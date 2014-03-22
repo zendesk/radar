@@ -19,9 +19,25 @@ require('long-stack-traces');
 http.globalAgent.maxSockets = 10000;
 
 module.exports = {
+  startPersistence: function(done) {
+    if(process.env.radar_connection) {
+      configuration.use_connection = process.env.radar_connection;
+    }
+    Persistence.setConfig(configuration);
+    Persistence.connect(function() {
+      Persistence.delWildCard('*', done);
+    });
+  },
+  endPersistence: function(done) {
+    Persistence.delWildCard('*', function() {
+      Persistence.disconnect(done);
+    });
+  },
   // starts a Radar server at the given port
   startRadar: function(context, done) {
-    Persistence.setConfig(configuration);
+    if(process.env.radar_connection) {
+      configuration.use_connection = process.env.radar_connection;
+    }
     context.server = http.createServer(function(req, res) { res.end('Running.'); });
     context.serverStarted = true;
     radar = new RadarServer();

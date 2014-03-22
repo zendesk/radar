@@ -5,11 +5,8 @@ vendor/bundle/
 npm-debug.log
 devmode.log
 logs/radar.log
-tests/sentinel/*.log
-tests/sentinel/*.conf
-tests/sentinel/dump*
-tests/sentinel/*.pid
-tests/configuration.js
+tests/sentinel/redis
+tests/sentinel/sentinel
 
 # mac os file explorer settings
 .DS_Store
