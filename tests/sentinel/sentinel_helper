@@ -17,6 +17,7 @@ case "$command" in
         echo "starting sentinel:26380"
         mkdir -p ./sentinel
         redis-server ./conf/sentinel.conf --sentinel --loglevel verbose
+        sleep 1
         redis-cli -p 26380 ping
         ;;
     "stop" )
