@@ -23,11 +23,13 @@ case "$command" in
         if [ -e "$redis_pid_file" ]; then
             echo "stopping redis:6380"
             kill -TERM `cat "$redis_pid_file"` || true #return true even if this fails
+            rm -rf ./redis
         fi
 
         if [ -e "$sentinel_pid_file" ]; then
             echo "stopping sentinel:26380"
             kill -TERM `cat "$sentinel_pid_file"` || true #return true even if this fails
+            rm -rf ./sentinel
         fi
         ;;
     * )
