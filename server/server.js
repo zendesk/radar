@@ -28,11 +28,6 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {
-
-  configuration = configuration || {};
-  configuration.redis_port = configuration.redis_port || 6379;
-  configuration.redis_host = configuration.redis_host || 'localhost';
-
   Core.Persistence.setConfig(configuration);
   Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
 };
@@ -41,6 +36,7 @@ Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
 
+  configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this.handleMessage.bind(this));
@@ -60,7 +56,7 @@ Server.prototype._setup = function(http_server, configuration) {
 
   logging.debug('#server_start ' + new Date().toString());
   this.emit('ready');
-}
+};
 
 Server.prototype.onClientConnection = function(client) {
   var self = this;

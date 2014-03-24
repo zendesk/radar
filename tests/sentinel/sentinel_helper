@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+redis_pid_file="./redis/redis.pid"
+sentinel_pid_file="./sentinel/sentinel.pid"
+command=$1
+
+case "$command" in
+    "start" )
+        echo "starting redis:6380"
+        mkdir -p ./redis
+        redis-server ./conf/redis.conf --loglevel verbose
+
+        sleep 1
+        redis-cli -p 6380 ping
+
+        echo "starting sentinel:26380"
+        mkdir -p ./sentinel
+        redis-server ./conf/sentinel.conf --sentinel --loglevel verbose
+        sleep 1
+        redis-cli -p 26380 ping
+        ;;
+    "stop" )
+        if [ -e "$redis_pid_file" ]; then
+            echo "stopping redis:6380"
+            kill -TERM `cat "$redis_pid_file"` || true #return true even if this fails
+            rm -rf ./redis
+        fi
+
+        if [ -e "$sentinel_pid_file" ]; then
+            echo "stopping sentinel:26380"
+            kill -TERM `cat "$sentinel_pid_file"` || true #return true even if this fails
+            rm -rf ./sentinel
+        fi
+        ;;
+    * )
+        echo "Usage: sentinel_helper (start|stop)"
+        ;;
+esac

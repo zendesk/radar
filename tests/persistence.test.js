@@ -1,6 +1,6 @@
 var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
-    redis = require('redis'),
+    Common = require('./common.js'),
     client;
 
 var configuration = require('./configuration.js');
@@ -8,15 +8,14 @@ var configuration = require('./configuration.js');
 exports['given a resource'] = {
 
   before: function(done) {
-    client = redis.createClient(configuration.redis_port, configuration.redis_host);
-    client.once('ready', function() {
-      Persistence.redis(client);
-      Persistence.delWildCard('*', done);
+    Common.startPersistence(function() {
+      client = Persistence.redis();
+      done();
     });
   },
 
-  after: function() {
-    client.end();
+  after: function(done) {
+    Common.endPersistence(done);
   },
 
   'non JSON redis string should be filtered out (ie. do not return corrupted data)': function(done) {

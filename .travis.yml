@@ -2,12 +2,12 @@ language: node_js
 node_js:
   - '0.10'
 
-before_install:
-    - sudo apt-get install redis-server
-    - redis-server --version
+services:
+    - redis-server
 
 script:
-    - verbose=1 npm test
+    - redis-server --version
+    - npm test
 
 notifications:
   flowdock:

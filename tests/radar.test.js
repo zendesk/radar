@@ -7,10 +7,9 @@ var http = require('http'),
     Type = require('../core').Type,
     Status = require('../core').Status,
     MessageList = require('../core').MessageList,
+    Common = require('./common.js'),
     frontend;
 
-require('./common.js'); //verbose
-var configuration = require('./configuration.js');
 
 var Client = new ClientScope({
   secure: false,
@@ -20,8 +19,7 @@ var Client = new ClientScope({
 
 exports['Radar api tests'] = {
   before: function(done) {
-    Persistence.setConfig(configuration);
-    Persistence.connect(function() {
+    Common.startPersistence(function() {
       // create frontend server
       frontend = http.createServer(function(req, res){ res.end('404 error');});
       Api.attach(frontend);
@@ -36,7 +34,7 @@ exports['Radar api tests'] = {
 
   after: function(done) {
     frontend.close();
-    Persistence.disconnect(done);
+    Common.endPersistence(done);
   },
 
   // GET /radar/status?accountName=test&scope=ticket/1

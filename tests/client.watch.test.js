@@ -11,8 +11,9 @@ exports['given two clients'] = {
   },
 
   after: function(done) {
-    common.endRadar(this, function() {});
-    Persistence.disconnect(done);
+    common.endRadar(this, function() {
+      Persistence.disconnect(done);
+    });
   },
 
   beforeEach: function(done) {
