@@ -1,7 +1,8 @@
 var redisLib = require('redis'),
     Tracker = require('callback_tracker'),
     sentinelLib = require('redis-sentinel-client'),
-    logging = require('minilog')('connection');
+    logging = require('minilog')('connection'),
+    async = require('async');
 
 function redisConnect(config) {
   var client = redisLib.createClient(config.redis_port, config.redis_host);
@@ -65,8 +66,9 @@ Connection.prototype.establishDone = function() {
   var readyListeners = this.readyListeners;
   this.readyListeners = [];
 
-  readyListeners.forEach(function(listener) {
+  async.eachLimit(readyListeners, 10, function(listener, next) {
     if(listener) listener();
+    next();
   });
 };
 
@@ -74,8 +76,9 @@ Connection.prototype.teardownDone = function() {
   var teardownListeners = this.teardownListeners;
   this.teardownListeners = [];
 
-  teardownListeners.forEach(function(listener) {
+  async.eachLimit(teardownListeners, 10, function(listener, next) {
     if(listener) listener();
+    next();
   });
 };
 
