@@ -18,8 +18,9 @@ ConnectionHelper.connection = function(name, config) {
 
 ConnectionHelper.destroyConnection = function(name, done) {
   var connection = connections[name];
-  if (!connection || connection.name)
+  if (!connection || connection.name) {
     return;
+  }
 
   connection.teardown(function() {
     delete connections[connection.name];

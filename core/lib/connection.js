@@ -22,7 +22,7 @@ function sentinelConnect(config) {
       index, sentinelHost, sentinelPort;
 
   if(!sentinels || !sentinels.length) {
-    throw new Error("Provide a valid sentinel cluster configuration ");
+    throw new Error('Provide a valid sentinel cluster configuration ');
   }
 
   //Pick a random sentinel for now.
@@ -33,7 +33,7 @@ function sentinelConnect(config) {
   sentinelPort = sentinels[index].port;
 
   if(!sentinelPort || !sentinelHost) {
-    throw new Error("Provide a valid sentinel cluster configuration ");
+    throw new Error('Provide a valid sentinel cluster configuration ');
   }
 
   client = sentinelLib.createClient(sentinelPort, sentinelHost, {
@@ -67,7 +67,9 @@ Connection.prototype.establishDone = function() {
   this.readyListeners = [];
 
   async.eachLimit(readyListeners, 10, function(listener, next) {
-    if(listener) listener();
+    if(listener) {
+      listener();
+    }
     next();
   });
 };
@@ -77,7 +79,9 @@ Connection.prototype.teardownDone = function() {
   this.teardownListeners = [];
 
   async.eachLimit(teardownListeners, 10, function(listener, next) {
-    if(listener) listener();
+    if(listener) {
+      listener();
+    }
     next();
   });
 };
@@ -102,7 +106,7 @@ Connection.prototype.establish = function(ready) {
       self.establishDone();
     });
 
-    method = this.selectMethod();
+    var method = this.selectMethod();
 
     //create a client (read/write)
     this.client = method(this.config);

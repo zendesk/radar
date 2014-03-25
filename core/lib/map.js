@@ -1,11 +1,11 @@
-var Map = function() {
+var RadarMap = function() {
   this.items = {};
   this.length = 0;
 };
 
-require('util').inherits(Map, require('events').EventEmitter);
+require('util').inherits(RadarMap, require('events').EventEmitter);
 
-Map.prototype.add = function(key, value) {
+RadarMap.prototype.add = function(key, value) {
   // only increment if the key is undefined
   if(!this.has(key)) {
     this.length++;
@@ -14,15 +14,15 @@ Map.prototype.add = function(key, value) {
   this.items[key] = (value !== undefined ? value : true);
 };
 
-Map.prototype.has = function(key) {
+RadarMap.prototype.has = function(key) {
   return Object.prototype.hasOwnProperty.call(this.items, key);
 };
 
-Map.prototype.get = function(key) {
+RadarMap.prototype.get = function(key) {
   return this.items[key];
 };
 
-Map.prototype.remove = function(key) {
+RadarMap.prototype.remove = function(key) {
   // only decrement if the key was previously Map
   if(this.has(key)) {
     this.length--;
@@ -31,15 +31,15 @@ Map.prototype.remove = function(key) {
   delete this.items[key];
 };
 
-Map.prototype.empty = function() {
+RadarMap.prototype.empty = function() {
   this.items = {};
   this.length = {};
 };
 
 ['filter', 'forEach', 'every', 'map', 'some'].forEach(function(name) {
-  Map.prototype[name] = function() {
+  RadarMap.prototype[name] = function() {
     return Array.prototype[name].apply(Object.keys(this.items), arguments);
-  }
+  };
 });
 
-module.exports = Map;
+module.exports = RadarMap;

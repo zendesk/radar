@@ -2,8 +2,6 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     minilog = require('minilog'),
-    configuration = require('./configuration.js'),
-    Client = require('radar_client').constructor,
     Tracker = require('callback_tracker');
 
 exports['given a server'] = {
@@ -12,7 +10,7 @@ exports['given a server'] = {
     common.startRadar(this, done);
   },
 
-  after: function() {
+  after: function(done) {
     common.endRadar(this, function() {
       Persistence.disconnect();
       done();
@@ -38,8 +36,8 @@ exports['given a server'] = {
 // - .unsubscribe(ack)
 // - .sync(callback)
   'presence: can set("online")': function(done) {
-    var client = this.client;
-    common.radar().once('set', function(socket, message) {
+    var client = this.client, radar = common.radar();
+    radar.once('set', function(socket, message) {
       assert.equal('set', message.op);
       assert.equal('online', message.value);
       assert.equal(123, message.key);
@@ -231,16 +229,15 @@ exports['given a server'] = {
 // - .publish('channel', message)
 
   'message: can subscribe()': function(done) {
-    var client = this.client;
-    // test.expect(2);
-    common.radar().when('subscribe', function(client, msg) {
+    var client = this.client, radar = common.radar();
+    radar.on('subscribe', function subscribe(client, msg) {
       var match = (msg.op == 'subscribe' && msg.to == 'message:/dev/test');
       if (match) {
+        radar.removeListener('subscribe', subscribe);
         assert.equal('subscribe', msg.op);
         assert.equal('message:/dev/test', msg.to);
         done();
       }
-      return match;
     });
     // optional (due to new "connect-if-configured-logic"): client.alloc('test');
     client.message('test').subscribe();

@@ -1,5 +1,5 @@
-var redis = require('redis'),
-    MiniEventEmitter = require('miniee'),
+var EventEmitter = require('events').EventEmitter,
+    util = require('util'),
     Core = require('../core'),
     Type = Core.Type,
     Heartbeat = require('../core/lib/Heartbeat.js'),
@@ -25,7 +25,7 @@ function Server() {
   this.timer = new Heartbeat().interval(15000);
 }
 
-MiniEventEmitter.mixin(Server);
+util.inherits(Server, EventEmitter);
 
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {

@@ -10,10 +10,10 @@ function Persistence() { }
 
 Persistence.connect = function(done) {
   var config = {};
-  if(configuration && configuration.connection_settings && configuration.use_connection) {
+  if (configuration && configuration.connection_settings && configuration.use_connection) {
     config = configuration.connection_settings[configuration.use_connection];
-    if(!config) {
-      throw new Error("Invalid configuration: connection_settings: "+configuration  + " use_connection: "+ connectionName);
+    if (!config) {
+      throw new Error('Invalid configuration: connection_settings: '+configuration  + ' use_connection: '+ connectionName);
     }
   } else {
     config.redis_host = configuration.redis_host || 'localhost';
@@ -25,15 +25,15 @@ Persistence.connect = function(done) {
 };
 
 function redis() {
-  if(!connection.client || !connection.client.connected) {
-    throw new Error("Client: Not connected to redis");
+  if (!connection.client || !connection.client.connected) {
+    throw new Error('Client: Not connected to redis');
   }
   return connection.client;
 }
 
 function pubsub() {
-  if(!connection.subscriber || !connection.subscriber.connected) {
-    throw new Error("Pubsub: Not connected to redis");
+  if (!connection.subscriber || !connection.subscriber.connected) {
+    throw new Error('Pubsub: Not connected to redis');
   }
   return connection.subscriber;
 }
@@ -46,7 +46,7 @@ Persistence.redis = function(value) {
 };
 
 Persistence.pubsub = function(value) {
-  if(value) {
+  if (value) {
     connection.subscriber = value;
   }
   return pubsub();
@@ -54,24 +54,28 @@ Persistence.pubsub = function(value) {
 
 Persistence.setConfig = function(config) {
   configuration = config;
-  if(config && config.use_connection && config.connection_settings) {
+  if (config && config.use_connection && config.connection_settings) {
     connectionName = config.use_connection;
   }
 };
 
 Persistence.applyPolicy = function(multi, key, policy) {
-  if(policy.maxCount) {
+  if (policy.maxCount) {
     multi.zremrangebyrank(key, 0, -policy.maxCount-1, function(err, res) {
       logging.debug('Enforce max count: '+(0-policy.maxCount-1)+' removed '+res);
-      if(err) throw new Error(err);
+      if (err) {
+        throw new Error(err);
+      }
     });
   }
 
-  if(policy.maxAgeSeconds) {
+  if (policy.maxAgeSeconds) {
     var maxScore = Date.now()-policy.maxAgeSeconds * 1000;
     multi.zremrangebyscore(key, 0, maxScore, function(err, res) {
       logging.debug('Enforce max age ('+key+'): '+new Date(maxScore).toUTCString()+' removed '+res);
-      if(err) throw new Error(err);
+      if (err) {
+        throw new Error(err);
+      }
     });
   }
 };
@@ -79,9 +83,11 @@ Persistence.applyPolicy = function(multi, key, policy) {
 Persistence.readOrderedWithScores = function(key, policy, callback) {
   var multi = redis().multi();
 
-  switch(arguments.length) {
+  switch (arguments.length) {
     case 3:
-      if (policy) Persistence.applyPolicy(multi, key, policy);
+      if (policy) {
+        Persistence.applyPolicy(multi, key, policy);
+      }
       break;
     case 2:
       callback = policy; // policy is optional
@@ -89,7 +95,9 @@ Persistence.readOrderedWithScores = function(key, policy, callback) {
 
   // sync up to 100 messages, starting from the newest
   multi.zrange(key, -100, -1, 'WITHSCORES', function (err, replies) {
-    if(err) throw new Error(err);
+    if (err) {
+      throw new Error(err);
+    }
     logging.debug(key+' '+ (replies.length /2) + ' items to sync');
 
     // (nherment) TODO: deserialize the result here because it is being serialized in persistOrdered()
@@ -108,7 +116,9 @@ Persistence.persistOrdered = function(key, value, callback) {
 
 Persistence.delWildCard = function(expr, callback) {
   redis().keys(expr, function(err, results) {
-    if(err) throw new Error(err);
+    if (err) {
+      throw new Error(err);
+    }
     async.eachLimit(results, 20, function(key, next) {
       Persistence.del(key, next);
     }, callback);
@@ -122,8 +132,10 @@ Persistence.del = function(key, callback) {
 
 Persistence.readHashAll = function(hash, callback) {
   redis().hgetall(hash, function (err, replies) {
-    if(err) throw new Error(err);
-    if(replies) {
+    if (err) {
+      throw new Error(err);
+    }
+    if (replies) {
       Object.keys(replies).forEach(function(attr) {
         try {
           replies[attr] = JSON.parse(replies[attr]);

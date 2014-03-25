@@ -1,8 +1,6 @@
 var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor,
-    configuration = require('./configuration.js'),
     Tracker = require('callback_tracker');
 
 exports['given two clients'] = {
@@ -23,33 +21,33 @@ exports['given two clients'] = {
 
     // sending a message should only send to each subscriber, but only once
   'should receive a message only once per subscriber': function(done) {
-    var client = this.client, client2 = this.client2,
+    var client = this.client,
+        client2 = this.client2,
         message = { state: 'test1'},
-        assertions = 0;
-    client2.once('ready', function() {
+        track = Tracker.create('client messages', done),
+        clientDone = track('client done'),
+        client2Done = track('client2 done'),
+        unsubscribed = track('unsubscribed');
+    client2.alloc('test', function() {
       client.message('test').on(function(msg) {
         assert.equal('message:/dev/test', msg.to);
         assert.equal(message.state, msg.value.state);
-        assertions += 2;
+        clientDone();
       });
       client2.message('test').on(function(msg) {
         assert.equal('message:/dev/test', msg.to);
         assert.equal(message.state, msg.value.state);
-        assertions += 2;
+        client2Done();
       });
-      common.radar().once('subscribe', function() {
+      client2.message('test').subscribe(function() {
         client.message('test').publish(message);
         setTimeout(function() {
-          assert.equal(4, assertions);
-
           client.message('test').removeAllListeners();
           client2.message('test').removeAllListeners();
-          done();
-        }, 50); // 50 ms at most
+          unsubscribed();
+        }, 50);
       });
-      client2.message('test').subscribe();
     });
-    client2.alloc('test');
   },
 
   // only subscribers to a channel should be notified of messages to that channel

@@ -31,7 +31,7 @@ exports['presence: given a server and two connected clients'] = {
   afterEach: function(done) {
     client1.dealloc('test');
     client2.dealloc('test');
-    common.endRadar(this,done);
+    common.endRadar(this, done);
   },
 
   'presence state can switch back to client_online after a client_offline': function(done) {

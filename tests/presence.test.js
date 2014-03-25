@@ -1,11 +1,9 @@
 var assert = require('assert'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
-    MiniEE = require('miniee'),
+    EventEmitter = require('events').EventEmitter,
     Persistence = require('../core/lib/persistence.js'),
     Common = require('./common.js'),
     Presence = require('../core/lib/resources/presence');
-
-var configuration = require('./configuration.js');
 
 var Server = {
   timer: new Heartbeat().interval(1500),
@@ -31,7 +29,7 @@ exports['given a presence'] = {
 
     Persistence.delWildCard('*', function() {
       self.presence = new Presence('aaa', Server, {});
-      self.client = new MiniEE();
+      self.client = new EventEmitter();
       self.client.id = counter++;
       Server.channels = { };
       Server.channels[self.presence.name] = self.presence;
@@ -130,7 +128,7 @@ exports['given a presence'] = {
 
 
   'users that disconnect ungracefully are added to the list of waiting items, no duplicates': function(done) {
-    var presence = this.presence, client = this.client, client2 = new MiniEE();
+    var presence = this.presence, client = this.client, client2 = new EventEmitter();
     client2.id = counter++;
 
     Persistence.publish = function() { };
@@ -155,7 +153,7 @@ exports['given a presence'] = {
   'when two connections have the same user, a disconnect is only queued after both disconnect but client disconnects are exposed': {
 
     beforeEach: function() {
-      this.client2 = new MiniEE();
+      this.client2 = new EventEmitter();
       this.client2.id = counter++;
       this.presence.set(this.client, { key: 1, type: 2, value: 'online' } );
       this.presence.set(this.client2, { key: 1, type: 2, value: 'online' } );
@@ -349,7 +347,7 @@ exports['given a presence'] = {
   },
 
   'users that are queued to disconnect and are still gone are gone, users that reconnect are excluded': function() {
-    var presence = this.presence, client = this.client, client2 = new MiniEE();
+    var presence = this.presence, client = this.client, client2 = new EventEmitter();
     client2.id = counter++;
     presence.set(client, { key: 1, type: 2, value: 'online' } );
 

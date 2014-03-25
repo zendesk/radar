@@ -2,34 +2,7 @@ var https = require('https'),
     http = require('http'),
     qs = require('querystring'),
     urlmodule = require('url'),
-
     logging = require('minilog')('client');
-
-function Scope(defaults) {
-  // clone Client.def. We don't want to change the defaults when we modify options further.
-  this.defaults = JSON.parse(JSON.stringify(defaults));
-}
-
-Scope.prototype.get = function(path) {
-  var c = new Client();
-  // Note: assigning this.defaults to c.options will still cause issues!
-  // The problem is that since we modify c.options when forming requests
-  // we would end up modifying the defaults values as well.
-  // JSON.parse(JSON.stringify) is just used as a lazy way to create a deep copy
-  c.options = JSON.parse(JSON.stringify(this.defaults));
-  c.set('method', 'GET')
-   .set('path', path);
-  return c;
-};
-
-Scope.prototype.post = function(path) {
-  var c = new Client();
-  c.options = JSON.parse(JSON.stringify(this.defaults));
-  c.set('method', 'POST')
-   .set('path', path);
-  return c;
-};
-
 
 function Client() {
   this.options = { headers: {}, secure: false };
@@ -41,7 +14,7 @@ Client.prototype.set = function(key, value) {
 };
 
 Client.prototype.header = function(key, value) {
-  this.options.headers || (this.options.headers = {});
+  this.options.headers = this.options.headers || {};
   this.options.headers[key] = value;
   return this;
 };
@@ -53,7 +26,7 @@ Client.prototype.data = function(data) {
     this.options.path += '?'+qs.stringify(data);
   } else {
     // JSON encoding
-    this.options.headers || (this.options.headers = {});
+    this.options.headers = this.options.headers || {};
     this.options.headers['Content-Type'] = 'application/json';
     this.options.data = JSON.stringify(data);
     this.options.headers['Content-Length'] = this.options.data.length;
@@ -82,12 +55,11 @@ Client.prototype._end = function(callback) {
   var proxy = protocol.request(options, function(response) {
     response.on('data', function(chunk) { res_data += chunk; });
     response.on('end', function() {
-      var err,
-          isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location;
+      var isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location;
 
       logging.debug('Response for the request "'+options.method+' '+options.host + options.path+'" has been ended.');
 
-      if(isRedirect && self.options.redirects == 0) {
+      if(isRedirect && !self.options.redirects) {
         logging.debug('Redirect to: ', response.headers.location);
         return self._redirect(response);
       }
@@ -103,14 +75,16 @@ Client.prototype._end = function(callback) {
       // detect errors
       if(response.statusCode >= 400) {
         return self._error(new Error('Unexpected HTTP status code ' +response.statusCode), res_data, callback);
-      } else if(res_data == '') {
+      } else if(!res_data) {
         return self._error(new Error('Response was empty.'), res_data, callback);
       }
 
       logging.info('The request "'+options.method+' '+options.host + options.path+'" has been responded successfully.');
       logging.debug('Response body: ', res_data);
 
-      callback && callback(undefined, res_data);
+      if (callback) {
+        callback(undefined, res_data);
+      }
     });
   }).on('error', function(err) { self._error(err, callback); });
 
@@ -123,24 +97,51 @@ Client.prototype._end = function(callback) {
 
 Client.prototype._error = function(error, res_data, callback) {
   logging.error('#api_error An Error occured', error, 'Received response: <res>'+res_data+'</res>');
-  callback && callback(error, res_data);
+  if (callback) {
+    callback(error, res_data);
+  }
 };
 
 Client.prototype._redirect = function(response) {
   var parts;
   if (!/^https?:/.test(response.headers.location)) {
-    response.headers.location = urlmodule.resolve(options.url, response.headers.location);
+    response.headers.location = urlmodule.resolve(this.options.url, response.headers.location);
   }
 
   // parse location to check for port
   parts = urlmodule.parse(response.headers.location);
   if(parts.protocol == 'http:') {
-    options.secure = false;
-    options.port = parts.port || 80;
+    this.options.secure = false;
+    this.options.port = parts.port || 80;
   }
 
   this.options.url = parts.href;
-  this._end(callback);
+  this._end();
+};
+
+function Scope(defaults) {
+  // clone Client.def. We don't want to change the defaults when we modify options further.
+  this.defaults = JSON.parse(JSON.stringify(defaults));
+}
+
+Scope.prototype.get = function(path) {
+  var c = new Client();
+  // Note: assigning this.defaults to c.options will still cause issues!
+  // The problem is that since we modify c.options when forming requests
+  // we would end up modifying the defaults values as well.
+  // JSON.parse(JSON.stringify) is just used as a lazy way to create a deep copy
+  c.options = JSON.parse(JSON.stringify(this.defaults));
+  c.set('method', 'GET')
+   .set('path', path);
+  return c;
+};
+
+Scope.prototype.post = function(path) {
+  var c = new Client();
+  c.options = JSON.parse(JSON.stringify(this.defaults));
+  c.set('method', 'POST')
+   .set('path', path);
+  return c;
 };
 
 module.exports = Scope;

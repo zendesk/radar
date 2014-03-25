@@ -41,7 +41,8 @@ function parseData(response, data, ResourceType) {
 
 // Note that Firefox needs a application/json content type or it will show a warning
 
-// curl -k -H "Content-Type: application/json" -X POST -d '{"accountName":"test","scope":"ticket/1","key":"greeting","value":"hello"}' https://localhost/radar/status
+// curl -k -H "Content-Type: application/json" -X POST -d \
+// '{"accountName":"test","scope":"ticket/1","key":"greeting","value":"hello"}' https://localhost/radar/status
 function setStatus(req, res, re, data) {
   var status = parseData(res, data, Status);
 

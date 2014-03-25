@@ -12,7 +12,7 @@ Router.prototype.route = function(req, res) {
   var pathname = url.parse(req.url).pathname.replace(/^\/?node/, ''),
       len = this.urlMap.length,
       i = -1,
-      urlHandler, matching;
+      urlHandler;
 
   while(++i <= len){
     if(this.urlMap[i] && this.urlMap[i].method == req.method && this.urlMap[i].re.test(pathname)){

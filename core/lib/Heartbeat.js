@@ -3,7 +3,7 @@ function Heartbeat() {
   this._actions = [];
   this._loop = false;
   this._interval = 60 * 1000;
-};
+}
 
 Heartbeat.prototype.interval = function(millis) {
   this._interval = millis;
@@ -46,7 +46,10 @@ Heartbeat.prototype.remove = function(callback) {
 };
 
 Heartbeat.prototype.pause = function() {
-  this._loop && ( clearTimeout(this._loop), (this._loop = false) );
+  if (this._loop) {
+    clearTimeout(this._loop);
+    this._loop = false;
+  }
   return this;
 };
 
@@ -63,7 +66,9 @@ Heartbeat.prototype.isActive = function() {
 Heartbeat.prototype._runActions = function(self) {
   var i, len = self._actions.length;
   for(i = 0; i < len; i++) {
-    self._actions[i] && self._actions[i]();
+    if (self._actions[i]) {
+      self._actions[i]();
+    }
   }
   // using setTimeout, since it is safer and easier to control
   // - only set the next interval once all actions have run
