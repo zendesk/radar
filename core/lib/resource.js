@@ -78,10 +78,11 @@ var noop = function(name) {
 // send to Engine.io clients
 Resource.prototype.redisIn = function(data) {
   var self = this;
-  logging.debug('#res_in', this.name, this.subscribers, data);
+  logging.info('#resource - incoming from redis', this.name, data);
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
+      logging.info('#client - sending data', client.id, self.name);
       client.send(data);
     }
   });
@@ -116,6 +117,8 @@ Resource.prototype.handleMessage = function(client, message) {
     case 'publish':
       this[message.op](client, message);
       break;
+    default:
+      logging.error('Unknown message.op, ignoring', message);
   }
 };
 
