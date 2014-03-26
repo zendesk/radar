@@ -93,19 +93,19 @@ Server.prototype.onClientConnection = function(client) {
 };
 
 Server.prototype.handleMessage = function(name, data) {
-  logging.debug('#redis_in', name, data);
+  logging.debug('#redis - incoming message', name, data);
 
   if (this.channels[name]) {
     try {
       data = JSON.parse(data);
     } catch(parseError) {
-      logging.error('Corrupted key value [' + name + ']. ' + parseError.message + ': '+ parseError.stack);
+      logging.error('#redis - Corrupted key value [' + name + ']. ' + parseError.message + ': '+ parseError.stack);
       return;
     }
 
     this.channels[name].redisIn(data);
   } else {
-    logging.warn('#message_not_handled', name, data);
+    logging.warn('#redis - message not handled', name, data);
   }
 };
 
@@ -128,16 +128,23 @@ Server.prototype.message = function(client, data) {
   var resource = this.resource(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    logging.info('#redis_subscribe', resource.name);
-    this.subs[resource.name] = true;
-    this.subscriber.subscribe(resource.name, function(err) {
-      if(!err) {
-        resource.handleMessage(client, message);
-        self.emit(message.op, client, message);
-      } else {
-        logging.error('could not subscribe to redis resource', resource.name);
-      }
-    });
+    if(!this.subs[resource.name]) {
+      logging.info('#redis - subscribe', resource.name);
+      this.subscriber.subscribe(resource.name, function(err) {
+        if(!err) {
+          logging.info("#redis - successfully subscribed", resource.name);
+          self.subs[resource.name] = true;
+          resource.handleMessage(client, message);
+          self.emit(message.op, client, message);
+        } else {
+          logging.error('#redis - could not subscribe to redis resource', resource.name);
+        }
+      });
+    } else {
+      logging.info("#redis - already subscribed", resource.name);
+      resource.handleMessage(client, message);
+      self.emit(message.op, client, message);
+    }
   } else {
     logging.warn('#auth_invalid', data);
     client.send({

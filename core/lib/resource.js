@@ -82,6 +82,7 @@ Resource.prototype.redisIn = function(data) {
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
+      logging.info('client.send', client.id, data);
       client.send(data);
     }
   });
@@ -116,6 +117,8 @@ Resource.prototype.handleMessage = function(client, message) {
     case 'publish':
       this[message.op](client, message);
       break;
+    default:
+      logging.error('Unknown message.op, ignoring', message);
   }
 };
 
