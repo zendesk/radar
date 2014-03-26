@@ -132,7 +132,7 @@ Server.prototype.message = function(client, data) {
       logging.info('#redis - subscribe', resource.name);
       this.subscriber.subscribe(resource.name, function(err) {
         if(!err) {
-          logging.info("#redis - successfully subscribed", resource.name);
+          logging.info('#redis - successfully subscribed', resource.name);
           self.subs[resource.name] = true;
           resource.handleMessage(client, message);
           self.emit(message.op, client, message);
@@ -141,7 +141,7 @@ Server.prototype.message = function(client, data) {
         }
       });
     } else {
-      logging.info("#redis - already subscribed", resource.name);
+      logging.info('#redis - already subscribed', resource.name);
       resource.handleMessage(client, message);
       self.emit(message.op, client, message);
     }
