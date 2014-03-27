@@ -119,7 +119,7 @@ exports['given two clients'] = {
         assert.equal('246', message.key);
         assert.equal('foo', message.value);
         client.status('voice/status').unsubscribe(function() {
-          client.once('presence:/dev/voice/status', function() {
+          client.once('status:/dev/voice/status', function() {
             assert.ok(false); // should not receive message
           });
           client2.status('voice/status').set('bar');
