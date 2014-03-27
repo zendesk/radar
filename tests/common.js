@@ -11,6 +11,9 @@ if (process.env.verbose) {
   var Minilog = require('minilog');
   Minilog.pipe(Minilog.backends.nodeConsole)
     .format(Minilog.backends.nodeConsole.formatWithStack);
+
+  require('radar_client')._log.pipe(Minilog.backends.nodeConsole)
+    .format(Minilog.backends.nodeConsole.formatWithStack);
 }
 
 require('long-stack-traces');
