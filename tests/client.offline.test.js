@@ -3,10 +3,8 @@ var common = require('./common.js'),
   http = require('http'),
   verbose = false,
   Persistence = require('../core').Persistence,
-  Client = require('radar_client').constructor,
   logging = require('minilog')('test'),
   Tracker = require('callback_tracker'),
-  configuration = require('./configuration.js'),
   client1, client2;
 
 http.globalAgent.maxSockets = 10000;
@@ -20,6 +18,7 @@ if (verbose) {
 exports['presence: given a server and two connected clients'] = {
 
   beforeEach: function(done) {
+    this.timeout(3000);
     var track = Tracker.create('before each', done);
     common.startRadar(this, function(){
       Persistence.delWildCard('*', track('cleanup redis'));
