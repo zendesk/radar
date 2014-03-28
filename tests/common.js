@@ -46,7 +46,7 @@ module.exports = {
     radar = new RadarServer();
     radar.once('ready', function() {
       context.server.listen(configuration.port, function() {
-        done();
+        Persistence.delWildCard('*',done);
       });
     });
     radar.attach(context.server, configuration);

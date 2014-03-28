@@ -13,7 +13,6 @@ exports['reconnect: given a server and two connected clients'] = {
         track = Tracker.create('beforeEach reconnect', done);
 
     common.startRadar(this, function(){
-      Persistence.delWildCard('*', track('cleanup redis'));
       self.client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
       self.client2 = common.getClient('test', 246, 0, { name: 'tester2' }, track('client 2 ready'));
     });
@@ -71,7 +70,7 @@ exports['reconnect: given a server and two connected clients'] = {
                       assert.equal(clientEvents[1], 'connected');
                       assert.equal(clientEvents[2], 'ready');
                       done();
-                    }, 500)
+                    }, 500);
                   }
                 });
                 //console.log('Server started');
