@@ -105,7 +105,7 @@ exports['given a status resource'] = {
     });
   },
 
-  'subscribe adds a subscriber and unsubscribe causes a unsubscribe if this is the last client': function(done) {
+  'subscribe adds a subscriber and unsubscribe causes a destroy if this is the last client': function(done) {
     var status = this.status;
 
     Radar.destroy = function(name) {
@@ -113,8 +113,9 @@ exports['given a status resource'] = {
       done();
     };
 
-    status.subscribe(123);
-    status.unsubscribe(123);
+    var client = {};
+    status.subscribe(client, 123);
+    status.unsubscribe(client, 123);
   },
 
   'sets a default option for maxPersistence': function(done) {
