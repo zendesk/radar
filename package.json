@@ -32,7 +32,7 @@
   "dependencies": {
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
-    "redis": "0.7.3",
+    "redis": "0.10.1",
     "redis-sentinel-client": "0.1.4",
     "minilog": "0.1.0",
     "callback_tracker": "*",
