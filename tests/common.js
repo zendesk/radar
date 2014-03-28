@@ -11,6 +11,9 @@ if (process.env.verbose) {
   var Minilog = require('minilog');
   Minilog.pipe(Minilog.backends.nodeConsole)
     .format(Minilog.backends.nodeConsole.formatWithStack);
+
+  require('radar_client')._log.pipe(Minilog.backends.nodeConsole)
+    .format(Minilog.backends.nodeConsole.formatWithStack);
 }
 
 require('long-stack-traces');
@@ -43,7 +46,7 @@ module.exports = {
     radar = new RadarServer();
     radar.once('ready', function() {
       context.server.listen(configuration.port, function() {
-        done();
+        Persistence.delWildCard('*',done);
       });
     });
     radar.attach(context.server, configuration);

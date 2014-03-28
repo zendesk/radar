@@ -1,3 +1,6 @@
+### v0.4.2
+* Do not wait for subscription callback from redis client
+
 ### v0.4.1
 * Subscribe to redis channels only when needed
 

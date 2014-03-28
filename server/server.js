@@ -138,20 +138,16 @@ Server.prototype.message = function(client, data) {
     if(!this.subs[resource.name]) {
       logging.info('#redis - subscribe', resource.name);
       this.subscriber.subscribe(resource.name, function(err) {
-        if(!err) {
-          logging.info('#redis - successfully subscribed', resource.name);
-          self.subs[resource.name] = true;
-          resource.handleMessage(client, message);
-          self.emit(message.op, client, message);
+        if(err) {
+          logging.error("#redis - subscribe failed", resource.name, err);
         } else {
-          logging.error('#redis - could not subscribe to redis resource', resource.name);
+          logging.info("#redis - subscribe successful", resource.name);
         }
       });
-    } else {
-      logging.info('#redis - already subscribed', resource.name);
-      resource.handleMessage(client, message);
-      self.emit(message.op, client, message);
+      this.subs[resource.name] = true;
     }
+    resource.handleMessage(client, message);
+    this.emit(message.op, client, message);
   } else {
     logging.warn('#auth_invalid', data);
     client.send({
