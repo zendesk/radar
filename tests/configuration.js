@@ -17,7 +17,7 @@ module.exports = {
       sentinels: [
       {
         host: 'localhost',
-        port: 26380
+        port: 26379
       }]
     },
     cluster2: {
