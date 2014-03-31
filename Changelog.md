@@ -1,3 +1,9 @@
+### v0.5.0
+* Redis client update to 0.10.1
+* Trust redis to queue subscriptions
+* Clear persistence in tests
+* Prevent more blocking forEach loops
+
 ### v0.4.2
 * Do not wait for subscription callback from redis client
 
