@@ -1,3 +1,7 @@
+### v0.5.1
+* #72 - Use simple_sentinel for starting sentinel for testing
+* #71 - Use redis-sentinel-client @0.1.5 (Forward pmessages always)
+
 ### v0.5.0
 * Redis client update to 0.10.1
 * Trust redis to queue subscriptions
