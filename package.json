@@ -42,19 +42,18 @@
   "devDependencies": {
     "mocha": "*",
     "radar_client": "0.2.18",
-    "long-stack-traces": "*"
+    "long-stack-traces": "*",
+    "simple_sentinel": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",
     "start": "node server.js",
     "check-modules": "if [ -z \"$SKIP_PACKAGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then echo 'Your node_modules are out of date. Please run \"npm update\"' && exit 1; fi",
     "pretest": "npm run check-modules",
-    "start-sentinel": "cd tests/sentinel/ && ./sentinel_helper start && cd ../../",
-    "stop-sentinel": "cd tests/sentinel/ && ./sentinel_helper stop && cd ../../",
     "test-redis": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
-    "pretest-sentinel": "npm run start-sentinel",
+    "pretest-sentinel": "./node_modules/.bin/simple_sentinel start",
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
-    "posttest-sentinel": "npm run stop-sentinel",
+    "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test": "npm run test-sentinel && npm run test-redis",
     "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
