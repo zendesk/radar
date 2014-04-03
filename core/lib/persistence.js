@@ -9,18 +9,7 @@ var logging = require('minilog')('persistence'),
 function Persistence() { }
 
 Persistence.connect = function(done) {
-  var config = {};
-  if(configuration && configuration.connection_settings && configuration.use_connection) {
-    config = configuration.connection_settings[configuration.use_connection];
-    if(!config) {
-      throw new Error("Invalid configuration: connection_settings: "+configuration  + " use_connection: "+ connectionName);
-    }
-  } else {
-    config.redis_host = configuration.redis_host || 'localhost';
-    config.redis_port = configuration.redis_port || 6379;
-  }
-
-  connection = ConnectionHelper.connection(connectionName, config);
+  connection = ConnectionHelper.connection(configuration);
   connection.establish(done);
 };
 

@@ -8,8 +8,8 @@ module.exports = {
   // Lets you specify a number of redis options and pick one.
   connection_settings: {
     legacy: {
-      redis_host: 'localhost',
-      redis_port: 6379
+      host: 'localhost',
+      port: 6379
     },
     cluster1: {
       // sentinel master name is required
@@ -40,7 +40,7 @@ module.exports = {
 
   // Only used if a connection_settings hash is present.
   // (optional). will fallback to default if not present.
-  //use_connection: 'cluster1',
+  //use_connection: 'legacy',
 
   //Radar config: Port for radar to run on.
   port: 8000,

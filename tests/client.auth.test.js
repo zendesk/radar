@@ -5,8 +5,7 @@ var http = require('http'),
   Type = require('../core').Type,
   common = require('./common.js'),
   Tracker = require('callback_tracker'),
-  Persistence = require('../core/lib/persistence.js'),
-  configuration = require('./configuration.js');
+  Persistence = require('../core/lib/persistence.js');
 
 exports['auth: given a server and a client'] = {
   beforeEach: function(done) {

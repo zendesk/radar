@@ -2,7 +2,6 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
-    configuration = require('./configuration.js'),
     Tracker = require('callback_tracker');
 
 exports['given two clients'] = {

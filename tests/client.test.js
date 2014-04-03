@@ -2,7 +2,6 @@ var common = require('./common.js'),
     assert = require('assert'),
     Persistence = require('../core').Persistence,
     minilog = require('minilog'),
-    configuration = require('./configuration.js'),
     Client = require('radar_client').constructor,
     Tracker = require('callback_tracker');
 

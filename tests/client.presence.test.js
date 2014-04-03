@@ -5,7 +5,6 @@ var common = require('./common.js'),
     Persistence = require('../core').Persistence,
     Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
-    configuration = require('./configuration.js'),
     Tracker = require('callback_tracker'),
     client, client2;
 
@@ -84,7 +83,7 @@ exports['presence: given a server and two connected clients'] = {
       assert.ok(message.value['123']);
       assert.equal(message.value['123'].userType, 0);
       assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
-    }
+    };
 
     client.presence(scope).set('online', function() {
       var presence = client2.presence(scope).sync({version: 2}, function(message) {
@@ -111,8 +110,8 @@ exports['presence: given a server and two connected clients'] = {
         var foo = setInterval(function() {
           client2.presence('chat/1/participants').get(function(message) {
             // both should show client 1 as online
-            assert.equal('get', message.op)
-            assert.deepEqual({ '123': 0 }, message.value)
+            assert.equal('get', message.op);
+            assert.deepEqual({ '123': 0 }, message.value);
 
             assert.equal(notifications.length, 2);
             assert.equal(notifications[0].op, 'online');
@@ -156,7 +155,7 @@ exports['presence: given a server and two connected clients'] = {
             assert.deepEqual({ '123': 0 }, message.value);
 
             // we should have received a online notification
-            assert.ok(notifications.some(function(m) { return m.op == 'online'}));
+            assert.ok(notifications.some(function(m) { return (m.op == 'online');}));
             // This does not hold now that we have client_online/client_offline notifications: assert.equal(1, notifications.length);
 
             // a presence be set to offline after the grace period
@@ -167,7 +166,7 @@ exports['presence: given a server and two connected clients'] = {
                 assert.equal(message.op, 'get');
                 assert.deepEqual(message.value, {});
 
-                assert.ok(notifications.some(function(m) { return m.op == 'offline'}));
+                assert.ok(notifications.some(function(m) { return (m.op == 'offline');}));
                 // broken due to new notifications: assert.equal(2, notifications.length);
                 done();
               });
