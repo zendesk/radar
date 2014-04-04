@@ -1,3 +1,6 @@
+### v0.5.2
+* #74 - Fix configuration.js parsing, fail on unexpected config
+
 ### v0.5.1
 * #72 - Use simple_sentinel for starting sentinel for testing
 * #71 - Use redis-sentinel-client @0.1.5 (Forward pmessages always)
