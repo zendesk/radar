@@ -5,8 +5,6 @@ var assert = require('assert'),
     Common = require('./common.js'),
     Presence = require('../core/lib/resources/presence');
 
-var configuration = require('./configuration.js');
-
 var Server = {
   timer: new Heartbeat().interval(1500),
   broadcast: function() { },

@@ -1,10 +1,5 @@
 var http = require('http'),
-
-    configuration = {
-      redis_host: 'localhost',
-      redis_port: 6379,
-      port: 8000
-    },
+    configuration = require('./configuration.js'),
     Radar = require('./server/server.js'),
     Api = require('./api/api.js'),
     Minilog = require('minilog');

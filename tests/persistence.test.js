@@ -3,8 +3,6 @@ var assert = require('assert'),
     Common = require('./common.js'),
     client;
 
-var configuration = require('./configuration.js');
-
 exports['given a resource'] = {
 
   before: function(done) {

@@ -3,7 +3,7 @@ var http = require('http'),
     eio = require('engine.io'),
     Persistence = require('../core/lib/persistence'),
     RadarServer = new require('../server/server.js'),
-    configuration = require('./configuration.js'),
+    configuration = require('../configuration.js'),
     Client = require('radar_client').constructor,
     radar;
 
