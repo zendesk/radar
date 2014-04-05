@@ -1,39 +1,130 @@
 var common = require('./common.js'),
     assert = require('assert'),
-    http = require('http'),
-    verbose = false,
-    Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor,
     logging = require('minilog')('test'),
+    Persistence = require('../core').Persistence,
     Tracker = require('callback_tracker'),
-    client, client2;
+    Client = require('radar_client').constructor,
+    radar, client, client2;
 
-http.globalAgent.maxSockets = 10000;
+exports['given two clients'] = {
+  before: function(done) {
+    radar = common.spawnRadar();
+    radar.sendCommand('start', common.configuration, done);
+  },
 
-if (verbose) {
-  var Minilog = require('minilog');
-  Minilog.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
-}
-
-exports['presence: given a server and two connected clients'] = {
-
-  beforeEach: function(done) {
-    var track =  Tracker.create('before each', done);
-    common.startRadar(this, function(){
-      Persistence.delWildCard("*", track('cleanup redis'));
-      client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
-      client2 = common.getClient('test', 222, 0, { name: 'tester2' }, track('client 2 ready'));
+  after: function(done) {
+    radar.sendCommand('stop', {}, function() {
+      radar.kill();
+      done();
     });
   },
 
-  afterEach: function(done) {
-    client.dealloc('test');
-    client2.dealloc('test');
-    common.endRadar(this, done);
+  beforeEach: function(done) {
+    var track = Tracker.create('beforeEach', done);
+    client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
+    client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'));
   },
 
-  'a presence can be set to online and subscribers will be updated': function(done) {
+  afterEach: function() {
+    client.presence('test').removeAllListeners();
+    client2.presence('test').removeAllListeners();
+    client.presence('chat/1/participants').removeAllListeners();
+    client2.presence('chat/1/participants').removeAllListeners();
+    client.presence('chat/1/participants').set('offline');
+    client2.presence('chat/1/participants').set('offline');
+    client.dealloc('test');
+    client2.dealloc('test');
+  },
+
+  'can subscribe a presence scope': function(done) {
+    var messages = [];
+
+    client.presence('test')
+    .on(function(m) {
+      messages.push(m);
+    }).subscribe(function() {
+      client2.presence('test').set('online', function() {
+        client2.presence('test').set('offline', function() {
+          // ensure that async tasks have run
+          setTimeout(function() {
+            assert.equal('online', messages[0].op);
+            assert.deepEqual({ '246': 0 }, messages[0].value);
+            assert.equal('client_online', messages[1].op);
+            assert.deepEqual(messages[1].value.userId, 246);
+            assert.equal('client_offline', messages[2].op);
+            assert.deepEqual(messages[2].value.userId, 246);
+            assert.equal('offline', messages[3].op);
+            assert.deepEqual({ '246': 0 }, messages[3].value);
+            done();
+          }, 5);
+        });
+      });
+    });
+  },
+
+
+  'can unsubscribe a presence scope': function(done) {
+    client.presence('test').subscribe(function() {
+      client.once('presence:/dev/test', function(message) {
+        assert.equal('online', message.op);
+        assert.deepEqual({ '246': 0 }, message.value);
+        client.presence('test').unsubscribe(function() {
+          client.once('presence:/dev/test', function() {
+            assert.ok(false); // should not receive message
+          });
+          client2.presence('test').set('offline');
+          setTimeout(function() {
+            done();
+          }, 10);
+        });
+      });
+      client2.presence('test').set('online');
+    });
+  },
+
+  'should send presence messages correctly when toggling back and forth': function(done) {
+    var messages = { count: 0 };
+    var count = 9; //FIXME: only odd number works
+    var onlines = Math.ceil(count/2);
+    var offlines = Math.floor(count/2);
+
+    var verify = function() {
+      logging.info(messages);
+      assert.ok(messages.client_offline == offlines, "expected "+ offlines +" but got " + messages.client_offline + " client_offlines");
+      assert.ok(messages.offline == offlines, "expected " + offlines + " but got " + messages.offline + " offlines");
+      assert.ok(messages.client_online == onlines, "expected "+ onlines +" but got " + messages.client_online + " client_onlines");
+      assert.ok(messages.online == onlines, "expected "+ onlines +" but got " + messages.online + " onlines");
+      done();
+    };
+
+    var current_state = 'offline';
+    var toggle = function() {
+      current_state = (current_state == 'offline'?'online':'offline');
+      logging.info("setting "+current_state);
+      client.presence('chat/1/participants').set(current_state);
+    };
+
+    client2.presence('chat/1/participants').on(function(message){
+      logging.info('Received message', message);
+      if(!messages[message.op]) {
+        messages[message.op] = 1;
+      } else {
+        messages[message.op] ++;
+      }
+      messages.count ++;
+      //Got everything, wait if we get something unwanted
+      if(messages.count == 2*count) {
+        setTimeout(verify, 50);
+      }
+    }).subscribe(function() {
+    logging.info("=================");
+      for(var i = 0; i< count; i++) {
+        setTimeout(toggle,10);
+      }
+    });
+  },
+
+  'should receive a presence update after subscription and only once': function(done) {
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -75,11 +166,11 @@ exports['presence: given a server and two connected clients'] = {
   },
 
   'userData will persist when a presence is updated': function(done) {
-    this.timeout(40*1000);
+    this.timeout(18*1000);
     var scope = 'chat/1/participants';
     var verify = function(message) {
       assert.equal(message.op, 'get');
-      assert.deepEqual(message.to, 'presence:/test/' + scope);
+      assert.deepEqual(message.to, 'presence:/dev/' + scope);
       assert.ok(message.value['123']);
       assert.equal(message.value['123'].userType, 0);
       assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
@@ -93,13 +184,13 @@ exports['presence: given a server and two connected clients'] = {
             verify(message);
             done();
           });
-        }, 30000);
+        }, 17000); //Wait for Autopub (15 sec)
       });
     });
   },
 
   'calling fullSync multiple times does not alter the result if users remain connected': function(done) {
-    this.timeout(35*1000);
+    this.timeout(18*1000);
     var notifications = [], getCounter = 0;
     client2.presence('chat/1/participants').on(function(message){
       notifications.push(message);
@@ -121,19 +212,19 @@ exports['presence: given a server and two connected clients'] = {
             assert.equal(notifications[1].value.clientId, client._socket.id);
             getCounter++;
           });
-        }, 800);
+        }, 200);
 
         setTimeout(function() {
           clearInterval(foo);
           done();
-        }, 32*1000);
+        }, 17*1000);
       });
     });
   },
 
   'a presence will not be set to offline during the grace period but will be offline after it': function(done) {
     enabled = true;
-    this.timeout(18*1000);
+    this.timeout(19*1000);
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -168,7 +259,7 @@ exports['presence: given a server and two connected clients'] = {
 
                 assert.ok(notifications.some(function(m) { return (m.op == 'offline');}));
                 // broken due to new notifications: assert.equal(2, notifications.length);
-                done();
+                client.alloc('test', done); //realloc client
               });
             }, 3*1000);
           });
@@ -178,4 +269,3 @@ exports['presence: given a server and two connected clients'] = {
   }
 
 };
-

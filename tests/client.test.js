@@ -3,30 +3,31 @@ var common = require('./common.js'),
     Persistence = require('../core').Persistence,
     minilog = require('minilog'),
     Client = require('radar_client').constructor,
-    Tracker = require('callback_tracker');
+    Tracker = require('callback_tracker'),
+    radar;
 
 exports['given a server'] = {
 
   before: function(done) {
-    common.startRadar(this, done);
+    radar = common.spawnRadar();
+    radar.sendCommand('start', common.configuration, done);
   },
 
-  after: function() {
-    common.endRadar(this, function() {
-      Persistence.disconnect();
+  after: function(done) {
+    radar.sendCommand('stop', {}, function() {
+      radar.kill();
       done();
     });
   },
 
   beforeEach: function(done) {
-    var track = Tracker.create('beforeEach', done);
-
-    Persistence.delWildCard('*', track('remove redis entries'));
-    this.client = common.getClient('dev', 123, 0, {}, track('client ready'));
-    this.client._logger = minilog('client.test');
-
+    this.client = common.getClient('dev', 123, 0, {}, done);
   },
+
   afterEach: function() {
+    this.client.presence('client-test').removeAllListeners();
+    this.client.message('client-test').removeAllListeners();
+    this.client.status('client-test').removeAllListeners();
     this.client.dealloc('test');
   },
 
@@ -36,48 +37,42 @@ exports['given a server'] = {
 // - .subscribe(ack)
 // - .unsubscribe(ack)
 // - .sync(callback)
-  'presence: can set("online")': function(done) {
+  'presence: can set("online")/get': function(done) {
     var client = this.client;
-    common.radar().once('set', function(socket, message) {
-      assert.equal('set', message.op);
-      assert.equal('online', message.value);
-      assert.equal(123, message.key);
-      client.presence('ticket/21').get(function(message) {
-        assert.equal('get', message.op);
+    var once_set = function() {
+      client.presence('client-test').get(function(message) {
+        assert.equal(message.to, 'presence:/dev/client-test');
+        assert.equal(message.op, 'get');
         assert.deepEqual(message.value, { 123: 0 });
-        client.presence('ticket/21').set('offline', function() {
+        client.presence('client-test').set('offline', function() {
           done();
         });
       });
-    });
-    this.client.presence('ticket/21').set('online');
+    };
+
+    this.client.presence('client-test').set('online', once_set);
   },
 
-  'presence: can set("offline")': function(done) {
+  'presence: can set("offline")/get': function(done) {
     var client = this.client;
-    common.radar().once('set', function(socket, message) {
-      assert.equal('set', message.op);
-      assert.equal('offline', message.value);
-      assert.equal(123, message.key);
-      // finish executing this request in Radar first
-      process.nextTick(function() {
-        client.presence('ticket/21').get(function(message) {
-          assert.equal('get', message.op);
-          assert.deepEqual(message.value, { });
-          done();
-        });
+    var once_set =  function() {
+      client.presence('client-test').get(function(message) {
+        assert.equal('get', message.op);
+        assert.deepEqual(message.value, { });
+        done();
       });
-    });
-    this.client.presence('ticket/21').set('offline');
+    };
+
+    this.client.presence('ticket/21').set('offline', once_set);
   },
 
   'presence: can get() using v1 API': function(done) {
     var client = this.client;
-    client.presence('ticket/21').get(function(message) {
+    client.presence('client-test').get(function(message) {
       assert.equal('get', message.op);
       assert.deepEqual([], message.value);
-      client.presence('ticket/21').set('online', function() {
-        client.presence('ticket/21').get(function(message) {
+      client.presence('client-test').set('online', function() {
+        client.presence('client-test').get(function(message) {
           assert.equal('get', message.op);
           assert.deepEqual(message.value, { '123': 0 });
           done();
@@ -88,11 +83,11 @@ exports['given a server'] = {
 
   'presence: can get() using v2 API': function(done) {
     var client = this.client;
-    client.presence('ticket/33').get({ version: 2 }, function(message) {
+    client.presence('client-test').get({ version: 2 }, function(message) {
       assert.equal('get', message.op);
       assert.deepEqual([], message.value);
-      client.presence('ticket/33').set('online', function() {
-        client.presence('ticket/33').get({ version: 2 }, function(message) {
+      client.presence('client-test').set('online', function() {
+        client.presence('client-test').get({ version: 2 }, function(message) {
           assert.equal('get', message.op);
           var expected = {123:{clients:{},userType:0}};
           expected['123'].clients[client._socket.id] = {};
@@ -108,8 +103,8 @@ exports['given a server'] = {
     // listener but not by the sync() callback
     var client = this.client;
 
-    this.client.presence('ticket/213').set('online', function() {
-      client.presence('ticket/213').sync({ version: 2 }, function(message) {
+    this.client.presence('client-test').set('online', function() {
+      client.presence('client-test').sync({ version: 2 }, function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
         var expected = {123:{clients:{},userType:0}};
@@ -120,82 +115,48 @@ exports['given a server'] = {
     });
   },
 
+
 // Status tests
-// - .set(value, ack)
-// - .get(callback)
+// - .set/get(value, ack) [string]
+// - .set/get(value, ack) [object]
 // - .subscribe(ack)
 // - .unsubscribe(ack)
 // - .sync(callback)
 
-  'status: can set([String])': function(done) {
-    common.radar().once('set', function(client, message) {
-      assert.equal('set', message.op);
-      assert.equal('foo', message.value);
-      assert.equal(123, message.key);
-      done();
-    });
-    this.client.status('voice/status').set('foo');
-  },
-
-  'status: can set([Object])': function(done) {
+  'status: can set and get([String])': function(done) {
     var client = this.client;
-    common.radar().once('set', function(ignore, message) {
-      assert.equal('set', message.op);
-      assert.deepEqual({ hello: 'world' }, message.value);
-      assert.equal(123, message.key);
-      client.status('voice/status').get(function(message) {
+
+    var once_set = function() {
+      client.status('client-test').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual( { hello: 'world' }, message.value['123']);
+        assert.equal('status:/dev/client-test', message.to);
+        assert.deepEqual({ '123': 'foo' }, message.value);
         done();
       });
-    });
-    this.client.status('voice/status').set({ hello: 'world' });
+    };
+    client.status('client-test').set('foo', once_set);
   },
 
-  'status: can get([String])': function(done) {
+  'status: can set and get([Object])': function(done) {
     var client = this.client;
-
-    this.client.status('voice/status').set('foo', function(){
-      client.status('voice/status').get(function(message) {
+    var once_set = function() {
+      client.status('client-test').get(function(message) {
         assert.equal('get', message.op);
-        assert.deepEqual({ 123: 'foo'}, message.value);
-        client.status('voice/status').set('bar', function() {
-          client.status('voice/status').get(function(message) {
-            assert.equal('get', message.op);
-            assert.deepEqual({ 123: 'bar'}, message.value);
-            done();
-          });
-        });
+        assert.equal('status:/dev/client-test', message.to);
+        assert.deepEqual({ '123': { hello: 'world' } }, message.value);
+        done();
       });
-    });
-
+    };
+    client.status('client-test').set({ hello: 'world' }, once_set);
   },
 
-  'status: can get([Object])': function(done) {
-    var client = this.client;
-
-    client.status('voice/status').set({'foo': 'bar'}, function() {
-      client.status('voice/status').get(function(message) {
-        assert.equal('get', message.op);
-        assert.deepEqual({ 123: {'foo': 'bar'}}, message.value);
-        client.status('voice/status').set({'foo2': 'bar2'}, function(){
-          client.status('voice/status').get(function(message) {
-            assert.equal('get', message.op);
-            assert.deepEqual({ 123: {'foo2': 'bar2'}}, message.value);
-            done();
-          });
-        });
-      });
-    });
-
-  },
 
   'status: can subscribe()': function(done) {
     this.timeout(10000);
 
     var client = this.client;
     var client2 = common.getClient('dev', 234, 0, {}, function() {
-        client2.status('voice/status')
+        client2.status('client-test')
           .once(function(message) {
             assert.equal('set', message.op);
             assert.equal('foo', message.value);
@@ -204,7 +165,7 @@ exports['given a server'] = {
             done();
           })
           .subscribe(function() {
-            client.status('voice/status').set('foo');
+            client.status('client-test').set('foo');
           });
       });
   },
@@ -213,8 +174,8 @@ exports['given a server'] = {
   'status: can sync()': function(done) {
     var client = this.client;
 
-    this.client.status('voice/status').set('foo', function() {
-      client.status('voice/status').sync(function(message) {
+    this.client.status('client-test').set('foo', function() {
+      client.status('client-test').sync(function(message) {
         // sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
         assert.deepEqual({ 123: 'foo'}, message.value);
@@ -232,17 +193,11 @@ exports['given a server'] = {
   'message: can subscribe()': function(done) {
     var client = this.client;
     // test.expect(2);
-    common.radar().when('subscribe', function(client, msg) {
-      var match = (msg.op == 'subscribe' && msg.to == 'message:/dev/test');
-      if (match) {
-        assert.equal('subscribe', msg.op);
-        assert.equal('message:/dev/test', msg.to);
-        done();
-      }
-      return match;
+    client.message('client-test').subscribe(function(message) {
+      assert.equal(message.op, 'subscribe');
+      assert.equal(message.to, 'message:/dev/client-test');
+      done();
     });
-    // optional (due to new "connect-if-configured-logic"): client.alloc('test');
-    client.message('test').subscribe();
   },
 
   'message: can publish([Object])': function(done) {
@@ -250,16 +205,16 @@ exports['given a server'] = {
     // test.expect(2);
     var message = { state: 'other'};
 
-    client.message('test').when(function(msg) {
+    client.message('client-test').when(function(msg) {
       if(msg.value && msg.value.state && msg.value.state == 'other') {
-        assert.equal('message:/dev/test', msg.to);
+        assert.equal('message:/dev/client-test', msg.to);
         assert.equal('other', msg.value.state);
         done();
         return true;
       }
       return false;
     });
-    client.message('test').subscribe().publish(message);
+    client.message('client-test').subscribe().publish(message);
   },
 
   'message: can publish([String])': function(done) {
@@ -267,9 +222,9 @@ exports['given a server'] = {
     // test.expect(2);
     var message = '{ "state": "other"}';
 
-    client.message('test').when(function(msg) {
+    client.message('client-test').when(function(msg) {
 
-      assert.equal('message:/dev/test', msg.to);
+      assert.equal('message:/dev/client-test', msg.to);
 
       assert.equal('string', typeof msg.value);
       assert.equal('{ "state": "other"}', msg.value);
@@ -277,22 +232,25 @@ exports['given a server'] = {
       done();
 
     });
-    client.message('test').subscribe().publish(message);
+    client.message('client-test').subscribe().publish(message);
   },
 
   'message: can sync([String])': function(done) {
     var client = this.client,
         message = 'foobar',
         assertions = 0;
-    Persistence.persistOrdered('message:/dev/test', message, function() {
-      client.message('test').on(function(msg) {
-        assert.equal('foobar', msg);
-        assertions++;
-      }).sync('test');
-      setTimeout(function() {
-        assert.equal(1, assertions);
-        done();
-      }, 100);
+    Persistence.setConfig(common.configuration);
+    Persistence.connect(function() {
+      Persistence.persistOrdered('message:/dev/client-test', message, function() {
+        client.message('client-test').on(function(msg) {
+          assert.equal('foobar', msg);
+          assertions++;
+        }).sync('client-test');
+        setTimeout(function() {
+          assert.equal(1, assertions);
+          Persistence.del('message:/dev/client-test', done);
+        }, 100);
+      });
     });
   },
 
@@ -300,15 +258,18 @@ exports['given a server'] = {
     var client = this.client,
         message = { foo: 'bar' },
         assertions = 0;
-    Persistence.persistOrdered('message:/dev/test', message, function() {
-      client.message('test').on(function(msg) {
-        assert.equal('bar', msg.foo);
-        assertions++;
-      }).sync('test');
-      setTimeout(function() {
-        assert.equal(1, assertions);
-        done();
-      }, 100);
+    Persistence.setConfig(common.configuration);
+    Persistence.connect(function() {
+      Persistence.persistOrdered('message:/dev/client-test', message, function() {
+        client.message('client-test').on(function(msg) {
+          assert.equal('bar', msg.foo);
+          assertions++;
+        }).sync('client-test');
+        setTimeout(function() {
+          assert.equal(1, assertions);
+          Persistence.del('message:/dev/client-test', done);
+        }, 100);
+      });
     });
   }
 };
