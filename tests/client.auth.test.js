@@ -13,10 +13,8 @@ exports['auth test'] = {
     var self = this;
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, function() {
-      radar.sendCommand('disableType', {}, function() {
-        self.client = common.getClient('client_auth', 111, 0,
-          { name: 'tester0' }, done);
-      });
+      self.client = common.getClient('client_auth', 111, 0,
+        { name: 'tester0' }, done);
     });
   },
 
