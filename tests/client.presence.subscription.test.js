@@ -28,10 +28,8 @@ exports['given two clients'] = {
   afterEach: function() {
     client.presence('test').removeAllListeners();
     client2.presence('test').removeAllListeners();
-    client.presence('chat/1/participants').removeAllListeners();
-    client2.presence('chat/1/participants').removeAllListeners();
-    client.presence('chat/1/participants').set('offline');
-    client2.presence('chat/1/participants').set('offline');
+    client.presence('test').set('offline');
+    client2.presence('test').set('offline');
     client.dealloc('test');
     client2.dealloc('test');
   },
@@ -101,10 +99,10 @@ exports['given two clients'] = {
     var toggle = function() {
       current_state = (current_state == 'offline'?'online':'offline');
       logging.info("setting "+current_state);
-      client.presence('chat/1/participants').set(current_state);
+      client.presence('test').set(current_state);
     };
 
-    client2.presence('chat/1/participants').on(function(message){
+    client2.presence('test').on(function(message){
       logging.info('Received message', message);
       if(!messages[message.op]) {
         messages[message.op] = 1;
@@ -128,12 +126,12 @@ exports['given two clients'] = {
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
-    client2.presence('chat/1/participants').on(function(message){
+    client2.presence('test').on(function(message){
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online', function() {
-        client2.presence('chat/1/participants').get(function(message) {
+      client.presence('test').set('online', function() {
+        client2.presence('test').get(function(message) {
           // both should show client 1 as online
           assert.equal('get', message.op);
           assert.deepEqual({ '123': 0 }, message.value);
@@ -151,7 +149,7 @@ exports['given two clients'] = {
   },
 
   'syncing a presence should automatically subscribe to that resource': function(done) {
-    client2.presence('test/state').on(function(message) {
+    client2.presence('test').on(function(message) {
       if (message.op == 'client_online') {
         assert.deepEqual(message.value, {
           userId: client.configuration('userId'),
@@ -162,12 +160,12 @@ exports['given two clients'] = {
       }
     }).sync();
 
-    client.presence('test/state').set('online');
+    client.presence('test').set('online');
   },
 
   'userData will persist when a presence is updated': function(done) {
     this.timeout(18*1000);
-    var scope = 'chat/1/participants';
+    var scope = 'test';
     var verify = function(message) {
       assert.equal(message.op, 'get');
       assert.deepEqual(message.to, 'presence:/dev/' + scope);
@@ -184,7 +182,7 @@ exports['given two clients'] = {
             verify(message);
             done();
           });
-        }, 17000); //Wait for Autopub (15 sec)
+        }, 16000); //Wait for Autopub (15 sec)
       });
     });
   },
@@ -192,14 +190,14 @@ exports['given two clients'] = {
   'calling fullSync multiple times does not alter the result if users remain connected': function(done) {
     this.timeout(18*1000);
     var notifications = [], getCounter = 0;
-    client2.presence('chat/1/participants').on(function(message){
+    client2.presence('test').on(function(message){
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online', function() {
+      client.presence('test').set('online', function() {
 
         var foo = setInterval(function() {
-          client2.presence('chat/1/participants').get(function(message) {
+          client2.presence('test').get(function(message) {
             // both should show client 1 as online
             assert.equal('get', message.op);
             assert.deepEqual({ '123': 0 }, message.value);
@@ -217,7 +215,7 @@ exports['given two clients'] = {
         setTimeout(function() {
           clearInterval(foo);
           done();
-        }, 17*1000);
+        }, 16*1000);
       });
     });
   },
@@ -228,18 +226,18 @@ exports['given two clients'] = {
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
-    client2.presence('chat/1/participants').on(function(message){
+    client2.presence('test').on(function(message){
       logging.info('Receive message', message);
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('chat/1/participants').set('online');
+      client.presence('test').set('online');
       // disconnect client 1 - ensure that this happens later the online
       setTimeout(function() {
         client.dealloc('test');
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
-          client2.presence('chat/1/participants').get(function(message) {
+          client2.presence('test').get(function(message) {
             logging.info('FOOOOO1', message, notifications);
             // both should show client 1 as online
             assert.equal('get', message.op);
@@ -251,7 +249,7 @@ exports['given two clients'] = {
 
             // a presence be set to offline after the grace period
             setTimeout(function() {
-              client2.presence('chat/1/participants').get(function(message) {
+              client2.presence('test').get(function(message) {
                 logging.info('FOOOOO2', message, notifications);
                 // both should show client 1 as offline
                 assert.equal(message.op, 'get');
@@ -267,5 +265,4 @@ exports['given two clients'] = {
       }, 5);
     });
   }
-
 };
