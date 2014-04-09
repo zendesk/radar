@@ -23,15 +23,19 @@ exports['given two clients'] = {
     var track = Tracker.create('beforeEach', done);
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'));
+    client3 = common.getClient('dev', 300, 0, {}, track('client 3 ready'));
   },
 
   afterEach: function() {
     client.presence('test').removeAllListeners();
     client2.presence('test').removeAllListeners();
+    client3.presence('test').removeAllListeners();
     client.presence('test').set('offline');
     client2.presence('test').set('offline');
+    client3.presence('test').set('offline');
     client.dealloc('test');
     client2.dealloc('test');
+    client3.dealloc('test');
   },
 
   'can subscribe a presence scope': function(done) {
@@ -163,6 +167,115 @@ exports['given two clients'] = {
     client.presence('test').set('online');
   },
 
+// Presence tests
+// - .get(callback)
+// - .set('online', ack) / .set('offline', ack)
+// - .subscribe(ack)
+// - .unsubscribe(ack)
+// - .sync(callback)
+  'presence: can set("online")/get': function(done) {
+    var once_set = function() {
+      client.presence('test').get(function(message) {
+        assert.equal(message.to, 'presence:/dev/test');
+        assert.equal(message.op, 'get');
+        assert.deepEqual(message.value, { 123: 0 });
+        client.presence('test').set('offline', function() {
+          done();
+        });
+      });
+    };
+
+    client.presence('test').set('online', once_set);
+  },
+
+  'presence: can set("offline")/get': function(done) {
+    var once_set =  function() {
+      client.presence('test').get(function(message) {
+        assert.equal('get', message.op);
+        assert.deepEqual(message.value, { });
+        done();
+      });
+    };
+
+    client.presence('ticket/21').set('offline', once_set);
+  },
+
+  'presence: can get() using v1 API': function(done) {
+    client.presence('test').get(function(message) {
+      assert.equal('get', message.op);
+      assert.deepEqual([], message.value);
+      client.presence('test').set('online', function() {
+        client.presence('test').get(function(message) {
+          assert.equal('get', message.op);
+          assert.deepEqual(message.value, { '123': 0 });
+          done();
+        });
+      });
+    });
+  },
+
+  'presence: can get() using v2 API (with userData)': function(done) {
+    client.presence('test').get({ version: 2 }, function(message) {
+      assert.equal('get', message.op);
+      assert.deepEqual([], message.value);
+      client.presence('test').set('online', function() {
+        client.presence('test').get({ version: 2 }, function(message) {
+          assert.equal('get', message.op);
+          var expected = {123:{clients:{},userType:0}};
+          expected['123'].clients[client._socket.id] = { name: "tester" };
+          assert.deepEqual(message.value, expected);
+          done();
+        });
+      });
+    });
+  },
+
+  'presence: can sync() via v2 API (with userData)': function(done) {
+    // not supported in v1 api because the result.op == "online" which is handled by the message
+    // listener but not by the sync() callback
+
+    client.presence('test').set('online', function() {
+      client.presence('test').sync({ version: 2 }, function(message) {
+        // sync is implemented as subscribe + get, hence the return op is "get"
+        assert.equal('get', message.op);
+        var expected = {123:{clients:{},userType:0}};
+        expected['123'].clients[client._socket.id] = { name: "tester" };
+        assert.deepEqual(message.value, expected);
+        done();
+      });
+    });
+  },
+  'presence: can get() using v2 API (without userData)': function(done) {
+    client3.presence('test').get({ version: 2 }, function(message) {
+      assert.equal('get', message.op);
+      assert.deepEqual([], message.value);
+      client3.presence('test').set('online', function() {
+        client3.presence('test').get({ version: 2 }, function(message) {
+          assert.equal('get', message.op);
+          var expected = {300:{clients:{},userType:0}};
+          expected['300'].clients[client3._socket.id] = {};
+          assert.deepEqual(message.value, expected);
+          done();
+        });
+      });
+    });
+  },
+
+  'presence: can sync() via v2 API (without userData)': function(done) {
+    // not supported in v1 api because the result.op == "online" which is handled by the message
+    // listener but not by the sync() callback
+
+    client3.presence('test').set('online', function() {
+      client3.presence('test').sync({ version: 2 }, function(message) {
+        // sync is implemented as subscribe + get, hence the return op is "get"
+        assert.equal('get', message.op);
+        var expected = {300:{clients:{},userType:0}};
+        expected['300'].clients[client3._socket.id] = {};
+        assert.deepEqual(message.value, expected);
+        done();
+      });
+    });
+  },
   'userData will persist when a presence is updated': function(done) {
     this.timeout(18*1000);
     var scope = 'test';
