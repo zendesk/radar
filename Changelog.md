@@ -1,3 +1,6 @@
+### v0.5.3
+* #76 - Bugfix: Do not fallback to localhost:6379 when reading redis host/port
+
 ### v0.5.2
 * #74 - Fix configuration.js parsing, fail on unexpected config
 
