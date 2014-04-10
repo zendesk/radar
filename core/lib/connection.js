@@ -5,7 +5,7 @@ var redisLib = require('redis'),
     async = require('async');
 
 function redisConnect(config) {
-  var client = redisLib.createClient(config.redis_port, config.redis_host);
+  var client = redisLib.createClient(config.port, config.host);
   if (config.redis_auth) {
     client.auth(config.redis_auth);
   }
