@@ -13,7 +13,6 @@ exports['given two clients'] = {
     radar.sendCommand('start', common.configuration,  function() {
       client = common.getClient('dev', 123, 0, {}, track('client 1 ready'));
       client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
-
     });
   },
 
@@ -29,8 +28,8 @@ exports['given two clients'] = {
   beforeEach: function(done) {
     client.status('test').removeAllListeners();
     client2.status('test').removeAllListeners();
-    var track = Tracker.create('before each', done);
 
+    var track = Tracker.create('before each', done);
     client.status('test').unsubscribe(track('client unsubscribe'));
     client2.status('test').unsubscribe(track('client2 unsubscribe'));
     common.startPersistence(track('redis cleanup'));
@@ -141,5 +140,65 @@ exports['given two clients'] = {
 
     client2.status('test').subscribe().set(message);
     client.status('test').subscribe();
+  },
+// Status tests
+// - .set/get(value, ack) [string]
+// - .set/get(value, ack) [object]
+// - .subscribe(ack)
+// - .unsubscribe(ack)
+// - .sync(callback)
+
+  'status: can set and get([String])': function(done) {
+
+    var once_set = function() {
+      client.status('test').get(function(message) {
+        assert.equal('get', message.op);
+        assert.equal('status:/dev/test', message.to);
+        assert.deepEqual({ '123': 'foo' }, message.value);
+        done();
+      });
+    };
+    client.status('test').set('foo', once_set);
+  },
+
+  'status: can set and get([Object])': function(done) {
+    var once_set = function() {
+      client.status('test').get(function(message) {
+        assert.equal('get', message.op);
+        assert.equal('status:/dev/test', message.to);
+        assert.deepEqual({ '123': { hello: 'world' } }, message.value);
+        done();
+      });
+    };
+    client.status('test').set({ hello: 'world' }, once_set);
+  },
+
+
+  'status: can subscribe()': function(done) {
+    this.timeout(10000);
+
+    client2.status('test')
+      .once(function(message) {
+        assert.equal('set', message.op);
+        assert.equal('foo', message.value);
+        assert.equal('123', message.key);
+        done();
+      })
+    .subscribe(function() {
+      client.status('test').set('foo');
+    });
+  },
+
+
+  'status: can sync()': function(done) {
+
+    client.status('test').set('foo', function() {
+      client.status('test').sync(function(message) {
+        // sync is implemented as subscribe + get, hence the return op is "get"
+        assert.equal('get', message.op);
+        assert.deepEqual({ 123: 'foo'}, message.value);
+        done();
+      });
+    });
   }
 };
