@@ -6,27 +6,27 @@ var common = require('./common.js'),
     Client = require('radar_client').constructor,
     radar, client, client2;
 
-exports['given two clients'] = {
-  before: function(done) {
+describe('given two clients', function() {
+  before(function(done) {
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, done);
-  },
+  });
 
-  after: function(done) {
+  after(function(done) {
     radar.sendCommand('stop', {}, function() {
       radar.kill();
       done();
     });
-  },
+  });
 
-  beforeEach: function(done) {
+  beforeEach(function(done) {
     var track = Tracker.create('beforeEach', done);
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'));
     client3 = common.getClient('dev', 300, 0, {}, track('client 3 ready'));
-  },
+  });
 
-  afterEach: function() {
+  afterEach(function() {
     client.presence('test').removeAllListeners();
     client2.presence('test').removeAllListeners();
     client3.presence('test').removeAllListeners();
@@ -36,9 +36,9 @@ exports['given two clients'] = {
     client.dealloc('test');
     client2.dealloc('test');
     client3.dealloc('test');
-  },
+  });
 
-  'can subscribe a presence scope': function(done) {
+  it('can subscribe a presence scope', function(done) {
     var messages = [];
 
     client.presence('test')
@@ -62,10 +62,10 @@ exports['given two clients'] = {
         });
       });
     });
-  },
+  });
 
 
-  'can unsubscribe a presence scope': function(done) {
+  it('can unsubscribe a presence scope', function(done) {
     client.presence('test').subscribe(function() {
       client.once('presence:/dev/test', function(message) {
         assert.equal('online', message.op);
@@ -82,9 +82,9 @@ exports['given two clients'] = {
       });
       client2.presence('test').set('online');
     });
-  },
+  });
 
-  'should send presence messages correctly when toggling back and forth': function(done) {
+  it('should send presence messages correctly when toggling back and forth', function(done) {
     var messages = { count: 0 };
     var count = 9; //FIXME: only odd number works
     var onlines = Math.ceil(count/2);
@@ -124,9 +124,9 @@ exports['given two clients'] = {
         setTimeout(toggle,10);
       }
     });
-  },
+  });
 
-  'should receive a presence update after subscription and only once': function(done) {
+  it('should receive a presence update after subscription and only once', function(done) {
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -150,9 +150,9 @@ exports['given two clients'] = {
         });
       });
     });
-  },
+  });
 
-  'syncing a presence should automatically subscribe to that resource': function(done) {
+  it('syncing a presence should automatically subscribe to that resource', function(done) {
     client2.presence('test').on(function(message) {
       if (message.op == 'client_online') {
         assert.deepEqual(message.value, {
@@ -165,7 +165,7 @@ exports['given two clients'] = {
     }).sync();
 
     client.presence('test').set('online');
-  },
+  });
 
 // Presence tests
 // - .get(callback)
@@ -173,7 +173,7 @@ exports['given two clients'] = {
 // - .subscribe(ack)
 // - .unsubscribe(ack)
 // - .sync(callback)
-  'presence: can set("online")/get': function(done) {
+  it('presence: can set("online")/get', function(done) {
     var once_set = function() {
       client.presence('test').get(function(message) {
         assert.equal(message.to, 'presence:/dev/test');
@@ -186,9 +186,9 @@ exports['given two clients'] = {
     };
 
     client.presence('test').set('online', once_set);
-  },
+  });
 
-  'presence: can set("offline")/get': function(done) {
+  it('presence: can set("offline")/get', function(done) {
     var once_set =  function() {
       client.presence('test').get(function(message) {
         assert.equal('get', message.op);
@@ -198,9 +198,9 @@ exports['given two clients'] = {
     };
 
     client.presence('ticket/21').set('offline', once_set);
-  },
+  });
 
-  'presence: can get() using v1 API': function(done) {
+  it('presence: can get() using v1 API', function(done) {
     client.presence('test').get(function(message) {
       assert.equal('get', message.op);
       assert.deepEqual([], message.value);
@@ -212,9 +212,9 @@ exports['given two clients'] = {
         });
       });
     });
-  },
+  });
 
-  'presence: can get() using v2 API (with userData)': function(done) {
+  it('presence: can get() using v2 API (with userData)', function(done) {
     client.presence('test').get({ version: 2 }, function(message) {
       assert.equal('get', message.op);
       assert.deepEqual([], message.value);
@@ -228,9 +228,9 @@ exports['given two clients'] = {
         });
       });
     });
-  },
+  });
 
-  'presence: can sync() via v2 API (with userData)': function(done) {
+  it('presence: can sync() via v2 API (with userData)', function(done) {
     // not supported in v1 api because the result.op == "online" which is handled by the message
     // listener but not by the sync() callback
 
@@ -244,8 +244,9 @@ exports['given two clients'] = {
         done();
       });
     });
-  },
-  'presence: can get() using v2 API (without userData)': function(done) {
+  });
+
+  it('presence: can get() using v2 API (without userData)', function(done) {
     client3.presence('test').get({ version: 2 }, function(message) {
       assert.equal('get', message.op);
       assert.deepEqual([], message.value);
@@ -259,9 +260,9 @@ exports['given two clients'] = {
         });
       });
     });
-  },
+  });
 
-  'presence: can sync() via v2 API (without userData)': function(done) {
+  it('presence: can sync() via v2 API (without userData)', function(done) {
     // not supported in v1 api because the result.op == "online" which is handled by the message
     // listener but not by the sync() callback
 
@@ -275,8 +276,9 @@ exports['given two clients'] = {
         done();
       });
     });
-  },
-  'userData will persist when a presence is updated': function(done) {
+  });
+
+  it('userData will persist when a presence is updated', function(done) {
     this.timeout(18*1000);
     var scope = 'test';
     var verify = function(message) {
@@ -298,9 +300,9 @@ exports['given two clients'] = {
         }, 16000); //Wait for Autopub (15 sec)
       });
     });
-  },
+  });
 
-  'calling fullSync multiple times does not alter the result if users remain connected': function(done) {
+  it('calling fullSync multiple times does not alter the result if users remain connected', function(done) {
     this.timeout(18*1000);
     var notifications = [], getCounter = 0;
     client2.presence('test').on(function(message){
@@ -331,9 +333,9 @@ exports['given two clients'] = {
         }, 16*1000);
       });
     });
-  },
+  });
 
-  'a presence will not be set to offline during the grace period but will be offline after it': function(done) {
+  it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
     enabled = true;
     this.timeout(19*1000);
     var notifications = [];
@@ -377,5 +379,5 @@ exports['given two clients'] = {
         }, 13*1000);
       }, 5);
     });
-  }
-};
+  });
+});

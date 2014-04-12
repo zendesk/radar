@@ -5,8 +5,8 @@ var common = require('./common.js'),
     Tracker = require('callback_tracker'),
     radar, client, client2;
 
-exports['given two clients'] = {
-  before: function(done) {
+describe('given two clients', function() {
+  before(function(done) {
     var track = Tracker.create('before', done);
 
     radar = common.spawnRadar();
@@ -14,18 +14,18 @@ exports['given two clients'] = {
       client = common.getClient('dev', 123, 0, {}, track('client 1 ready'));
       client2 = common.getClient('dev', 246, 0, {}, track('client 2 ready'));
     });
-  },
+  });
 
-  after: function(done) {
+  after(function(done) {
     client.dealloc('test');
     client2.dealloc('test');
     radar.sendCommand('stop', {}, function() {
       radar.kill();
       done();
     });
-  },
+  });
 
-  beforeEach: function(done) {
+  beforeEach(function(done) {
     client.status('test').removeAllListeners();
     client2.status('test').removeAllListeners();
 
@@ -33,28 +33,28 @@ exports['given two clients'] = {
     client.status('test').unsubscribe(track('client unsubscribe'));
     client2.status('test').unsubscribe(track('client2 unsubscribe'));
     common.startPersistence(track('redis cleanup'));
-  },
+  });
 
-  'should subscribe successfully': function(done) {
+  it('should subscribe successfully', function(done) {
 
     client.status('test').subscribe(function(msg) {
       assert.equal('subscribe', msg.op);
       assert.equal('status:/dev/test', msg.to);
       done();
     });
-  },
+  });
 
-  'should unsubscribe successfully': function(done) {
+  it('should unsubscribe successfully', function(done) {
 
     client.status('test').unsubscribe(function(msg) {
       assert.equal('unsubscribe', msg.op);
       assert.equal('status:/dev/test', msg.to);
       done();
     });
-  },
+  });
 
   // sending a message should only send to each subscriber, but only once
-  'should receive a message only once per subscriber': function(done) {
+  it('should receive a message only once per subscriber', function(done) {
     var message = { state: 'test1'};
 
     var finished = {};
@@ -81,18 +81,18 @@ exports['given two clients'] = {
 
     client.status('test').subscribe();
     client2.status('test').subscribe().set(message);
-  },
+  });
 
-  'can chain subscribe and on/once': function(done) {
+  it('can chain subscribe and on/once', function(done) {
     client.status('test').subscribe().once(function(message) {
       assert.equal('246', message.key);
       assert.equal('foo', message.value);
       done();
     });
     client2.status('test').set('foo');
-  },
+  });
 
-  'should only receive message when subscribed': function(done) {
+  it('should only receive message when subscribed', function(done) {
     //send three messages, client2 will assert if it receieves any,
     //Stop test when we receive all three at client 1
 
@@ -113,9 +113,9 @@ exports['given two clients'] = {
     client.status('test').subscribe().set(message);
     client2.status('test').set(message2);
     client.status('test').set(message3);
-  },
+  });
 
-  'should not receive messages after unsubscribe': function(done) {
+  it('should not receive messages after unsubscribe', function(done) {
     //send two messages after client2 unsubscribes,
     // client2 will assert if it receives message 2 and 3
     //Stop test when we receive all three at client 1
@@ -140,7 +140,7 @@ exports['given two clients'] = {
 
     client2.status('test').subscribe().set(message);
     client.status('test').subscribe();
-  },
+  });
 // Status tests
 // - .set/get(value, ack) [string]
 // - .set/get(value, ack) [object]
@@ -148,7 +148,7 @@ exports['given two clients'] = {
 // - .unsubscribe(ack)
 // - .sync(callback)
 
-  'status: can set and get([String])': function(done) {
+  it('status can set and get([String])', function(done) {
 
     var once_set = function() {
       client.status('test').get(function(message) {
@@ -159,9 +159,9 @@ exports['given two clients'] = {
       });
     };
     client.status('test').set('foo', once_set);
-  },
+  });
 
-  'status: can set and get([Object])': function(done) {
+  it('status can set and get([Object])', function(done) {
     var once_set = function() {
       client.status('test').get(function(message) {
         assert.equal('get', message.op);
@@ -171,10 +171,10 @@ exports['given two clients'] = {
       });
     };
     client.status('test').set({ hello: 'world' }, once_set);
-  },
+  });
 
 
-  'status: can subscribe()': function(done) {
+  it('status can subscribe()', function(done) {
     this.timeout(10000);
 
     client2.status('test')
@@ -187,10 +187,10 @@ exports['given two clients'] = {
     .subscribe(function() {
       client.status('test').set('foo');
     });
-  },
+  });
 
 
-  'status: can sync()': function(done) {
+  it('status can sync()', function(done) {
 
     client.status('test').set('foo', function() {
       client.status('test').sync(function(message) {
@@ -200,5 +200,5 @@ exports['given two clients'] = {
         done();
       });
     });
-  }
-};
+  });
+});
