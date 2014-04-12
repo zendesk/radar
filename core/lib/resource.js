@@ -87,7 +87,6 @@ Resource.prototype.redisIn = function(data) {
   async.eachLimit(Object.keys(this.subscribers), 20, function(subscriber, next) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
-      logging.info('#client - sending data', client.id, self.name);
       client.send(data);
     }
     setImmediate(next);
@@ -96,7 +95,7 @@ Resource.prototype.redisIn = function(data) {
 
 Resource.prototype.ack = function(client, sendAck) {
   if (client && client.send && sendAck) {
-    logging.debug('#client_send_ack', client.id, sendAck);
+    logging.debug('#client - send_ack', client.id, sendAck);
 
     client.send({
       op: 'ack',

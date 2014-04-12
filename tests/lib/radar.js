@@ -20,14 +20,22 @@ function p404(req, res) {
 }
 
 // For client.auth.test
-Type.add([{
-  name: 'client_auth',
-  expression: /^message:\/client_auth\/disabled$/,
-  type: 'MessageList',
-  authProvider: {
-    authorize: function() { return false; }
-  }
-}]);
+Type.add([
+    {
+      name: 'client_auth',
+      expression: /^message:\/client_auth\/disabled$/,
+      type: 'MessageList',
+      authProvider: {
+        authorize: function() { return false; }
+      }
+    },
+    {
+      name: 'cached_chat',
+      expression: /^message:\/dev\/cached_chat\/(.+)/,
+      type: 'MessageList',
+      policy: { cache: true, maxAgeSeconds: 30 }
+    }
+]);
 
 Type.add([{
   name: 'client_auth',
