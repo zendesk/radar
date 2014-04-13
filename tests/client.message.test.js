@@ -43,7 +43,7 @@ describe('When using message list resources:', function() {
 
   describe('subscribe/unsubscribe', function() {
 
-    it('should subscribe successfully', function(done) {
+    it('should subscribe successfully with an ack', function(done) {
       client.message('test').subscribe(function(message) {
         assert.equal('subscribe', message.op);
         assert.equal('message:/dev/test', message.to);
@@ -51,7 +51,7 @@ describe('When using message list resources:', function() {
       });
     });
 
-    it('should unsubscribe successfully', function(done) {
+    it('should unsubscribe successfully with an ack', function(done) {
       client.message('test').unsubscribe(function(message) {
         assert.equal('unsubscribe', message.op);
         assert.equal('message:/dev/test', message.to);
@@ -168,23 +168,29 @@ describe('When using message list resources:', function() {
   });
 
   describe('publish', function() {
-    it('can publish(String)', function(done) {
+    it('can ack a publish', function(done) {
+      client.message('test').publish('foobar', function(message) {
+        assert.equal('message:/dev/test', message.to);
+        assert.equal('foobar', message.value);
+        assert.equal('publish', message.op);
+        assert.deepEqual({}, message.userData);
+        done();
+      });
+    });
+
+    it('can publish a String', function(done) {
       var message = '{ "state": "other"}';
 
       client.message('test').when(function(msg) {
-
         assert.equal('message:/dev/test', msg.to);
-
         assert.equal('string', typeof msg.value);
         assert.equal('{ "state": "other"}', msg.value);
-
         done();
-
       });
       client.message('test').subscribe().publish(message);
     });
 
-    it('can publish(Object)', function(done) {
+    it('can publish an Object', function(done) {
       var message = { state: 'other'};
 
       client.message('test').when(function(msg) {
@@ -201,6 +207,25 @@ describe('When using message list resources:', function() {
   });
 
   describe('sync', function() {
+    it('can sync() when empty', function(done) {
+      client.message('cached_chat/1').on(function(msg) {
+        assert.ok(false);
+      }).sync();
+      setTimeout(done, 100);
+    });
+
+    it('does not provide ack', function(done) {
+      var message = 'foobar';
+      client2.message('cached_chat/1').subscribe()
+                                      .publish(message)
+                                      .once(function() {
+        client.message('cached_chat/1').on(function(msg) {
+          setTimeout(done, 50);
+        }).sync(function() {
+          assert.ok(false);
+        });
+      });
+    });
 
     it('can sync() when messagelist has String', function(done) {
       var message = 'foobar',
@@ -244,7 +269,7 @@ describe('When using message list resources:', function() {
       });
     });
 
-    it('can sync() with multiple values in right order', function(done) {
+    it('can sync() with multiple values in correct order', function(done) {
       var messages   = ['1', '2', '3', '4', 'foobar', { foo: 'bar' }],
           received   = [],
           written    = 0,
