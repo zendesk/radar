@@ -25,6 +25,7 @@ Type.add([
       name: 'client_auth',
       expression: /^message:\/client_auth\/disabled$/,
       type: 'MessageList',
+      policy: { cache: true, maxAgeSeconds: 30 },
       authProvider: {
         authorize: function() { return false; }
       }
