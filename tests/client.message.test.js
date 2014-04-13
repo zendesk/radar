@@ -207,7 +207,7 @@ describe('When using message list resources:', function() {
   });
 
   describe('sync', function() {
-    it('can sync() when empty', function(done) {
+    it('does not notify when empty', function(done) {
       client.message('cached_chat/1').on(function(msg) {
         assert.ok(false);
       }).sync();
