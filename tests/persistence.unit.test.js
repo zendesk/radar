@@ -1,39 +1,33 @@
 var assert = require('assert'),
     Persistence = require('../core/lib/persistence.js'),
-    Common = require('./common.js'),
-    client;
+    Common = require('./common.js');
 
-exports['given a resource'] = {
+describe('Persistence', function() {
+  var client;
 
-  before: function(done) {
+  before( function(done) {
     Common.startPersistence(function() {
       client = Persistence.redis();
       done();
     });
-  },
+  });
 
-  after: function(done) {
+  after(function(done) {
     Common.endPersistence(done);
-  },
+  });
 
-  'non JSON redis string should be filtered out (ie. do not return corrupted data)': function(done) {
-
+  it('non JSON redis string should be filtered out (ie. do not return corrupted data)', function(done) {
     var key = 'persistence.test';
-
-    client.del(key, function() {
-      client.hset(key, 'bar1', 'this string should be filtered out', function() {
-        client.hset(key, 'bar2', '"this string should be returned"', function() {
-          Persistence.readHashAll(key, function(result) {
-            assert.deepEqual({ bar2: 'this string should be returned' }, result);
-            done();
-          });
-        });
-      });
+    client.del(key);
+    client.hset(key, 'bar1', 'this string should be filtered out');
+    client.hset(key, 'bar2', '"this string should be returned"');
+    Persistence.readHashAll(key, function(result) {
+      assert.deepEqual({ bar2: 'this string should be returned' }, result);
+      done();
     });
+  });
 
-  },
-
-  'persisting messages serializes it when the message is an object': function(done) {
+  it('persisting messages serializes it when the message is an object', function(done) {
     // (nherment) TODO: the result should actually be deserialized because it is being serialized in persistOrdered()
     // The problem is that radar_client currently deserializes the response.
     // We need to make the client not deserialize the response so that we can deserialize it here.
@@ -58,9 +52,9 @@ exports['given a resource'] = {
       });
 
     });
-  },
+  });
 
-  'persisting messages serializes it when the message is a string': function(done) {
+  it('persisting messages serializes it when the message is a string', function(done) {
     // (nherment) TODO: the result should actually be deserialized because it is being serialized in persistOrdered()
     // The problem is that radar_client currently deserializes the response.
     // We need to make the client not deserialize the response so that we can deserialize it here.
@@ -83,6 +77,5 @@ exports['given a resource'] = {
       });
 
     });
-  }
-
-};
+  });
+});
