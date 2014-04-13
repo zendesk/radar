@@ -218,6 +218,37 @@ describe('When using status resources', function() {
   });
 
   describe('sync', function() {
+    it('calls back with the value, does not notify', function(done) {
+      //Make sure redis message has reflected.
+      client2.status('test').subscribe().set('foo').once(function() {
+        client.status('test').on(function(message) {
+          assert.ok(false);
+        }).sync(function(message) {
+          // sync is implemented as subscribe + get, hence the return op is "get"
+          assert.equal('get', message.op);
+          assert.deepEqual({ 246: 'foo'}, message.value);
+          setTimeout(done,50);
+        });
+      });
+    });
+    it('also subscribes', function(done) {
+      client.status('test').set('foo', function() {
+        client.status('test').on(function(message) {
+          assert.equal('set', message.op);
+          assert.equal('status:/dev/test', message.to);
+          assert.equal('bar', message.value);
+          assert.equal('123', message.key);
+          assert.deepEqual({}, message.userData);
+          assert.deepEqual(0, message.type);
+          done();
+        }).sync(function(message) {
+          // sync is implemented as subscribe + get, hence the return op is "get"
+          assert.equal('get', message.op);
+          assert.deepEqual({ 123: 'foo'}, message.value);
+          client.status('test').set('bar');
+        });
+      });
+    });
     it('can sync a String', function(done) {
       client.status('test').set('foo', function() {
         client.status('test').sync(function(message) {
