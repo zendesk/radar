@@ -12,10 +12,9 @@ describe('When radar server restarts', function() {
   var client, client2;
 
   before(function(done) {
-    //FIXME: Can make it 10, 20, 40, 80 to speed up test.
     //FIXME: Need to fix transport.close in radar_client, probably not needed in 0.7.4
-    Backoff.durations = [ 500, 600, 700, 800, 900 ]; //make them quicker
-    Backoff.fallback = 200;
+    //Backoff.durations = [ 500, 600, 700, 800, 900 ]; //make them quicker
+    //Backoff.fallback = 200;
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, done);
   });
@@ -45,6 +44,7 @@ describe('When radar server restarts', function() {
   });
 
   it('reconnects existing clients', function(done) {
+    this.timeout(4000);
     var clientEvents = [], client2Events = [];
 
     ['disconnected', 'connected', 'ready'].forEach(function(state) {
@@ -62,6 +62,7 @@ describe('When radar server restarts', function() {
   });
 
   it('resubscribes to subscriptions', function(done) {
+    this.timeout(4000);
     var verifySubscriptions = function() {
       var tracker = Tracker.create('resources updated', done);
 
@@ -92,6 +93,7 @@ describe('When radar server restarts', function() {
   });
 
   it('reestablishes presence', function(done) {
+    this.timeout(4000);
     var verifySubscriptions = function() {
       client2.presence('restore').get(function(message) {
         assert.equal('get', message.op);
@@ -106,6 +108,7 @@ describe('When radar server restarts', function() {
     });
   });
   it('must not repeat synced chat (messagelist) messages, with two clients', function(done) {
+    this.timeout(4000);
     var messages = [];
     var verifySubscriptions = function() {
       assert.equal(messages.length, 2);
