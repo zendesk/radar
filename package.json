@@ -36,8 +36,7 @@
     "redis-sentinel-client": "0.1.5",
     "minilog": "0.1.0",
     "callback_tracker": "*",
-    "underscore": "*",
-    "async": "*"
+    "underscore": "*"
   },
   "devDependencies": {
     "mocha": "*",

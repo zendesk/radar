@@ -1,8 +1,7 @@
 var Resource = require('../../resource.js'),
     Persistence = require('../../persistence.js'),
     LocalManager = require('./local_manager.js'),
-    logging = require('minilog')('presence'),
-    async = require('async');
+    logging = require('minilog')('presence');
 
 var default_options = {
   policy: {
@@ -153,12 +152,11 @@ Presence.prototype.get = function(client, message) {
 Presence.prototype.broadcast = function(message, except) {
   logging.debug('updateSubscribers', message, except);
   var self = this;
-  async.eachLimit(Object.keys(this.subscribers), 20, function(subscriber, next) {
+  Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if(client && client.id != except) {
       client.send(message);
     }
-    setImmediate(next);
   });
 };
 
