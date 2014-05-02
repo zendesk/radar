@@ -3,8 +3,7 @@ var logging = require('minilog')('persistence'),
     // defaults
     connectionName = 'default',
     connection = {},
-    configuration = {},
-    async = require('async');
+    configuration = {};
 
 function Persistence() { }
 
@@ -98,9 +97,18 @@ Persistence.persistOrdered = function(key, value, callback) {
 Persistence.delWildCard = function(expr, callback) {
   redis().keys(expr, function(err, results) {
     if(err) throw new Error(err);
-    async.eachLimit(results, 20, function(key, next) {
-      Persistence.del(key, next);
-    }, callback);
+    var counter = 0;
+    if(!results.length) {
+      return callback();
+    }
+    results.forEach(function(key) {
+      Persistence.del(key, function() {
+        counter++;
+        if (counter == results.length) {
+          callback();
+        }
+      });
+    });
   });
 };
 
