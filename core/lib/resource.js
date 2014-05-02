@@ -79,6 +79,7 @@ var noop = function(name) {
 Resource.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#resource - incoming from redis', this.name, data);
+  logging.info('#resource - number of subscribers:', this.name, Object.keys(this.subscribers).length);
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
