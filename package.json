@@ -40,7 +40,8 @@
   "devDependencies": {
     "mocha": "*",
     "radar_client": "0.2.18",
-    "long-stack-traces": "*"
+    "long-stack-traces": "*",
+    "simple_sentinel": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",
