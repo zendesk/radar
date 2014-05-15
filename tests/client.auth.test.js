@@ -1,11 +1,8 @@
-var http = require('http'),
-  assert = require('assert'),
-  Radar = require('../server/server.js'),
-  Client = require('radar_client').constructor,
-  Type = require('../core').Type,
-  common = require('./common.js'),
-  Tracker = require('callback_tracker'),
-  Persistence = require('../core/lib/persistence.js');
+var assert = require('assert'),
+    Type = require('../core').Type,
+    common = require('./common.js'),
+    Tracker = require('callback_tracker'),
+    Persistence = require('persistence');
 
 exports['auth: given a server and a client'] = {
   beforeEach: function(done) {

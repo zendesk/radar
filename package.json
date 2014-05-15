@@ -32,17 +32,15 @@
   "dependencies": {
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
-    "redis": "0.10.1",
-    "redis-sentinel-client": "0.1.5",
     "minilog": "0.1.0",
     "callback_tracker": "*",
-    "underscore": "*"
+    "underscore": "*",
+    "persistence": "~>0.1.0"
   },
   "devDependencies": {
     "mocha": "*",
     "radar_client": "0.2.18",
-    "long-stack-traces": "*",
-    "simple_sentinel": "*"
+    "long-stack-traces": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",
