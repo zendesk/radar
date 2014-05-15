@@ -1,5 +1,4 @@
-var redis = require('redis'),
-    MiniEventEmitter = require('miniee'),
+var MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
     Heartbeat = require('../core/lib/Heartbeat.js'),
@@ -111,8 +110,7 @@ Server.prototype.handleMessage = function(name, data) {
 
 // Process a message
 Server.prototype.message = function(client, data) {
-  var self = this,
-      message = parseJSON(data);
+  var message = parseJSON(data);
 
   // format check
   if(!message || !message.op || !message.to) {
@@ -132,9 +130,9 @@ Server.prototype.message = function(client, data) {
       logging.info('#redis - subscribe', resource.name);
       this.subscriber.subscribe(resource.name, function(err) {
         if(err) {
-          logging.error("#redis - subscribe failed", resource.name, err);
+          logging.error('#redis - subscribe failed', resource.name, err);
         } else {
-          logging.info("#redis - subscribe successful", resource.name);
+          logging.info('#redis - subscribe successful', resource.name);
         }
       });
       this.subs[resource.name] = true;
