@@ -1,9 +1,9 @@
 var assert = require('assert'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
     MiniEE = require('miniee'),
-    Persistence = require('../core/lib/persistence.js'),
+    Persistence = require('persistence'),
     Common = require('./common.js'),
-    Presence = require('../core/lib/resources/presence');
+    Presence = require('../index.js').core.Presence;
 
 var Server = {
   timer: new Heartbeat().interval(1500),

@@ -4,7 +4,7 @@ var Resource = require('./lib/resource.js'),
     Status = require('./lib/resources/status.js');
 
 module.exports = {
-  Persistence: require('./lib/persistence.js'),
+  Persistence: require('persistence'),
   Type: require('./lib/type.js'),
   Map: require('./lib/map.js'),
   RemoteManager: require('./lib/resources/presence/remote_manager'),

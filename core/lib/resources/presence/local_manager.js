@@ -2,7 +2,7 @@ var Set = require('../../map.js'),
     ArraySet = require('./aset.js'),
     RemoteManager = require('./remote_manager.js'),
     DisconnectQueue = require('./disconnect_queue.js'),
-    Persistence = require('../../persistence.js'),
+    Persistence = require('persistence'),
     logging = require('minilog')('presence');
 
 function LocalManager(scope, policy) {

@@ -1,5 +1,5 @@
 var Resource = require('../resource.js'),
-    Persistence = require('../persistence.js'),
+    Persistence = require('persistence'),
     logger = require('minilog')('radar:message_list');
 
 var default_options = {

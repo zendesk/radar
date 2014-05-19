@@ -1,6 +1,6 @@
 var assert = require('assert'),
-    Status = require('../core/lib/resources/status.js'),
-    Persistence = require('../core/lib/persistence.js');
+    Status = require('../index.js').core.Status,
+    Persistence = require('persistence');
 
 require('./common.js');
 

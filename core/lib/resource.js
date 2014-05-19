@@ -1,4 +1,4 @@
-var Persistence = require('./persistence.js'),
+var Persistence = require('persistence'),
     logging = require('minilog')('core');
 
 /*

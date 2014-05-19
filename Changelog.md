@@ -1,3 +1,6 @@
+### master
+* extract persistence into separate package
+
 ### v0.5.3
 * #76 - Bugfix: Do not fallback to localhost:6379 when reading redis host/port
 

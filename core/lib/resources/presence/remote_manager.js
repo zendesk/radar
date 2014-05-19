@@ -1,6 +1,6 @@
 var Set = require('../../map.js'),
     ArraySet = require('./aset.js'),
-    Persistence = require('../../persistence.js'),
+    Persistence = require('persistence'),
     logging = require('minilog')('presence');
 
 function RemoteManager(scope, filter) {

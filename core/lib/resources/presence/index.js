@@ -1,5 +1,4 @@
 var Resource = require('../../resource.js'),
-    Persistence = require('../../persistence.js'),
     LocalManager = require('./local_manager.js'),
     logging = require('minilog')('presence');
 
@@ -165,7 +164,6 @@ Presence.prototype.fullRead = function(callback) {
 };
 
 Presence.setBackend = function(backend) {
-  Persistence = backend;
   LocalManager.setBackend(backend);
 };
 

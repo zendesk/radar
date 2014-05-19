@@ -1,8 +1,7 @@
 var http = require('http'),
     logging = require('minilog')('common'),
-    eio = require('engine.io'),
-    Persistence = require('../core/lib/persistence'),
-    RadarServer = new require('../server/server.js'),
+    Persistence = require('persistence'),
+    RadarServer = new require('../index.js').server,
     configuration = require('../configuration.js'),
     Client = require('radar_client').constructor,
     radar;
@@ -58,33 +57,33 @@ module.exports = {
 
   // ends the Radar server
   endRadar: function(context, done) {
-    logging.info("in endRadar");
+    logging.info('in endRadar');
     context.server.on('close', function() {
-      logging.info("server closed");
+      logging.info('server closed');
       if(context.serverStarted) {
         clearTimeout(context.serverTimeout);
-        logging.info("Calling done, close event");
+        logging.info('Calling done, close event');
         context.serverStarted = false;
         done();
       }
     });
     Persistence.delWildCard('*', function() {
       radar.terminate(function() {
-        logging.info("radar terminated");
+        logging.info('radar terminated');
         if(!context.serverStarted) {
-          logging.info("server terminated");
+          logging.info('server terminated');
           done();
         }
         else {
-          logging.info("closing server");
+          logging.info('closing server');
           logging.info(context.server._connections);
-          var val = context.server.close();
+          context.server.close();
           context.serverTimeout = setTimeout(function() {
             //failsafe, because server.close does not always
             //throw the close event within time.
             if(context.serverStarted) {
               context.serverStarted = false;
-              logging.info("Calling done, timeout");
+              logging.info('Calling done, timeout');
               done();
             }
           }, 1000);

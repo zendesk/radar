@@ -1,7 +1,7 @@
 var assert = require('assert'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
-    Persistence = require('../core/lib/persistence.js'),
-    Presence = require('../core/lib/resources/presence');
+    Persistence = require('persistence'),
+    Presence = require('../index.js').core.Presence;
 
 require('./common.js');
 
