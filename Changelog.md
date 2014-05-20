@@ -1,5 +1,8 @@
-### master
+### v0.5.5
 * extract persistence into separate package
+
+### v0.5.4
+* revert async loops from v0.5.0
 
 ### v0.5.3
 * #76 - Bugfix: Do not fallback to localhost:6379 when reading redis host/port
