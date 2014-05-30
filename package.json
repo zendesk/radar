@@ -35,7 +35,7 @@
     "minilog": "0.1.0",
     "callback_tracker": "*",
     "underscore": "*",
-    "persistence": "~>0.1.0"
+    "persistence": "0.1.1"
   },
   "devDependencies": {
     "mocha": "*",
