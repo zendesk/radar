@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.2.18",
+    "radar_client": "0.3.1",
     "long-stack-traces": "*",
     "simple_sentinel": "*"
   },
