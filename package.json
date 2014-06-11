@@ -32,7 +32,7 @@
   "dependencies": {
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
-    "minilog": "0.1.0",
+    "minilog": "2.0.5",
     "callback_tracker": "*",
     "underscore": "*",
     "persistence": "0.1.1"
@@ -53,7 +53,7 @@
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test": "npm run test-sentinel && npm run test-redis",
-    "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
+    "pretest-one": "([ -z \"$radar_log\" ] && export radar_log=debug) || true",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
     "reset-stats": "redis-cli KEYS 'radar:/audit/*' | xargs redis-cli DEL",
