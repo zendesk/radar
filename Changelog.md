@@ -1,3 +1,6 @@
+### v0.7.1
+* Use latest persistence always (currently @0.2.0)
+
 ### v0.7.0
 * Use minilog 2.0.5
 
