@@ -47,7 +47,7 @@ routes.get(new RegExp('^/views.js$'), function(req, res) {
 });
 
 Minilog.pipe(Minilog.backends.nodeConsole)
-  .format(Minilog.backends.nodeConsole.formatWithStack);
+  .pipe(Minilog.backends.nodeConsole.formatWithStack);
 
 
 routes.attach(server);
