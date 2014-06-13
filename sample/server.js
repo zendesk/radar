@@ -51,7 +51,7 @@ Minilog.pipe(Minilog.backends.nodeConsole.formatWithStack)
 
 
 routes.attach(server);
-Radar.attach(server);
+new Radar().attach(server, require('../configuration.js'));
 
 server.listen(8080);
 
