@@ -46,8 +46,8 @@ routes.get(new RegExp('^/views.js$'), function(req, res) {
   res.end(fs.readFileSync('./views.js'));
 });
 
-Minilog.pipe(Minilog.backends.nodeConsole)
-  .pipe(Minilog.backends.nodeConsole.formatWithStack);
+Minilog.pipe(Minilog.backends.nodeConsole.formatWithStack)
+  .pipe(Minilog.backends.nodeConsole);
 
 
 routes.attach(server);
