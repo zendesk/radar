@@ -1,3 +1,13 @@
+### v0.7.0
+* Use minilog 2.0.5
+
+### v0.6.0
+* use radar_client 0.3.1
+
+### v0.5.6
+* persistence@0.1.1
+ - Makes redis methods easily exposed
+
 ### v0.5.5
 * extract persistence into separate package
 
