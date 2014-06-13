@@ -8,11 +8,14 @@ var http = require('http'),
 
 if (process.env.verbose) {
   var Minilog = require('minilog');
-  Minilog.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
+  // configure log output
+  Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
+    .pipe(Minilog.backends.nodeConsole.formatWithStack)
+    .pipe(Minilog.backends.nodeConsole);
 
-  require('radar_client')._log.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
+  require('radar_client')._log.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
+    .pipe(Minilog.backends.nodeConsole.formatWithStack)
+    .pipe(Minilog.backends.nodeConsole);
 }
 
 require('long-stack-traces');
