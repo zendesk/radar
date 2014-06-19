@@ -1,4 +1,4 @@
-var Persistence = require('../../persistence.js'),
+var Persistence = require('persistence'),
     logging = require('minilog')('presence');
 
 function DisconnectQueue(parent) {
@@ -20,8 +20,8 @@ DisconnectQueue.prototype.timeouts = function() {
   var self = this;
   logging.debug('_disconnectQueue', this._queue);
   Object.keys(this._queue).forEach(function(userId) {
-    var userId = parseInt(userId, 10),
-        userType;
+    var userType;
+    userId = parseInt(userId, 10);
     // now, remove the queued clientIds from the set of userIds
     // but only if the clientId is not already in remote|localClients
     // because if the clientId were there, then it would have meant

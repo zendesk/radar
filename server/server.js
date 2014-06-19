@@ -1,12 +1,10 @@
-var redis = require('redis'),
-    MiniEventEmitter = require('miniee'),
+var MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
     Heartbeat = require('../core/lib/Heartbeat.js'),
     logging = require('minilog')('server'),
     hostname = require('os').hostname(),
-    DefaultEngineIO = require('engine.io'),
-    async = require('async');
+    DefaultEngineIO = require('engine.io');
 
 // Parse JSON
 function parseJSON(data) {
@@ -85,18 +83,12 @@ Server.prototype.onClientConnection = function(client) {
     // event: client disconnected
     logging.info('#disconnect', client.id);
 
-    var subscriptions = client.subscriptions;
-
-    if (subscriptions) {
-      async.eachLimit(Object.keys(subscriptions), 20, function(name, next) {
-        var channel = self.channels[name];
-        if (channel) {
-          channel.unsubscribe(client, false, next);
-        } else {
-          setImmediate(next);
-        }
-      });
-    }
+    Object.keys(self.channels).forEach(function(name) {
+      var channel = self.channels[name];
+      if (channel.subscribers[client.id]) {
+        channel.unsubscribe(client, false);
+      }
+    });
   });
 };
 
@@ -119,8 +111,7 @@ Server.prototype.handleMessage = function(name, data) {
 
 // Process a message
 Server.prototype.message = function(client, data) {
-  var self = this,
-      message = parseJSON(data);
+  var message = parseJSON(data);
 
   // format check
   if(!message || !message.op || !message.to) {
@@ -140,9 +131,9 @@ Server.prototype.message = function(client, data) {
       logging.info('#redis - subscribe', resource.name);
       this.subscriber.subscribe(resource.name, function(err) {
         if(err) {
-          logging.error("#redis - subscribe failed", resource.name, err);
+          logging.error('#redis - subscribe failed', resource.name, err);
         } else {
-          logging.info("#redis - subscribe successful", resource.name);
+          logging.info('#redis - subscribe successful', resource.name);
         }
       });
       this.subs[resource.name] = true;
@@ -174,22 +165,22 @@ Server.prototype.resource = function(name) {
 };
 
 // Destroy empty channel
-Server.prototype.destroy = function(name, done) {
+Server.prototype.destroy = function(name) {
   delete this.channels[name];
   delete this.subs[name];
   logging.info('#redis_unsubscribe', name);
-  this.subscriber.unsubscribe(name, done);
+  this.subscriber.unsubscribe(name);
 };
 
 Server.prototype.terminate = function(done) {
   var self = this;
-  async.eachLimit(Object.keys(this.channels), 20, function(name, next) {
-    self.destroy(name, next);
-  }, function() {
-    self.timer.clear();
-    self.server.close();
-    Core.Persistence.disconnect(done);
+  Object.keys(this.channels).forEach(function(name) {
+    self.destroy(name);
   });
+
+  this.timer.clear();
+  this.server.close();
+  Core.Persistence.disconnect(done);
 };
 
 module.exports = Server;

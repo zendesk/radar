@@ -1,3 +1,28 @@
+### v0.7.1
+* Use latest persistence always (currently @0.2.0)
+
+### v0.7.0
+* Use minilog 2.0.5
+
+### v0.6.0
+* use radar_client 0.3.1
+
+### v0.5.6
+* persistence@0.1.1
+ - Makes redis methods easily exposed
+
+### v0.5.5
+* extract persistence into separate package
+
+### v0.5.4
+* revert async loops from v0.5.0
+
+### v0.5.3
+* #76 - Bugfix: Do not fallback to localhost:6379 when reading redis host/port
+
+### v0.5.2
+* #74 - Fix configuration.js parsing, fail on unexpected config
+
 ### v0.5.1
 * #72 - Use simple_sentinel for starting sentinel for testing
 * #71 - Use redis-sentinel-client @0.1.5 (Forward pmessages always)

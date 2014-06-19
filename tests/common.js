@@ -1,8 +1,7 @@
 var http = require('http'),
     logging = require('minilog')('common'),
-    eio = require('engine.io'),
-    Persistence = require('../core/lib/persistence'),
-    RadarServer = new require('../server/server.js'),
+    Persistence = require('persistence'),
+    RadarServer = new require('../index.js').server,
     configuration = require('../configuration.js'),
     Client = require('radar_client').constructor,
     fork = require('child_process').fork,
@@ -11,11 +10,14 @@ var http = require('http'),
 
 if (process.env.verbose) {
   var Minilog = require('minilog');
-  Minilog.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
+  // configure log output
+  Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
+    .pipe(Minilog.backends.nodeConsole.formatWithStack)
+    .pipe(Minilog.backends.nodeConsole);
 
-  require('radar_client')._log.pipe(Minilog.backends.nodeConsole)
-    .format(Minilog.backends.nodeConsole.formatWithStack);
+  require('radar_client')._log.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
+    .pipe(Minilog.backends.nodeConsole.formatWithStack)
+    .pipe(Minilog.backends.nodeConsole);
 }
 //Disabling, https://github.com/tlrobinson/long-stack-traces/issues/6
 //require('long-stack-traces');

@@ -1,5 +1,5 @@
 var Resource = require('../resource.js'),
-    Persistence = require('../persistence.js'),
+    Persistence = require('persistence'),
     logging = require('minilog')('core');
 
 var default_options = {

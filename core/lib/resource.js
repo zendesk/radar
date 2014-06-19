@@ -1,6 +1,5 @@
-var Persistence = require('./persistence.js'),
-    logging = require('minilog')('core'),
-    async = require('async');
+var Persistence = require('persistence'),
+    logging = require('minilog')('core');
 
 /*
 
@@ -48,27 +47,23 @@ Resource.prototype.type = 'default';
 
 // Add a subscriber (Engine.io client)
 Resource.prototype.subscribe = function(client, message) {
-  client.subscriptions = client.subscriptions || {};
-  client.subscriptions[this.name] = this;
   this.subscribers[client.id] = true;
-  logging.debug('#res_subscribe', this.name, client.id, message && message.ack);
+  logging.debug('#res_subscribe', this.name, client.id, this.subscribers, message && message.ack);
   this.ack(client, message && message.ack);
 };
 
 // Remove a subscriber (Engine.io client)
-Resource.prototype.unsubscribe = function(client, message, done) {
+Resource.prototype.unsubscribe = function(client, message) {
   delete this.subscribers[client.id];
 
   logging.debug('#res_unsubscribe', this.name, client.id);
 
-  this.ack(client, message && message.ack);
-
   if (!Object.keys(this.subscribers).length) {
     logging.debug('Destroying resource', this.name, this.subscribers);
-    this.parent.destroy(this.name, done);
-  } else if (done) {
-    setImmediate(done);
+    this.parent.destroy(this.name);
   }
+
+  this.ack(client, message && message.ack);
 };
 
 var noop = function(name) {
@@ -84,12 +79,12 @@ var noop = function(name) {
 Resource.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#resource - incoming from redis', this.name, data);
-  async.eachLimit(Object.keys(this.subscribers), 20, function(subscriber, next) {
+  logging.info('#resource - number of subscribers:', this.name, Object.keys(this.subscribers).length);
+  Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
       client.send(data);
     }
-    setImmediate(next);
   });
 };
 

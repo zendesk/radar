@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.5.1",
+  "version": "0.7.1",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -32,16 +32,14 @@
   "dependencies": {
     "engine.io": "0.2.x",
     "miniee": "0.0.5",
-    "redis": "0.10.1",
-    "redis-sentinel-client": "0.1.5",
-    "minilog": "0.1.0",
+    "minilog": "2.0.5",
     "callback_tracker": "*",
     "underscore": "*",
-    "async": "*"
+    "persistence": "*"
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.2.18",
+    "radar_client": "0.3.1",
     "long-stack-traces": "*",
     "simple_sentinel": "*"
   },
@@ -55,7 +53,7 @@
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test": "npm run test-sentinel && npm run test-redis",
-    "pretest-one": "[ -z \"$radar_log\" ] && export radar_log=-*",
+    "pretest-one": "([ -z \"$radar_log\" ] && export radar_log=debug) || true",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
     "reset-stats": "redis-cli KEYS 'radar:/audit/*' | xargs redis-cli DEL",

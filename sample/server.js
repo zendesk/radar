@@ -46,12 +46,12 @@ routes.get(new RegExp('^/views.js$'), function(req, res) {
   res.end(fs.readFileSync('./views.js'));
 });
 
-Minilog.pipe(Minilog.backends.nodeConsole)
-  .format(Minilog.backends.nodeConsole.formatWithStack);
+Minilog.pipe(Minilog.backends.nodeConsole.formatWithStack)
+  .pipe(Minilog.backends.nodeConsole);
 
 
 routes.attach(server);
-Radar.attach(server);
+new Radar().attach(server, require('../configuration.js'));
 
 server.listen(8080);
 
