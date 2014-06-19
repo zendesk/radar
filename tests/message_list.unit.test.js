@@ -1,6 +1,6 @@
 var assert = require('assert'),
     MessageList = require('../core/lib/resources/message_list.js'),
-    Persistence = require('../core/lib/persistence.js');
+    Persistence = require('persistence');
 
 require('./common.js');
 

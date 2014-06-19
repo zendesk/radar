@@ -1,7 +1,7 @@
 var http = require('http'),
     Radar = require('../../index.js'),
     configuration = require('../../configuration.js'),
-    Persistence = require('../../core/lib/persistence'),
+    Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
     logger = require('minilog')('lib_radar'),

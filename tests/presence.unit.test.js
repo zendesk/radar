@@ -1,7 +1,7 @@
 var assert = require('assert'),
     Heartbeat = require('../core/lib/Heartbeat.js'),
     MiniEE = require('miniee'),
-    Persistence = require('../core/lib/persistence.js'),
+    Persistence = require('persistence'),
     Common = require('./common.js'),
     Presence = require('../core/lib/resources/presence');
 
@@ -89,7 +89,6 @@ describe('given a presence resource',function() {
 
     it('also subscribes, if set online', function() {
       presence.set(client, { key: 1, type: 2, value: 'online' });
-      assert.equal(client.subscriptions[presence.name], presence);
       assert.ok(presence.subscribers[client.id]);
     });
   });

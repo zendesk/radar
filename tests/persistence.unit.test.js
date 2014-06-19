@@ -1,5 +1,5 @@
 var assert = require('assert'),
-    Persistence = require('../core/lib/persistence.js'),
+    Persistence = require('persistence'),
     Common = require('./common.js');
 
 describe('Persistence', function() {

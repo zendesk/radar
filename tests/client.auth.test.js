@@ -5,7 +5,7 @@ var http = require('http'),
     Type = require('../core').Type,
     common = require('./common.js'),
     Tracker = require('callback_tracker'),
-    Persistence = require('../core/lib/persistence.js');
+    Persistence = require('persistence');
 
 describe('auth test', function() {
   var radar, client;
