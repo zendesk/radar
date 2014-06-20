@@ -1,3 +1,6 @@
+### v0.7.2
+* Test with persistence 0.3.0
+
 ### v0.7.1
 * Use latest persistence always (currently @0.2.0)
 
