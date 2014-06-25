@@ -127,7 +127,7 @@ describe('given a presence resource',function() {
   });
 
 
-  it('users that disconnect ungracefully are added to the list of waiting items, no duplicates', function(done) {
+  it('users that disconnect implicitly are added to the list of waiting items, no duplicates', function(done) {
 
     Persistence.publish = function() { };
 
@@ -229,7 +229,7 @@ describe('given a presence resource',function() {
       assert.equal(messages[client2.id].length, 2);
     });
 
-    it('ungraceful disconnects', function() {
+    it('implicit disconnects', function() {
 
       presence.unsubscribe(client);
       // and the autopublish runs
@@ -277,7 +277,7 @@ describe('given a presence resource',function() {
       assert.equal(messages[client2.id].length, 1);
     });
 
-    it('one does a ungraceful disconnect, the other one does a explicit disconnect', function() {
+    it('one does an implicit disconnect, the other one does a explicit disconnect', function() {
 
       presence.unsubscribe(client);
       // and the autopublish runs

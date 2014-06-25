@@ -8,10 +8,12 @@ var http = require('http'),
     radar, http_server, serverStarted = false;
 
 if(process.env.verbose) {
-  var stdoutPipe = Minilog.pipe(Minilog.backends.nodeConsole);
-  stdoutPipe
-    .filter(Minilog.backends.nodeConsole.filterEnv(process.env.radar_log))
-    .format(Minilog.backends.nodeConsole.formatWithStack);
+  var minilogPipe = Minilog;
+  if(process.env.radar_log) {
+    minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
+  }
+  minilogPipe.pipe(Minilog.backends.nodeConsole.formatWithStack)
+             .pipe(Minilog.backends.nodeConsole);
 }
 
 function p404(req, res) {
@@ -19,9 +21,9 @@ function p404(req, res) {
   res.end('404 Not Found');
 }
 
-// For client.auth.test
+
 Type.add([
-    {
+    {// For client.auth.test
       name: 'client_auth',
       expression: /^message:\/client_auth\/disabled$/,
       type: 'MessageList',
@@ -31,24 +33,22 @@ Type.add([
       }
     },
     {
+      name: 'client_auth',
+      expression: /^message:\/client_auth\/enabled$/,
+      type: 'MessageList',
+      authProvider: {
+        authorize: function() { return true; }
+      }
+    },
+    {// For client.message.test
       name: 'cached_chat',
       expression: /^message:\/dev\/cached_chat\/(.+)/,
       type: 'MessageList',
       policy: { cache: true, maxAgeSeconds: 30 }
-    }
+    },
 ]);
 
-Type.add([{
-  name: 'client_auth',
-  expression: /^message:\/client_auth\/enabled$/,
-  type: 'MessageList',
-  authProvider: {
-    authorize: function() { return true; }
-  }
-}]);
-
-function Service() {
-}
+var Service = {};
 
 Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);

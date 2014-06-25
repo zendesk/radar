@@ -29,6 +29,10 @@ describe('For a message list', function() {
 
   beforeEach(function() {
     message_list = new MessageList('aaa', Radar, {});
+    FakePersistence.publish = function() {};
+    FakePersistence.readOrderedWithScores = function() {};
+    FakePersistence.persistOrdered = function() {};
+    FakePersistence.expire = function() {};
   });
 
   describe('publishing', function() {

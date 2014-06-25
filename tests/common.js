@@ -36,19 +36,18 @@ module.exports = {
     function getListener(action, callback) {
       var listener = function(message) {
         message = JSON.parse(message);
-        logging.info("message received", message, action);
+        logging.debug("message received", message, action);
         if(message.action == action) {
           if(callback) callback(message.error);
         }
       };
-      listener.action = action;
       return listener;
     }
 
     radarProcess = fork(__dirname + '/lib/radar.js');
     radarProcess.sendCommand = function(command, arg, callback) {
       var listener = getListener(command, function(error) {
-        logging.info("removing listener", command, listener.action);
+        logging.debug("removing listener", command);
         radarProcess.removeListener('message', listener);
         if(callback) callback(error);
       });
