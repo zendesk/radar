@@ -63,6 +63,7 @@ Server.prototype.onClientConnection = function(client) {
 
   // always send data as json
   client.send = function(data) {
+    logging.info('#client - sending data', client.id, data.to, data.op);
     oldSend.call(client, JSON.stringify(data));
   };
 

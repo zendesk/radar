@@ -83,7 +83,6 @@ Resource.prototype.redisIn = function(data) {
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
-      logging.info('#client - sending data', client.id, self.name);
       client.send(data);
     }
   });
@@ -91,7 +90,7 @@ Resource.prototype.redisIn = function(data) {
 
 Resource.prototype.ack = function(client, sendAck) {
   if (client && client.send && sendAck) {
-    logging.debug('#client_send_ack', client.id, sendAck);
+    logging.debug('#client - send_ack', client.id, sendAck);
 
     client.send({
       op: 'ack',

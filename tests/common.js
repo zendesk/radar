@@ -4,26 +4,79 @@ var http = require('http'),
     RadarServer = new require('../index.js').server,
     configuration = require('../configuration.js'),
     Client = require('radar_client').constructor,
+    fork = require('child_process').fork,
+    Tracker = require('callback_tracker'),
     radar;
 
 if (process.env.verbose) {
   var Minilog = require('minilog');
   // configure log output
   Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(Minilog.backends.nodeConsole.formatWithStack)
-    .pipe(Minilog.backends.nodeConsole);
+    .pipe(new Minilog.Stringifier())
+    .pipe(process.stdout);
 
   require('radar_client')._log.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(Minilog.backends.nodeConsole.formatWithStack)
-    .pipe(Minilog.backends.nodeConsole);
+    .pipe(new Minilog.Stringifier())
+    .pipe(process.stdout);
 }
+//Disabling, https://github.com/tlrobinson/long-stack-traces/issues/6
+//require('long-stack-traces');
 
-require('long-stack-traces');
+if(process.env.radar_connection) {
+  configuration.use_connection = process.env.radar_connection;
+}
 
 
 http.globalAgent.maxSockets = 10000;
 
 module.exports = {
+  spawnRadar: function() {
+    var radarProcess;
+
+    function getListener(action, callback) {
+      var listener = function(message) {
+        message = JSON.parse(message);
+        logging.debug("message received", message, action);
+        if(message.action == action) {
+          if(callback) callback(message.error);
+        }
+      };
+      return listener;
+    }
+
+    radarProcess = fork(__dirname + '/lib/radar.js');
+    radarProcess.sendCommand = function(command, arg, callback) {
+      var listener = getListener(command, function(error) {
+        logging.debug("removing listener", command);
+        radarProcess.removeListener('message', listener);
+        if(callback) callback(error);
+      });
+
+      radarProcess.on('message', listener);
+      radarProcess.send(JSON.stringify({
+        action: command,
+        arg: configuration
+      }));
+    };
+    return radarProcess;
+  },
+
+  restartRadar: function(radar, configuration, clients, callback) {
+    var tracker = Tracker.create('server restart, given clients ready', function() {
+      if(callback) setTimeout(callback,0);
+    });
+
+    for(var i = 0; i < clients.length; i++) {
+      clients[i].once('ready', tracker('client '+i+' ready'));
+    }
+
+    var server_restart = tracker('server restart');
+
+    radar.sendCommand('stop', {}, function() {
+      radar.sendCommand('start', configuration, server_restart);
+    });
+  },
+
   startPersistence: function(done) {
     if(process.env.radar_connection) {
       configuration.use_connection = process.env.radar_connection;
@@ -38,63 +91,6 @@ module.exports = {
       Persistence.disconnect(done);
     });
   },
-  // starts a Radar server at the given port
-  startRadar: function(context, done) {
-    if(process.env.radar_connection) {
-      configuration.use_connection = process.env.radar_connection;
-    }
-    context.server = http.createServer(function(req, res) { res.end('Running.'); });
-    context.serverStarted = true;
-    radar = new RadarServer();
-    radar.once('ready', function() {
-      context.server.listen(configuration.port, function() {
-        Persistence.delWildCard('*',done);
-      });
-    });
-    radar.attach(context.server, configuration);
-  },
-
-  radar: function() {
-    return radar;
-  },
-
-  // ends the Radar server
-  endRadar: function(context, done) {
-    logging.info('in endRadar');
-    context.server.on('close', function() {
-      logging.info('server closed');
-      if(context.serverStarted) {
-        clearTimeout(context.serverTimeout);
-        logging.info('Calling done, close event');
-        context.serverStarted = false;
-        done();
-      }
-    });
-    Persistence.delWildCard('*', function() {
-      radar.terminate(function() {
-        logging.info('radar terminated');
-        if(!context.serverStarted) {
-          logging.info('server terminated');
-          done();
-        }
-        else {
-          logging.info('closing server');
-          logging.info(context.server._connections);
-          context.server.close();
-          context.serverTimeout = setTimeout(function() {
-            //failsafe, because server.close does not always
-            //throw the close event within time.
-            if(context.serverStarted) {
-              context.serverStarted = false;
-              logging.info('Calling done, timeout');
-              done();
-            }
-          }, 1000);
-        }
-      });
-    });
-  },
-
   getClient: function(account, userId, userType, userData, done) {
       var client = new Client().configure({
         userId: userId,

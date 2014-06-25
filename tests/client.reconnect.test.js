@@ -1,122 +1,140 @@
 var common = require('./common.js'),
     assert = require('assert'),
     Radar = require('../server/server.js'),
+    Backoff = require('radar_client').Backoff,
+    logging = require('minilog')('test:reconnect'),
     Persistence = require('../core').Persistence,
-    Client = require('radar_client').constructor,
-    Tracker = require('callback_tracker');
+    Tracker = require('callback_tracker'),
+    radar;
 
-exports['reconnect: given a server and two connected clients'] = {
 
-  beforeEach: function(done) {
-    var self = this,
-        track = Tracker.create('beforeEach reconnect', done);
+describe('When radar server restarts', function() {
+  var client, client2;
 
-    common.startRadar(this, function(){
-      self.client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
-      self.client2 = common.getClient('test', 246, 0, { name: 'tester2' }, track('client 2 ready'));
+  before(function(done) {
+    //FIXME: Need to fix transport.close in radar_client, probably not needed in 0.7.4
+    //Backoff.durations = [ 500, 600, 700, 800, 900 ]; //make them quicker
+    //Backoff.fallback = 200;
+    radar = common.spawnRadar();
+    radar.sendCommand('start', common.configuration, done);
+  });
+
+  beforeEach(function(done) {
+    var track = Tracker.create('beforeEach reconnect', done);
+    client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'));
+    client2 = common.getClient('test', 246, 0, { name: 'tester2' }, track('client 2 ready'));
+  });
+
+  afterEach(function() {
+    client.presence('restore').removeAllListeners();
+    client.message('restore').removeAllListeners();
+    client.status('restore').removeAllListeners();
+
+    client.message('foo').removeAllListeners();
+
+    client.dealloc('test');
+    client2.dealloc('test');
+  });
+
+  after(function(done) {
+    radar.sendCommand('stop', {}, function() {
+      radar.kill();
+      done();
     });
-  },
+  });
 
-  afterEach: function(done) {
-    this.client.dealloc('test');
-    this.client2.dealloc('test');
-    common.endRadar(this, done);
-  },
+  it('reconnects existing clients', function(done) {
+    this.timeout(4000);
+    var clientEvents = [], client2Events = [];
 
-  'after a connection, create one subscription of each type, then disconnect. all subs should be restored and "reconnected" event': function(done) {
-    this.timeout(30000);
-    var self = this,
-        client = this.client,
-        eioClientId = this.client._socket.id,
-        beforeDisconnect = [],
-        afterDisconnect = [],
-        clientEvents = [];
-
-    client.once('disconnected', function() { clientEvents.push('disconnected'); });
-    client.once('connected', function() { clientEvents.push('connected'); });
-    client.once('ready', function() { clientEvents.push('ready'); });
-
-    function checkEvents(arr) {
-      return arr.some(function(i) { return i.to && i.to == 'message:/test/restore'; }) &&
-             arr.some(function(i) { return i.to && i.to == 'presence:/test/restore'; }) &&
-             arr.some(function(i) { return i.to && i.to == 'status:/test/restore'; });
-    }
-
-    // using the fact that messages are emitted to our advantage
-    common.radar().on('subscribe', function(c, message) {
-      if(eioClientId == c.id) {
-        beforeDisconnect.push(message);
-
-        if(beforeDisconnect.length == 3) {
-          // now that all the subscriptions have been made, stop the server
-          // then start it again to trigger a real disconnect
-          setTimeout(function() {
-            //console.log('Shutting down the server');
-            common.endRadar(self, function() {
-              common.startRadar(self, function(){
-                // re-establish listener
-                common.radar().on('subscribe', function(c, message) {
-                  afterDisconnect.push(message);
-
-                  if(afterDisconnect.length == 3) {
-                    setTimeout(function() {
-                      //console.log(beforeDisconnect, afterDisconnect, clientEvents);
-                      // assert that the subscriptions were established and re-established
-                      assert.ok(checkEvents(beforeDisconnect));
-                      assert.ok(checkEvents(afterDisconnect));
-                      // assert that the client events were fired
-                      assert.equal(clientEvents[0], 'disconnected');
-                      assert.equal(clientEvents[1], 'connected');
-                      assert.equal(clientEvents[2], 'ready');
-                      done();
-                    }, 500);
-                  }
-                });
-                //console.log('Server started');
-              });
-            });
-          }, 500); // allow time for messages to be delivered
-        }
-      }
+    ['disconnected', 'connected', 'ready'].forEach(function(state) {
+      client.once(state, function() { clientEvents.push(state); });
+      client2.once(state, function() { client2Events.push(state); });
     });
 
-    client.message('restore').subscribe(function() {});
-    client.presence('restore').subscribe(function() {});
-    client.status('restore').subscribe(function() {});
-  },
+    common.restartRadar(radar, common.configuration, [client, client2], function() {
+      assert.deepEqual(clientEvents,['disconnected', 'connected', 'ready']);
+      assert.deepEqual(client2Events,['disconnected', 'connected', 'ready']);
+      assert.equal('activated', client.currentState());
+      assert.equal('activated', client2.currentState());
+      done();
+    });
+  });
 
-/*
-  'presence is restored even after the server has expired the previous set(online)': function(done) {
-    done();
-  },
+  it('resubscribes to subscriptions', function(done) {
+    this.timeout(4000);
+    var verifySubscriptions = function() {
+      var tracker = Tracker.create('resources updated', done);
 
-  */
+      client.message('restore').on(tracker('message updated', function(message) {
+        assert.equal(message.to, 'message:/test/restore');
+        assert.equal(message.op, 'publish');
+        assert.equal(message.value, 'hello');
+      })).publish('hello');
 
-  'restarting the server will not cause duplicate messages': function(done) {
-    var client = this.client, client2 = this.client2, self = this, messages = [];
-    this.timeout(30000);
+      client.status('restore').on(tracker('status updated', function(message) {
+        assert.equal(message.to, 'status:/test/restore');
+        assert.equal(message.op, 'set');
+        assert.equal(message.value, 'hello');
+      })).set('hello');
 
-    client.message('foo').on(function(msg) {
-      messages.push(msg);
-    }).sync();
+      client.presence('restore').on(tracker('presence updated', function(message) {
+        assert.equal(message.to, 'presence:/test/restore');
+        assert.equal(message.op, 'offline');
+      })).set('offline');
+    };
 
-    client2.message('foo').publish('1');
+    var tracker = Tracker.create('subscriptions done', function() {
+      common.restartRadar(radar, common.configuration, [client], verifySubscriptions);
+    });
+    client.message('restore').subscribe(tracker('message subscribed'));
+    client.presence('restore').subscribe(tracker('presence subscribed'));
+    client.status('restore').subscribe(tracker('status subscribed'));
+  });
 
-    setTimeout(function() {
-      common.endRadar(self, function() {
-        common.startRadar(self, function(){
-          client.once('ready', function() {
-            client2.message('foo').publish('2');
-            setTimeout(function() {
-              assert.equal(messages.length, 2);
-              assert.ok(messages.some(function(m) { return m.value == '1';}));
-              assert.ok(messages.some(function(m) { return m.value == '2';}));
-              done();
-            }, 5000); // need wait here since reconnect is 2sec
+  it('reestablishes presence', function(done) {
+    this.timeout(4000);
+    var verifySubscriptions = function() {
+      client2.presence('restore').get(function(message) {
+        assert.equal('get', message.op);
+        assert.equal('presence:/test/restore', message.to);
+        assert.deepEqual({ 123 : 0 }, message.value);
+        done();
+      });
+    };
+
+    client.presence('restore').set('online', function() {
+      common.restartRadar(radar, common.configuration, [client, client2], verifySubscriptions);
+    });
+  });
+  it('must not repeat synced chat (messagelist) messages, with two clients', function(done) {
+    this.timeout(4000);
+    var messages = [];
+    var verifySubscriptions = function() {
+      assert.equal(messages.length, 2);
+      assert.ok(messages.some(function(m) { return m.value == '1';}));
+      assert.ok(messages.some(function(m) { return m.value == '2';}));
+      done();
+    };
+
+
+    client.alloc('test', function() {
+      client2.alloc('test', function() {
+        client.message('foo').on(function(msg) {
+          messages.push(msg);
+          if(messages.length == 2) {
+            //when we have enough, wait a while and check
+            setTimeout(verifySubscriptions, 500);
+          }
+        }).sync();
+
+        client2.message('foo').publish('1', function() {
+          common.restartRadar(radar, common.configuration, [client, client2], function() {
+            client.message('foo').publish('2');
           });
         });
       });
-    }, 500); // allow time for messages to be delivered
-  }
+    });
+  });
 
-};
+});
