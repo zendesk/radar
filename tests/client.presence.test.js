@@ -27,12 +27,9 @@ describe('given two clients', function() {
   });
 
   afterEach(function() {
-    client.presence('test').removeAllListeners();
-    client2.presence('test').removeAllListeners();
-    client3.presence('test').removeAllListeners();
-    client.presence('test').set('offline');
-    client2.presence('test').set('offline');
-    client3.presence('test').set('offline');
+    client.presence('test').set('offline').removeAllListeners();
+    client2.presence('test').set('offline').removeAllListeners();
+    client3.presence('test').set('offline').removeAllListeners();
     client.dealloc('test');
     client2.dealloc('test');
     client3.dealloc('test');
@@ -146,7 +143,6 @@ describe('given two clients', function() {
         setTimeout(verify, 50);
       }
     }).subscribe(function() {
-    logging.info("=================");
       for(var i = 0; i< count; i++) {
         setTimeout(toggle,10);
       }
