@@ -338,7 +338,6 @@ describe('given two clients', function() {
     });
   });
 
-
   it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
     enabled = true;
     this.timeout(19*1000);

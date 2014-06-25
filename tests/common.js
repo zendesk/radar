@@ -12,12 +12,12 @@ if (process.env.verbose) {
   var Minilog = require('minilog');
   // configure log output
   Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(Minilog.backends.nodeConsole.formatWithStack)
-    .pipe(Minilog.backends.nodeConsole);
+    .pipe(new Minilog.Stringifier())
+    .pipe(process.stdout);
 
   require('radar_client')._log.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(Minilog.backends.nodeConsole.formatWithStack)
-    .pipe(Minilog.backends.nodeConsole);
+    .pipe(new Minilog.Stringifier())
+    .pipe(process.stdout);
 }
 //Disabling, https://github.com/tlrobinson/long-stack-traces/issues/6
 //require('long-stack-traces');

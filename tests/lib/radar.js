@@ -12,8 +12,8 @@ if(process.env.verbose) {
   if(process.env.radar_log) {
     minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
   }
-  minilogPipe.pipe(Minilog.backends.nodeConsole.formatWithStack)
-             .pipe(Minilog.backends.nodeConsole);
+  minilogPipe.pipe(new Minilog.Stringifier())
+             .pipe(process.stdout);
 }
 
 function p404(req, res) {
