@@ -74,13 +74,13 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, userData,
   this.localUsers.push(userId, clientId);
   // persist local
   var message = {
-      userId: userId,
-      userType: userType,
-      userData: userData,
-      clientId: clientId,
-      online: true,
-      at: Date.now()
-    }
+    userId: userId,
+    userType: userType,
+    userData: userData,
+    clientId: clientId,
+    online: true,
+    at: Date.now()
+  };
   this.localClients.add(clientId, message);
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
 
@@ -103,7 +103,7 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
 
   // order is significant (so that client_offline is emitted before user_offline)
   if(!this.hasClient(clientId)) {
-    this.emit('client_offline', clientId, userId);
+    this.emit('client_offline', clientId, userId, true);
   }
 
   // fast path doesn't set a disconnect queue item

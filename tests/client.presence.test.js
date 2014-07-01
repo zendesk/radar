@@ -52,6 +52,7 @@ describe('given two clients', function() {
               assert.equal('client_online', messages[1].op);
               assert.deepEqual(messages[1].value.userId, 246);
               assert.equal('client_offline', messages[2].op);
+              assert.ok(messages[2].explicit);
               assert.deepEqual(messages[2].value.userId, 246);
               assert.equal('offline', messages[3].op);
               assert.deepEqual({ '246': 0 }, messages[3].value);
@@ -335,6 +336,18 @@ describe('given two clients', function() {
           });
         }, 16000); //Wait for Autopub (15 sec)
       });
+    });
+  });
+
+  it('should be notified of client_offline after a timeout', function(done) {
+    this.timeout(55*1000);
+    client.presence('test').on(function(message) {
+      if (message.op == 'client_offline' && message.explicit === false) {
+        done();
+      }
+    }).subscribe(function() {
+      client2.presence('test').set('online');
+      client2.manager.close();
     });
   });
 

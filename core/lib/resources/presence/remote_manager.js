@@ -88,14 +88,13 @@ RemoteManager.prototype.timeouts = function() {
         uid = message.userId;
 
     if(!isOnline || (isOnline && isExpired)) {
-      var emits = [],
-          userType = self.userTypes.get(uid);
+      var emits = [];
 
       self.remoteUsers.removeItem(uid, cid);
 
       if(self.hasClient(cid)) {
         emits.push(function() {
-          self.emit('client_offline', cid, uid, userType);
+          self.emit('client_offline', cid, uid, false);
         });
       }
 

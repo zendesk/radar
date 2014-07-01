@@ -53,11 +53,12 @@ Presence.prototype.setup = function() {
       }
     });
   });
-  this._xserver.on('client_offline', function(clientId, userId) {
+  this._xserver.on('client_offline', function(clientId, userId, explicit) {
     logging.info('client_offline', clientId, userId);
     self.broadcast({
       to: self.name,
       op: 'client_offline',
+      explicit: !!explicit,
       value: {
         userId: userId,
         clientId: clientId
