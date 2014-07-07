@@ -94,7 +94,7 @@ RemoteManager.prototype.timeouts = function() {
 
       if(self.hasClient(cid)) {
         emits.push(function() {
-          self.emit('client_offline', cid, uid, false);
+          self.emit('client_offline', cid, uid, (isOnline && isExpired) ? false : !!message.explicit);
         });
       }
 

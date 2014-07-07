@@ -13,10 +13,7 @@ describe('given two clients', function() {
   });
 
   after(function(done) {
-    radar.sendCommand('stop', {}, function() {
-      radar.kill();
-      done();
-    });
+    common.stopRadar(radar, done);
   });
 
   beforeEach(function(done) {
