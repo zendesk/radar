@@ -5,6 +5,7 @@ function DisconnectQueue(parent) {
   this._queue = {};
   this.parent = parent;
 }
+DisconnectQueue.expiry = 15000;
 
 DisconnectQueue.prototype.push = function(clientId, userId, userType) {
   var self = this;
@@ -13,7 +14,7 @@ DisconnectQueue.prototype.push = function(clientId, userId, userType) {
   } else {
     this._queue[userId].push( { clientId: clientId, userType: userType} );
   }
-  setTimeout(function() { self.timeouts(); }, 15000);
+  setTimeout(function() { self.timeouts(); }, DisconnectQueue.expiry);
 };
 
 DisconnectQueue.prototype.timeouts = function() {
