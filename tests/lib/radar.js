@@ -1,6 +1,7 @@
 var http = require('http'),
     Radar = require('../../index.js'),
     configuration = require('../../configuration.js'),
+    DisconnectQueue = require('../../core/lib/resources/presence/disconnect_queue.js'),
     Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
@@ -53,7 +54,8 @@ var Service = {};
 Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);
   http_server = http.createServer(p404);
-  radar = new Radar.server();
+  DisconnectQueue.expiry = 3000;
+  radar = new Radar.server({ heartbeat: 3000 });
   radar.once('ready', function() {
     logger.debug('radar ready');
     http_server.listen(configuration.port, function() {

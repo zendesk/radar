@@ -281,7 +281,7 @@ describe('given two clients', function() {
     });
 
     it('calling fullSync multiple times does not alter the result if users remain connected', function(done) {
-      this.timeout(18*1000);
+      this.timeout(6000);
       var notifications = [], getCounter = 0;
       client2.presence('test').on(function(message){
         notifications.push(message);
@@ -308,14 +308,14 @@ describe('given two clients', function() {
           setTimeout(function() {
             clearInterval(foo);
             done();
-          }, 16*1000);
+          }, 5000);
         });
       });
     });
   });
 
   it('userData will persist when a presence is updated', function(done) {
-    this.timeout(18*1000);
+    this.timeout(5000);
     var scope = 'test';
     var verify = function(message) {
       assert.equal(message.op, 'get');
@@ -333,14 +333,14 @@ describe('given two clients', function() {
             verify(message);
             done();
           });
-        }, 16000); //Wait for Autopub (15 sec)
+        }, 4000); //Wait for Autopub (3 sec for test server)
       });
     });
   });
 
   it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
     enabled = true;
-    this.timeout(19*1000);
+    this.timeout(5000);
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -377,9 +377,9 @@ describe('given two clients', function() {
                 // broken due to new notifications: assert.equal(2, notifications.length);
                 client.alloc('test', done); //realloc client
               });
-            }, 3*1000);
+            }, 1500);
           });
-        }, 13*1000);
+        }, 2000);
       }, 5);
     });
   });
