@@ -19,10 +19,7 @@ describe('When using status resources', function() {
   after(function(done) {
     client.dealloc('test');
     client2.dealloc('test');
-    radar.sendCommand('stop', {}, function() {
-      radar.kill();
-      done();
-    });
+    common.stopRadar(radar, done);
   });
 
   beforeEach(function(done) {

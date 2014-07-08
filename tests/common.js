@@ -58,7 +58,24 @@ module.exports = {
         arg: configuration
       }));
     };
+
+    process.on('exit', function() {
+      if (radarProcess.running) {
+        radarProcess.kill();
+      }
+    });
+
+    radarProcess.running = true;
+
     return radarProcess;
+  },
+
+  stopRadar: function(radar, done) {
+    radar.sendCommand('stop', {}, function() {
+      radar.kill();
+      radar.running = false;
+      done();
+    });
   },
 
   restartRadar: function(radar, configuration, clients, callback) {

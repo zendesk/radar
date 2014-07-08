@@ -25,10 +25,7 @@ describe('auth test', function() {
 
   after(function(done){
     client.dealloc('test');
-    radar.sendCommand('stop', {}, function() {
-      radar.kill();
-      done();
-    });
+    common.stopRadar(radar, done);
   });
 
   describe('if type is disabled', function() {

@@ -42,9 +42,9 @@ function LocalManager(scope, policy) {
     }
   });
 
-  this.remoteManager.on('client_offline', function(clientId, userId, userType) {
+  this.remoteManager.on('client_offline', function(clientId, userId, explicit) {
     if(!self.localClients.has(clientId)) {
-      self.emit('client_offline', clientId, userId, userType);
+      self.emit('client_offline', clientId, userId, explicit);
     }
   });
 
@@ -74,13 +74,13 @@ LocalManager.prototype.addLocal = function(clientId, userId, userType, userData,
   this.localUsers.push(userId, clientId);
   // persist local
   var message = {
-      userId: userId,
-      userType: userType,
-      userData: userData,
-      clientId: clientId,
-      online: true,
-      at: Date.now()
-    }
+    userId: userId,
+    userType: userType,
+    userData: userData,
+    clientId: clientId,
+    online: true,
+    at: Date.now()
+  };
   this.localClients.add(clientId, message);
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
 
@@ -103,7 +103,7 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
 
   // order is significant (so that client_offline is emitted before user_offline)
   if(!this.hasClient(clientId)) {
-    this.emit('client_offline', clientId, userId);
+    this.emit('client_offline', clientId, userId, true);
   }
 
   // fast path doesn't set a disconnect queue item
@@ -119,6 +119,7 @@ LocalManager.prototype.removeLocal = function(clientId, userId, callback) {
     userType: userType,
     clientId: clientId,
     online: false,
+    explicit: true,
     at: 0
   }, callback);
 };
@@ -137,7 +138,7 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
 
     // order is significant (so that client_offline is emitted before user_offline)
     if(!this.hasClient(clientId)) {
-      this.emit('client_offline', clientId, userId);
+      this.emit('client_offline', clientId, userId, true);
     }
     logging.info('user_offline (queue)', userId, clientId);
     // slow path
@@ -153,6 +154,7 @@ LocalManager.prototype.disconnectLocal = function(clientId) {
       userType: this.userTypes.get(userId),
       clientId: clientId,
       online: false,
+      explicit: false,
       at: Date.now()
     };
     Persistence.persistHash(this.scope, userId + '.' + clientId, message);

@@ -37,10 +37,7 @@ describe('When radar server restarts', function() {
   });
 
   after(function(done) {
-    radar.sendCommand('stop', {}, function() {
-      radar.kill();
-      done();
-    });
+    common.stopRadar(radar, done);
   });
 
   it('reconnects existing clients', function(done) {
