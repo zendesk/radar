@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -30,16 +30,16 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
-    "engine.io": "0.2.x",
-    "miniee": "0.0.5",
-    "minilog": "2.0.5",
+    "engine.io": "0.7.9",
+    "miniee": "*",
+    "minilog": "*",
     "callback_tracker": "*",
     "underscore": "*",
     "persistence": "*"
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.3.1",
+    "radar_client": "0.7.3",
     "long-stack-traces": "*",
     "simple_sentinel": "*"
   },
