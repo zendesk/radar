@@ -15,12 +15,12 @@ function parseJSON(data) {
   return false;
 }
 
-function Server() {
+function Server(options) {
   this.server = null;
   this.channels = {};
   this.subscriber = null;
   this.subs = {};
-  this.timer = new Heartbeat().interval(15000);
+  this.timer = new Heartbeat().interval(options.heartbeat || 15000);
 }
 
 MiniEventEmitter.mixin(Server);

@@ -1,4 +1,4 @@
-var Set = require('../../map.js'),
+var ASet = require('../../map.js'),
     ArraySet = require('./aset.js'),
     RemoteManager = require('./remote_manager.js'),
     DisconnectQueue = require('./disconnect_queue.js'),
@@ -10,11 +10,11 @@ function LocalManager(scope, policy) {
   this.scope = scope;
   this.policy = policy;
   // client lists are simple sets
-  this.localClients = new Set();
+  this.localClients = new ASet();
   // user lists are sets of arrays
   this.localUsers = new ArraySet();
   // user type information (assumed to be same each userId)
-  this.userTypes = new Set();
+  this.userTypes = new ASet();
 
   this.remoteManager = new RemoteManager(scope, function(clientId) {
     return self.localClients.has(clientId);
