@@ -1,8 +1,7 @@
 var MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
-    Heartbeat = require('../core/lib/Heartbeat.js'),
-    logging = require('minilog')('server'),
+    logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
 
@@ -20,7 +19,6 @@ function Server() {
   this.channels = {};
   this.subscriber = null;
   this.subs = {};
-  this.timer = new Heartbeat().interval(15000);
 }
 
 MiniEventEmitter.mixin(Server);
@@ -40,6 +38,8 @@ Server.prototype._setup = function(http_server, configuration) {
 
   this.subscriber.on('message', this.handleMessage.bind(this));
 
+  Core.Resources.Presence.sentry.start();
+
   if(configuration.engineio) {
     engine = configuration.engineio.module;
     engineConf = configuration.engineio.conf;
@@ -50,10 +50,7 @@ Server.prototype._setup = function(http_server, configuration) {
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
 
-  this.timer.start();
-
-
-  logging.debug('#server_start ' + new Date().toString());
+  logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
 };
 
@@ -63,12 +60,12 @@ Server.prototype.onClientConnection = function(client) {
 
   // always send data as json
   client.send = function(data) {
-    logging.info('#client - sending data', client.id, data.to, data.op);
+    logging.info('#client - sending data', client.id, data);
     oldSend.call(client, JSON.stringify(data));
   };
 
   // event: client connected
-  logging.info('#connect', client.id);
+  logging.info('#client - connect', client.id);
 
   client.send({
     server: hostname,
@@ -81,7 +78,7 @@ Server.prototype.onClientConnection = function(client) {
 
   client.on('close', function() {
     // event: client disconnected
-    logging.info('#disconnect', client.id);
+    logging.info('#client - disconnect', client.id);
 
     Object.keys(self.channels).forEach(function(name) {
       var channel = self.channels[name];
@@ -93,8 +90,6 @@ Server.prototype.onClientConnection = function(client) {
 };
 
 Server.prototype.handleMessage = function(name, data) {
-  logging.debug('#redis - incoming message', name, data);
-
   if (this.channels[name]) {
     try {
       data = JSON.parse(data);
@@ -105,6 +100,7 @@ Server.prototype.handleMessage = function(name, data) {
 
     this.channels[name].redisIn(data);
   } else {
+    if(name == Core.Presence.Sentry.channel) return; //limit unwanted logs
     logging.warn('#redis - message not handled', name, data);
   }
 };
@@ -115,11 +111,11 @@ Server.prototype.message = function(client, data) {
 
   // format check
   if(!message || !message.op || !message.to) {
-    logging.warn('#message_rejected', (client && client.id), data);
+    logging.warn('#client.message - rejected', (client && client.id), data);
     return;
   }
 
-  logging.info('#message_received', (client && client.id), message,
+  logging.info('#client.message - received', (client && client.id), message,
      (this.channels[message.to] ? 'exists' : 'not instantiated'),
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
@@ -128,12 +124,12 @@ Server.prototype.message = function(client, data) {
 
   if (resource && resource.authorize(message, client, data)) {
     if(!this.subs[resource.name]) {
-      logging.info('#redis - subscribe', resource.name);
+      logging.info('#redis - subscribe', resource.name, (client && client.id));
       this.subscriber.subscribe(resource.name, function(err) {
         if(err) {
-          logging.error('#redis - subscribe failed', resource.name, err);
+          logging.error('#redis - subscribe failed', resource.name, (client && client.id), err);
         } else {
-          logging.info('#redis - subscribe successful', resource.name);
+          logging.info('#redis - subscribe successful', resource.name, (client && client.id));
         }
       });
       this.subs[resource.name] = true;
@@ -141,7 +137,7 @@ Server.prototype.message = function(client, data) {
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
   } else {
-    logging.warn('#auth_invalid', data);
+    logging.warn('#client.message - auth_invalid', data, (client && client.id));
     client.send({
       op: 'err',
       value: 'auth',
@@ -158,7 +154,7 @@ Server.prototype.resource = function(name) {
     if (definition && Core.Resources[definition.type]) {
       this.channels[name] = new Core.Resources[definition.type](name, this, definition);
     } else {
-      logging.error('#unknown_type', name, definition);
+      logging.error('#resource - unknown_type', name, definition);
     }
   }
   return this.channels[name];
@@ -166,9 +162,12 @@ Server.prototype.resource = function(name) {
 
 // Destroy empty channel
 Server.prototype.destroy = function(name) {
+  if(this.channels[name]) {
+    this.channels[name].destroy();
+  }
   delete this.channels[name];
   delete this.subs[name];
-  logging.info('#redis_unsubscribe', name);
+  logging.info('#redis - unsubscribe', name);
   this.subscriber.unsubscribe(name);
 };
 
@@ -178,7 +177,7 @@ Server.prototype.terminate = function(done) {
     self.destroy(name);
   });
 
-  this.timer.clear();
+  Core.Resources.Presence.sentry.stop();
   this.server.close();
   Core.Persistence.disconnect(done);
 };

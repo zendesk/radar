@@ -1,66 +1,62 @@
 var assert = require('assert'),
-    Heartbeat = require('../core/lib/Heartbeat.js'),
     Persistence = require('persistence'),
-    Presence = require('../index.js').core.Presence;
-
-require('./common.js');
+    Presence = require('../index.js').core.Presence,
+    Common = require('./common.js');
 
 var Server = {
-  timer: new Heartbeat().interval(1500),
   broadcast: function() { },
-  terminate: function() { Server.timer.clear(); },
   destroy: function() {},
   server: {
     clients: { }
   }
 };
-
-var FakePersistence = { };
+var readHashAll = Persistence.readHashAll;
 
 exports['given a presence monitor'] = {
 
-  beforeEach: function() {
-    this.presence = new Presence('aaa', Server, {});
+  beforeEach: function(done) {
+    var self = this;
+    Common.startPersistence(function() {
+      Presence.sentry.start();
+      self.presence = new Presence('aaa', Server, {});
+      Persistence.readHashAll = readHashAll;
+      done();
+    });
   },
 
-  before: function() {
-    Presence.setBackend(FakePersistence);
-  },
-
-  after: function() {
-    Presence.setBackend(Persistence);
+  afterEach: function(done) {
+    Presence.sentry.stop();
+    Common.endPersistence(done);
   },
 
   'messages from Redis trigger immediate notifications if new': function(done) {
     var presence = this.presence;
-    presence._xserver.once('user_online', function(userId, userType) {
+    presence.manager.once('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
       // we assume that messages always arrive in separate ticks
       process.nextTick(function() {
-        presence._xserver.once('user_offline', function(userId, userType) {
+        presence.manager.once('user_offline', function(userId, userType) {
           assert.equal(123, userId);
           assert.equal(0, userType);
           done();
         });
         // remote and local messages are treated differently
         // namely, remote messages about local clients cannot trigger the fast path
-        presence.redisIn({ online: false, userId: 123, clientId: 'aab', userType: 0, at: 0});
-        // manually trigger the disconnect processing
-        presence._xserver._processDisconnects();
+        presence.redisIn({ online: false, userId: 123, clientId: 'aab', userType: 0, sentry: Presence.sentry.name});
       });
     });
-    presence.redisIn({ online: true, userId: 123, clientId: 'aab', userType: 0, at: Date.now()});
+    presence.redisIn({ online: true, userId: 123, clientId: 'aab', userType: 0, sentry: Presence.sentry.name});
   },
 
   'messages from Redis are not broadcast, only changes in status are': function() {
     var presence = this.presence;
     var updates = [];
     // replace function
-    presence._xserver.on('user_online', function(userId, userType) {
+    presence.manager.on('user_online', function(userId, userType) {
       updates.push([true, userId, userType]);
     });
-    presence._xserver.on('user_offline', function(userId, userType) {
+    presence.manager.on('user_offline', function(userId, userType) {
       updates.push([false, userId, userType]);
     });
 
@@ -69,7 +65,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      at: Date.now()
+      sentry: Presence.sentry.name
     });
     assert.equal(1, updates.length);
     assert.deepEqual([true, 123, 2], updates[0]);
@@ -80,7 +76,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      at: Date.now()
+      sentry: Presence.sentry.name
     });
     assert.equal(1, updates.length);
 
@@ -90,7 +86,7 @@ exports['given a presence monitor'] = {
       userType: 0,
       clientId: 'ccc',
       online: true,
-      at: Date.now()
+      sentry: Presence.sentry.name
     });
 
     assert.equal(2, updates.length);
@@ -102,7 +98,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'bbb',
       online: false,
-      at: Date.now()
+      sentry: Presence.sentry.name
     });
     assert.equal(2, updates.length);
 
@@ -112,7 +108,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: false,
-      at: Date.now()
+      sentry: Presence.sentry.name
     });
     assert.equal(3, updates.length);
     assert.deepEqual([false, 123, 2], updates[2]);
@@ -121,14 +117,14 @@ exports['given a presence monitor'] = {
   'setting status twice does not cause duplicate notifications': function(done) {
     var presence = this.presence;
     var calls = 0;
-    presence._xserver.on('user_online', function(userId, userType) {
+    presence.manager.on('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
-    presence.redisIn({ online: true, userId: 123, userType: 0, at: Date.now()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name });
+    presence.redisIn({ online: true, userId: 123, userType: 0, sentry: Presence.sentry.name });
 
     assert.equal(1, calls);
     done();
@@ -137,28 +133,28 @@ exports['given a presence monitor'] = {
   'string userId is treated the same as int userId': function(done) {
     var presence = this.presence;
     var calls = 0;
-    presence._xserver.on('user_online', function(userId, userType) {
+    presence.manager.on('user_online', function(userId, userType) {
       assert.equal(123, userId);
       assert.equal(0, userType);
       calls++;
     });
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
-    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', at: Date.now()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name });
+    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', sentry: Presence.sentry.name });
 
     assert.equal(1, calls);
     done();
   },
 
-  'full reads consider users with a recent online key as online and users without a key as offline': function(done) {
-    FakePersistence.readHashAll = function(scope, callback) {
+  'full reads consider users with a valid sentry as online': function(done) {
+    Persistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()}
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name },
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name }
       });
     };
     var users = {};
-    this.presence._xserver.on('user_online', function(userId, userType) {
+    this.presence.manager.on('user_online', function(userId, userType) {
       users[userId] = userType;
     });
 
@@ -169,12 +165,12 @@ exports['given a presence monitor'] = {
     });
   },
 
-  'full reads exclude users that were set to online a long time ago as offline': function(done) {
+  'full reads exclude users that were set to online with an invalid sentry': function(done) {
     // this may happen if the server gets terminated, so the key is never deleted properly...
-    FakePersistence.readHashAll = function(scope, callback) {
+    Persistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now() - 50 * 1000},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()},
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: 'unknown'},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name},
       });
     };
     this.presence.fullRead(function(online) {
@@ -186,19 +182,19 @@ exports['given a presence monitor'] = {
   'full reads cause change events based on what was previously known': function(done) {
     var presence = this.presence;
     // make 123 online
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now()});
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name });
 
-    FakePersistence.readHashAll = function(scope, callback) {
+    Persistence.readHashAll = function(scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', at: Date.now() - 50 * 1000},
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', at: Date.now()},
+        123: { online: false, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name},
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name },
       });
     };
     var added = {}, removed = {};
-    presence._xserver.on('user_online', function(userId, userType) {
+    presence.manager.on('user_online', function(userId, userType) {
       added[userId] = userType;
     });
-    presence._xserver.on('user_offline', function(userId, userType) {
+    presence.manager.on('user_offline', function(userId, userType) {
       removed[userId] = userType;
     });
 
@@ -213,22 +209,22 @@ exports['given a presence monitor'] = {
   'when there are two messages for a single user - one setting the user offline and another setting it online, the online prevails': function(done) {
     var presence = this.presence;
 
-    FakePersistence.readHashAll = function(scope, callback) {
+    Persistence.readHashAll = function(scope, callback) {
       callback({
         // so, one clientId disconnected and another connected - at the same timestamp: user should be considered to be online
-        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', at: Date.now()},
-        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', at: Date.now()},
-        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', at: Date.now()},
-        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', at: Date.now()},
-        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', at: Date.now()},
+        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', sentry: Presence.sentry.name },
+        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', sentry: Presence.sentry.name },
+        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', sentry: Presence.sentry.name },
+        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', sentry: Presence.sentry.name },
+        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', sentry: Presence.sentry.name },
       });
     };
 
     var added = {}, removed = {};
-    presence._xserver.on('user_online', function(userId, userType) {
+    presence.manager.on('user_online', function(userId, userType) {
       added[userId] = userType;
     });
-    presence._xserver.on('user_offline', function(userId, userType) {
+    presence.manager.on('user_offline', function(userId, userType) {
       removed[userId] = userType;
     });
 

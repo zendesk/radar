@@ -21,13 +21,13 @@ MessageList.prototype.type = 'message';
 // Publish to Redis
 MessageList.prototype.publish = function(client, message) {
   var self = this;
+  logger.debug('#message_list - publish', this.name, message, client && client.id);
   this._publish(this.name, this.options.policy, message, function() {
     self.ack(client, message.ack);
   });
 };
 
 MessageList.prototype._publish = function(name, policy, message, callback) {
-  logger.debug('_publish', name, policy, message);
   if(policy && policy.cache) {
     Persistence.persistOrdered(name, message);
     if(policy.maxPersistence) {
@@ -39,6 +39,7 @@ MessageList.prototype._publish = function(name, policy, message, callback) {
 
 MessageList.prototype.sync = function(client, message) {
   var name = this.name;
+  logger.debug('#message_list - sync', this.name, message, client && client.id);
   this._sync(name, this.options.policy, function(replies) {
     client.send({
       op: 'sync',

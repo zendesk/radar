@@ -1,5 +1,5 @@
 var url = require('url'),
-    logging = require('minilog')('api');
+    logging = require('minilog')('radar:api-router');
 
 function Router() {
   this.urlMap = [];

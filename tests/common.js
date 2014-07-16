@@ -1,22 +1,27 @@
 var http = require('http'),
     logging = require('minilog')('common'),
+    formatter = require('./lib/formatter.js'),
     Persistence = require('persistence'),
     RadarServer = new require('../index.js').server,
     configuration = require('../configuration.js'),
+    Sentry = require('../core/lib/resources/presence/sentry.js'),
     Client = require('radar_client').constructor,
     fork = require('child_process').fork,
     Tracker = require('callback_tracker'),
     radar;
 
+Sentry.expiry = 4000;
 if (process.env.verbose) {
   var Minilog = require('minilog');
   // configure log output
   Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(new Minilog.Stringifier())
+    .pipe(formatter)
+    .pipe(Minilog.backends.nodeConsole.formatColor)
     .pipe(process.stdout);
 
   require('radar_client')._log.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
-    .pipe(new Minilog.Stringifier())
+    .pipe(formatter)
+    .pipe(Minilog.backends.nodeConsole.formatColor)
     .pipe(process.stdout);
 }
 //Disabling, https://github.com/tlrobinson/long-stack-traces/issues/6

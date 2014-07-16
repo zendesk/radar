@@ -3,13 +3,15 @@ var http = require('http'),
     Api = require('../api/api.js'),
     ClientScope = require('../api/lib/client'),
     Persistence = require('../core').Persistence,
-    RemoteManager = require('../core').RemoteManager,
+    PresenceManager = require('../core').PresenceManager,
+    Presence = require('../core').Presence,
     Type = require('../core').Type,
     Status = require('../core').Status,
     MessageList = require('../core').MessageList,
     Common = require('./common.js'),
     frontend;
 
+var originalSentry = Presence.sentry;
 
 var Client = new ClientScope({
   secure: false,
@@ -153,7 +155,7 @@ exports['Radar api tests'] = {
             userType: 0,
             clientId: 1000,
             online: true,
-            at: Date.now()
+            sentry: 'server1'
           }
         },
         'presence:/test/ticket/2': {
@@ -162,7 +164,7 @@ exports['Radar api tests'] = {
             userType: 4,
             clientId: 1001,
             online: true,
-            at: Date.now()
+            sentry: 'server1'
           }
         }
       };
@@ -170,12 +172,21 @@ exports['Radar api tests'] = {
       FakePersistence.readHashAll = function(scope, callback) {
         callback(messages[scope]);
       };
-      RemoteManager.setBackend(FakePersistence);
+      PresenceManager.setBackend(FakePersistence);
+      var fakeSentry = {
+        name: 'server1',
+        isValid: function() {
+         return true;
+        },
+        on: function() {}
+      };
+      Presence.sentry = fakeSentry;
       done();
     },
 
     after: function(done) {
-      RemoteManager.setBackend(Persistence);
+      PresenceManager.setBackend(Persistence);
+      Presence.sentry = originalSentry;
       done();
     },
 

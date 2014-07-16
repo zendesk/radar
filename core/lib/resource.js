@@ -1,5 +1,5 @@
 var Persistence = require('persistence'),
-    logging = require('minilog')('core');
+    logging = require('minilog')('radar:resource');
 
 /*
 
@@ -48,7 +48,7 @@ Resource.prototype.type = 'default';
 // Add a subscriber (Engine.io client)
 Resource.prototype.subscribe = function(client, message) {
   this.subscribers[client.id] = true;
-  logging.debug('#res_subscribe', this.name, client.id, this.subscribers, message && message.ack);
+  logging.debug('#'+this.type, '- subscribe', this.name, client.id, this.subscribers, message && message.ack);
   this.ack(client, message && message.ack);
 };
 
@@ -56,10 +56,10 @@ Resource.prototype.subscribe = function(client, message) {
 Resource.prototype.unsubscribe = function(client, message) {
   delete this.subscribers[client.id];
 
-  logging.debug('#res_unsubscribe', this.name, client.id);
+  logging.info('#'+this.type, '- unsubscribe', this.name, client.id, 'subscribers left:', Object.keys(this.subscribers).length);
 
   if (!Object.keys(this.subscribers).length) {
-    logging.debug('Destroying resource', this.name, this.subscribers);
+    logging.info('#'+this.type, '- destroying resource', this.name, this.subscribers, client.id);
     this.parent.destroy(this.name);
   }
 
@@ -68,7 +68,7 @@ Resource.prototype.unsubscribe = function(client, message) {
 
 var noop = function(name) {
   return function() {
-    logging.error('#undefined_method called for resource', name, this.name);
+    logging.error('#'+this.type+ '- undefined_method called for resource', name, this.name);
   };
 };
 'get set sync publish'.split(' ').forEach(function(method) {
@@ -78,8 +78,7 @@ var noop = function(name) {
 // send to Engine.io clients
 Resource.prototype.redisIn = function(data) {
   var self = this;
-  logging.info('#resource - incoming from redis', this.name, data);
-  logging.info('#resource - number of subscribers:', this.name, Object.keys(this.subscribers).length);
+  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
@@ -90,7 +89,7 @@ Resource.prototype.redisIn = function(data) {
 
 Resource.prototype.ack = function(client, sendAck) {
   if (client && client.send && sendAck) {
-    logging.debug('#client - send_ack', client.id, sendAck);
+    logging.debug('#client - send_ack', client.id, this.name, sendAck);
 
     client.send({
       op: 'ack',
@@ -118,8 +117,11 @@ Resource.prototype.handleMessage = function(client, message) {
       this[message.op](client, message);
       break;
     default:
-      logging.error('Unknown message.op, ignoring', message);
+      logging.error('#resource - Unknown message.op, ignoring', message, client && client.id);
   }
+};
+
+Resource.prototype.destroy = function() {
 };
 
 Resource.setBackend = function(backend) {
