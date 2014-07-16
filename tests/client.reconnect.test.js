@@ -75,10 +75,13 @@ describe('When radar server restarts', function() {
         assert.equal(message.value, 'hello');
       })).set('hello');
 
-      client.presence('restore').on(tracker('presence updated', function(message) {
-        assert.equal(message.to, 'presence:/test/restore');
-        assert.equal(message.op, 'offline');
-      })).set('offline');
+      var presence_done = tracker('presence updated');
+      client.presence('restore').on(function (message) {
+        if(message.op === 'online') {
+          assert.equal(message.to, 'presence:/test/restore');
+          presence_done();
+        }
+      }).set('online');
     };
 
     var tracker = Tracker.create('subscriptions done', function() {

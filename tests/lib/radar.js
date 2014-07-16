@@ -1,18 +1,24 @@
 var http = require('http'),
     Radar = require('../../index.js'),
     configuration = require('../../configuration.js'),
+    PresenceManager = require('../../core/lib/resources/presence/presence_manager.js'),
+    Presence = require('../../core/lib/resources/presence/index.js'),
+    Sentry = require('../../core/lib/resources/presence/sentry.js'),
     Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
     logger = require('minilog')('lib_radar'),
+    formatter = require('./formatter.js'),
     radar, http_server, serverStarted = false;
 
 if(process.env.verbose) {
   var minilogPipe = Minilog;
+  // configure log output
   if(process.env.radar_log) {
     minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
   }
-  minilogPipe.pipe(new Minilog.Stringifier())
+  minilogPipe.pipe(formatter)
+             .pipe(Minilog.backends.nodeConsole.formatColor)
              .pipe(process.stdout);
 }
 
@@ -53,6 +59,10 @@ var Service = {};
 Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);
   http_server = http.createServer(p404);
+  PresenceManager.userTimeout = 1000;
+  Sentry.expiry = 4000;
+  PresenceManager.autoPubTimeout = 4000;
+
   radar = new Radar.server();
   radar.once('ready', function() {
     logger.debug('radar ready');
@@ -88,7 +98,7 @@ Service.stop = function(arg, callback){
       }
       else {
         logger.info("closing http_server");
-        logger.info(http_server._connections);
+        logger.info('connections left', http_server._connections);
         var val = http_server.close();
         serverTimeout = setTimeout(function() {
           //failsafe, because server.close does not always

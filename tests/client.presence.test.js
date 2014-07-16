@@ -6,7 +6,7 @@ var common = require('./common.js'),
     Client = require('radar_client').constructor,
     radar, client, client2;
 
-describe('given two clients', function() {
+describe('given two clients and one server', function() {
   before(function(done) {
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, done);
@@ -44,6 +44,7 @@ describe('given two clients', function() {
           client2.presence('test').set('offline', function() {
             // ensure that async tasks have run
             setTimeout(function() {
+              assert.equal(4, messages.length);
               assert.equal('online', messages[0].op);
               assert.deepEqual({ '246': 0 }, messages[0].value);
               assert.equal('client_online', messages[1].op);
@@ -108,7 +109,7 @@ describe('given two clients', function() {
 
   it('should send presence messages correctly when toggling back and forth', function(done) {
     var messages = { count: 0 };
-    var count = 9; //FIXME: only odd number works
+    var count = 8;
     var onlines = Math.ceil(count/2);
     var offlines = Math.floor(count/2);
 
@@ -265,6 +266,10 @@ describe('given two clients', function() {
 
     it('syncing a presence should automatically subscribe to that resource', function(done) {
       client2.presence('test').on(function(message) {
+        if(message.op == 'online') {
+          // wait for sync to complete
+          client.presence('test').set('online');
+        }
         if (message.op == 'client_online') {
           assert.deepEqual(message.value, {
             userId: client.configuration('userId'),
@@ -275,11 +280,47 @@ describe('given two clients', function() {
         }
       }).sync();
 
-      client.presence('test').set('online');
     });
 
-    it('calling fullSync multiple times does not alter the result if users remain connected', function(done) {
-      this.timeout(18*1000);
+    it('calling sync multiple times does not alter the result if users remain connected', function(done) {
+      this.timeout(6000);
+      var notifications = [], getCounter = 0;
+      client2.presence('test').on(function(message){
+        notifications.push(message);
+      }).subscribe(function() {
+        // set client 1 to online
+        client.presence('test').set('online', function() {
+
+          var foo = setInterval(function() {
+            client2.presence('test').sync(function(message) {
+              // both should show client 1 as online
+              assert.equal('online', message.op);
+              assert.deepEqual({ '123': 0 }, message.value);
+
+              assert.equal(notifications.length, 2 + getCounter);
+              assert.equal(notifications[0].op, 'online');
+              assert.deepEqual(notifications[0].value, { '123': 0 });
+              assert.equal(notifications[1].op, 'client_online');
+              assert.equal(notifications[1].value.userId, 123);
+              assert.equal(notifications[1].value.clientId, client._socket.id);
+              if(getCounter >= 1) {
+                assert.deepEqual(notifications[getCounter+1].value, {'123':0});
+                assert.equal(notifications[getCounter+1].op, 'online');
+              }
+              getCounter++;
+            });
+          }, 200);
+
+          setTimeout(function() {
+            clearInterval(foo);
+            done();
+          }, 2000);
+        });
+      });
+    });
+
+    it('calling get multiple times does not alter the result if users remain connected', function(done) {
+      this.timeout(6000);
       var notifications = [], getCounter = 0;
       client2.presence('test').on(function(message){
         notifications.push(message);
@@ -306,14 +347,13 @@ describe('given two clients', function() {
           setTimeout(function() {
             clearInterval(foo);
             done();
-          }, 16*1000);
+          }, 2000);
         });
       });
     });
   });
 
   it('userData will persist when a presence is updated', function(done) {
-    this.timeout(18*1000);
     var scope = 'test';
     var verify = function(message) {
       assert.equal(message.op, 'get');
@@ -331,7 +371,7 @@ describe('given two clients', function() {
             verify(message);
             done();
           });
-        }, 16000); //Wait for Autopub (15 sec)
+        }, 1500); //reread after a while
       });
     });
   });
@@ -344,13 +384,14 @@ describe('given two clients', function() {
       }
     }).subscribe(function() {
       client2.presence('test').set('online');
-      client2.manager.close();
+      setTimeout(function() {
+        client2.manager.close();
+      },10);
     });
   });
 
   it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
     enabled = true;
-    this.timeout(19*1000);
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -387,9 +428,9 @@ describe('given two clients', function() {
                 // broken due to new notifications: assert.equal(2, notifications.length);
                 client.alloc('test', done); //realloc client
               });
-            }, 3*1000);
+            }, 400);
           });
-        }, 13*1000);
+        }, 900);
       }, 5);
     });
   });
