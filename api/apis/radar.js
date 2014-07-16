@@ -1,7 +1,8 @@
 var url = require('url'),
     Status = require('../../core').Status,
     MessageList = require('../../core').MessageList,
-    RemoteManager = require('../../core').RemoteManager,
+    Presence = require('../../core').Presence,
+    PresenceManager = require('../../core').PresenceManager,
     Type = require('../../core').Type,
     hostname = require('os').hostname();
 
@@ -119,7 +120,7 @@ function getPresence(req, res) {
   if(!(q.scope || q.scopes)) { return res.end(); }
   // sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
   if(q.scope) {
-    var monitor = new RemoteManager('presence:/'+q.accountName+'/'+q.scope);
+    var monitor = new PresenceManager('presence:/'+q.accountName+'/'+q.scope, {}, Presence.sentry);
     monitor.fullRead(function(online) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
@@ -134,7 +135,7 @@ function getPresence(req, res) {
     var scopes = q.scopes.split(','),
         result = {}; // key: scope - value: replies
     scopes.forEach(function(scope) {
-      var monitor = new RemoteManager('presence:/'+q.accountName+'/'+scope);
+      var monitor = new PresenceManager('presence:/'+q.accountName+'/'+scope, {}, Presence.sentry);
       monitor.fullRead(function(online) {
         if(q.version == 2) {
           result[scope] = monitor.getClientsOnline();
