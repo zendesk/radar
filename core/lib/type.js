@@ -21,30 +21,29 @@ var Types = [
 
 // Get the type by resource name.
 function getByExpression(name) {
-  logger.debug('getByExpression', name);
   if (name) {
     for (var i = 0, l = Types.length, definition, expression; i < l; ++i) {
       definition = Types[i];
       expression = definition.expression || definition.expr;
       if (!expression) {
-        logger.error('There is a type definition without an expression.', i, definition.name);
+        logger.error('#type - there is a type definition without an expression.', i, definition.name);
         continue;
       }
 
       if(expression.test && expression.test(name) || expression === name) {
-        logger.debug('found', name);
+        logger.debug('#type - found', name);
         return definition;
       }
     }
   }
-  logger.error('Unable to find a valid type definition for:', name);
+  logger.error('#type - Unable to find a valid type definition for:', name);
 }
 
 module.exports = {
   getByExpression: getByExpression,
   // deprecated
   register: function(name, type) {
-    logger.debug('register type', type);
+    logger.debug('#type - register', type);
     Types.unshift(type);
   },
   add: function(types) {

@@ -1,6 +1,6 @@
 var Resource = require('../resource.js'),
     Persistence = require('persistence'),
-    logging = require('minilog')('core');
+    logger = require('minilog')('radar:status');
 
 var default_options = {
   policy: {
@@ -18,6 +18,7 @@ Status.prototype.type = 'status';
 // get status
 Status.prototype.get = function(client) {
   var name = this.name;
+  logger.debug('#status - get', this.name, (client && client.id));
   this._get(name, function(replies) {
     client.send({
       op: 'get',
@@ -33,6 +34,7 @@ Status.prototype._get = function(name, callback) {
 
 Status.prototype.set = function(client, message) {
   var self = this;
+  logger.debug('#status - set', this.name, message, (client && client.id));
   Status.prototype._set(this.name, message, this.options.policy, function() {
     self.ack(client, message.ack);
   });
@@ -43,13 +45,14 @@ Status.prototype._set = function(scope, message, policy, callback) {
   if(policy && policy.maxPersistence) {
     Persistence.expire(scope, policy.maxPersistence);
   } else {
-    logging.warn('resource created without ttl :', scope);
-    logging.warn('resource policy was :', policy);
+    logger.warn('resource created without ttl :', scope);
+    logger.warn('resource policy was :', policy);
   }
   Persistence.publish(scope, message, callback);
 };
 
 Status.prototype.sync = function(client) {
+  logger.debug('#status - sync', this.name, (client && client.id));
   this.subscribe(client, false);
   this.get(client);
 };
