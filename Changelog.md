@@ -1,3 +1,8 @@
+### v0.8.0
+* Presence refactor; checkout readme file in core/lib/resources/presence
+* Logging is streamlined.
+* More integration tests around remote radar server messages
+
 ### v0.7.2
 * Test with persistence 0.3.0
 
