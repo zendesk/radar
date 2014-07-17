@@ -288,51 +288,114 @@ describe('given a client and a server,', function() {
       presenceManager.addClient('def', 200, 0, { name: 'tester2' }, done);
     });
 
-    describe('when syncing (v1), ', function() {
-      it('should send only one online message with all users as both notification and callback', function(done) {
+    var should_be_online = function(uid, cid, type, name) {
+      var online_idx = -1, client_online_idx = -1;
+
+      var i;
+      for(i = 0; i < notifications.length; i++) {
+        var value = notifications[i].value;
+        if(typeof value[uid] !== undefined && value[uid] === type) {
+          assert.equal(online_idx, -1);
+          online_idx = i;
+          assert.equal(value[uid], type);
+          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'online', value: value });
+        }
+        if(value.userId == uid && value.clientId == cid) {
+          assert.equal(client_online_idx, -1);
+          client_online_idx = i;
+          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'client_online', value: { userId: uid, clientId: cid, userData: { name: name }}});
+        }
+      }
+      assert.ok(online_idx != -1);
+      assert.ok(client_online_idx != -1);
+      assert.ok(client_online_idx > online_idx);
+      return [ online_idx, client_online_idx ];
+    };
+
+    describe('when syncing (v2), ', function() {
+      it('should send new notifications and callback correctly', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 1);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+          assert.equal(notifications.length, 4);
+
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
           assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync(function(message) {
-          assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+        client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+          assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+            value: {
+              100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+              200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+            }
+          });
           callback = true;
         });
-        notifier.when(1, function() {
+        notifier.when(4, function() {
           setTimeout(validate, 10);
         });
       });
 
-
-      it('subsequently new online notifications should work fine', function(done) {
+      it('should send new notifications and callback correctly for different clients with same user', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 3);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' } }
-          });
+          assert.equal(notifications.length, 5);
+
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(100, 'pqr', 2, 'tester3');
+          should_be_online(200, 'def', 0, 'tester2');
           assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync(function(message) {
-          assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+        presenceManager.addClient('pqr', 100, 2, { name: 'tester3' }, function() {
+          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+              value: {
+                100: { clients: { abc: { name: 'tester1' }, pqr: { name: 'tester3' } }, userType: 2 },
+                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+              }
+            });
+            callback = true;
+          });
+        });
+
+        notifier.when(5, function() {
+          setTimeout(validate, 10);
+        });
+      });
+
+      it('subsequent new online notifications should work fine', function(done) {
+        var callback = false;
+        var validate = function() {
+          assert.equal(notifications.length, 6);
+          // these should be last two
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
+          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
+
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
+          assert.ok(callback);
+          done();
+        };
+        client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+          assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+            value: {
+              100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+              200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+            }
+          });
           callback = true;
         });
 
         // After sync's online has come, add another client
-        notifier.when(1, function() {
+        notifier.when(4, function() {
           sentry.name = 'server1';
           sentry.publishKeepAlive();
           presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
         });
 
-        notifier.when(3, function() {
+        notifier.when(6, function() {
           setTimeout(validate, 10);
         });
       });
@@ -340,19 +403,25 @@ describe('given a client and a server,', function() {
       it('should ignore dead server clients (sentry expired and gone)', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 1);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+          assert.equal(notifications.length, 4);
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
           assert.ok(callback);
           done();
         };
 
         sentry.name = 'unknown';
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).sync(function(message) {
-            assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+              value: {
+                100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+              }
+            });
             callback = true;
           });
-          notifier.when(1, function() {
+          notifier.when(4, function() {
             setTimeout(validate, 10);
           });
         });
@@ -361,8 +430,9 @@ describe('given a client and a server,', function() {
       it('should ignore dead server clients (sentry expired but present)', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 1);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+          assert.equal(notifications.length, 4);
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
           assert.ok(callback);
           done();
         };
@@ -370,11 +440,16 @@ describe('given a client and a server,', function() {
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).sync(function(message) {
-            assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+              value: {
+                100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+              }
+            });
             callback = true;
           });
-          notifier.when(1, function() {
+          notifier.when(4, function() {
             setTimeout(validate, 10);
           });
         });
@@ -383,8 +458,11 @@ describe('given a client and a server,', function() {
         it('should include clients with unexpired entries', function(done) {
           var callback = false;
           var validate = function() {
-            assert.equal(notifications.length, 1);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2, '400': 2 } });
+            var i;
+            assert.equal(notifications.length, 6);
+            should_be_online(100, 'abc', 2, 'tester1');
+            should_be_online(200, 'def', 0, 'tester2');
+            should_be_online(400, 'klm', 0, 'tester4');
             assert.ok(callback);
             done();
           };
@@ -394,12 +472,18 @@ describe('given a client and a server,', function() {
             message.at = Date.now();
           };
 
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).sync(function(message) {
-              assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2, '400': 2 } });
+          presenceManager.addClient('klm', 400, 0, { name: 'tester4' }, function() {
+            client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+              assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+                value: {
+                  100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+                  200: { clients: { def: { name: 'tester2' } }, userType: 0 },
+                  400: { clients: { klm: { name: 'tester4' } }, userType: 0 }
+                }
+              });
               callback = true;
             });
-            notifier.when(1, function() {
+            notifier.when(6, function() {
               setTimeout(validate, 10);
             });
           });
@@ -408,8 +492,9 @@ describe('given a client and a server,', function() {
         it('should ignore clients with expired entries', function(done) {
           var callback = false;
           var validate = function() {
-            assert.equal(notifications.length, 1);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+            assert.equal(notifications.length, 4);
+            should_be_online(100, 'abc', 2, 'tester1');
+            should_be_online(200, 'def', 0, 'tester2');
             assert.ok(callback);
             done();
           };
@@ -420,11 +505,16 @@ describe('given a client and a server,', function() {
           };
 
           presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).sync(function(message) {
-              assert.deepEqual(message, { to: 'presence:/dev/test', op: 'online', value: { '200': 0, '100': 2 } });
+            client.presence('test').on(notify).sync({ version: 2 }, function(message) {
+              assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
+                value: {
+                  100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
+                  200: { clients: { def: { name: 'tester2' } }, userType: 0 }
+                }
+              });
               callback = true;
             });
-            notifier.when(1, function() {
+            notifier.when(4, function() {
               setTimeout(validate, 10);
             });
           });
@@ -432,64 +522,59 @@ describe('given a client and a server,', function() {
       });
     });
 
-    describe('when syncing (v2), ', function() {
-      it('should send only one online message with all users through callback, but no notifictaion', function(done) {
+    describe('when syncing (v1), (deprecated since callbacks are broken)', function() {
+      it('should send all notifications (one extra for sync)', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 0);
+          assert.equal(notifications.length, 5);
+          //get this out of the way
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '100': 2, '200': 0 } });
+          notifications.pop();
+
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
           done();
         };
-        client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-          assert.deepEqual(message, {
-            op:"get",
-            to:"presence:/dev/test",
-            value: {
-              100: {
-                clients: {"abc": {"name":"tester1"}},
-                userType:2
-              },
-              200: {
-                clients:{"def":{"name":"tester2"}},
-                userType:0
-              }
-            }
-          });
+        client.presence('test').on(notify).sync(function(message) {
+          assert.equal(message.op, 'online');
+          assert.equal(message.to, 'presence:/dev/test');
+          assert.ok(message.value);
           setTimeout(validate, 10);
         });
       });
 
 
-      it('subsequently new online notifications should work fine', function(done) {
+      it('subsequent new online notifications should work fine', function(done) {
+        var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' } }
-          });
+          assert.equal(notifications.length, 7, JSON.stringify(notifications));
+          // new
+          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
+          assert.deepEqual(notifications[6], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
+          notifications.pop(); notifications.pop(); // pop pop!!!
+          // sync
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '100': 2, '200': 0 } });
+          notifications.pop();
+
+          should_be_online(100, 'abc', 2, 'tester1');
+          should_be_online(200, 'def', 0, 'tester2');
+          assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync( { version: 2 }, function(message) {
-          assert.deepEqual(message, {
-            op:"get",
-            to:"presence:/dev/test",
-            value: {
-              100: {
-                clients: {"abc": {"name":"tester1"}},
-                userType:2
-              },
-              200: {
-                clients:{"def":{"name":"tester2"}},
-                userType:0
-              }
-            }
-          });
+        client.presence('test').on(notify).sync(function(message) {
+          assert.equal(message.op, 'online');
+          assert.equal(message.to, 'presence:/dev/test');
+          assert.ok(message.value);
+          callback = true;
+        });
+
+        notifier.when(5, function() {
           // After sync's online has come, add another client
           sentry.name = 'server1';
           sentry.publishKeepAlive();
           presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
         });
 
-        notifier.when(2, function() {
+        notifier.when(7, function() {
           setTimeout(validate, 10);
         });
       });
