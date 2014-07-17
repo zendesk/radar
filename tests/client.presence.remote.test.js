@@ -525,11 +525,7 @@ describe('given a client and a server,', function() {
     describe('when syncing (v1), (deprecated since callbacks are broken)', function() {
       it('should send all notifications (one extra for sync)', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 5);
-          //get this out of the way
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '100': 2, '200': 0 } });
-          notifications.pop();
-
+          assert.equal(notifications.length, 4);
           should_be_online(100, 'abc', 2, 'tester1');
           should_be_online(200, 'def', 0, 'tester2');
           done();
@@ -546,14 +542,10 @@ describe('given a client and a server,', function() {
       it('subsequent new online notifications should work fine', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 7, JSON.stringify(notifications));
+          assert.equal(notifications.length, 6, JSON.stringify(notifications));
           // new
-          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
-          assert.deepEqual(notifications[6], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
-          notifications.pop(); notifications.pop(); // pop pop!!!
-          // sync
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '100': 2, '200': 0 } });
-          notifications.pop();
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
+          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
 
           should_be_online(100, 'abc', 2, 'tester1');
           should_be_online(200, 'def', 0, 'tester2');
@@ -567,14 +559,14 @@ describe('given a client and a server,', function() {
           callback = true;
         });
 
-        notifier.when(5, function() {
+        notifier.when(4, function() {
           // After sync's online has come, add another client
           sentry.name = 'server1';
           sentry.publishKeepAlive();
           presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
         });
 
-        notifier.when(7, function() {
+        notifier.when(6, function() {
           setTimeout(validate, 10);
         });
       });
