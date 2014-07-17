@@ -110,16 +110,7 @@ Presence.prototype.unsubscribe = function(client, message) {
 
 Presence.prototype.sync = function(client, message) {
   var self = this;
-  //This is part of the glorious bullshit parade called sync.
-  //Essentially, client_online/online message are not sent to this client until we finish sync,
-  //but we should send a final message with all { userId: userType } as a single online message
-  //nasty stuff. X-(
-  logging.debug('#presence - muting client until sync is completed', client.id, this.name );
-  client.radar_presence_muted = true;
-
   this.fullRead(function(online) {
-    logging.debug('#presence - unmuting client, sync is complete', client.id, self.name );
-    delete client.radar_presence_muted;
     if(message.options && message.options.version == 2) {
       client.send({
         op: 'get',
@@ -127,6 +118,7 @@ Presence.prototype.sync = function(client, message) {
         value: self.manager.getClientsOnline()
       });
     } else {
+      logging.warn('presence v1 received, sending online', self.name, client.id);
       // will be deprecated when syncs no longer need to use "online" to look like
       // regular messages
       client.send({
@@ -164,10 +156,10 @@ Presence.prototype.broadcast = function(message, except) {
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    if(client && client.id != except && !client.radar_presence_muted) {
+    if(client && client.id != except) {
       client.send(message);
     } else {
-      logging.warn('#client - not sending: ', (client && client.id), message,  except, (client && client.radar_presence_muted), self.name);
+      logging.warn('#client - not sending: ', (client && client.id), message,  except, self.name);
     }
   });
 };

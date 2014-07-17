@@ -1,3 +1,8 @@
+### v0.8.1
+* Bugfix - Sync (v1/v2) needs to send notifications
+  - Make v2 primary test targe
+  - Fix tests so that redis hash order does not fail us
+
 ### v0.8.0
 * Presence refactor; checkout readme file in core/lib/resources/presence
 * Logging is streamlined.

@@ -266,10 +266,6 @@ describe('given two clients and one server', function() {
 
     it('syncing a presence should automatically subscribe to that resource', function(done) {
       client2.presence('test').on(function(message) {
-        if(message.op == 'online') {
-          // wait for sync to complete
-          client.presence('test').set('online');
-        }
         if (message.op == 'client_online') {
           assert.deepEqual(message.value, {
             userId: client.configuration('userId'),
@@ -278,7 +274,10 @@ describe('given two clients and one server', function() {
           });
           done();
         }
-      }).sync();
+      }).sync(function() {
+        // wait for sync to complete
+        client.presence('test').set('online');
+      });
 
     });
 
@@ -297,17 +296,13 @@ describe('given two clients and one server', function() {
               assert.equal('online', message.op);
               assert.deepEqual({ '123': 0 }, message.value);
 
-              assert.equal(notifications.length, 2 + getCounter);
+              //Not more than 2 notifications ever
+              assert.equal(notifications.length, 2);
               assert.equal(notifications[0].op, 'online');
               assert.deepEqual(notifications[0].value, { '123': 0 });
               assert.equal(notifications[1].op, 'client_online');
               assert.equal(notifications[1].value.userId, 123);
               assert.equal(notifications[1].value.clientId, client._socket.id);
-              if(getCounter >= 1) {
-                assert.deepEqual(notifications[getCounter+1].value, {'123':0});
-                assert.equal(notifications[getCounter+1].op, 'online');
-              }
-              getCounter++;
             });
           }, 200);
 
