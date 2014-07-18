@@ -25,7 +25,7 @@ PresenceManager.prototype.setup = function() {
   var manager = this;
 
   store.on('user_added', function(message) {
-    manager.emit('user_online', message.userId, message.userType);
+    manager.emit('user_online', message.userId, message.userType, message.userData);
   });
 
   store.on('user_removed', function(message) {
