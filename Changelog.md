@@ -1,3 +1,6 @@
+### v0.8.2
+* Fix userData for user_online
+
 ### v0.8.1
 * Bugfix - Sync (v1/v2) needs to send notifications
   - Make v2 primary test targe

@@ -63,7 +63,7 @@ describe('given a client and a server,', function() {
             delete n.ts;
           });
           assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -96,7 +96,7 @@ describe('given a client and a server,', function() {
             delete n.ts;
           });
           assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -122,7 +122,7 @@ describe('given a client and a server,', function() {
               delete n.ts;
             });
             assert.equal(notifications.length, 4);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
             assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
               op: 'client_online',
               value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -159,7 +159,7 @@ describe('given a client and a server,', function() {
               delete n.ts;
             });
             assert.equal(notifications.length, 2);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
             assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
               op: 'client_online',
               value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }

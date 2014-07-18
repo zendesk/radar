@@ -78,7 +78,7 @@ describe('given a client and a server,', function() {
       it('should emit user/client onlines', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -94,7 +94,7 @@ describe('given a client and a server,', function() {
       it('should ignore duplicate messages', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -135,7 +135,7 @@ describe('given a client and a server,', function() {
           };
           var validate = function() {
             assert.equal(notifications.length, 2);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
             assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
               op: 'client_online',
               value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -168,7 +168,7 @@ describe('given a client and a server,', function() {
       it('should emit user/client offline for explicit disconnect', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -190,7 +190,7 @@ describe('given a client and a server,', function() {
       it('should handle multiple explicit disconnects', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -213,7 +213,7 @@ describe('given a client and a server,', function() {
       it('should not emit user_offline during user expiry for implicit disconnect', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 3);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -234,7 +234,7 @@ describe('given a client and a server,', function() {
       it('should not emit user_offline during user expiry for multiple implicit disconnects', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 3);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -256,7 +256,7 @@ describe('given a client and a server,', function() {
       it('should emit user_offline eventually for implicit disconnect', function(done) {
         var validate = function() {
           assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 } });
+          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
           assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
             op: 'client_online',
             value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
@@ -298,7 +298,7 @@ describe('given a client and a server,', function() {
           assert.equal(online_idx, -1);
           online_idx = i;
           assert.equal(value[uid], type);
-          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'online', value: value });
+          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'online', value: value, userData: { name: name } });
         }
         if(value.userId == uid && value.clientId == cid) {
           assert.equal(client_online_idx, -1);
@@ -343,16 +343,16 @@ describe('given a client and a server,', function() {
           assert.equal(notifications.length, 5);
 
           should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(100, 'pqr', 2, 'tester3');
+          should_be_online(100, 'pqr', 2, 'tester1');
           should_be_online(200, 'def', 0, 'tester2');
           assert.ok(callback);
           done();
         };
-        presenceManager.addClient('pqr', 100, 2, { name: 'tester3' }, function() {
+        presenceManager.addClient('pqr', 100, 2, { name: 'tester1' }, function() {
           client.presence('test').on(notify).sync({ version: 2 }, function(message) {
             assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
               value: {
-                100: { clients: { abc: { name: 'tester1' }, pqr: { name: 'tester3' } }, userType: 2 },
+                100: { clients: { abc: { name: 'tester1' }, pqr: { name: 'tester1' } }, userType: 2 },
                 200: { clients: { def: { name: 'tester2' } }, userType: 0 }
               }
             });
@@ -370,7 +370,7 @@ describe('given a client and a server,', function() {
         var validate = function() {
           assert.equal(notifications.length, 6);
           // these should be last two
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 }, userData: { name: 'tester3' } });
           assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
 
           should_be_online(100, 'abc', 2, 'tester1');
@@ -544,7 +544,7 @@ describe('given a client and a server,', function() {
         var validate = function() {
           assert.equal(notifications.length, 6, JSON.stringify(notifications));
           // new
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 } });
+          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 }, userData: { name: 'tester3' } });
           assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
 
           should_be_online(100, 'abc', 2, 'tester1');
