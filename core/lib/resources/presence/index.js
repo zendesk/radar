@@ -2,6 +2,7 @@ var Resource = require('../../resource.js'),
     shasum = require('crypto').createHash('sha1'),
     PresenceManager = require('./presence_manager.js'),
     Sentry = require('./sentry.js'),
+    EventEmitter = require('events').EventEmitter,
     logging = require('minilog')('radar:presence');
 
 var default_options = {
@@ -18,6 +19,8 @@ function Presence(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
   this.setup();
 }
+
+Presence.resource_count = 0;
 
 Presence.prototype = new Resource();
 Presence.prototype.type = 'presence';
@@ -71,6 +74,13 @@ Presence.prototype.setup = function() {
       }
     }, clientId);
   });
+
+  //keep track of listeners count
+  Presence.resource_count++;
+  var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
+  if(sentryListenersCount != Presence.resource_count) {
+    logging.warn('sentry listener leak detected', sentryListenersCount - Presence.resource_count);
+  }
 };
 
 Presence.prototype.redisIn = function(message) {
@@ -170,6 +180,7 @@ Presence.prototype.fullRead = function(callback) {
 
 Presence.prototype.destroy = function() {
   this.manager.destroy();
+  Presence.resource_count --;
 };
 
 Presence.setBackend = function(backend) {
