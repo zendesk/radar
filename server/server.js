@@ -39,6 +39,7 @@ Server.prototype._setup = function(http_server, configuration) {
   this.subscriber.on('message', this.handleMessage.bind(this));
 
   Core.Resources.Presence.sentry.start();
+  Core.Resources.Presence.sentry.setMaxListeners(0);
 
   if(configuration.engineio) {
     engine = configuration.engineio.module;
