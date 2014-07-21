@@ -1,3 +1,6 @@
+### v0.8.3
+* Unlimited listeners for sentry down event
+
 ### v0.8.2
 * Fix userData for user_online
 
