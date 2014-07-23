@@ -1,3 +1,10 @@
+### v0.9.1
+* upgrade engine.io to 1.3.1
+* radar_client @ 0.9.1
+
+### v0.9.0
+* bad tag
+
 ### v0.8.3
 * Unlimited listeners for sentry down event
 

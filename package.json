@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.9.0",
+    "radar_client": "0.9.1",
     "long-stack-traces": "*",
     "simple_sentinel": "*"
   },
