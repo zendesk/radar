@@ -1,3 +1,7 @@
+### v0.9.2
+* Fix crash: an unsubscribe after sync may cause issues
+ - Handle cleanup of redis reply correctly
+
 ### v0.9.1
 * upgrade engine.io to 1.3.1
 * radar_client @ 0.9.1
