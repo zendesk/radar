@@ -1,7 +1,6 @@
 var http = require('http'),
     configuration = require('./configuration.js'),
     Radar = require('./server/server.js'),
-    Api = require('./api/api.js'),
     Minilog = require('minilog');
 
 var server;
@@ -18,8 +17,6 @@ function p404(req, res){
 }
 
 server = http.createServer(p404);
-// Radar API
-Api.attach(server);
 
 // Radar server
 var radar = new Radar();

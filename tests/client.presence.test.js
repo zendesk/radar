@@ -1,10 +1,9 @@
+/* globals describe, it, before, after, afterEach, beforeEach */
 var common = require('./common.js'),
     assert = require('assert'),
     logging = require('minilog')('test'),
-    Persistence = require('../core').Persistence,
     Tracker = require('callback_tracker'),
-    Client = require('radar_client').constructor,
-    radar, client, client2;
+    radar, client, client2, client3;
 
 describe('given two clients and one server', function() {
   before(function(done) {
@@ -115,17 +114,17 @@ describe('given two clients and one server', function() {
 
     var verify = function() {
       logging.info(messages);
-      assert.ok(messages.client_offline == offlines, "expected "+ offlines +" but got " + messages.client_offline + " client_offlines");
-      assert.ok(messages.offline == offlines, "expected " + offlines + " but got " + messages.offline + " offlines");
-      assert.ok(messages.client_online == onlines, "expected "+ onlines +" but got " + messages.client_online + " client_onlines");
-      assert.ok(messages.online == onlines, "expected "+ onlines +" but got " + messages.online + " onlines");
+      assert.ok(messages.client_offline == offlines, 'expected '+ offlines +' but got ' + messages.client_offline + ' client_offlines');
+      assert.ok(messages.offline == offlines, 'expected ' + offlines + ' but got ' + messages.offline + ' offlines');
+      assert.ok(messages.client_online == onlines, 'expected '+ onlines +' but got ' + messages.client_online + ' client_onlines');
+      assert.ok(messages.online == onlines, 'expected '+ onlines +' but got ' + messages.online + ' onlines');
       done();
     };
 
     var current_state = 'offline';
     var toggle = function() {
       current_state = (current_state == 'offline'?'online':'offline');
-      logging.info("setting "+current_state);
+      logging.info('setting '+current_state);
       client.presence('test').set(current_state);
     };
 
@@ -206,7 +205,7 @@ describe('given two clients and one server', function() {
           client.presence('test').get({ version: 2 }, function(message) {
             assert.equal('get', message.op);
             var expected = {123:{clients:{},userType:0}};
-            expected['123'].clients[client._socket.id] = { name: "tester" };
+            expected['123'].clients[client._socket.id] = { name: 'tester' };
             assert.deepEqual(message.value, expected);
             done();
           });
@@ -241,7 +240,7 @@ describe('given two clients and one server', function() {
           // sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op);
           var expected = {123:{clients:{},userType:0}};
-          expected['123'].clients[client._socket.id] = { name: "tester" };
+          expected['123'].clients[client._socket.id] = { name: 'tester' };
           assert.deepEqual(message.value, expected);
           done();
         });
@@ -283,7 +282,7 @@ describe('given two clients and one server', function() {
 
     it('calling sync multiple times does not alter the result if users remain connected', function(done) {
       this.timeout(6000);
-      var notifications = [], getCounter = 0;
+      var notifications = [];
       client2.presence('test').on(function(message){
         notifications.push(message);
       }).subscribe(function() {
@@ -386,7 +385,6 @@ describe('given two clients and one server', function() {
   });
 
   it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
-    enabled = true;
     var notifications = [];
     // subscribe online with client 2
     // cache the notifications to client 2
@@ -395,9 +393,7 @@ describe('given two clients and one server', function() {
       notifications.push(message);
     }).subscribe(function() {
       // set client 1 to online
-      client.presence('test').set('online');
-      // disconnect client 1 - ensure that this happens later the online
-      setTimeout(function() {
+      client.presence('test').set('online', function() {
         client.dealloc('test');
         // do an explicit get as well after slightly less than the grace period
         setTimeout(function() {
@@ -426,7 +422,7 @@ describe('given two clients and one server', function() {
             }, 400);
           });
         }, 900);
-      }, 5);
+      });
     });
   });
 });

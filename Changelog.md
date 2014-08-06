@@ -1,3 +1,7 @@
+### next
+* Integrate REST API into normal request/authenticate/process/respond
+workflow used by engine.io in order to simplify management
+
 ### v0.9.2
 * Fix crash: an unsubscribe after sync may cause issues
  - Handle cleanup of redis reply correctly

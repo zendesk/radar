@@ -2,8 +2,10 @@ var MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
-    hostname = require('os').hostname(),
-    DefaultEngineIO = require('engine.io');
+    DefaultEngineIO = require('engine.io'),
+    RESTClient = require('./rest_client'),
+    url = require('url'),
+    collect = require('collect-stream');
 
 // Parse JSON
 function parseJSON(data) {
@@ -12,6 +14,11 @@ function parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
+}
+
+function sendJSON(data) {
+  logging.info('#client - sending data', this.id, data);
+  return this.send(JSON.stringify(data));
 }
 
 function Server() {
@@ -29,9 +36,11 @@ Server.prototype.attach = function(http_server, configuration) {
   Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
 };
 
-Server.prototype._setup = function(http_server, configuration) {
+Server.prototype._setup = function(httpServer, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
+
+  this.httpServer = httpServer;
 
   configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
@@ -48,30 +57,49 @@ Server.prototype._setup = function(http_server, configuration) {
     this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
   }
 
-  this.server = engine.attach(http_server, engineConf);
+
+  this.server = engine.attach(httpServer, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
+
+  this.httpListeners = httpServer.listeners('request').slice(0);
+  httpServer.removeAllListeners('request');
+  httpServer.on('request', this.handleHTTPRequest.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
 };
 
+Server.prototype.apiPathRegExp = /^\/(api|ping)/;
+
+Server.prototype.handleHTTPRequest = function(request, response) {
+  var uri = url.parse(request.url);
+
+  if (this.apiPathRegExp.test(uri.path || '')) {
+    var client = new RESTClient(request, response);
+
+    if (RegExp.$2 == 'ping') {
+      client.ping();
+    } else if (request.method == 'POST') {
+      this.onClientConnection(client);
+      request.pipe(process.stdout);
+      collect(request, function(error, data) {
+        client.emit('message', data);
+      });
+    }
+  } else if (this.httpListeners && this.httpListeners.length) {
+    for (var i = 0, l = this.httpListeners.length; i < l; ++i) {
+      this.httpListeners[i].call(this.httpServer, request, response);
+    }
+  }
+};
+
 Server.prototype.onClientConnection = function(client) {
   var self = this;
-  var oldSend = client.send;
 
-  // always send data as json
-  client.send = function(data) {
-    logging.info('#client - sending data', client.id, data);
-    oldSend.call(client, JSON.stringify(data));
-  };
+  client.sendJSON = client.sendJSON || sendJSON;
 
   // event: client connected
   logging.info('#client - connect', client.id);
-
-  client.send({
-    server: hostname,
-    cid: client.id
-  });
 
   client.on('message', function(data) {
     self.message(client, data);
@@ -139,7 +167,7 @@ Server.prototype.message = function(client, data) {
     this.emit(message.op, client, message);
   } else {
     logging.warn('#client.message - auth_invalid', data, (client && client.id));
-    client.send({
+    client.sendJSON({
       op: 'err',
       value: 'auth',
       origin: message

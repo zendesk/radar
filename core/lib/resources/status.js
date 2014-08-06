@@ -20,7 +20,7 @@ Status.prototype.get = function(client) {
   var name = this.name;
   logger.debug('#status - get', this.name, (client && client.id));
   this._get(name, function(replies) {
-    client.send({
+    client.sendJSON({
       op: 'get',
       to: name,
       value: replies || {}

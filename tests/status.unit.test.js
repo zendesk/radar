@@ -1,3 +1,4 @@
+/* globals describe, it, before, beforeEach, after */
 var assert = require('assert'),
     Status = require('../core/lib/resources/status.js'),
     Persistence = require('persistence');
@@ -38,7 +39,7 @@ describe('given a status resource', function() {
       };
 
       status.get({
-        send: function(msg) {
+        sendJSON: function(msg) {
           assert.equal('get', msg.op);
           assert.equal('aaa', msg.to);
           assert.deepEqual([1, 2], msg.value);
@@ -54,7 +55,7 @@ describe('given a status resource', function() {
       };
 
       status.get({
-        send: function(msg) {
+        sendJSON: function(msg) {
           assert.equal('get', msg.op);
           assert.equal('aaa', msg.to);
           assert.deepEqual({}, msg.value);
@@ -123,7 +124,7 @@ describe('given a status resource', function() {
 
       status.sync({
         id: 123,
-        send: function(msg) {
+        sendJSON: function(msg) {
           // check message
           assert.equal('get', msg.op);
           assert.equal('aaa', msg.to);
@@ -140,7 +141,7 @@ describe('given a status resource', function() {
 
       status.sync({
         id: 123,
-        send: function(msg) {
+        sendJSON: function() {
           assert.ok(status.subscribers['123']);
           done();
         }

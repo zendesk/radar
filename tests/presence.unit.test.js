@@ -1,3 +1,4 @@
+/* globals describe, before, after, afterEach, it */
 var assert = require('assert'),
     MiniEE = require('miniee'),
     Persistence = require('persistence'),
@@ -230,10 +231,10 @@ describe('given a presence resource',function() {
         Server.server.clients[client.id] = client;
         Server.server.clients[client2.id] = client2;
         messages = {};
-        client.send = function(msg) {
+        client.sendJSON = function(msg) {
           (messages[client.id] || (messages[client.id] = [])).push(msg);
         };
-        client2.send = function(msg) {
+        client2.sendJSON = function(msg) {
           (messages[client2.id] || (messages[client2.id] = [])).push(msg);
         };
       });
@@ -402,7 +403,7 @@ describe('given a presence resource',function() {
             userType: 2,
           },
           fakeClient = {
-            send: function(msg) {
+            sendJSON: function(msg) {
               assert.deepEqual(msg.value[123], data);
             }
           };

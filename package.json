@@ -35,13 +35,15 @@
     "minilog": "*",
     "callback_tracker": "*",
     "underscore": "*",
-    "persistence": "*"
+    "persistence": "*",
+    "collect-stream": "*"
   },
   "devDependencies": {
     "mocha": "*",
     "radar_client": "0.9.1",
     "long-stack-traces": "*",
-    "simple_sentinel": "*"
+    "simple_sentinel": "*",
+    "request": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",

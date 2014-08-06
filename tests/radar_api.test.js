@@ -1,230 +1,124 @@
-var http = require('http'),
-    assert = require('assert'),
-    Api = require('../api/api.js'),
-    ClientScope = require('../api/lib/client'),
-    Persistence = require('../core').Persistence,
-    PresenceManager = require('../core').PresenceManager,
-    Presence = require('../core').Presence,
-    Type = require('../core').Type,
-    Status = require('../core').Status,
-    MessageList = require('../core').MessageList,
-    Common = require('./common.js'),
-    frontend;
+/* globals describe, it, before, after */
+var assert = require('assert'),
+    core = require('../core'),
+    Persistence = core.Persistence,
+    common = require('./common.js'),
+    request = require('request'),
+    RadarClient = require('radar_client'),
+    //logger = require('minilog')('radar:test_api'),
+    API_PATH = 'http://localhost:' + common.configuration.port + '/api',
+    radar;
 
-var originalSentry = Presence.sentry;
 
-var Client = new ClientScope({
-  secure: false,
-  host: 'localhost',
-  port: 8123
-});
+function retrieve(data, fn) {
+  return request.post(API_PATH, { json: data }, function(error, response) {
+    if (error) {
+      throw error;
+    }
+    fn.call(this, response.body);
+  });
+}
 
-exports['Radar api tests'] = {
-  before: function(done) {
-    Common.startPersistence(function() {
-      // create frontend server
-      frontend = http.createServer(function(req, res){ res.end('404 error');});
-      Api.attach(frontend);
-
-      frontend.listen(8123, done);
-    });
-  },
-
-  beforeEach: function(done){
-    Persistence.delWildCard('*', done);
-  },
-
-  after: function(done) {
-    frontend.close();
-    Common.endPersistence(done);
-  },
-
-  // GET /radar/status?accountName=test&scope=ticket/1
-  'can get a status scope': function(done) {
-    var name = 'status:/test/ticket/1',
-        opts = Type.getByExpression(name),
-        status = new Status(name, {}, opts);
-
-    status.set({}, {
-      key: 'foo',
-      value: 'bar'
-    });
-
-    Client.get('/node/radar/status')
-      .data({ accountName: 'test', scope: 'ticket/1' })
-      .end(function(error, response) {
-        assert.deepEqual({foo:'bar'}, response);
-        Persistence.ttl('status:/test/ticket/1', function(err, reply) {
-          assert.ok((parseInt(reply, 10) > 0));
-          done();
-        });
-      });
-  },
-
-  // POST /radar/status { accountName: 'test', scope: 'ticket/1' }
-  'can set a status scope': function(done) {
-    Client.post('/node/radar/status')
-      .data({ accountName: 'test', scope: 'ticket/2', key: 'foo', value: 'bar' })
-      .end(function(error, response) {
-        assert.deepEqual({}, response);
-
-        Client.get('/node/radar/status')
-        .data({ accountName: 'test', scope: 'ticket/2' })
-        .end(function(error, response) {
-          assert.deepEqual({foo:'bar'}, response);
-          Persistence.ttl('status:/test/ticket/2', function(err, reply) {
-            assert.ok((parseInt(reply, 10) > 0));
-            done();
-          });
-        });
-      });
-
-  },
-
-  // GET /radar/message?accountName=test&scope=chat/1
-  'can get a message scope': function(done) {
-
-    var message_type = {
-      expr: new RegExp('^message:/setStatus/(.+)$'),
-      type: 'message',
-      authProvider: false,
-      policy: { cache: true, maxAgeSeconds: 30 }
-    };
-
-    Type.register('message', message_type);
-
-    var name = 'message:/setStatus/chat/1',
-        opts = Type.getByExpression(name),
-        msgList = new MessageList(name, {}, opts);
-
-    msgList.publish({},{
-      key: 'foo',
-      value: 'bar'
-    });
-
-    Client.get('/node/radar/message')
-      .data({ accountName: 'setStatus', scope: 'chat/1' })
-      .end(function(error, response) {
-        assert.deepEqual({key:'foo', value: 'bar'}, JSON.parse(response[0]));
+describe('Radar api tests', function() {
+  before(function(done) {
+    common.startPersistence(function() {
+      radar = common.spawnRadar();
+      radar.sendCommand('start', common.configuration,  function() {
         done();
       });
-  },
+    });
+  });
 
-  // POST /radar/message { accountName:'test', scope:'ticket/1' }
-  'can set a message scope': function(done) {
+  after(function(done) {
+    common.stopRadar(radar, function() {
+      common.endPersistence(done);
+    });
+  });
 
-    var message_type = {
-      expr: new RegExp('^message:/setStatus/(.+)$'),
-      type: 'MessageList',
-      authProvider: false,
-      policy: {
-        cache: true,
-        maxAgeSeconds: 300
-      }
-    };
+  it('can set a status scope', function(done) {
+    var name = 'status:/test/ticket/2';
+    retrieve({ op: 'set', to: name, key: 'foo', value: 'bar', ack: 21 }, function(response) {
+      assert.deepEqual({ op: 'ack', value: 21 }, response);
+      Persistence.ttl(name, function(err, reply) {
+        assert.ok((parseInt(reply, 10) > 0));
+        done();
+      });
+    });
+  });
 
-    Type.register('message', message_type);
+  it('can get a status scope', function(done) {
+    var name = 'status:/test/ticket/2';
+    retrieve({ op: 'get', to: name }, function(response) {
+      assert.deepEqual({ op: 'get', to: name, value: { foo: 'bar' } }, response);
+      done();
+    });
+  });
 
-    Client.post('/node/radar/message')
-      .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })
-      .end(function(error, response) {
-        assert.deepEqual({}, response);
+  it('can publish a message scope', function(done) {
+    var name = 'message:/test/chat/2';
+    retrieve({ op: 'publish', to: name, value: 'hello', ack: 22 }, function(response) {
+      assert.deepEqual({ op: 'ack', value: 22 }, response);
+      Persistence.ttl(name, function(err, reply) {
+        assert.ok((parseInt(reply, 10) > 0));
+        done();
+      });
+    });
+  });
 
-        Client.get('/node/radar/message')
-        .data({ accountName: 'setStatus', scope: 'chat/2' })
-        .end(function(error, response) {
-          assert.deepEqual('hello', JSON.parse(response[0]).value);
-          Persistence.ttl('message:/setStatus/chat/2', function(err, reply) {
+  it('can get a message scope', function(done) {
+    var name = 'message:/test/chat/2';
+    retrieve({ op: 'get', to: name }, function(response) {
+      assert.equal(response.op, 'get');
+      assert.equal(response.to, name);
+      assert.deepEqual({ op: 'publish', to: name, value: 'hello', ack: 22 }, JSON.parse(response.value[0]));
+      assert(response.value[1] > Date.now()-100);
+      done();
+    });
+  });
+
+  describe('for a client presence', function() {
+    before(function(done) {
+      RadarClient.configure({
+        host: 'localhost',
+        port: common.configuration.port,
+        accountName: 'test',
+        userId: 123,
+        userType: 4,
+        userData: {
+          name: 'joe'
+        }
+      }).alloc('test', done);
+    });
+
+    it('can get and set a presence scope with version 2', function(done) {
+      var name = 'presence:/test/ticket/1';
+      RadarClient.presence('ticket/1').set('online', function() {
+        retrieve({ op: 'get', to: name, options: { version: 2 } }, function(response) {
+          assert.equal(response.op, 'get');
+          assert.equal(response.to, name);
+          var clientData = response.value[123].clients[RadarClient.currentClientId()];
+          assert.deepEqual({ name: 'joe' }, clientData);
+          Persistence.ttl(name, function(err, reply) {
             assert.ok((parseInt(reply, 10) > 0));
             done();
           });
         });
       });
+    });
 
-  },
-
-  'given a fake PresenceMonitor': {
-
-    before: function(done) {
-      function FakePersistence() {}
-
-      var messages = {
-        'presence:/test/ticket/1': {
-          '1.1000': {
-            userId: 1,
-            userType: 0,
-            clientId: 1000,
-            online: true,
-            sentry: 'server1'
-          }
-        },
-        'presence:/test/ticket/2': {
-          '2.1001': {
-            userId: 2,
-            userType: 4,
-            clientId: 1001,
-            online: true,
-            sentry: 'server1'
-          }
-        }
-      };
-
-      FakePersistence.readHashAll = function(scope, callback) {
-        callback(messages[scope]);
-      };
-      PresenceManager.setBackend(FakePersistence);
-      var fakeSentry = {
-        name: 'server1',
-        isValid: function() {
-         return true;
-        },
-        on: function() {}
-      };
-      Presence.sentry = fakeSentry;
-      done();
-    },
-
-    after: function(done) {
-      PresenceManager.setBackend(Persistence);
-      Presence.sentry = originalSentry;
-      done();
-    },
-
-    // GET /radar/presence?accountName=support&scope=ticket/1
-    'can get a presence scope using api v1': function(done) {
-      Client.get('/node/radar/presence')
-        .data({ accountName: 'test', scope: 'ticket/1' })
-        .end(function(error, response) {
-          assert.deepEqual({'1': 0 }, response);
-          done();
+    it('can get and set a presence scope', function(done) {
+      var name = 'presence:/test/ticket/2';
+      RadarClient.presence('ticket/2').set('online', function() {
+        retrieve({ op: 'get', to: name }, function(response) {
+          assert.equal(response.op, 'get');
+          assert.equal(response.to, name);
+          assert.deepEqual({ 123: 4 }, response.value);
+          Persistence.ttl(name, function(err, reply) {
+            assert.ok((parseInt(reply, 10) > 0));
+            done();
+          });
         });
-    },
-
-    'can get multiple presence scopes using api v1': function(done) {
-      Client.get('/node/radar/presence')
-        .data({ accountName: 'test', scopes: 'ticket/1,ticket/2' })
-        .end(function(error, response) {
-          assert.deepEqual({ 'ticket/1': {'1': 0 }, 'ticket/2':{'2': 4}}, response);
-          done();
-        });
-    },
-
-    'can get a presence scope with client ids using api v2': function(done) {
-      Client.get('/node/radar/presence')
-        .data({ accountName: 'test', scope: 'ticket/1', version: 2 })
-        .end(function(error, response) {
-          assert.deepEqual( {'1':{'clients':{'1000':{}},'userType':0}}, response);
-          done();
-        });
-    },
-
-    'can get multiple presence scopes using api v2': function(done) {
-      Client.get('/node/radar/presence')
-        .data({ accountName: 'test', scopes: 'ticket/1,ticket/2', version: 2 })
-        .end(function(error, response) {
-          assert.deepEqual({ 'ticket/1': {'1':{'clients':{'1000':{}},'userType':0}}, 'ticket/2':{'2':{'clients':{'1001':{}},'userType':4}}}, response);
-          done();
-        });
-    },
-  }
-};
+      });
+    });
+  });
+});

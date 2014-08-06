@@ -1,3 +1,4 @@
+/* globals describe, it, before, after, beforeEach */
 var assert = require('assert'),
     MessageList = require('../core/lib/resources/message_list.js'),
     Persistence = require('persistence');
@@ -94,7 +95,7 @@ describe('For a message list', function() {
       };
 
       message_list.sync({
-        send: function(msg) {
+        sendJSON: function(msg) {
           // check message
           assert.equal('sync', msg.op);
           assert.equal('aab', msg.to);
@@ -116,7 +117,7 @@ describe('For a message list', function() {
       };
 
       message_list.sync({
-        send: function() {
+        sendJSON: function() {
           assert.equal(expiryTime, 24 * 60 * 60);
           done();
         }
@@ -134,7 +135,7 @@ describe('For a message list', function() {
       };
 
       message_list.unsubscribe({
-        send: function() {}
+        sendJSON: function() {}
       }, {});
     });
   });
@@ -143,7 +144,7 @@ describe('For a message list', function() {
     assert.equal(message_list.options.policy.maxPersistence, 14 * 24 * 60 * 60);
   });
 
-  it('default caching is false', function() {
-    assert.ok(!message_list.options.policy.cache);
+  it('default caching is true', function() {
+    assert.ok(message_list.options.policy.cache);
   });
 });
