@@ -275,7 +275,9 @@ PresenceManager.prototype.fullRead = function(callback) {
     });
   };
 
-  Persistence.readHashAll(this.scope, this.handleRedisReply);
+  Persistence.readHashAll(this.scope, function(replies) {
+    self.handleRedisReply(replies);
+  });
 };
 
 //sync v1
