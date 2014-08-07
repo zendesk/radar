@@ -1,3 +1,7 @@
+## Radar
+
+High level API and backend for writing web apps that use real-time information.
+
 ## Documentation
 
 See http://radar.zendesk.com/ for detailed documentation.
@@ -6,7 +10,7 @@ See http://radar.zendesk.com/ for detailed documentation.
 
 ## Installation
 
-Installing from scratch:
+###Installing from scratch:
 
 - Install and start Redis
 - Install a 0.10.x or better branch of Node, look in http://nodejs.org/dist/
@@ -14,24 +18,20 @@ Installing from scratch:
 - npm install
 - npm start
 
-Installing from NPM:
+###Installing from NPM:
 
 - Install and start redis
 - Install a 0.10.x or better branch of Node, look in http://nodejs.org/dist/
 - npm init
 - npm install --save radar
-- create a file called index.js with the contents:
+- create a file called server.js with the contents:
 ```
   var http = require('http');
   var Radar = require('radar').server;
-  var Api = require('radar').api;
 
   var httpServer = http.createServer(function(req, res) {
     res.end('Nothing here.');
   });
-
-  // Radar API
-  Api.attach(httpServer);
 
   // Radar server
   var radar = new Radar();
@@ -39,7 +39,11 @@ Installing from NPM:
 
   httpServer.listen(8000);
 ```
-- node index.js
+- node server.js
+
+## How to contribute
+
+- Fork http://github.com/zendesk/radar, clone, make changes (including a Changelog update), commit, push, PR
 
 ## Copyright and License
 
