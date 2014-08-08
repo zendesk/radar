@@ -1,92 +1,62 @@
-## The Radar API
+## The Radar REST API
 
 Overview:
 
-- Presence can only be set from the Radar client, not via the API. This is because "being present" means that you are available for push communication, so you need the full client.
-- All the POST apis respond with:
+- Presence should only be set from the Radar client, not via the API.
+This is because "being present" means that you are available for push
+communication, so you should be using a full client.
 
-```js
-{}
-200: OK
-```
+- The REST API is hooked into the same
+request/authenticate/process/respond workflow as an individual message
+from a engine.io client.
 
-### Status
+### Examples:
 
-#### /radar/status [POST]
+#### Status
 
-    curl -k -H "Content-Type: application/json" -X POST -d '{"accountName":"test","scope":"ticket/1","key":"greeting","value":"hello"}' https://localhost/radar/status
+```shell
+curl -H "Content-Type: application/json" -X POST -d '
+{ "op": "set", "to": "status:/test/ticket/2", "key": "foo", "value": "bar", "ack": 21 }
+' http://localhost:8000/api
+# {"op":"ack","value":21}
 
-You probably want to set the key to the current user's ID if you want to have each user have it's own value in the same scope.
-
-You can store any arbitrary string as the value.
-
-##### /radar/status [GET]
-
-    curl -k "https://localhost/radar/status?accountName=test&scope=ticket/1"
-
-###### Response - Status
-```js
-{
-  1: 'foo',
-  2: 'bar',
-  123: 'foo'
-}
-200: OK
+curl -H "Content-Type: application/json" -X POST -d '
+{ "op": "get", "to": "status:/test/ticket/2" }
+' http://localhost:8000/api
+# {"op":"get","to":"status:/test/ticket/2","value":{"foo":"bar"}}
 ```
 
 The keys and values of the hash are determined by the content of the status. Often these are userID: value pairs.
 
-### Presence
+#### Presence
 
-Presence can only be set from the Radar client, not via the API.
+Presence should only be set from the Radar client, not via the API.
 
-#### /radar/presence [GET]
+```shell
+# You should not do this, but for the sake of this example we can simulate a present client by running the following in a separate terminal:
+# curl -v -k -H "Content-Type: application/json" -X POST -d '{ "op": "set", "to": "presence:/test/ticket/2", "key": 123, "value": "online", "userData": { "name": "joe" } }' http://localhost:8000/api
 
-    curl -k "https://localhost/radar/presence?accountName=test&scope=ticket/1"
-
-You can use scopes=one,two to get multiple scopes in one get:
-
-    curl -k "https://localhost/radar/presence?accountName=test&scopes=ticket/1,ticket/2"
-
-###### Response - Presence
-```js
-{
-  1: 0,
-  2: 2,
-  123: 4
-}
-200: OK
+curl -H "Content-Type: application/json" -X POST -d '
+{ "op": "get", "to": "presence:/test/ticket/2", "options": { "version": 2 } }
+' http://localhost:8000/api
+# {"op":"get","to":"presence:/test/ticket/2","value":{"123":{"clients":{"rest_client-823139":{"name":"joe"}}}}}
 ```
 
-This the keys are the user IDs of present users, and the values are the user types of the users (0 = end user, 2 = agent, 4 = admin).
-
-When getting multiple scopes, the format is:
-
-```js
-{
-  "scope1": { ... },
-  "scope2": { ... }
-}
-```
-
+These keys are typically the user IDs of present users and the values
+are a hash of users and clients with the userData for each client.
 
 ### MessageList
 
-#### /radar/message [POST]
+```shell
+curl -H "Content-Type: application/json" -X POST -d '
+{ "op": "publish", "to": "message:/test/ticket/2", "value": "hello", "ack": 22 }
+' http://localhost:8000/api
+# {"op":"ack","value":22}
 
-    curl -k -H "Content-Type: application/json" -X POST -d '{"accountName":"test","scope":"chat/123", "value":"hello"}' https://localhost/radar/message
-
-#### /radar/message [GET]
-
-    curl -k "https://localhost/radar/message?accountName=test&scope=dev/test"
-
-###### Response - MessageList
-```js
-[
-  { to: 'message:/dev/test', value: ... },
-  { to: 'message:/dev/test', value: ... }
-]
-200: OK
+curl -H "Content-Type: application/json" -X POST -d '
+{ "op": "get", "to": "message:/test/ticket/2" }
+' http://localhost:8000/api
+# {"op":"get","to":"message:/test/ticket/2","value":["{\"op\":\"publish\",\"to\":\"message:/test/ticket/2\",\"value\":\"hello\",\"ack\":22}","1407360686077"],"time":1407360714899}
 ```
 
 The response includes all the messages have not yet expired (based on the message retention policy on the server side, e.g. time-limited for some resources).

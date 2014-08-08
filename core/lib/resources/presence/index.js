@@ -13,13 +13,13 @@ var default_options = {
 
 shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
 var sentryName = shasum.digest('hex').slice(0,15);
-Presence.sentry = new Sentry(sentryName);
 
 function Presence(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
   this.setup();
 }
 
+Presence.sentry = new Sentry(sentryName);
 Presence.resource_count = 0;
 
 Presence.prototype = new Resource();
@@ -122,7 +122,7 @@ Presence.prototype.sync = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
     if(message.options && message.options.version == 2) {
-      client.send({
+      client.sendJSON({
         op: 'get',
         to: self.name,
         value: self.manager.getClientsOnline()
@@ -131,7 +131,7 @@ Presence.prototype.sync = function(client, message) {
       logging.warn('presence v1 received, sending online', self.name, client.id);
       // will be deprecated when syncs no longer need to use "online" to look like
       // regular messages
-      client.send({
+      client.sendJSON({
         op: 'online',
         to: self.name,
         value: online
@@ -145,14 +145,15 @@ Presence.prototype.sync = function(client, message) {
 Presence.prototype.get = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
+    logging.debug('get presence', self.manager.getClientsOnline(), message, client && client.id);
     if(message.options && message.options.version == 2) {
-      client.send({
+      client.sendJSON({
         op: 'get',
         to: self.name,
         value: self.manager.getClientsOnline()
       });
     } else {
-      client.send({
+      client.sendJSON({
         op: 'get',
         to: self.name,
         value: online
@@ -167,7 +168,7 @@ Presence.prototype.broadcast = function(message, except) {
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if(client && client.id != except) {
-      client.send(message);
+      client.sendJSON(message);
     } else {
       logging.warn('#client - not sending: ', (client && client.id), message,  except, self.name);
     }

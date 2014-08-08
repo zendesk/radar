@@ -4,6 +4,7 @@ var Resource = require('../resource.js'),
 
 var default_options = {
   policy: {
+    cache: true,
     maxPersistence: 14 * 24 * 60 * 60 // 2 weeks in seconds
   }
 };
@@ -38,17 +39,21 @@ MessageList.prototype._publish = function(name, policy, message, callback) {
 };
 
 MessageList.prototype.sync = function(client, message) {
+  this.get(client, message, 'sync');
+  this.subscribe(client, message);
+};
+
+MessageList.prototype.get = function(client, message, type) {
   var name = this.name;
-  logger.debug('#message_list - sync', this.name, message, client && client.id);
+  logger.debug('#message_list - get', name, message, client && client.id);
   this._sync(name, this.options.policy, function(replies) {
-    client.send({
-      op: 'sync',
+    client.sendJSON({
+      op: type || 'get',
       to: name,
       value: replies,
       time: Date.now()
     });
   });
-  this.subscribe(client, message);
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
