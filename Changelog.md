@@ -1,3 +1,6 @@
+### next
+* Perform a prepublish check for dirty working tree or outdated dependencies
+
 ### v0.9.2
 * Fix crash: an unsubscribe after sync may cause issues
  - Handle cleanup of redis reply correctly
