@@ -1,4 +1,4 @@
-### next
+### v0.9.3
 * Perform a prepublish check for dirty working tree or outdated dependencies
 
 ### v0.9.2

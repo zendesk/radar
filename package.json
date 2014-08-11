@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -39,32 +39,25 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.9.1",
+    "radar_client": "0.9.3",
     "long-stack-traces": "*",
     "simple_sentinel": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",
     "start": "node server.js",
-
     "check-modules": "if [ -z \"$SKIP_PACKAGE_CHECK\" ] && [ ./package.json -nt ./node_modules ]; then npm run warn-outdated && exit 1; fi",
     "check-clean": "if [[ $(git diff --shortstat 2> /dev/null | tail -n1) != \"\" ]]; then npm run warn-dirty-tree && exit 1; fi",
-
     "warn-outdated": "echo 'Your node_modules are out of date. Please run \"rm -rf node_modules && npm install\" in order to ensure you have the latest dependencies.'",
     "warn-dirty-tree": "echo 'Your repo tree is dirty.'",
-
     "pretest": "npm run check-modules",
     "test": "npm run test-sentinel && npm run test-redis",
-
     "test-redis": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
-
     "pretest-sentinel": "./node_modules/.bin/simple_sentinel start",
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
-
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
-
     "prepublish": "npm run check-clean || echo 'You cannot publish with outdated dependecies or uncommitted changes.'"
   }
 }
