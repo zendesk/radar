@@ -1,3 +1,6 @@
+### next
+* use latest radar_client with async message emits
+
 ### v0.9.3
 * Perform a prepublish check for dirty working tree or outdated dependencies
 
