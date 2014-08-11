@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
