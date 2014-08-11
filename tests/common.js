@@ -24,8 +24,6 @@ if (process.env.verbose) {
     .pipe(Minilog.backends.nodeConsole.formatColor)
     .pipe(process.stdout);
 }
-//Disabling, https://github.com/tlrobinson/long-stack-traces/issues/6
-//require('long-stack-traces');
 
 if(process.env.radar_connection) {
   configuration.use_connection = process.env.radar_connection;

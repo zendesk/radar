@@ -1,4 +1,4 @@
-### next
+### 0.10.0
 * use latest radar_client with async message emits
 
 ### v0.9.3
