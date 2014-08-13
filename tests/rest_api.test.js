@@ -1,10 +1,12 @@
-/* globals describe, it, before, after */
+/* globals describe, it, before, after, beforeEach */
 var assert = require('assert'),
+    http = require('http'),
     core = require('../core'),
     Persistence = core.Persistence,
     common = require('./common.js'),
     request = require('request'),
     RadarClient = require('radar_client'),
+    collect = require('collect-stream'),
     //logger = require('minilog')('radar:test_api'),
     API_PATH = 'http://localhost:' + common.configuration.port + '/api',
     radar;
@@ -17,6 +19,15 @@ function retrieve(data, fn) {
     }
     fn.call(this, response.body);
   });
+}
+
+function respond(json, outgoing) {
+  if (!json) {
+    return outgoing.end();
+  }
+  var data = JSON.stringify(json);
+  outgoing.setHeader('Content-Type', 'application/json');
+  outgoing.end(data);
 }
 
 describe('Radar api tests', function() {
@@ -118,6 +129,65 @@ describe('Radar api tests', function() {
             done();
           });
         });
+      });
+    });
+  });
+
+  describe('can accept subscriptions via webhooks', function() {
+    var subscribingServer, handler, PORT = 9013, scope = 'status:/test/chat/1';
+
+    before(function(done) {
+      subscribingServer = http.createServer(function(incoming, outgoing) {
+        if (incoming.method == 'POST') {
+          collect(incoming, function(error, data) {
+            handler(incoming, outgoing, JSON.parse(data.toString()));
+          });
+        }
+      });
+
+      subscribingServer.listen(PORT, done);
+    });
+
+    beforeEach(function() {
+      handler = function(i, o) {
+        o.end();
+      };
+    });
+
+    after(function(done) {
+      if(subscribingServer) {
+        subscribingServer.close(done);
+      } else {
+        done();
+      }
+    });
+
+    it('should subscribe to a resource', function(done) {
+      retrieve({ op: 'subscribe', to: scope, url: 'http://localhost:' + PORT + '/radar-update', ack: 32 }, function(response) {
+        assert.deepEqual({ op: 'ack', value: 32 }, response);
+        done();
+      });
+    });
+
+    it('should receive updates via a webhook', function(done) {
+      handler = function(incoming, outgoing, data) {
+        assert.equal(incoming.url, '/radar-update');
+        assert(data.client);
+        delete data.client;
+        assert.deepEqual({ op: 'set', to: scope, key: 908, value: 'new status update', ack: 33 }, data);
+        respond({ ack: true }, outgoing);
+        done();
+      };
+
+      retrieve({ op: 'set', to: scope, key: 908, value: 'new status update', ack: 33 }, function(response) {
+        assert.deepEqual({ op: 'ack', value: 33 }, response);
+      });
+    });
+
+    it('should get a full response from a sync', function(done) {
+      retrieve({ op: 'sync', to: scope, url: 'http://localhost:' + PORT + '/radar-update', ack: 36 }, function(response) {
+        assert.deepEqual({ op: 'get', to: scope, value: { 908: 'new status update' } }, response);
+        done();
       });
     });
   });
