@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>radar - High level API and backend for writing web apps that use push messaging</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../assets/css/gh.css"/>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="assets/js/prettify.js"></script>
+
+  </head>
+<body onload="prettyPrint()">
+
+  <div id="toc">
+    <div id="toc-inner">
+      <h4>Table of contents</h4>
+
+      <a href="index.html">
+        <h5>Overview &amp; tutorial</h5>
+      </a>
+
+      <a href="client.html">
+        <h5>Radar client</h5>
+      </a>
+
+      <a href="server.html">
+        <h5>Radar server</h5>
+      </a>
+
+      <a href="rest.html">
+        <h5>REST API</h5>
+      </a>
+
+      <a href="https://github.com/zendesk/radar" target="_blank">
+        <h5>Full source code on Github</h5>
+      </a>
+
+      <a href="http://www.zendesk.com/company/careers?jvi=oHiWWfwB,Job" target="_blank">
+        <h5>Zendesk is hiring Radar developers</h5>
+      </a>
+
+    </div>
+  </div>
+
+  <div id="wrapper">
+    <div id="header">
+
+    </div>
+
+    <div class="clear"></div>
+    <div id="main">
+      <div id="content" class="post">
+
+
+      <h1>Radar server</h1>
+<h2>Starting the sample server</h2>
+<pre>git clone ...
+npm install
+npm start</pre>
+<p><code>npm start</code> starts the example server.</p>
+<h2>Installing the Radar server</h2>
+<pre>npm install --save radar</pre>
+<h2>Configuration</h2>
+<p> Radar attaches to a regular Node http server. The API and the server can be attached separately: if you don&#39;t want the REST API, you can leave it out or switch it with a custom API.</p>
+<pre>var http = require(&#39;http&#39;),
+    Radar = require(&#39;radar&#39;).server,
+    Api = require(&#39;radar&#39;).api,
+    httpServer = http.createServer(function(req, res) {
+      res.end(&#39;Nothing here.&#39;);
+    });
+
+// Radar API
+Api.attach(httpServer);
+
+// Radar server
+Radar.attach(httpServer, { redis_host: &#39;localhost&#39;, redis_port: 6379 });
+
+httpServer.listen(8000);</pre>
+<p>The server accepts two configurable options:</p>
+<ul class="list">
+<li><code>redis_host</code> and <code>redis_port</code>: the hostname and port where the Redis server is running</li>
+</ul>
+<h2>Authentication and persistence</h2>
+<p>Authentication and persistence are configured on a resource-type basis.</p>
+<p>The resource type is detected by checking resource names against a regular expression in the server.</p>
+<p>Resources are given names based on 1) their type and 2) the accountName associated with the resource. For example:</p>
+<ul class="list">
+<li>status:/dev/foo/bar represents a status resource, for the account &quot;dev&quot;, named &quot;foo/bar&quot;</li>
+<li>message:/test/chat/1 represents a message list resource, for the account &quot;test&quot;, named &quot;chat/1&quot;</li>
+<li>presence:/test/chat/1 represents a presence resource, for the account &quot;test&quot;, named &quot;chat/1&quot;</li>
+</ul>
+<p>Policies are specified by defining and registering resource types on the server. For example:</p>
+<pre>var http = require(&#39;http&#39;),
+    Radar = require(&#39;radar&#39;).server,
+    Type = require(&#39;radar&#39;).core.Type;
+
+var types = require(&#39;./my_types.js&#39;);
+
+Object.keys(types).forEach(function(name) {
+  Type.register(name, types[name]);
+});
+// ... and then later
+server = http.createServer(function() { ... });
+Radar.attach(server, configuration);</pre>
+<p>Each policy has a name, and a set of properties. <code>my_types.js</code> could contain something like this:</p>
+<pre>module.exports = {
+  chat_messages: {
+    expr: new RegExp(&#39;^message:/.+/chat/.+$&#39;),
+    type: &#39;message&#39;,
+    policy: { cache: true },
+    auth: function(message) {
+      //...
+    }
+  }
+};</pre>
+<p>The <code>expr</code> property is used to match real resource names to their types. It should be a regular expression for the resource.</p>
+<p>The <code>type</code> property specifies the type of the resource. This is used for legacy purposes.</p>
+<h3>Authentication</h3>
+<p>Authentication is configured using the <code>auth</code> key. The value should be a function that takes the given message, and returns true if the authentication is valid, or false if it is not. By default, no authentication is required.</p>
+<p>The authentication function cannot access session information, it can only access the current message. This is by design: each request should contain all the information needed to service it, so that requests can be load balanced in a round-robin fashion (though right now the transport e.g. engine.io does assume sticky sessions).</p>
+<p>You can use any authentication scheme you want. One way to do this is to use <a href="https://github.com/mixu/token">token</a>, which generates a HMAC hash based on a shared secret. The main application can generate these tokens via the shared secret when a user is authenticated, and the Radar backend server can verify their validity. This way you do not need to share sessions between separate applications.</p>
+<h3>Persistence</h3>
+<p>Persistence policies can be applied to message and status resources. Persistence options:</p>
+<ul class="list">
+<li><code>cache</code>: true | false</li>
+<li><code>maxAgeSeconds</code>: number - applicable to both message list and status resources. With message lists, messages older than maxAgeSeconds are pruned on read. With status resources, status resources unused (not updated) for maxAgeSeconds will be removed.</li>
+<li><code>maxCount</code>: number - only applicable to message list resources</li>
+</ul>
+<p>The default is not to cache messages. If persistence policies are set, they are enforced lazily on read.</p>
+<h2>Deployment</h2>
+<p>Radar can be deployed as a single instance directly serving requests, or with multiple instances of the Radar server behind a load balancer.</p>
+<p>If a load balancer is used, then servers behind the load balancer can be restarted safely, and the clients will recover their connections as long as at least one Radar server remains available.</p>
+<p>The load balancer must use source IP sticky sessions. Radar itself does not need sticky sessions, as it can recover the correct state from Redis and the client, but Engine.io does (due to the way handshakes are done). Radar clients will recover from a server crash, as long as the load balancer points them to a different server.</p>
+<p>For more information about deploying Radar, read <a href="http://book.mixu.net/ch13.html">this chapter on Comet and Socket.io</a>, which includes sample configurations for HAProxy. While this is not specific to Radar, the same principles apply.</p>
+<p>Normal Redis replication can be used to scale beyond a single Redis backend (or, the servers can be sharded e.g. by account, each with their own backend).</p>
+
+
+
+      </div>
+    </div>
+
+    <div class="clear">
+    </div>
+
+    <div id="footer">
+    </div>
+  </div>
+</body>
+</html>
