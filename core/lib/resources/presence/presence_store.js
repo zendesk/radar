@@ -3,16 +3,29 @@ var logging = require('minilog')('radar:presence_store');
 function PresenceStore(scope) {
   this.scope = scope;
   this.map = {};
+  this.cache = {};
   this.clientUserMap = {};
   this.userTypes = {};
 }
 
 require('util').inherits(PresenceStore, require('events').EventEmitter);
 
+//cache the client data without adding
+PresenceStore.prototype.cacheAdd = function(clientId, data) {
+  this.cache[clientId] = data;
+};
+
+PresenceStore.prototype.cacheRemove = function(clientId) {
+  var val = this.cache[clientId];
+  delete this.cache[clientId];
+  return val;
+};
+
 PresenceStore.prototype.add = function(clientId, userId, userType, data) {
   var store = this,
       events = [];
   logging.debug('#presence - store.add', userId, clientId, data, this.scope);
+  this.cacheRemove(clientId);
 
   if(!this.map[userId]) {
     events.push('user_added');
@@ -36,6 +49,8 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
   var store = this,
       events = [];
   logging.debug('#presence - store.remove', userId, clientId, data, this.scope);
+  this.cacheRemove(clientId);
+
   if(!this.map[userId] || !this.map[userId][clientId]) {
     return; //inexistant, return
   }
@@ -59,6 +74,7 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
 
 PresenceStore.prototype.removeClient = function(clientId, data) {
   var userId = this.clientUserMap[clientId];
+  this.cacheRemove(clientId);
   if(!userId) {
     logging.warn('#presence - store.removeClient: cannot find data for', clientId, this.scope);
     return; //inexistant, return
