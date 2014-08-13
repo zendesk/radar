@@ -36,14 +36,14 @@
     "callback_tracker": "*",
     "underscore": "*",
     "persistence": "*",
-    "collect-stream": "*"
+    "collect-stream": "*",
+    "request": "*"
   },
   "devDependencies": {
     "mocha": "*",
     "radar_client": "0.9.1",
-    "long-stack-traces": "*",
     "simple_sentinel": "*",
-    "request": "*"
+    "sinon": "*"
   },
   "scripts": {
     "prestart": "npm run check-modules",

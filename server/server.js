@@ -5,7 +5,8 @@ var MiniEventEmitter = require('miniee'),
     DefaultEngineIO = require('engine.io'),
     RESTClient = require('./rest_client'),
     url = require('url'),
-    collect = require('collect-stream');
+    collect = require('collect-stream'),
+    _ = require('underscore');
 
 // Parse JSON
 function parseJSON(data) {
@@ -57,7 +58,6 @@ Server.prototype._setup = function(httpServer, configuration) {
     this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
   }
 
-
   this.server = engine.attach(httpServer, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
 
@@ -75,21 +75,20 @@ Server.prototype.handleHTTPRequest = function(request, response) {
   var uri = url.parse(request.url);
 
   if (this.apiPathRegExp.test(uri.path || '')) {
-    var client = new RESTClient(request, response);
+    var client = RESTClient.get(request, response);
 
-    if (RegExp.$2 == 'ping') {
+    if (RegExp.$1 == 'ping') {
       client.ping();
     } else if (request.method == 'POST') {
       this.onClientConnection(client);
-      request.pipe(process.stdout);
       collect(request, function(error, data) {
         client.emit('message', data);
       });
     }
-  } else if (this.httpListeners && this.httpListeners.length) {
-    for (var i = 0, l = this.httpListeners.length; i < l; ++i) {
-      this.httpListeners[i].call(this.httpServer, request, response);
-    }
+  } else {
+    _.each(this.httpListeners, function(listener) {
+      listener.call(this.httpServer, request, response);
+    }.bind(this));
   }
 };
 

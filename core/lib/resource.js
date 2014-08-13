@@ -1,5 +1,6 @@
 var Persistence = require('persistence'),
-    logging = require('minilog')('radar:resource');
+    logging = require('minilog')('radar:resource'),
+    url = require('url');
 
 /*
 
@@ -36,6 +37,11 @@ function recursiveMerge(target) {
   return target;
 }
 
+function isValidURL(value) {
+  var hash = url.parse(value);
+  return !!(hash.protocol && hash.host);
+}
+
 function Resource(name, parent, options, default_options) {
   this.name = name;
   this.subscribers = {};
@@ -47,14 +53,26 @@ Resource.prototype.type = 'default';
 
 // Add a subscriber (Engine.io client)
 Resource.prototype.subscribe = function(client, message) {
-  this.subscribers[client.id] = true;
-  logging.debug('#'+this.type, '- subscribe', this.name, client.id, this.subscribers, message && message.ack);
+  this.subscribers[client.id] = client;
+
+  logging.debug('#'+this.type, '- subscribe', this.name, client.id, message && message.ack);
+
+  if (message && message.url && client.subscriptions && isValidURL(message.url)) {
+    // this is a potential security hole if not validated and authorized
+    // during the auth phase of a message request
+    client.subscriptions[this.name] = message.url;
+  }
+
   this.ack(client, message && message.ack);
 };
 
 // Remove a subscriber (Engine.io client)
 Resource.prototype.unsubscribe = function(client, message) {
   delete this.subscribers[client.id];
+
+  if (client.unsubscribe) {
+    client.unsubscribe(this.name);
+  }
 
   logging.info('#'+this.type, '- unsubscribe', this.name, client.id, 'subscribers left:', Object.keys(this.subscribers).length);
 
@@ -79,8 +97,8 @@ var noop = function(name) {
 Resource.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
-  Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.parent.server.clients[subscriber];
+  Object.keys(this.subscribers).forEach(function(id) {
+    var client = self.subscribers[id];
     if (client && client.sendJSON) {
       client.sendJSON(data);
     }
