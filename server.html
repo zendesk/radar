@@ -3,7 +3,6 @@
   <head>
     <title>radar - High level API and backend for writing web apps that use push messaging</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <link type="text/css" rel="stylesheet" href="../assets/css/gh.css"/>
     <link rel="stylesheet" href="assets/css/style.css">
     <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
 
@@ -46,7 +45,7 @@
 
       <h2>Starting the sample server</h2>
 
-<pre>git clone ...
+<pre class="prettyprint">git clone ...
 npm install
 npm start</pre>
 
@@ -54,7 +53,7 @@ npm start</pre>
 
       <h2>Installing the Radar server</h2>
 
-      <pre>npm install --save radar</pre>
+      <pre class="prettyprint">npm install --save radar</pre>
 
       <h2>Configuration</h2>
 
@@ -63,7 +62,7 @@ npm start</pre>
         it out or switch it with a custom API.
       </p>
 
-<pre><code>var http = require('http'),
+<pre class="prettyprint"><code>var http = require('http'),
     Radar = require('radar').server,
     Api = require('radar').api,
     httpServer = http.createServer(function(req, res) {
@@ -101,7 +100,7 @@ httpServer.listen(8000);
 
       <p>Policies are specified by defining and registering resource types on the server. For example:</p>
 
-<pre><code>var http = require('http'),
+<pre class="prettyprint"><code>var http = require('http'),
     Radar = require('radar').server,
     Type = require('radar').core.Type;
 
@@ -117,7 +116,7 @@ Radar.attach(server, configuration);
 
       <p>Each policy has a name, and a set of properties. <code>my_types.js</code> could contain something like this:</p>
 
-<pre><code>module.exports = {
+<pre class="prettyprint"><code>module.exports = {
   chat_messages: {
     expr: new RegExp('^message:/.+/chat/.+$'),
     type: 'message',
@@ -155,7 +154,10 @@ Radar.attach(server, configuration);
 
       <ul class="list">
         <li><code>cache</code>: true | false</li>
-        <li><code>maxAgeSeconds</code>: number - applicable to both message list and status resources. With message lists, messages older than maxAgeSeconds are pruned on read. With status resources, status resources unused (not updated) for maxAgeSeconds will be removed.</li>
+        <li>
+          <code>maxAgeSeconds</code>: number - applicable to both message list and status resources. With message lists, messages older than maxAgeSeconds
+          are pruned on read. With status resources, status resources unused (not updated) for maxAgeSeconds will be removed.
+        </li>
         <li><code>maxCount</code>: number - only applicable to message list resources</li>
       </ul>
 
@@ -173,10 +175,6 @@ Radar.attach(server, configuration);
         The load balancer must use source IP sticky sessions. Radar itself does not need sticky sessions, as it can recover the correct state from Redis
         and the client, but Engine.io does (due to the way handshakes are done). Radar clients will recover from a server crash, as long as the load balancer
         points them to a different server.
-      </p>
-      <p>
-        For more information about deploying Radar, read <a href="http://book.mixu.net/ch13.html">this chapter on Comet and Socket.io</a>, which includes
-        sample configurations for HAProxy. While this is not specific to Radar, the same principles apply.
       </p>
       <p>Normal Redis replication can be used to scale beyond a single Redis backend (or, the servers can be sharded e.g. by account, each with their own backend).</p>
 

@@ -3,7 +3,6 @@
   <head>
     <title>radar - High level API and backend for writing web apps that use push messaging</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <link type="text/css" rel="stylesheet" href="../assets/css/gh.css"/>
     <link rel="stylesheet" href="assets/css/style.css">
     <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
 
@@ -46,7 +45,7 @@
 
       <h2>Basic usage</h2>
 
-<pre><code>RadarClient.configure({ ... }).alloc('example', function (){
+<pre class="prettyprint"><code>RadarClient.configure({ ... }).alloc('example', function (){
   RadarClient.status("invite/1234")
     .on(function(msg) { console.log(msg) })
     .sync();
@@ -69,7 +68,7 @@
       <h2>Configuration</h2>
       <p>The backend URL needs to be configured before using RadarClient.</p>
 
-<pre><code>RadarClient.configure({
+<pre class="prettyprint"><code>RadarClient.configure({
   host: 'localhost',
   port: 8000,
   secure: false,
@@ -133,7 +132,7 @@
 
       <p>Each of these returns a chainable object specific to that resource + name.</p>
       <p>For example:</p>
-<pre><code>RadarClient.presence(name).on(function(message) {
+<pre class="prettyprint"><code>RadarClient.presence(name).on(function(message) {
   console.log(message);
 }).set('online').sync();
 </code></pre>
@@ -190,7 +189,7 @@
             <li>Immediately retrieves the presence resource content and returns it.</li>
             <li>
               <p>callback(message): message is a JSON object, which looks like this:</p>
-<pre><code>{
+<pre class="prettyprint"><code>{
   "op": "get",
   "to": "presence:/account/scope",
   "value": {
