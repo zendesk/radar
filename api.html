@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>radar - High level API and backend for writing web apps that use push messaging</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="assets/js/prettify.js"></script>
+
+  </head>
+<body onload="prettyPrint()">
+
+  <div id="toc">
+    <div id="toc-inner">
+      <h4>Table of contents</h4>
+
+      <h5><a href="index.html">Overview &amp; tutorial</a></h5>
+
+      <h5><a href="client.html">Radar client</a></h5>
+
+      <h5><a href="server.html">Radar server</a></h5>
+
+      <h5><a href="api.html">Transactional API</a></h5>
+
+      <h5><a href="https://github.com/zendesk/radar" target="_blank">Full source code on Github</a></h5>
+
+      <h5><a href="http://www.zendesk.com/company/careers?jvi=oHiWWfwB,Job" target="_blank">Zendesk is hiring Radar developers</a></h5>
+
+    </div>
+  </div>
+
+  <div id="wrapper">
+    <div id="header">
+
+    </div>
+
+    <div class="clear"></div>
+    <div id="main">
+      <div id="content" class="post">
+
+
+      <h1>radar</h1>
+
+      <h1>Transactional API</h1>
+
+      <p>
+        Radar does not have a REST API, but it does have a session-less endpoint that allows you to write transactional interections
+        without establishing a session through engine.io. All of these requests are the same message format as that used by the engine.io
+        client and are POST'ed to a single endpoint at /api. The server is capable of recognizing repeated requests from the same
+        identified client under two conditions:
+      </p>
+
+      <ol>
+        <li>the initial request from the client was to subscribe/sync with a resource</li>
+        <li>each subsequent request includes the X-RADAR-ID HTTP header with the value specified by the corresponding header in the initial response</li>
+      </ol>
+
+      <p>Otherwise, each request is treated as if it originates from a separate client.</p>
+
+      <h3>Status</h3>
+
+      <h4>set a status</h4>
+
+<pre class="prettyprint"><code>curl -H "Content-Type: application/json" -X POST -d '
+{
+  "op": "set",
+  "to":"status:/test/ticket/1",
+  "key":"greeting",
+  "value":"hello",
+  "ack": true
+}
+' https://localhost:8000/api
+</code></pre>
+
+      <h6>Response</h6>
+
+<pre class="prettyprint"><code>{
+  "op": "ack",
+  "value": true
+}</code></pre>
+
+      <p>You probably want to set the key to the current user's ID if you want to have each user have it's own value in the same scope.</p>
+      <p>You can store any arbitrary string as the value.</p>
+
+      <h4>retrieve a status</h4>
+
+<pre class="prettyprint"><code>curl -H "Content-Type: application/json" -X POST -d '
+{
+  "op": "get",
+  "to":"status:/test/ticket/1"
+}
+' https://localhost:8000/api
+</code></pre>
+
+      <h6>Response</h6>
+
+<pre class="prettyprint"><code>{
+  "op": "get",
+  "to": "status:/test/ticket/1",
+  "value": {
+    "greeting": "hello"
+  }
+}</code></pre>
+
+      <p>The keys and values of the hash are determined by the content of the status. Often these are userID: value pairs.</p>
+
+      <h3>Presence</h3>
+
+      <p>Presence should only be set from the Radar client, not via the API, as the presence will disappear after the connection has been severed.</p>
+
+      <h4>retrieve a presence</h4>
+
+<pre class="prettyprint"><code>curl -H "Content-Type: application/json" -X POST -d '
+{
+  "op": "get",
+  "to":"presence:/test/ticket/1",
+  "options": { "version": 2 }
+}
+' https://localhost:8000/api
+</code></pre>
+
+      <h6>Response - Presence</h6>
+
+<pre class="prettyprint"><code>{
+  "op": "get",
+  "to": "presence:/test/ticket/1",
+  "value": {
+    "1234": {
+      "userType": 2,
+      "clients": {
+        "hdchvkgfj": {}
+      }
+    },
+    "4567": {
+      "userType": 0,
+      "clients": {
+        "jhghjgjkghjk": {},
+        "khgfdakjhkmh": { "name": "joe" }
+      }
+    }
+  }
+}</code></pre>
+
+      <p>
+        The "value" property of the response has a key for each identified userId that has set the presence to "online" and each userId property contains a userType
+        property that corresponds to the value provided by the clients based on configuration properties and a dictionary/hash of client ids that are supplied by each
+        unique socket connection that a userId has used. The value of the client properties is either a dictionary/object representing the value passed in by the client
+        for "userData" when the presence was set to "online".
+      </p>
+
+      <h3>MessageList</h3>
+
+      <h4>publish a message</h4>
+
+<pre class="prettyprint"><code>curl -H "Content-Type: application/json" -X POST -d '
+{
+  "op": "publish",
+  "to": "message:/test/ticket/1",
+  "value": "this is the message",
+  "ack": true
+}
+' https://localhost:8000/api
+</code></pre>
+
+      <h6>response</h6>
+
+<pre class="prettyprint"><code>{
+  "op": "ack",
+  "value": true
+}</code></pre>
+
+      <h4>retrieve a message</h4>
+
+<pre class="prettyprint"><code>curl -H "Content-Type: application/json" -X POST -d '
+{
+  "op": "sync",
+  "to": "message:/test/ticket/1"
+}
+' https://localhost:8000/api
+</code></pre>
+
+      <h6>Response</h6>
+
+<pre class="prettyprint"><code>{
+  "op": "sync",
+  "to": "message:/test/ticket/1",
+  "time": 1407974998784,
+  "value": [
+    { to: 'message:/test/ticket/1', value: "this is the message" }, 1407974998764,
+  ]
+}
+</code></pre>
+
+      <p>The response includes all the messages have not yet expired (based on the message retention policy on the server side, e.g. time-limited for some resources).</p>
+
+      </div>
+    </div>
+
+    <div class="clear">
+    </div>
+
+    <div id="footer">
+    </div>
+  </div>
+</body>
+</html>
