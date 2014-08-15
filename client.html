@@ -22,7 +22,7 @@
 
       <h5><a href="server.html">Radar server</a></h5>
 
-      <h5><a href="rest.html">REST API</a></h5>
+      <h5><a href="api.html">Transactional API</a></h5>
 
       <h5><a href="https://github.com/zendesk/radar" target="_blank">Full source code on Github</a></h5>
 
@@ -55,7 +55,7 @@
       <p>"example" is an arbitrary name for your functionality, which is used to determine whether to keep the connection alive or not.</p>
       <p>API calls - see the <a href="rest.html">REST API docs</a> for more details:</p>
 
-<pre><code>curl -k -H "Content-Type: application/json" -X POST -d '
+<pre class="prettyprint"><code>curl -k -H "Content-Type: application/json" -X POST -d '
 {
   "op":"set",
   "to":"status:/test/invite/1234",
