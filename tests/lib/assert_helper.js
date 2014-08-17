@@ -5,10 +5,12 @@ var assert = require('assert'),
 function PresenceMessage(account, name) {
   this.scope = 'presence:/'+account+'/'+name;
   this.notifications = [];
+  this.times = [];
 
   var self = this;
   this.notify = function(message) {
     self.notifications.push(message);
+    self.times.push(Date.now());
     self.emit(self.notifications.length);
   };
 }
@@ -136,7 +138,7 @@ PresenceMessage.prototype.assert_client_implicit_offline =  function(message) {
 
 PresenceMessage.prototype.assert_message_sequence = function(list) {
   var i, messages = this.notifications;
-  assert.equal(messages.length, list.length);
+  assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
     var method = 'assert_'+list[i];
@@ -287,4 +289,13 @@ PresenceMessage.prototype.assert_ack_for_subscribe = function(message) {
 PresenceMessage.prototype.assert_ack_for_unsubscribe = function(message) {
   this.assert_ack_for('unsubscribe', message);
 };
+
+//timing of messages
+PresenceMessage.prototype.assert_delay_between_notifications_within_range = function(i, j, low, high) {
+  var delay;
+  delay = this.times[j] - this.times[i];
+  assert.ok(low <= delay, 'delay('+delay+') was not >= '+low);
+  assert.ok(delay <= high, 'delay('+delay+') was not <= '+high);
+};
+
 module.exports.PresenceMessage = PresenceMessage;
