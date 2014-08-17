@@ -35,12 +35,16 @@ PresenceMessage.prototype.fail_on_any_message = function() {
 };
 
 PresenceMessage.prototype.for_client = function(client) {
-  this.client = {
-    userId: client.configuration('userId'),
-    userType:  client.configuration('userType'),
-    userData: client.configuration('userData'),
-    clientId: client.currentClientId()
-  };
+  if(client.configuration) {
+    this.client = {
+      userId: client.configuration('userId'),
+      userType:  client.configuration('userType'),
+      userData: client.configuration('userData'),
+      clientId: client.currentClientId()
+    };
+  } else {
+    this.client = client;
+  }
   return this;
 };
 
@@ -136,8 +140,9 @@ PresenceMessage.prototype.assert_client_implicit_offline =  function(message) {
   this.assert_client_offline(message, false);
 };
 
-PresenceMessage.prototype.assert_message_sequence = function(list) {
-  var i, messages = this.notifications;
+PresenceMessage.prototype.assert_message_sequence = function(list, from) {
+  var i, messages = this.notifications.slice(from);
+  from = from || 0;
   assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
@@ -146,9 +151,50 @@ PresenceMessage.prototype.assert_message_sequence = function(list) {
   }
 };
 
+PresenceMessage.prototype.assert_onlines_received = function() {
+  for(j = 0; j < this.online_clients.length; j++) {
+    var client = this.online_clients[j];
+    var uid = client.userId;
+    var cid = client.clientId;
+    var type = client.userType;
+    var udata = client.userData;
+    var i, online_idx = -1, client_online_idx = -1;
+
+    for(i = 0; i < this.notifications.length; i++) {
+      var value = this.notifications[i].value;
+      if(typeof value[uid] !== undefined && value[uid] === type) {
+        assert.equal(online_idx, -1);
+        online_idx = i;
+        this.for_client(client).assert_online(this.notifications[i]);
+      }
+      if(value.userId == uid && value.clientId == cid) {
+        assert.equal(client_online_idx, -1);
+        client_online_idx = i;
+        this.for_client(client).assert_client_online(this.notifications[i]);
+      }
+    }
+    assert.ok(online_idx != -1);
+    assert.ok(client_online_idx != -1);
+    assert.ok(client_online_idx > online_idx);
+  }
+};
+
 PresenceMessage.prototype.for_online_clients = function() {
   var clients = Array.prototype.slice.call(arguments, 0);
-  this.online_clients = clients;
+  this.online_clients = [];
+  var self = this;
+  clients.forEach(function(client) {
+    var clientHash = client;
+    if(client.configuration) {
+      clientHash = {
+        clientId: client.currentClientId(),
+        userId: client.configuration('userId'),
+        userData: client.configuration('userData'),
+        userType: client.configuration('userType')
+      };
+    }
+    self.online_clients.push(clientHash);
+  });
   return this;
 };
 
@@ -165,7 +211,7 @@ PresenceMessage.prototype.assert_get_response = function(message) {
   var value = {};
 
   clients.forEach(function(client) {
-    value[client.configuration('userId')] = client.configuration('userType');
+    value[client.userId] = client.userType;
   });
 
   assert.deepEqual({
@@ -193,25 +239,21 @@ PresenceMessage.prototype.assert_get_v2_response = function(message) {
   var value = {};
   clients = this.online_clients || [];
   clients.forEach(function(client) {
-    var clientId = client.currentClientId();
-    var userId = client.configuration('userId');
-    var userData = client.configuration('userData');
-    var userType = client.configuration('userType');
     var userHash;
-    if(value[userId]) {
-      userHash = value[userId];
+    if(value[client.userId]) {
+      userHash = value[client.userId];
     } else {
-      value[userId] = userHash = { clients: {} };
+      value[client.userId] = userHash = { clients: {} };
     }
-    userHash.clients[clientId] = userData;
-    userHash.userType = userType;
+    userHash.clients[client.clientId] = client.userData;
+    userHash.userType = client.userType;
   });
 
   assert.deepEqual({
     op: 'get',
     to: this.scope,
     value: value
-  }, message);
+  }, message, JSON.stringify(value)+' vs '+JSON.stringify(message.value));
 };
 
 // sync response:
@@ -227,7 +269,7 @@ PresenceMessage.prototype.assert_sync_response = function(message) {
   var value = {};
 
   clients.forEach(function(client) {
-    value[client.configuration('userId')] = client.configuration('userType');
+    value[client.userId] = client.userType;
   });
 
   assert.deepEqual({
