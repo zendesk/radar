@@ -6,19 +6,14 @@ var common = require('./common.js'),
     PresenceManager = require('../core/lib/resources/presence/presence_manager.js'),
     Client = require('radar_client').constructor,
     EE = require('events').EventEmitter,
+    PresenceAssert = require('./lib/assert_helper.js').PresenceMessage,
     Sentry = require('../core/lib/resources/presence/sentry.js'),
     radar, client, client2;
 
 describe('given a client and a server,', function() {
-  var sentry = new Sentry('test-sentry');
+  var p, sentry = new Sentry('test-sentry');
   var presenceManager = new PresenceManager('presence:/dev/test',{}, sentry);
   var stampExpiration = presenceManager.stampExpiration;
-  var notifications, notifier = new EE();
-  notifier.when = notifier.once;
-  var notify = function(message) {
-    notifications.push(message);
-    notifier.emit(notifications.length);
-  };
   before(function(done) {
     common.startPersistence(function() {
       radar = common.spawnRadar();
@@ -34,12 +29,13 @@ describe('given a client and a server,', function() {
   });
 
   beforeEach(function(done) {
+    p = new PresenceAssert('dev', 'test');
+    p.client = { clientId: 'abc', userId: 100, userType: 2, userData: { name: 'tester' } };
     var track = Tracker.create('beforeEach', done);
     sentry.name = 'test-sentry';
     sentry.publishKeepAlive(); //set ourselves alive
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     notifications = [];
-    notifier.removeAllListeners();
   });
 
   afterEach(function(done) {
@@ -51,19 +47,15 @@ describe('given a client and a server,', function() {
 
   describe('without listening to a presence, ', function(done) {
     it('should be able to set offline', function(done) {
-      notifier.on(1, function() {
-        assert.ok(false);
-      });
-      client.presence('test').on(notify).set('offline', function() {
+      p.fail_on_any_message();
+      client.presence('test').on(p.notify).set('offline', function() {
         setTimeout(done,1000);
       });
     });
 
     it('should be able to unsubscribe', function(done) {
-      notifier.on(1, function() {
-        assert.ok(false);
-      });
-      client.presence('test').on(notify).unsubscribe(function() {
+      p.fail_on_any_message();
+      client.presence('test').on(p.notify).unsubscribe(function() {
         setTimeout(done,1000);
       });
     });
@@ -71,39 +63,31 @@ describe('given a client and a server,', function() {
 
   describe('when listening to a presence,', function() {
     beforeEach(function(done) {
-      client.presence('test').on(notify).subscribe(function() { done(); });
+      client.presence('test').on(p.notify).subscribe(function() { done(); });
     });
 
     describe('for incoming online messages,', function() {
       it('should emit user/client onlines', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
+          p.assert_message_sequence([ 'online', 'client_online' ]);
           done();
         };
         presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-        notifier.when(2, function() {
+
+        p.fail_on_more_than(2);
+        p.on(2, function() {
           setTimeout(validate, 10);
         });
       });
 
       it('should ignore duplicate messages', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 2);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
+          p.assert_message_sequence([ 'online', 'client_online' ]);
           done();
         };
         presenceManager.addClient('abc', 100, 2, { name: 'tester' });
         presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-        notifier.when(2, function() {
+        p.on(2, function() {
           setTimeout(validate, 20);
         });
       });
@@ -111,9 +95,7 @@ describe('given a client and a server,', function() {
       it('should ignore messages from dead servers (sentry expired and gone)', function(done) {
         sentry.name = 'dead';
         presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-        notifier.when(1, function() {
-          assert.ok(false);
-        });
+        p.fail_on_any_message();
         setTimeout(done, 10);
       });
 
@@ -121,9 +103,7 @@ describe('given a client and a server,', function() {
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
         presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-        notifier.when(1, function() {
-          assert.ok(false);
-        });
+        p.fail_on_any_message();
         setTimeout(done, 10);
       });
 
@@ -134,16 +114,13 @@ describe('given a client and a server,', function() {
             message.at = Date.now();
           };
           var validate = function() {
-            assert.equal(notifications.length, 2);
-            assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-            assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-              op: 'client_online',
-              value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-            });
+            p.assert_message_sequence([ 'online', 'client_online' ]);
             done();
           };
           presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-          notifier.when(2, function() {
+
+          p.fail_on_more_than(2);
+          p.on(2, function() {
             setTimeout(validate, 10);
           });
         });
@@ -153,9 +130,7 @@ describe('given a client and a server,', function() {
             message.at = Date.now() - 5000;
           };
           presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-          notifier.when(1, function() {
-            assert.ok(false);
-          });
+          p.fail_on_any_message();
           setTimeout(done, 10);
         });
       });
@@ -167,110 +142,57 @@ describe('given a client and a server,', function() {
 
       it('should emit user/client offline for explicit disconnect', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_offline',
-            value: { userId: 100, clientId: 'abc' },
-            explicit: true
-          });
-          assert.deepEqual(notifications[3], { to: 'presence:/dev/test', op: 'offline', value: { '100': 2 } });
+          p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ]);
           done();
         };
         presenceManager.removeClient('abc', 100, 2);
-        notifier.when(4, function() {
+        p.on(4, function() {
           setTimeout(validate,10);
         });
       });
 
       it('should handle multiple explicit disconnects', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_offline',
-            value: { userId: 100, clientId: 'abc' },
-            explicit: true
-          });
-          assert.deepEqual(notifications[3], { to: 'presence:/dev/test', op: 'offline', value: { '100': 2 } });
+          p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ]);
           done();
         };
         presenceManager.removeClient('abc', 100, 2);
         presenceManager.removeClient('abc', 100, 2);
-        notifier.when(4, function() {
+        p.on(4, function() {
           setTimeout(validate, 10);
         });
       });
 
       it('should not emit user_offline during user expiry for implicit disconnect', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 3);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_offline',
-            value: { userId: 100, clientId: 'abc' },
-            explicit: false
-          });
+          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline' ]);
           done();
         };
         presenceManager._implicitDisconnect('abc', 100, 2);
-        notifier.when(3, function() {
+        p.on(3, function() {
           setTimeout(validate, 900);
         });
       });
 
       it('should not emit user_offline during user expiry for multiple implicit disconnects', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 3);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_offline',
-            value: { userId: 100, clientId: 'abc' },
-            explicit: false
-          });
+          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline' ]);
           done();
         };
         presenceManager._implicitDisconnect('abc', 100, 2);
         presenceManager._implicitDisconnect('abc', 100, 2);
-        notifier.when(3, function() {
+        p.on(3, function() {
           setTimeout(validate, 900);
         });
       });
 
       it('should emit user_offline eventually for implicit disconnect', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          assert.deepEqual(notifications[0], { to: 'presence:/dev/test', op: 'online', value: { '100': 2 }, userData: { name: 'tester' } });
-          assert.deepEqual(notifications[1], { to: 'presence:/dev/test',
-            op: 'client_online',
-            value: { userId: 100, clientId: 'abc', userData: { name: 'tester' } }
-          });
-          assert.deepEqual(notifications[2], { to: 'presence:/dev/test',
-            op: 'client_offline',
-            value: { userId: 100, clientId: 'abc' },
-            explicit: false
-          });
-          assert.deepEqual(notifications[3], { to: 'presence:/dev/test', op: 'offline', value: { '100': 2 } });
+          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline', 'offline' ]);
           done();
         };
         presenceManager._implicitDisconnect('abc', 100, 2);
-        notifier.when(3, function() {
+        p.on(3, function() {
           setTimeout(validate, 1100);
         });
       });
@@ -279,6 +201,7 @@ describe('given a client and a server,', function() {
 
 
   describe('with existing persistence entries, ', function() {
+    var clients = {};
     beforeEach(function(done) {
       sentry.name = 'server1';
       sentry.publishKeepAlive();
@@ -286,116 +209,83 @@ describe('given a client and a server,', function() {
       sentry.name = 'server2';
       sentry.publishKeepAlive();
       presenceManager.addClient('def', 200, 0, { name: 'tester2' }, done);
+      clients =  {
+        abc: { clientId: 'abc', userId: 100, userType: 2, userData: { name: 'tester1' } },
+        def: { clientId: 'def', userId: 200, userType: 0, userData: { name: 'tester2' } },
+        hij: { clientId: 'hij', userId: 300, userType: 2, userData: { name: 'tester3' } },
+        pqr: { clientId: 'pqr', userId: 100, userType: 2, userData: { name: 'tester1' } },
+        klm: { clientId: 'klm', userId: 400, userType: 2, userData: { name: 'tester4' } }
+      };
     });
-
-    var should_be_online = function(uid, cid, type, name) {
-      var online_idx = -1, client_online_idx = -1;
-
-      var i;
-      for(i = 0; i < notifications.length; i++) {
-        var value = notifications[i].value;
-        if(typeof value[uid] !== undefined && value[uid] === type) {
-          assert.equal(online_idx, -1);
-          online_idx = i;
-          assert.equal(value[uid], type);
-          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'online', value: value, userData: { name: name } });
-        }
-        if(value.userId == uid && value.clientId == cid) {
-          assert.equal(client_online_idx, -1);
-          client_online_idx = i;
-          assert.deepEqual(notifications[i], { to: 'presence:/dev/test', op: 'client_online', value: { userId: uid, clientId: cid, userData: { name: name }}});
-        }
-      }
-      assert.ok(online_idx != -1);
-      assert.ok(client_online_idx != -1);
-      assert.ok(client_online_idx > online_idx);
-      return [ online_idx, client_online_idx ];
-    };
 
     describe('when syncing (v2), ', function() {
       it('should send new notifications and callback correctly', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 4);
-
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-          assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-            value: {
-              100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-              200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-            }
-          });
+        client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+          p.for_online_clients(clients.abc, clients.def)
+            .assert_sync_v2_response(message);
           callback = true;
         });
-        notifier.when(4, function() {
+
+        p.on(4, function() {
           setTimeout(validate, 10);
         });
+        p.fail_on_more_than(4);
       });
 
       it('should send new notifications and callback correctly for different clients with same user', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 5);
-
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(100, 'pqr', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def, clients.pqr)
+            .assert_onlines_received();
           assert.ok(callback);
           done();
         };
         presenceManager.addClient('pqr', 100, 2, { name: 'tester1' }, function() {
-          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-              value: {
-                100: { clients: { abc: { name: 'tester1' }, pqr: { name: 'tester1' } }, userType: 2 },
-                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-              }
-            });
+          client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+            p.for_online_clients(clients.abc, clients.def, clients.pqr)
+              .assert_sync_v2_response(message);
             callback = true;
           });
         });
 
-        notifier.when(5, function() {
+        p.on(5, function() {
           setTimeout(validate, 10);
         });
+        p.fail_on_more_than(5);
       });
 
       it('subsequent new online notifications should work fine', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 6);
-          // these should be last two
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 }, userData: { name: 'tester3' } });
-          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
+          // these should be last two, so from=4
+          p.for_client(clients.hij)
+            .assert_message_sequence(['online', 'client_online'], 4);
 
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-          assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-            value: {
-              100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-              200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-            }
-          });
+        client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+          p.for_online_clients(clients.abc, clients.def)
+            .assert_sync_v2_response(message);
           callback = true;
         });
 
         // After sync's online has come, add another client
-        notifier.when(4, function() {
+        p.on(4, function() {
           sentry.name = 'server1';
           sentry.publishKeepAlive();
           presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
         });
 
-        notifier.when(6, function() {
+        p.fail_on_more_than(6);
+        p.on(6, function() {
           setTimeout(validate, 10);
         });
       });
@@ -403,25 +293,20 @@ describe('given a client and a server,', function() {
       it('should ignore dead server clients (sentry expired and gone)', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           assert.ok(callback);
           done();
         };
 
         sentry.name = 'unknown';
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-              value: {
-                100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-              }
-            });
+          client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+            p.for_online_clients(clients.abc, clients.def).assert_sync_v2_response(message);
             callback = true;
           });
-          notifier.when(4, function() {
+
+          p.fail_on_more_than(4);
+          p.on(4, function() {
             setTimeout(validate, 10);
           });
         });
@@ -430,9 +315,7 @@ describe('given a client and a server,', function() {
       it('should ignore dead server clients (sentry expired but present)', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           assert.ok(callback);
           done();
         };
@@ -440,16 +323,13 @@ describe('given a client and a server,', function() {
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-            assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-              value: {
-                100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-                200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-              }
-            });
+          client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+            p.for_online_clients(clients.abc, clients.def)
+              .assert_sync_v2_response(message);
             callback = true;
           });
-          notifier.when(4, function() {
+          p.fail_on_more_than(4);
+          p.on(4, function() {
             setTimeout(validate, 10);
           });
         });
@@ -458,11 +338,8 @@ describe('given a client and a server,', function() {
         it('should include clients with unexpired entries', function(done) {
           var callback = false;
           var validate = function() {
-            var i;
-            assert.equal(notifications.length, 6);
-            should_be_online(100, 'abc', 2, 'tester1');
-            should_be_online(200, 'def', 0, 'tester2');
-            should_be_online(400, 'klm', 0, 'tester4');
+            p.for_online_clients(clients.abc, clients.def, clients.klm)
+              .assert_onlines_received();
             assert.ok(callback);
             done();
           };
@@ -472,18 +349,15 @@ describe('given a client and a server,', function() {
             message.at = Date.now();
           };
 
-          presenceManager.addClient('klm', 400, 0, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-              assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-                value: {
-                  100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-                  200: { clients: { def: { name: 'tester2' } }, userType: 0 },
-                  400: { clients: { klm: { name: 'tester4' } }, userType: 0 }
-                }
-              });
+          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+            client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+              p.for_online_clients(clients.abc, clients.def, clients.klm)
+                .assert_sync_v2_response(message);
               callback = true;
             });
-            notifier.when(6, function() {
+
+            p.fail_on_more_than(6);
+            p.on(6, function() {
               setTimeout(validate, 10);
             });
           });
@@ -492,9 +366,7 @@ describe('given a client and a server,', function() {
         it('should ignore clients with expired entries', function(done) {
           var callback = false;
           var validate = function() {
-            assert.equal(notifications.length, 4);
-            should_be_online(100, 'abc', 2, 'tester1');
-            should_be_online(200, 'def', 0, 'tester2');
+            p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
             assert.ok(callback);
             done();
           };
@@ -505,16 +377,14 @@ describe('given a client and a server,', function() {
           };
 
           presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).sync({ version: 2 }, function(message) {
-              assert.deepEqual(message, { op: 'get', to: 'presence:/dev/test',
-                value: {
-                  100: { clients: { abc: { name: 'tester1' } }, userType: 2 },
-                  200: { clients: { def: { name: 'tester2' } }, userType: 0 }
-                }
-              });
+            client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
+              p.for_online_clients(clients.abc, clients.def)
+                .assert_sync_v2_response(message);
               callback = true;
             });
-            notifier.when(4, function() {
+
+            p.fail_on_more_than(4);
+            p.on(4, function() {
               setTimeout(validate, 10);
             });
           });
@@ -525,103 +395,93 @@ describe('given a client and a server,', function() {
     describe('when syncing (v1), (deprecated since callbacks are broken)', function() {
       it('should send all notifications (one extra for sync)', function(done) {
         var validate = function() {
-          assert.equal(notifications.length, 4);
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           done();
         };
-        client.presence('test').on(notify).sync(function(message) {
-          assert.equal(message.op, 'online');
-          assert.equal(message.to, 'presence:/dev/test');
-          assert.ok(message.value);
+        client.presence('test').on(p.notify).sync(function(message) {
+          p.for_online_clients(clients.abc, clients.def)
+            .assert_sync_response(message);
           setTimeout(validate, 10);
         });
+
+        p.fail_on_more_than(4);
       });
 
 
       it('subsequent new online notifications should work fine', function(done) {
         var callback = false;
         var validate = function() {
-          assert.equal(notifications.length, 6, JSON.stringify(notifications));
-          // new
-          assert.deepEqual(notifications[4], { to: 'presence:/dev/test', op: 'online', value: { '300': 2 }, userData: { name: 'tester3' } });
-          assert.deepEqual(notifications[5], { to: 'presence:/dev/test', op: 'client_online', value: { userId: 300, clientId: 'hij', userData: { name: 'tester3' }}});
+          // after 4 messages,
+          p.for_client(clients.hij)
+            .assert_message_sequence(['online', 'client_online'], 4);
 
-          should_be_online(100, 'abc', 2, 'tester1');
-          should_be_online(200, 'def', 0, 'tester2');
+          p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
           assert.ok(callback);
           done();
         };
-        client.presence('test').on(notify).sync(function(message) {
-          assert.equal(message.op, 'online');
-          assert.equal(message.to, 'presence:/dev/test');
-          assert.ok(message.value);
+        client.presence('test').on(p.notify).sync(function(message) {
+          p.for_online_clients(clients.abc, clients.def)
+            .assert_sync_response(message);
           callback = true;
         });
 
-        notifier.when(4, function() {
+        p.on(4, function() {
           // After sync's online has come, add another client
           sentry.name = 'server1';
           sentry.publishKeepAlive();
           presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
         });
 
-        notifier.when(6, function() {
+        p.on(6, function() {
           setTimeout(validate, 10);
         });
+
+        p.fail_on_more_than(6);
       });
     });
 
     describe('when getting, ', function() {
       it('should send correct callback and no notifications', function(done) {
-        var validate = function() {
-          assert.equal(notifications.length, 0);
-          done();
-        };
-        client.presence('test').on(notify).get(function(message) {
-          assert.deepEqual(message, { to: 'presence:/dev/test', op: 'get', value: { '200': 0, '100': 2 } });
-          setTimeout(validate, 10);
+        client.presence('test').on(p.notify).get(function(message) {
+          p.for_online_clients(clients.abc, clients.def)
+            .assert_get_response(message);
+          setTimeout(done, 10);
         });
+
+        p.fail_on_any_message();
       });
 
 
       it('should ignore dead server clients (sentry expired and gone)', function(done) {
-        var validate = function() {
-          assert.equal(notifications.length, 0);
-          done();
-        };
-
         sentry.name = 'unknown';
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).get(function(message) {
-            assert.deepEqual(message, { to: 'presence:/dev/test', op: 'get', value: { '200': 0, '100': 2 } });
-            setTimeout(validate, 10);
+          client.presence('test').on(p.notify).get(function(message) {
+            p.for_online_clients(clients.abc, clients.def)
+              .assert_get_response(message);
+            setTimeout(done, 10);
           });
         });
+
+        p.fail_on_any_message();
       });
 
       it('should ignore dead server clients (sentry expired but not gone)', function(done) {
-        var validate = function() {
-          assert.equal(notifications.length, 0);
-          done();
-        };
-
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
         presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-          client.presence('test').on(notify).get(function(message) {
-            assert.deepEqual(message, { to: 'presence:/dev/test', op: 'get', value: { '200': 0, '100': 2 } });
-            setTimeout(validate, 10);
+          client.presence('test').on(p.notify).get(function(message) {
+            p.for_online_clients(clients.abc, clients.def)
+              .assert_get_response(message);
+            setTimeout(done, 10);
           });
         });
+
+        p.fail_on_any_message();
       });
 
       describe('with legacy messages, ', function() {
         it('should include clients with unexpired entries', function(done) {
-          var validate = function() {
-            assert.equal(notifications.length, 0);
-            done();
-          };
+          p.fail_on_any_message();
 
           delete sentry.name;
           presenceManager.stampExpiration = function(message) {
@@ -629,18 +489,16 @@ describe('given a client and a server,', function() {
           };
 
           presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).get(function(message) {
-              assert.deepEqual(message, { to: 'presence:/dev/test', op: 'get', value: { '200': 0, '100': 2, '400': 2 } });
-              setTimeout(validate, 10);
+            client.presence('test').on(p.notify).get(function(message) {
+              p.for_online_clients(clients.abc, clients.def, clients.klm)
+                .assert_get_response(message);
+              setTimeout(done, 10);
             });
           });
         });
 
         it('should ignore clients with expired entries', function(done) {
-          var validate = function() {
-            assert.equal(notifications.length, 0);
-            done();
-          };
+          p.fail_on_any_message();
 
           delete sentry.name;
           presenceManager.stampExpiration = function(message) {
@@ -648,9 +506,10 @@ describe('given a client and a server,', function() {
           };
 
           presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(notify).get(function(message) {
-              assert.deepEqual(message, { to: 'presence:/dev/test', op: 'get', value: { '200': 0, '100': 2 } });
-              setTimeout(validate, 10);
+            client.presence('test').on(p.notify).get(function(message) {
+              p.for_online_clients(clients.abc, clients.def)
+                .assert_get_response(message);
+              setTimeout(done, 10);
             });
           });
         });

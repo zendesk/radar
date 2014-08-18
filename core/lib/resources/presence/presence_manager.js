@@ -92,6 +92,9 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType, userD
 
   this.stampExpiration(message);
 
+  //we might need the details before we actually do a store.add
+  this.store.cacheAdd(clientId, message);
+
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
 
   if(this.policy && this.policy.maxPersistence) {
@@ -119,13 +122,22 @@ PresenceManager.prototype.removeClient = function(clientId, userId, userType, ca
 // implicit disconnect (broken connection)
 PresenceManager.prototype.disconnectClient = function(clientId, callback) {
   var userId = this.store.userOf(clientId);
+  var userType;
   // if there is no userid, then we've already removed the user (e.g. via a remove call)
+  // or, we have not added this client to the store yet. (redis reply for addClient has not come)
   if(!userId) {
-    //this is possible for multiple servers expiring a fallen server's clients
-    logging.warn('#presence - no userId/userType found for', clientId, 'in store, userId:', userId, this.scope);
-    return;
+    var message = this.store.cacheRemove(clientId);
+    if(!message) {
+      //this is possible if multiple servers are expiring a fallen server's clients
+      logging.warn('#presence - no userId/userType found for', clientId, 'in store, userId:', userId, this.scope);
+      return;
+    } else {
+      userId = message.userId;
+      userType = message.userType;
+    }
+  } else {
+    userType = this.store.userTypeOf(userId);
   }
-  var userType = this.store.userTypeOf(userId);
   this._implicitDisconnect(clientId, userId, userType, callback);
 };
 

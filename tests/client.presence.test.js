@@ -4,9 +4,11 @@ var common = require('./common.js'),
     Persistence = require('../core').Persistence,
     Tracker = require('callback_tracker'),
     Client = require('radar_client').constructor,
+    PresenceMessage = require('./lib/assert_helper.js').PresenceMessage,
     radar, client, client2;
 
-describe('given two clients and one server', function() {
+describe('given two clients and a presence resource', function() {
+  var p;
   before(function(done) {
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, done);
@@ -17,6 +19,7 @@ describe('given two clients and one server', function() {
   });
 
   beforeEach(function(done) {
+    p = new PresenceMessage('dev', 'test');
     var track = Tracker.create('beforeEach', done);
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'));
@@ -24,6 +27,7 @@ describe('given two clients and one server', function() {
   });
 
   afterEach(function() {
+    p.teardown();
     client.presence('test').set('offline').removeAllListeners();
     client2.presence('test').set('offline').removeAllListeners();
     client3.presence('test').set('offline').removeAllListeners();
@@ -32,310 +36,285 @@ describe('given two clients and one server', function() {
     client3.dealloc('test');
   });
 
-  describe('subscribe/unsubscribe', function() {
+  describe('when using subscribe/unsubscribe', function() {
     it('can subscribe a presence scope', function(done) {
-      var messages = [];
+      client.presence('test').on(p.notify).subscribe(function(message) {
+        p.for_client(client).assert_ack_for_subscribe(message);
+        client2.presence('test').set('online');
+        client2.presence('test').set('offline');
+      });
 
-      client.presence('test')
-      .on(function(m) {
-        messages.push(m);
-      }).subscribe(function() {
-        client2.presence('test').set('online', function() {
-          client2.presence('test').set('offline', function() {
-            // ensure that async tasks have run
-            setTimeout(function() {
-              assert.equal(4, messages.length);
-              assert.equal('online', messages[0].op);
-              assert.deepEqual({ '246': 0 }, messages[0].value);
-              assert.equal('client_online', messages[1].op);
-              assert.deepEqual(messages[1].value.userId, 246);
-              assert.equal('client_offline', messages[2].op);
-              assert.ok(messages[2].explicit);
-              assert.deepEqual(messages[2].value.userId, 246);
-              assert.equal('offline', messages[3].op);
-              assert.deepEqual({ '246': 0 }, messages[3].value);
-              done();
-            }, 5);
-          });
-        });
+      p.fail_on_more_than(4);
+      p.once(4, function() {
+        // ensure that no more messages come
+        setTimeout(function() {
+          p.for_client(client2).assert_message_sequence([
+            'online', 'client_online', 'client_explicit_offline', 'offline'
+          ]);
+          done();
+        }, 5);
       });
     });
 
     it('can unsubscribe a presence scope', function(done) {
-      client.presence('test').subscribe(function() {
-        client.once('presence:/dev/test', function(message) {
-          assert.equal('online', message.op);
-          assert.deepEqual({ '246': 0 }, message.value);
-          client.presence('test').unsubscribe(function() {
-            client.once('presence:/dev/test', function() {
-              assert.ok(false); // should not receive message
-            });
-            client2.presence('test').set('offline');
-            setTimeout(function() {
+      client.presence('test').on(p.notify).subscribe();
+      client2.presence('test').set('online');
+
+      p.fail_on_more_than(2);
+      p.on(2, function() {
+        // online and client_online
+        p.for_client(client2).assert_message_sequence(
+          [ 'online', 'client_online' ]
+        );
+        client.presence('test').unsubscribe(function(message) {
+          p.for_client(client).assert_ack_for_unsubscribe(message);
+          client2.presence('test').set('offline');
+          setTimeout(done,10);
+        });
+      });
+
+    });
+
+    describe('with a client subscribed', function() {
+      it('should receive presence notifications if a client comes online', function(done) {
+        // subscribe online with client 2
+        client2.presence('test').on(p.notify).subscribe(function() {
+          // set client 1 to online
+          client.presence('test').set('online', function() {
+            client2.presence('test').get(function(message) {
+              // should show client 1 as online
+              p.for_online_clients(client).assert_get_response(message);
+              p.for_client(client).assert_message_sequence(
+                [ 'online', 'client_online' ]
+              );
               done();
-            }, 10);
+            });
           });
         });
-        client2.presence('test').set('online');
       });
-    });
 
-    it('should receive a presence update after subscription and only once', function(done) {
-      var notifications = [];
-      // subscribe online with client 2
-      // cache the notifications to client 2
-      client2.presence('test').on(function(message){
-        notifications.push(message);
-      }).subscribe(function() {
-        // set client 1 to online
-        client.presence('test').set('online', function() {
-          client2.presence('test').get(function(message) {
-            // both should show client 1 as online
-            assert.equal('get', message.op);
-            assert.deepEqual({ '123': 0 }, message.value);
+      it('should not receive any notification if an offline client unsubscribes', function(done) {
+        p.fail_on_any_message();
+        // subscribe online with client 2
+        client2.presence('test').on(p.notify).subscribe(function() {
+          // client 1 disconnect
+          client.presence('test').unsubscribe();
+          setTimeout(done,20);
+        });
+      });
 
-            assert.equal(notifications.length, 2);
-            assert.equal(notifications[0].op, 'online');
-            assert.deepEqual(notifications[0].value, { '123': 0 });
-            assert.equal(notifications[1].op, 'client_online');
-            assert.equal(notifications[1].value.userId, 123);
-            assert.equal(notifications[1].value.clientId, client._socket.id);
-            done();
-          });
+      it('should not receive notifications after we unsubscribe', function(done) {
+        // subscribe online with client 2
+        client2.presence('test').on(p.notify).subscribe(function() {
+          client.presence('test').set('online');
+        });
+
+        p.fail_on_more_than(2);
+        p.on(2, function() {
+          p.for_client(client).assert_message_sequence(['online', 'client_online']);
+
+          client2.presence('test').unsubscribe();
+          client.presence('test').set('online');
+          setTimeout(done, 20);
         });
       });
     });
   });
 
-  it('should send presence messages correctly when toggling back and forth', function(done) {
-    var messages = { count: 0 };
-    var count = 8;
-    var onlines = Math.ceil(count/2);
-    var offlines = Math.floor(count/2);
-
-    var verify = function() {
-      logging.info(messages);
-      assert.ok(messages.client_offline == offlines, "expected "+ offlines +" but got " + messages.client_offline + " client_offlines");
-      assert.ok(messages.offline == offlines, "expected " + offlines + " but got " + messages.offline + " offlines");
-      assert.ok(messages.client_online == onlines, "expected "+ onlines +" but got " + messages.client_online + " client_onlines");
-      assert.ok(messages.online == onlines, "expected "+ onlines +" but got " + messages.online + " onlines");
-      done();
-    };
-
-    var current_state = 'offline';
-    var toggle = function() {
-      current_state = (current_state == 'offline'?'online':'offline');
-      logging.info("setting "+current_state);
-      client.presence('test').set(current_state);
-    };
-
-    client2.presence('test').on(function(message){
-      logging.info('Received message', message);
-      if(!messages[message.op]) {
-        messages[message.op] = 1;
-      } else {
-        messages[message.op] ++;
-      }
-      messages.count ++;
-      //Got everything, wait if we get something unwanted
-      if(messages.count == 2*count) {
-        setTimeout(verify, 50);
-      }
-    }).subscribe(function() {
-      for(var i = 0; i< count; i++) {
-        setTimeout(toggle,10);
-      }
-    });
-  });
-
-// Presence tests
-// - .get(callback)
-// - .set('online', ack) / .set('offline', ack)
-// - .subscribe(ack)
-// - .unsubscribe(ack)
-// - .sync(callback)
-  describe('set', function() {
-    it('online', function(done) {
-      var once_set = function() {
+  describe('when using set()', function() {
+    it('can set online', function(done) {
+      client.presence('test').set('online', function(ack) {
+        p.for_client(client).assert_ack_for_set_online(ack);
         client.presence('test').get(function(message) {
-          assert.equal(message.to, 'presence:/dev/test');
-          assert.equal(message.op, 'get');
-          assert.deepEqual(message.value, { 123: 0 });
-          client.presence('test').set('offline', function() {
-            done();
-          });
-        });
-      };
-
-      client.presence('test').set('online', once_set);
-    });
-
-    it('offline', function(done) {
-      var once_set =  function() {
-        client.presence('test').get(function(message) {
-          assert.equal('get', message.op);
-          assert.deepEqual(message.value, { });
+          p.for_online_clients(client).assert_get_response(message);
           done();
         });
-      };
+      });
+    });
 
-      client.presence('ticket/21').set('offline', once_set);
+    it('can set offline without setting online first', function(done) {
+      client.presence('test').set('offline', function(ack) {
+        p.for_client(client).assert_ack_for_set_offline(ack);
+        client.presence('test').get(function(message) {
+          p.for_online_clients().assert_get_response(message);
+          done();
+        });
+      });
+    });
+
+    it('can set offline after setting online', function(done) {
+      p = p.for_client(client);
+      client.presence('test').set('online', function(ack) {
+        p.assert_ack_for_set_online(ack);
+        client.presence('test').set('offline', function(ack) {
+          p.assert_ack_for_set_offline(ack);
+          client.presence('test').get(function(message) {
+            p.for_online_clients().assert_get_response(message);
+            done();
+          });
+        });
+      });
+    });
+
+    describe('with another client listening for notifications', function() {
+      it('should remain online after a while if the state does not change', function(done) {
+        client.presence('test').set('online', function() {
+          var presence = client2.presence('test').sync({ version: 2 }, function(message) {
+            p.for_online_clients(client).assert_sync_v2_response(message);
+            setTimeout(function() {
+              presence.get({ version: 2 }, function(message) {
+                p.for_online_clients(client).assert_get_v2_response(message);
+                done();
+              });
+            }, 1500); //reread after a while
+          });
+        });
+      });
+
+      it('should not send notifications for a set(offline) if already offline', function(done) {
+        p.fail_on_any_message();
+        // subscribe online with client 2
+        client2.presence('test').on(p.notify).subscribe(function() {
+          client.presence('test').set('offline');
+          setTimeout(done, 50);
+        });
+      });
+
+      it('should send online notification only once for multiple set(online)', function(done) {
+        // subscribe online with client 2
+        client2.presence('test').on(p.notify)
+          .subscribe(function() {
+            client.presence('test').set('online');
+            client.presence('test').set('online');
+            client.presence('test').set('online');
+            setTimeout(done, 50);
+          });
+
+        p.fail_on_more_than(2);
+        p.on(2, function() {
+          p.for_client(client).assert_message_sequence([ 'online', 'client_online' ]);
+        });
+      });
+
+      it('should send presence messages correctly when toggling back and forth', function(done) {
+        var expected = [];
+        var count = 8;
+
+        var toggle = function(index) {
+          if(index % 2 === 0) {
+            expected = expected.concat(['online', 'client_online']);
+            client.presence('test').set('online');
+          } else {
+            expected = expected.concat(['client_explicit_offline', 'offline']);
+            client.presence('test').set('offline');
+          }
+        };
+
+        client2.presence('test')
+          .on(p.notify)
+          .subscribe(function() {
+            for(var i = 0; i < count; i++) {
+              setTimeout(toggle, 10, i);
+            }
+          });
+
+        var verify = function() {
+          assert.equal(2*count, p.notifications.length);
+          p.for_client(client).assert_message_sequence(expected);
+          done();
+        };
+
+        p.on(count*2, function() {
+          setTimeout(verify, 50);
+        });
+      });
+
+      it('should implicitly disconnect after set(online) if unsubscribed', function(done){
+        client2.presence('test').on(p.notify).subscribe(function() {
+          client.presence('test').set('online');
+        });
+
+        p.on(2, function() {
+          p.for_client(client).assert_message_sequence(
+            [ 'online', 'client_online' ]
+          );
+          client.presence('test').unsubscribe();
+        });
+
+        p.on(4, function() {
+          p.for_client(client).assert_message_sequence([
+            'online', 'client_online', 'client_implicit_offline', 'offline'
+          ]);
+          done();
+        });
+      });
+
+      it('should notify correctly if disconnecting immediately after online', function(done){
+        client2.presence('test').on(p.notify).subscribe(function() {
+          client.presence('test').set('online');
+          client.presence('test').unsubscribe();
+        });
+
+        p.on(4, function() {
+          p.for_client(client).assert_message_sequence(
+            [ 'online', 'client_online', 'client_implicit_offline', 'offline']
+          );
+          done();
+        });
+      });
     });
   });
 
-  describe('get', function() {
-    it('using v1 API', function(done) {
+  describe('when using get()', function() {
+    it('should respond correctly when using v1 API', function(done) {
       client.presence('test').get(function(message) {
-        assert.equal('get', message.op);
-        assert.deepEqual([], message.value);
+        p.for_online_clients().assert_get_response(message);
         client.presence('test').set('online', function() {
           client.presence('test').get(function(message) {
-            assert.equal('get', message.op);
-            assert.deepEqual(message.value, { '123': 0 });
+            p.for_online_clients(client).assert_get_response(message);
             done();
           });
         });
       });
     });
 
-    it('using v2 API (with userData)', function(done) {
+    it('should respond correctly when using v2 API (with userData)', function(done) {
       client.presence('test').get({ version: 2 }, function(message) {
-        assert.equal('get', message.op);
-        assert.deepEqual([], message.value);
+        p.for_online_clients().assert_get_v2_response(message);
         client.presence('test').set('online', function() {
           client.presence('test').get({ version: 2 }, function(message) {
-            assert.equal('get', message.op);
-            var expected = {123:{clients:{},userType:0}};
-            expected['123'].clients[client._socket.id] = { name: "tester" };
-            assert.deepEqual(message.value, expected);
+            p.for_online_clients(client).assert_get_v2_response(message);
             done();
           });
         });
       });
     });
 
-    it('using v2 API (without userData)', function(done) {
+    it('should respond correctly when using v2 API (without userData)', function(done) {
       client3.presence('test').get({ version: 2 }, function(message) {
-        assert.equal('get', message.op);
-        assert.deepEqual([], message.value);
+        p.for_online_clients().assert_get_v2_response(message);
         client3.presence('test').set('online', function() {
           client3.presence('test').get({ version: 2 }, function(message) {
-            assert.equal('get', message.op);
-            var expected = {300:{clients:{},userType:0}};
-            expected['300'].clients[client3._socket.id] = {};
-            assert.deepEqual(message.value, expected);
+            p.for_online_clients(client3).assert_get_v2_response(message);
             done();
           });
         });
       });
     });
-  });
 
-  describe('sync', function() {
-    it('via v2 API (with userData)', function(done) {
-      // not supported in v1 api because the result.op == "online" which is handled by the message
-      // listener but not by the sync() callback
-
-      client.presence('test').set('online', function() {
-        client.presence('test').sync({ version: 2 }, function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
-          assert.equal('get', message.op);
-          var expected = {123:{clients:{},userType:0}};
-          expected['123'].clients[client._socket.id] = { name: "tester" };
-          assert.deepEqual(message.value, expected);
-          done();
-        });
-      });
-    });
-
-    it('via v2 API (without userData)', function(done) {
-      // not supported in v1 api because the result.op == "online" which is handled by the message
-      // listener but not by the sync() callback
-
-      client3.presence('test').set('online', function() {
-        client3.presence('test').sync({ version: 2 }, function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
-          assert.equal('get', message.op);
-          var expected = {300:{clients:{},userType:0}};
-          expected['300'].clients[client3._socket.id] = {};
-          assert.deepEqual(message.value, expected);
-          done();
-        });
-      });
-    });
-
-    it('syncing a presence should automatically subscribe to that resource', function(done) {
-      client2.presence('test').on(function(message) {
-        if (message.op == 'client_online') {
-          assert.deepEqual(message.value, {
-            userId: client.configuration('userId'),
-            clientId: client.currentClientId(),
-            userData: client.configuration('userData')
-          });
-          done();
-        }
-      }).sync(function() {
-        // wait for sync to complete
-        client.presence('test').set('online');
-      });
-
-    });
-
-    it('calling sync multiple times does not alter the result if users remain connected', function(done) {
+    it('can be called multiple times without changing the result', function(done) {
       this.timeout(6000);
-      var notifications = [], getCounter = 0;
-      client2.presence('test').on(function(message){
-        notifications.push(message);
-      }).subscribe(function() {
-        // set client 1 to online
-        client.presence('test').set('online', function() {
-
-          var foo = setInterval(function() {
-            client2.presence('test').sync(function(message) {
-              // both should show client 1 as online
-              assert.equal('online', message.op);
-              assert.deepEqual({ '123': 0 }, message.value);
-
-              //Not more than 2 notifications ever
-              assert.equal(notifications.length, 2);
-              assert.equal(notifications[0].op, 'online');
-              assert.deepEqual(notifications[0].value, { '123': 0 });
-              assert.equal(notifications[1].op, 'client_online');
-              assert.equal(notifications[1].value.userId, 123);
-              assert.equal(notifications[1].value.clientId, client._socket.id);
-            });
-          }, 200);
-
-          setTimeout(function() {
-            clearInterval(foo);
-            done();
-          }, 2000);
-        });
-      });
-    });
-
-    it('calling get multiple times does not alter the result if users remain connected', function(done) {
-      this.timeout(6000);
-      var notifications = [], getCounter = 0;
-      client2.presence('test').on(function(message){
-        notifications.push(message);
-      }).subscribe(function() {
+      client2.presence('test').on(p.notify).subscribe(function() {
         // set client 1 to online
         client.presence('test').set('online', function() {
 
           var foo = setInterval(function() {
             client2.presence('test').get(function(message) {
               // both should show client 1 as online
-              assert.equal('get', message.op);
-              assert.deepEqual({ '123': 0 }, message.value);
-
-              assert.equal(notifications.length, 2);
-              assert.equal(notifications[0].op, 'online');
-              assert.deepEqual(notifications[0].value, { '123': 0 });
-              assert.equal(notifications[1].op, 'client_online');
-              assert.equal(notifications[1].value.userId, 123);
-              assert.equal(notifications[1].value.clientId, client._socket.id);
-              getCounter++;
+              p.for_online_clients(client).assert_get_response(message);
+              p.for_client(client).assert_message_sequence(
+                ['online', 'client_online']
+              );
             });
           }, 200);
 
@@ -348,85 +327,136 @@ describe('given two clients and one server', function() {
     });
   });
 
-  it('userData will persist when a presence is updated', function(done) {
-    var scope = 'test';
-    var verify = function(message) {
-      assert.equal(message.op, 'get');
-      assert.deepEqual(message.to, 'presence:/dev/' + scope);
-      assert.ok(message.value['123']);
-      assert.equal(message.value['123'].userType, 0);
-      assert.deepEqual(message.value['123'].clients[client.currentClientId()], { name: 'tester' });
-    };
+  describe('when using sync', function() {
+    it('should respond correclty when using via v1 API', function(done) {
 
-    client.presence(scope).set('online', function() {
-      var presence = client2.presence(scope).sync({version: 2}, function(message) {
-        verify(message);
-        setTimeout(function() {
-          presence.get({version:2}, function(message) {
-            verify(message);
+      client.presence('test').set('online', function() {
+        client.presence('test').sync(function(message) {
+          p.for_online_clients(client).assert_sync_response(message);
+          done();
+        });
+      });
+    });
+
+    it('should respond correctly when using via v2 API (with userData)', function(done) {
+      // not supported in v1 api because the result.op == "online" which is handled by the message
+      // listener but not by the sync() callback
+
+      client.presence('test').set('online', function() {
+        client.presence('test').sync({ version: 2 }, function(message) {
+          // sync is implemented as subscribe + get, hence the return op is "get"
+          p.for_online_clients(client).assert_sync_v2_response(message);
+          done();
+        });
+      });
+    });
+
+    it('should respond correctly when using via v2 API (without userData)', function(done) {
+      // not supported in v1 api because the result.op == "online" which is handled by the message
+      // listener but not by the sync() callback
+
+      client3.presence('test').set('online', function() {
+        client3.presence('test').sync({ version: 2 }, function(message) {
+          // sync is implemented as subscribe + get, hence the return op is "get"
+          p.for_online_clients(client3).assert_sync_v2_response(message);
+          done();
+        });
+      });
+    });
+
+    it('should also subscribe to that resource', function(done) {
+      client.presence('test').on(p.notify).sync(function(message) {
+        // wait for sync to complete
+        p.for_online_clients().assert_sync_response(message);
+        client.presence('test').set('online');
+      });
+
+      p.fail_on_more_than(2);
+      p.on(2, function() {
+        p.for_client(client).assert_message_sequence(['online', 'client_online']);
+        setTimeout(done, 10);
+      });
+    });
+
+    it('can be called multiple times without changing the result', function(done) {
+      this.timeout(6000);
+      client2.presence('test').on(p.notify).subscribe(function() {
+        // set client 1 to online
+        client.presence('test').set('online', function() {
+
+          var foo = setInterval(function() {
+            client2.presence('test').sync(function(message) {
+              // both should show client 1 as online
+              p.for_online_clients(client).assert_sync_response(message);
+
+              //Not more than 2 notifications ever
+              p.for_client(client).assert_message_sequence(
+                ['online', 'client_online']);
+            });
+          }, 200);
+
+          setTimeout(function() {
+            clearInterval(foo);
             done();
-          });
-        }, 1500); //reread after a while
+          }, 2000);
+        });
       });
     });
   });
 
-  it('should be notified of client_offline after a timeout', function(done) {
+  it('should implicitly disconnect after a request timeout', function(done) {
     this.timeout(55*1000);
-    client.presence('test').on(function(message) {
-      if (message.op == 'client_offline' && message.explicit === false) {
-        done();
-      }
-    }).subscribe(function() {
+    client.presence('test').on(p.notify).subscribe(function() {
       client2.presence('test').set('online');
       setTimeout(function() {
+        // Hack a bit so that socketId is saved
+        var clientId = client2.currentClientId();
+        client2.currentClientId = function() { return clientId; };
+        //disconnect, causing a request timeout or socket close
         client2.manager.close();
       },10);
     });
+
+    p.on(4, function() {
+      p.for_client(client2).assert_message_sequence(
+        ['online', 'client_online', 'client_implicit_offline', 'offline']
+      );
+      done();
+    });
   });
 
-  it('a presence will not be set to offline during the grace period but will be offline after it', function(done) {
-    enabled = true;
-    var notifications = [];
-    // subscribe online with client 2
-    // cache the notifications to client 2
-    client2.presence('test').on(function(message){
-      logging.info('Receive message', message);
-      notifications.push(message);
-    }).subscribe(function() {
-      // set client 1 to online
+  it('should keep a user online for a grace period for disconnections', function(done) {
+    client2.presence('test').on(p.notify).subscribe(function() {
       client.presence('test').set('online');
-      // disconnect client 1 - ensure that this happens later the online
+    });
+
+    p.on(2, function() {
+      p.for_client(client).assert_message_sequence(
+        ['online', 'client_online']
+      );
+
+      // Hack a bit so that socketId is saved
+      var clientId = client.currentClientId();
+      client.currentClientId = function() { return clientId; };
+
+      client.dealloc('test');
+      var time = Date.now();
+
       setTimeout(function() {
-        client.dealloc('test');
-        // do an explicit get as well after slightly less than the grace period
-        setTimeout(function() {
+        client2.presence('test').get(function(message){
+          p.for_online_clients(client).assert_get_response(message);
+        });
+        p.on(4, function() {
+          assert.ok(Date.now() - time > 950); //timeout is 1 second
+          p.for_client(client).assert_message_sequence([
+            'online', 'client_online', 'client_implicit_offline', 'offline'
+          ]);
           client2.presence('test').get(function(message) {
-            logging.info('FOOOOO1', message, notifications);
-            // both should show client 1 as online
-            assert.equal('get', message.op);
-            assert.deepEqual({ '123': 0 }, message.value);
-
-            // we should have received a online notification
-            assert.ok(notifications.some(function(m) { return (m.op == 'online');}));
-            // This does not hold now that we have client_online/client_offline notifications: assert.equal(1, notifications.length);
-
-            // a presence be set to offline after the grace period
-            setTimeout(function() {
-              client2.presence('test').get(function(message) {
-                logging.info('FOOOOO2', message, notifications);
-                // both should show client 1 as offline
-                assert.equal(message.op, 'get');
-                assert.deepEqual(message.value, {});
-
-                assert.ok(notifications.some(function(m) { return (m.op == 'offline');}));
-                // broken due to new notifications: assert.equal(2, notifications.length);
-                client.alloc('test', done); //realloc client
-              });
-            }, 400);
+            p.for_online_clients().assert_get_response(message);
+            client.alloc('test', done);
           });
-        }, 900);
-      }, 5);
+        });
+      }, 900);
     });
   });
 });
