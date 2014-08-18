@@ -1,3 +1,8 @@
+### 0.10.1
+* Bugfix: Fix immediate disconnects after set(online) causing incorrect online messages
+    - Rewrite all presence tests to be simpler/readable by extracting asserts into a helper
+    - Add several new edgecase tests
+
 ### 0.10.0
 * use latest radar_client with async message emits
 
