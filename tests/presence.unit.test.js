@@ -126,6 +126,27 @@ describe('given a presence resource',function() {
 
   describe('user disconnects', function() {
     describe('when implicit', function() {
+      it('should notify correctly even if redis has not replied to set(online) yet', function(done) {
+        var client_online_called = false;
+
+        Persistence.publish = function(scope, m) {
+          //10ms delay
+          setTimeout(function() {
+            presence.redisIn(m);
+          }, 10);
+        };
+
+        presence.set(client, { key: 1, type: 2, value: 'online' });
+        presence.unsubscribe(client);
+        presence.manager.once('client_online', function() {
+          client_online_called = true;
+        });
+        presence.manager.once('client_offline', function() {
+          assert.ok(client_online_called);
+          done();
+        });
+      });
+
       it('should get added to user expiry timer, no duplicates', function(done) {
 
         Persistence.publish = function(scope, m) {
