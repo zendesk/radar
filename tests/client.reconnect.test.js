@@ -124,7 +124,7 @@ describe('When radar server restarts', function() {
           messages.push(msg);
           if(messages.length == 2) {
             //when we have enough, wait a while and check
-            setTimeout(verifySubscriptions, 500);
+            setTimeout(verifySubscriptions, 100);
           }
         }).sync();
 
