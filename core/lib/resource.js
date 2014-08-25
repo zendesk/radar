@@ -114,6 +114,7 @@ Resource.prototype.handleMessage = function(client, message) {
     case 'sync':
     case 'set':
     case 'publish':
+    case 'push':
       this[message.op](client, message);
       break;
     default:
