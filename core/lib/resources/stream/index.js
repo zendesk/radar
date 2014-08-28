@@ -1,6 +1,7 @@
 var Resource = require('../../resource.js'),
     Persistence = require('persistence'),
-    logger = require('minilog')('radar:stream');
+    logger = require('minilog')('radar:stream'),
+    StreamCounter = require('./stream_counter.js');
 
 var default_options = {
   policy: {
@@ -11,6 +12,7 @@ var default_options = {
 
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
+  this.counter = new StreamCounter(name);
 }
 
 Stream.prototype = new Resource();
@@ -40,35 +42,39 @@ Stream.prototype.push = function(client, message) {
 
   logger.debug('#stream - push', this.name, message, (client && client.id));
 
-  this._push(message.resource, message.action, message.value, message.userData, function(error, length) {
-    if(error) {
-      logging.error(error);
-      return;
-    }
+  this.counter.increment(function(value) {
+    message.id = value;
+    self._push(message, function(error, length) {
+      if(error) {
+        logging.error(error);
+        return;
+      }
 
-    if(policy.maxPersistence) {
-      Persistence.expire(self.name, policy.maxPersistence);
-    } else {
-      logger.warn('resource created without ttl :', self.name, self.counter);
-      logger.warn('resource policy was :', policy);
-    }
+      if(policy.maxPersistence) {
+        Persistence.expire(self.name, policy.maxPersistence);
+      } else {
+        logger.warn('resource created without ttl :', self.name);
+        logger.warn('resource policy was :', policy);
+      }
 
-    if(policy.maxLength && length > policy.maxLength) {
-      redis.ltrim(self.name, 0, policy.maxLength);
-    }
+      if(policy.maxLength && length > policy.maxLength) {
+        redis.ltrim(self.name, 0, policy.maxLength);
+      }
 
-    Persistence.publish(self.name, message, function() {
-      self.ack(client, message.ack);
+      Persistence.publish(self.name, message, function() {
+        self.ack(client, message.ack);
+      });
     });
   });
 };
 
-Stream.prototype._push = function(resource, action, value, userData, callback) {
+Stream.prototype._push = function(message, callback) {
   Persistence.redis().rpush(this.name, JSON.stringify({
-    resource: resource,
-    action: action,
-    value: value,
-    userData: userData
+    id: message.id,
+    resource: message.resource,
+    action: message.action,
+    value: message.value,
+    userData: message.userData
   }), function(error, length) {
     if(error) {
       callback(error);
@@ -82,6 +88,12 @@ Stream.prototype.sync = function(client) {
   logger.debug('#stream - sync', this.name, (client && client.id));
   this.get(client);
   this.subscribe(client, false);
+};
+
+Stream.prototype.redisIn = function(data) {
+  Resource.prototype.redisIn.call(this, data);
+  //someone released the lock, wake up
+  this.counter.wakeUp();
 };
 
 Stream.setBackend = function(backend) { Persistence = backend; };

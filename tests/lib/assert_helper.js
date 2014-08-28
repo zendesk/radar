@@ -404,6 +404,8 @@ StreamMessage.prototype.assert_ack_for_push = function(message, resource, action
 
 StreamMessage.prototype.assert_push_notification = function(message, resource, action, value, sender) {
   sender = sender || this.client;
+  var id = message.id;
+  delete message.id;
   var expected = {
     to: this.scope,
     op: 'push',
@@ -413,6 +415,8 @@ StreamMessage.prototype.assert_push_notification = function(message, resource, a
     userData: this.client.userData
   };
   assert.deepEqual(expected, message);
+  message.id = id;
+  assert.ok(message.id);
 };
 
 StreamMessage.prototype.assert_message_sequence = function(list, from) {
@@ -433,15 +437,17 @@ StreamMessage.prototype.assert_message_sequence = function(list, from) {
 
 StreamMessage.prototype.assert_get_response = function(response, list) {
   var values = [];
-  list.forEach(function(listEntry) {
+  for(var i = 0; i< list.length; i++) {
+   var listEntry = list[i];
     assert.equal(listEntry.length, 4);
     values.push({
       resource: listEntry[0],
       action: listEntry[1],
       value: listEntry[2],
-      userData: listEntry[3].configuration('userData')
+      userData: listEntry[3].configuration('userData'),
+      id: i+1,
     });
-  });
+  }
 
   assert.deepEqual({
     op: 'get',
