@@ -18,20 +18,112 @@ function Stream(name, parent, options) {
 Stream.prototype = new Resource();
 Stream.prototype.type = 'stream';
 
+Stream.prototype.update = function(callback) {
+  var self = this;
+  var multi = Persistence.redis().multi();
+
+  multi.lrange(this.name, 0, 0, function(error, values) {
+    if(error) throw new Error(error);
+
+    if(values.length == 1) {
+      self.start = JSON.parse(values[0]).id;
+    } else {
+      delete self.start;
+    }
+  });
+
+  multi.lrange(this.name, -1, -1, function(error, values) {
+    if(error) throw new Error(error);
+
+    if(values.length == 1) {
+      self.end = JSON.parse(values[0]).id;
+    } else {
+      delete self.end;
+    }
+  });
+
+  multi.llen(this.name, function(error, value) {
+    if(error) throw new Error(error);
+
+    self.length = value;
+  });
+
+  multi.exec(function() {
+    if(callback) callback();
+  });
+};
+
 // get status
 Stream.prototype.get = function(client, message) {
-  var name = this.name, redis = Persistence.redis();
-  logger.debug('#stream - get', this.name, (client && client.id));
-  redis.lrange(name, 0, -1, function(error, replies) {
-    var parsed = [];
-    replies.forEach(function(reply) {
-      parsed.push(JSON.parse(reply));
-    });
-    logger.debug('#stream -lrange', name, parsed);
-    client.send({
-      op: 'get',
-      to: name,
-      value: parsed || []
+  var stream = this,
+      name = this.name,
+      redis = Persistence.redis(),
+      from = message.options && message.options.from;
+  logger.debug('#stream - get', this.name,'from: '+from, (client && client.id));
+
+  this._get(from, function(error, values) {
+    if(error) {
+      client.send({
+        op: 'get',
+        to: name,
+        value: [],
+        error: 'sync-error',
+        from: from,
+        state: {
+          start:stream.start,
+          end: stream.end,
+          length: stream.length
+        }
+      });
+    } else {
+      client.send({
+        op: 'get',
+        to: name,
+        value: values || []
+      });
+    }
+  });
+};
+
+Stream.prototype._getReadOffsets = function(from) {
+  var endOffset = -1; //always read to the end
+  var startOffset = 0; //default is from the start
+  if(from > 0) {
+    if(from < stream.start || from > stream.end) {
+      return null;
+    }
+    var distance = this.end - this.start + 1;
+    var skipped = distance - length; //if ids were ever skipped
+    startOffset = endOffset - from - this.end - skipped;
+    startOffset = startOffset - 100; //buffer for any newly added members
+  }
+  return [ startOffset, endOffset ];
+};
+
+Stream.prototype._get = function(from, callback) {
+  var stream = this,
+      name = this.name,
+      redis = Persistence.redis();
+
+  this.update(function() {
+    var offsets = stream._getReadOffsets(from);
+    if(!offsets) {
+      //sync error
+      callback('sync-error');
+    }
+
+    redis.lrange(name, offsets[0], offsets[1], function(error, replies) {
+      var parsed = [];
+      replies.forEach(function(reply) {
+        var message = JSON.parse(reply);
+        if(from >= 0 && message.id <= from) {
+          return; //filter out
+        }
+        parsed.push(message);
+      });
+
+      logger.debug('#stream -lrange', name, parsed);
+      callback(null, parsed);
     });
   });
 };
@@ -84,9 +176,9 @@ Stream.prototype._push = function(message, callback) {
   });
 };
 
-Stream.prototype.sync = function(client) {
+Stream.prototype.sync = function(client, message) {
   logger.debug('#stream - sync', this.name, (client && client.id));
-  this.get(client);
+  this.get(client, message);
   this.subscribe(client, false);
 };
 
