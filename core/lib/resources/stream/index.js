@@ -53,6 +53,38 @@ Stream.prototype.update = function(callback) {
   });
 };
 
+Stream.prototype.subscribe = function(client, message) {
+  var self = this;
+  var from = message.options && message.options.from;
+  Resource.prototype.subscribe.call(this, client, message);
+  if(typeof from === 'undefined') {
+    return;
+  }
+  this._get(from, function(error, values) {
+    if(error) {
+      client.send({
+        op: 'push',
+        to: name,
+        error: {
+          type: 'sync-error',
+          from: from,
+          start: stream.start,
+          end: stream.end,
+          length: stream.length
+        }
+      });
+    } else {
+      var i, message;
+      for(i = 0; i < values.length; i++) {
+        message = values[i];
+        message.op = 'push';
+        message.to = self.name;
+        client.send(message);
+      }
+    }
+  });
+};
+
 // get status
 Stream.prototype.get = function(client, message) {
   var stream = this,
@@ -67,10 +99,10 @@ Stream.prototype.get = function(client, message) {
         op: 'get',
         to: name,
         value: [],
-        error: 'sync-error',
-        from: from,
-        state: {
-          start:stream.start,
+        error: {
+          type: 'sync-error',
+          from: from,
+          start: stream.start,
           end: stream.end,
           length: stream.length
         }
