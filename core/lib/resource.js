@@ -21,7 +21,7 @@ function recursiveMerge(target) {
   Array.prototype.slice.call(arguments, 1).forEach(function(source) {
     if (source) {
       Object.keys(source).forEach(function(name) {
-        if (target[name]) {
+        if (target[name] !== undefined) {//catch 0s and false too
           // extend the object if it is an Object
           if (target[name] === Object(target[name])) {
             target[name] = recursiveMerge(target[name], source[name]);
