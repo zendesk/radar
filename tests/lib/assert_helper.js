@@ -455,8 +455,24 @@ StreamMessage.prototype.assert_get_response = function(response, list) {
     value: values
   }, response);
 };
+
+StreamMessage.prototype.assert_sync_error_notification = function(notification, state) {
+  var error = { type: 'sync-error', from: state.from, length: state.length };
+  if(state.start >= 0) {
+    error.start = state.start;
+  }
+  if(state.end >= 0) {
+    error.end = state.end;
+  }
+
+  assert.deepEqual({
+    op: 'push',
+    to: this.scope,
+    error: error
+  }, notification);
+};
 // sync is implemented as subscribe + get, hence the return op is "get"
 StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;
-
+StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
 module.exports.PresenceMessage = PresenceMessage;
 module.exports.StreamMessage = StreamMessage;

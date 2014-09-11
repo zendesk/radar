@@ -6,7 +6,7 @@ var common = require('./common.js'),
     Tracker = require('callback_tracker'),
     radar, client, client2;
 
-describe('When using stream resources', function() {
+describe('When using the stream resource', function() {
   var s = new StreamMessage('dev', 'test');
   before(function(done) {
     var track = Tracker.create('before', done);
@@ -35,7 +35,7 @@ describe('When using stream resources', function() {
     common.startPersistence(track('redis cleanup'));
   });
 
-  describe('subscribe/unsubscribe', function() {
+  describe('when using subscribe/unsubscribe', function() {
     it('should subscribe successfully with ack', function(done) {
 
       client.stream('test').subscribe(function(msg) {
@@ -139,6 +139,121 @@ describe('When using stream resources', function() {
         done();
       });
     });
+
+    describe("when using from option", function() {
+      it('should receive missed messages on subscribe', function(done) {
+        client.stream('test').on(s.notify).subscribe();
+        client2.stream('test').push('ticket/1','open','first')
+                              .push('ticket/1','open','second')
+                              .push('ticket/1','open','third');
+        s.on(3, function() {
+          s.for_sender(client2).assert_message_sequence([
+            [ 'ticket/1', 'open', "first" ],
+            [ 'ticket/1', 'open', "second" ],
+            [ 'ticket/1', 'open', "third" ]
+          ]);
+          client.stream('test').unsubscribe();
+          client2.stream('test').push('ticket/1','open','fourth')
+                                .push('ticket/1','open','fifth')
+                                .push('ticket/1','open','sixth');
+          client.stream('test').subscribe({from: s.notifications[2].id});
+          s.fail_on_more_than(6);
+
+          s.on(6, function() {
+            s.for_sender(client2).assert_message_sequence([
+              [ 'ticket/1', 'open', "fourth" ],
+              [ 'ticket/1', 'open', "fifth" ],
+              [ 'ticket/1', 'open', "sixth" ]
+            ], 3);
+            done();
+          });
+        });
+      });
+
+      it('should receive a sync-error if server ran out of history', function(done) {
+        var s = new StreamMessage('dev', 'short_stream/1');
+        client.stream('short_stream/1').on(s.notify).subscribe();
+        client2.stream('short_stream/1').push('ticket/1','open','first')
+                              .push('ticket/1','open','second')
+                              .push('ticket/1','open','third')
+                              .push('ticket/1','open','fourth');
+        s.on(4, function() {
+          s.for_sender(client2).assert_message_sequence([
+            [ 'ticket/1', 'open', "first" ],
+            [ 'ticket/1', 'open', "second" ],
+            [ 'ticket/1', 'open', "third" ],
+            [ 'ticket/1', 'open', "fourth" ]
+          ]);
+          client.stream('short_stream/1').unsubscribe();
+          client2.stream('short_stream/1').push('ticket/1','open','fifth')
+            .push('ticket/1','open','sixth', function() {
+              client.stream('short_stream/1').subscribe({from: s.notifications[3].id});
+            });
+        });
+        s.fail_on_more_than(5);
+        s.on(5, function() {
+          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, length: 2, from: 4 });
+          done();
+        });
+      });
+
+      it('should still be subscribed after a sync-error', function(done) {
+        var s = new StreamMessage('dev', 'short_stream/2');
+        client.stream('short_stream/2').on(s.notify).subscribe();
+        client2.stream('short_stream/2').push('ticket/1','open','first')
+                              .push('ticket/1','open','second')
+                              .push('ticket/1','open','third')
+                              .push('ticket/1','open','fourth');
+        s.on(4, function() {
+          s.for_sender(client2).assert_message_sequence([
+            [ 'ticket/1', 'open', "first" ],
+            [ 'ticket/1', 'open', "second" ],
+            [ 'ticket/1', 'open', "third" ],
+            [ 'ticket/1', 'open', "fourth" ]
+          ]);
+          client.stream('short_stream/2').unsubscribe();
+          client2.stream('short_stream/2').push('ticket/1','open','fifth')
+            .push('ticket/1','open','sixth', function() {
+              client.stream('short_stream/2').subscribe({from: s.notifications[3].id});
+            });
+        });
+        s.on(5, function() {
+          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, length: 2, from: 4 });
+          s.on(6, function() {
+            s.for_sender(client2).assert_message_sequence([
+              [ 'ticket/1', 'open', 'seventh']
+            ], 5);
+
+            done();
+          });
+          client2.stream('short_stream/2').push('ticket/1', 'open', 'seventh');
+        });
+      });
+
+      it('should receive a sync-error if server does not keep history', function(done) {
+        var s = new StreamMessage('dev', 'uncached_stream/1');
+        client.stream('uncached_stream/1').on(s.notify).subscribe();
+        client2.stream('uncached_stream/1').push('ticket/1','open','first')
+                              .push('ticket/1','open','second')
+                              .push('ticket/1','open','third')
+                              .push('ticket/1','open','fourth');
+        s.on(4, function() {
+          s.for_sender(client2).assert_message_sequence([
+            [ 'ticket/1', 'open', "first" ],
+            [ 'ticket/1', 'open', "second" ],
+            [ 'ticket/1', 'open', "third" ],
+            [ 'ticket/1', 'open', "fourth" ]
+          ]);
+          client.stream('uncached_stream/1').subscribe({from: s.notifications[3].id});
+        });
+
+        s.fail_on_more_than(5);
+        s.on(5, function() {
+          s.assert_sync_error_notification(s.notifications[4], { length: 0, from: 4 });
+          done();
+        });
+      });
+    });
   });
 
   describe('push', function() {
@@ -199,6 +314,40 @@ describe('When using stream resources', function() {
         s.assert_get_response(message, []);
         done();
       });
+    });
+
+    it('returns messages from specified message id', function(done) {
+      client.stream('test').on(s.notify).subscribe();
+      client2.stream('test').push('ticket/1','open','first')
+                            .push('ticket/1','open','second')
+                            .push('ticket/1','open','third');
+      s.on(3, function() {
+        s.for_sender(client2).assert_message_sequence([
+          [ 'ticket/1', 'open', "first" ],
+          [ 'ticket/1', 'open', "second" ],
+          [ 'ticket/1', 'open', "third" ]
+        ]);
+        client.stream('test').unsubscribe();
+        client2.stream('test').push('ticket/1','open','fourth')
+                              .push('ticket/1','open','fifth')
+                              .push('ticket/1','open','sixth');
+        client.stream('test').subscribe({from: s.notifications[2].id});
+        s.fail_on_more_than(6);
+
+        s.on(6, function() {
+          s.for_sender(client2).assert_message_sequence([
+            [ 'ticket/1', 'open', "fourth" ],
+            [ 'ticket/1', 'open', "fifth" ],
+            [ 'ticket/1', 'open', "sixth" ]
+          ], 3);
+          done();
+        });
+      });
+      done();//XXX
+    });
+
+    it('returns sync-error if server lacks required history', function(done) {
+      done();//XXX
     });
   });
 
