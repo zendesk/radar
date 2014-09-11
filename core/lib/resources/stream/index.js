@@ -64,13 +64,13 @@ Stream.prototype.subscribe = function(client, message) {
     if(error) {
       client.send({
         op: 'push',
-        to: name,
+        to: self.name,
         error: {
           type: 'sync-error',
           from: from,
-          start: stream.start,
-          end: stream.end,
-          length: stream.length
+          start: self.start,
+          end: self.end,
+          length: self.length
         }
       });
     } else {
@@ -121,11 +121,11 @@ Stream.prototype._getReadOffsets = function(from) {
   var endOffset = -1; //always read to the end
   var startOffset = 0; //default is from the start
   if(from > 0) {
-    if(from < stream.start || from > stream.end) {
+    if(this.length === 0 || from < this.start || from > this.end) {
       return null;
     }
     var distance = this.end - this.start + 1;
-    var skipped = distance - length; //if ids were ever skipped
+    var skipped = distance - this.length; //if ids were ever skipped
     startOffset = endOffset - from - this.end - skipped;
     startOffset = startOffset - 100; //buffer for any newly added members
   }
@@ -142,10 +142,14 @@ Stream.prototype._get = function(from, callback) {
     if(!offsets) {
       //sync error
       callback('sync-error');
+      return;
     }
 
     redis.lrange(name, offsets[0], offsets[1], function(error, replies) {
       var parsed = [];
+      if(error) throw error;
+
+      replies = replies || [];
       replies.forEach(function(reply) {
         var message = JSON.parse(reply);
         if(from >= 0 && message.id <= from) {
@@ -168,27 +172,33 @@ Stream.prototype.push = function(client, message) {
 
   this.counter.increment(function(value) {
     message.id = value;
-    self._push(message, function(error, length) {
-      if(error) {
-        logging.error(error);
-        return;
-      }
-
-      if(policy.maxPersistence) {
-        Persistence.expire(self.name, policy.maxPersistence);
-      } else {
-        logger.warn('resource created without ttl :', self.name);
-        logger.warn('resource policy was :', policy);
-      }
-
-      if(policy.maxLength && length > policy.maxLength) {
-        redis.ltrim(self.name, 0, policy.maxLength);
-      }
-
+    if(policy.maxLength === 0) {//only publish
       Persistence.publish(self.name, message, function() {
         self.ack(client, message.ack);
       });
-    });
+    } else {
+      self._push(message, function(error, length) {
+        if(error) {
+          logging.error(error);
+          return;
+        }
+
+        if(policy.maxPersistence) {
+          Persistence.expire(self.name, policy.maxPersistence);
+        } else {
+          logger.warn('resource created without ttl :', self.name);
+          logger.warn('resource policy was :', policy);
+        }
+
+        if(policy.maxLength && length > policy.maxLength) {
+          redis.ltrim(self.name, -policy.maxLength, -1);
+        }
+
+        Persistence.publish(self.name, message, function() {
+          self.ack(client, message.ack);
+        });
+      });
+    }
   });
 };
 
