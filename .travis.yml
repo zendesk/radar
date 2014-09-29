@@ -1,14 +1,11 @@
 language: node_js
 node_js:
-  - '0.10'
-
+- '0.10'
 services:
-    - redis-server
-
+- redis-server
 script:
-    - redis-server --version
-    - verbose=1 radar_log=info npm test
-
+- redis-server --version
+- verbose=1 radar_log=info npm test
 notifications:
   flowdock:
-    secure: GzhfVfSDKQtvfCaHHh2AYTLn/kWOUvHK+SM44AfWX10pwQXCicSR5kx7jMIDrU//0+T2CP/m1EJDnK15CTix+vRJLTwybgc4b8NOl0XmnZXVcW+4i8uhKnXA3bm6+dgVxvUCwNy69dbk7H7CkyFZOzJcZCVliiRBZcbj41uwMqc=
+    secure: eqo+1HteeVzHGckSQhvSG18sD7Eq/DdFSouaW3Mj7owW8gH83/utYgCU2DOiSn404wOqIv2MgI+CYzgoFQCoYaR98BgxYS2iike1GWkn+s53VFSS9WNkjWW/4W7Fm+g4fWEDnN00U4mIJK3G/9l+C2zDiSaRwuD+9K61o3QCWaM=
