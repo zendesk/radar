@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.10.0",
+    "radar_client": "git://github.com/zendesk/radar_client.git#vanchi/stream",
     "simple_sentinel": "*"
   },
   "scripts": {
