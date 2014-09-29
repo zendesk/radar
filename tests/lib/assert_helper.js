@@ -435,7 +435,8 @@ StreamMessage.prototype.assert_message_sequence = function(list, from) {
   }
 };
 
-StreamMessage.prototype.assert_get_response = function(response, list) {
+StreamMessage.prototype.assert_get_response = function(response, list, idstart) {
+  idstart = idstart || 1;
   var values = [];
   for(var i = 0; i< list.length; i++) {
    var listEntry = list[i];
@@ -445,7 +446,7 @@ StreamMessage.prototype.assert_get_response = function(response, list) {
       action: listEntry[1],
       value: listEntry[2],
       userData: listEntry[3].configuration('userData'),
-      id: i+1,
+      id: idstart + i,
     });
   }
 
@@ -470,6 +471,23 @@ StreamMessage.prototype.assert_sync_error_notification = function(notification, 
     to: this.scope,
     error: error
   }, notification);
+};
+
+StreamMessage.prototype.assert_sync_error_get_response = function(response, state) {
+  var error = { type: 'sync-error', from: state.from, length: state.length };
+  if(state.start >= 0) {
+    error.start = state.start;
+  }
+  if(state.end >= 0) {
+    error.end = state.end;
+  }
+
+  assert.deepEqual({
+    op: 'get',
+    to: this.scope,
+    value: [],
+    error: error
+  }, response);
 };
 // sync is implemented as subscribe + get, hence the return op is "get"
 StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;

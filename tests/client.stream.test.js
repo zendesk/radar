@@ -321,33 +321,41 @@ describe('When using the stream resource', function() {
       client2.stream('test').push('ticket/1','open','first')
                             .push('ticket/1','open','second')
                             .push('ticket/1','open','third');
-      s.on(3, function() {
+      s.once(3, function() {
         s.for_sender(client2).assert_message_sequence([
           [ 'ticket/1', 'open', "first" ],
           [ 'ticket/1', 'open', "second" ],
           [ 'ticket/1', 'open', "third" ]
         ]);
-        client.stream('test').unsubscribe();
-        client2.stream('test').push('ticket/1','open','fourth')
-                              .push('ticket/1','open','fifth')
-                              .push('ticket/1','open','sixth');
-        client.stream('test').subscribe({from: s.notifications[2].id});
-        s.fail_on_more_than(6);
-
-        s.on(6, function() {
-          s.for_sender(client2).assert_message_sequence([
-            [ 'ticket/1', 'open', "fourth" ],
-            [ 'ticket/1', 'open', "fifth" ],
-            [ 'ticket/1', 'open', "sixth" ]
-          ], 3);
+        client.stream('test').get({from: s.notifications[0].id}, function(m) {
+          s.assert_get_response(m, [
+            [ 'ticket/1', 'open', 'second', client2 ],
+            [ 'ticket/1', 'open', 'third', client2 ]
+          ], s.notifications[1].id); //from the next
           done();
         });
       });
-      done();//XXX
     });
 
     it('returns sync-error if server lacks required history', function(done) {
-      done();//XXX
+        var s = new StreamMessage('dev', 'short_stream/get/1');
+      client.stream('short_stream/get/1').on(s.notify).subscribe();
+      client2.stream('short_stream/get/1').push('ticket/1','open','first')
+                            .push('ticket/1','open','second')
+                            .push('ticket/1','open','third')
+                            .push('ticket/1','open','fourth');
+      s.once(4, function() {
+        s.for_sender(client2).assert_message_sequence([
+          [ 'ticket/1', 'open', "first" ],
+          [ 'ticket/1', 'open', "second" ],
+          [ 'ticket/1', 'open', "third" ],
+          [ 'ticket/1', 'open', "fourth" ]
+        ]);
+        client.stream('short_stream/get/1').get({from: s.notifications[1].id}, function(m) {
+          s.assert_sync_error_get_response(m, { start: 3, end: 4, from: 2, length: 2 });
+          done();
+        });
+      });
     });
   });
 
