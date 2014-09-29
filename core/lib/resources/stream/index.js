@@ -185,6 +185,7 @@ Stream.prototype.push = function(client, message) {
 
         if(policy.maxPersistence) {
           Persistence.expire(self.name, policy.maxPersistence);
+          self.counter.expire(policy.maxPersistence);
         } else {
           logger.warn('resource created without ttl :', self.name);
           logger.warn('resource policy was :', policy);

@@ -51,4 +51,8 @@ StreamCounter.prototype.wakeUp = function(callback) {
   processListener(this);
 };
 
+StreamCounter.prototype.expire = function(time) {
+  Persistence.expire(this.scope, time);
+};
+
 module.exports = StreamCounter;
