@@ -1,6 +1,6 @@
 var Resource = require('../../resource.js'),
     Persistence = require('persistence'),
-    logger = require('minilog')('radar:stream'),
+    logging = require('minilog')('radar:stream'),
     StreamCounter = require('./stream_counter.js');
 
 var default_options = {
@@ -13,10 +13,26 @@ var default_options = {
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
   this.counter = new StreamCounter(name);
+  this.streamSubs = {};
 }
 
 Stream.prototype = new Resource();
 Stream.prototype.type = 'stream';
+
+function StreamSubscriber(clientId) {
+  this.id = clientId;
+  this.sent = null;
+  this.sendDisabled = false;
+}
+
+StreamSubscriber.prototype.startSubscribing = function(from) {
+  this.sent = from;
+  this.sentDisabled = true;
+};
+
+StreamSubscriber.prototype.finishSubscribing = function() {
+  this.sentDisabled = false;
+};
 
 Stream.prototype.update = function(callback) {
   var self = this;
@@ -53,26 +69,33 @@ Stream.prototype.update = function(callback) {
   });
 };
 
+Stream.prototype.getSyncError = function(from) {
+  return {
+    to: this.name,
+    error: {
+      type: 'sync-error',
+      from: from,
+      start: this.start,
+      end: this.end,
+      length: this.length
+    }
+  };
+};
 Stream.prototype.subscribe = function(client, message) {
   var self = this;
   var from = message.options && message.options.from;
   Resource.prototype.subscribe.call(this, client, message);
+  var subscriber = new StreamSubscriber(client.id);
+  this.streamSubs[client.id] = subscriber;
   if(typeof from === 'undefined') {
     return;
   }
+  subscriber.startSubscribing(from);
   this._get(from, function(error, values) {
     if(error) {
-      client.send({
-        op: 'push',
-        to: self.name,
-        error: {
-          type: 'sync-error',
-          from: from,
-          start: self.start,
-          end: self.end,
-          length: self.length
-        }
-      });
+      var syncError = self.getSyncError(from);
+      syncError.op = 'push';
+      client.send(syncError);
     } else {
       var i, message;
       for(i = 0; i < values.length; i++) {
@@ -80,8 +103,10 @@ Stream.prototype.subscribe = function(client, message) {
         message.op = 'push';
         message.to = self.name;
         client.send(message);
+        subscriber.sent = message.id;
       }
     }
+    subscriber.finishSubscribing();
   });
 };
 
@@ -91,22 +116,14 @@ Stream.prototype.get = function(client, message) {
       name = this.name,
       redis = Persistence.redis(),
       from = message.options && message.options.from;
-  logger.debug('#stream - get', this.name,'from: '+from, (client && client.id));
+  logging.debug('#stream - get', this.name,'from: '+from, (client && client.id));
 
   this._get(from, function(error, values) {
     if(error) {
-      client.send({
-        op: 'get',
-        to: name,
-        value: [],
-        error: {
-          type: 'sync-error',
-          from: from,
-          start: stream.start,
-          end: stream.end,
-          length: stream.length
-        }
-      });
+      var syncError = stream.getSyncError(from);
+      syncError.op = 'get';
+      syncError.value = [];
+      client.send(syncError);
     } else {
       client.send({
         op: 'get',
@@ -158,7 +175,7 @@ Stream.prototype._get = function(from, callback) {
         parsed.push(message);
       });
 
-      logger.debug('#stream -lrange', name, parsed);
+      logging.debug('#stream -lrange', name, parsed);
       callback(null, parsed);
     });
   });
@@ -168,7 +185,7 @@ Stream.prototype.push = function(client, message) {
   var self = this, redis = Persistence.redis();
   var policy = this.options.policy || {};
 
-  logger.debug('#stream - push', this.name, message, (client && client.id));
+  logging.debug('#stream - push', this.name, message, (client && client.id));
 
   this.counter.increment(function(value) {
     message.id = value;
@@ -187,8 +204,8 @@ Stream.prototype.push = function(client, message) {
           Persistence.expire(self.name, policy.maxPersistence);
           self.counter.expire(policy.maxPersistence);
         } else {
-          logger.warn('resource created without ttl :', self.name);
-          logger.warn('resource policy was :', policy);
+          logging.warn('resource created without ttl :', self.name);
+          logging.warn('resource policy was :', policy);
         }
 
         if(policy.maxLength && length > policy.maxLength) {
@@ -220,13 +237,24 @@ Stream.prototype._push = function(message, callback) {
 };
 
 Stream.prototype.sync = function(client, message) {
-  logger.debug('#stream - sync', this.name, (client && client.id));
+  logging.debug('#stream - sync', this.name, (client && client.id));
   this.get(client, message);
   this.subscribe(client, false);
 };
 
 Stream.prototype.redisIn = function(data) {
-  Resource.prototype.redisIn.call(this, data);
+  var self = this;
+  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
+  Object.keys(this.subscribers).forEach(function(subscriber) {
+    var client = self.parent.server.clients[subscriber];
+    if (client && client.send) {
+      var streamSub = self.streamSubs[client.id];
+      if(streamSub && data.id > streamSub.sent && !streamSub.sendDisabled) {
+        client.send(data);
+        streamSub.sent = data.id;
+      }
+    }
+  });
   //someone released the lock, wake up
   this.counter.wakeUp();
 };
