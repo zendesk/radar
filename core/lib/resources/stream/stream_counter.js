@@ -1,18 +1,18 @@
 var Persistence = require('persistence'),
     StreamLock = require('./stream_lock.js');
 
-function StreamCounter(name) {
+function StreamCounter(name, expiry) {
   this.name = name;
   this.scope = 'stream_counter:/'+name;
   this.lock = new StreamLock(name);
   this.listeners = [];
   this.processing = false;
+  this.expiry = expiry;
   this.lock.on('expired', this.wakeUp.bind(this));
   this.lock.on('released', this.wakeUp.bind(this));
 }
 
 var processListener = function(counter) {
-  var redis = Persistence.redis();
 
   if(counter.processing || counter.listeners.length === 0) return;
 
@@ -24,7 +24,8 @@ var processListener = function(counter) {
     }
 
     if(success) {
-      redis.incr(counter.scope, function(error, value) {
+      var multi = Persistence.redis().multi();
+      multi.incr(counter.scope, function(error, value) {
         if(error) {
           counter.processing = false;
           throw new Error(error);
@@ -34,6 +35,10 @@ var processListener = function(counter) {
         counter.processing = false;
         counter.lock.release();
       });
+      if(counter.expiry) {
+        multi.expire(counter.scope, counter.expiry);
+      }
+      multi.exec();
     } else { //not locked
       counter.processing = false;
     }
@@ -49,10 +54,6 @@ StreamCounter.prototype.increment = function(callback) {
 
 StreamCounter.prototype.wakeUp = function(callback) {
   processListener(this);
-};
-
-StreamCounter.prototype.expire = function(time) {
-  Persistence.expire(this.scope, time);
 };
 
 module.exports = StreamCounter;

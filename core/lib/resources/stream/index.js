@@ -12,7 +12,7 @@ var default_options = {
 
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
-  this.counter = new StreamCounter(name);
+  this.counter = new StreamCounter(name, this.options.policy.maxPersistence);
   this.streamSubs = {};
 }
 
@@ -189,51 +189,47 @@ Stream.prototype.push = function(client, message) {
 
   this.counter.increment(function(value) {
     message.id = value;
-    if(policy.maxLength === 0) {//only publish
-      Persistence.publish(self.name, message, function() {
-        self.ack(client, message.ack);
-      });
-    } else {
-      self._push(message, function(error, length) {
-        if(error) {
-          logging.error(error);
-          return;
-        }
+    self._push(message, policy, function(error) {
+      if(error) {
+        logging.error(error);
+        return;
+      }
 
-        if(policy.maxPersistence) {
-          Persistence.expire(self.name, policy.maxPersistence);
-          self.counter.expire(policy.maxPersistence);
-        } else {
-          logging.warn('resource created without ttl :', self.name);
-          logging.warn('resource policy was :', policy);
-        }
-
-        if(policy.maxLength && length > policy.maxLength) {
-          redis.ltrim(self.name, -policy.maxLength, -1);
-        }
-
-        Persistence.publish(self.name, message, function() {
-          self.ack(client, message.ack);
-        });
-      });
-    }
+      self.ack(client, message.ack);
+    });
   });
 };
 
-Stream.prototype._push = function(message, callback) {
-  Persistence.redis().rpush(this.name, JSON.stringify({
-    id: message.id,
-    resource: message.resource,
-    action: message.action,
-    value: message.value,
-    userData: message.userData
-  }), function(error, length) {
-    if(error) {
-      callback(error);
-      return;
-    }
-    if(callback) callback(null, length);
-  });
+Stream.prototype._push = function(message, policy, callback) {
+  var multi = Persistence.redis().multi();
+
+  if(policy.maxLength > 0) {
+    multi.rpush(this.name, JSON.stringify({
+      id: message.id,
+      resource: message.resource,
+      action: message.action,
+      value: message.value,
+      userData: message.userData
+    }), function(error, length) {
+      if(error) {
+        logging.error(error);
+      }
+    });
+  }
+
+  if(policy.maxPersistence) {
+    multi.expire(this.name, policy.maxPersistence);
+  } else {
+    logging.warn('resource created without ttl :', this.name);
+    logging.warn('resource policy was :', policy);
+  }
+
+  if(policy.maxLength) {
+    multi.ltrim(this.name, -policy.maxLength, -1);
+  }
+
+  multi.publish(this.name, JSON.stringify(message), callback);
+  multi.exec();
 };
 
 Stream.prototype.sync = function(client, message) {
