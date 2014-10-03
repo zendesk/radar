@@ -4,6 +4,7 @@ var common = require('./common.js'),
     Client = require('radar_client').constructor,
     StreamMessage = require('./lib/assert_helper.js').StreamMessage,
     Tracker = require('callback_tracker'),
+    logging = require('minilog')('test'),
     radar, client, client2;
 
 describe('When using the stream resource', function() {
@@ -15,6 +16,8 @@ describe('When using the stream resource', function() {
     radar.sendCommand('start', common.configuration,  function() {
       client = common.getClient('dev', 123, 0, { name: 'tester1' }, track('client 1 ready'));
       client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'));
+      client.on('message:in', function(m) { logging.info('incoming', client.id, m); });
+      client2.on('message:in', function(m) { logging.info('incoming', client2.id, m); });
     });
   });
 
@@ -76,6 +79,8 @@ describe('When using the stream resource', function() {
       client.stream('test').subscribe();
       client2.stream('test').subscribe().push('ticket/1', 'open', message);
     });
+  });
+  describe('', function() {
 
     it('can chain subscribe and on/once', function(done) {
       client.stream('test').subscribe().once(function(message) {
@@ -192,7 +197,7 @@ describe('When using the stream resource', function() {
         });
         s.fail_on_more_than(5);
         s.on(5, function() {
-          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, length: 2, from: 4 });
+          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, size: 2, from: 4 });
           done();
         });
       });
@@ -218,7 +223,7 @@ describe('When using the stream resource', function() {
             });
         });
         s.on(5, function() {
-          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, length: 2, from: 4 });
+          s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, size: 2, from: 4 });
           s.on(6, function() {
             s.for_sender(client2).assert_message_sequence([
               [ 'ticket/1', 'open', 'seventh']
@@ -249,7 +254,7 @@ describe('When using the stream resource', function() {
 
         s.fail_on_more_than(5);
         s.on(5, function() {
-          s.assert_sync_error_notification(s.notifications[4], { length: 0, from: 4 });
+          s.assert_sync_error_notification(s.notifications[4], { size: 0, from: 4 });
           done();
         });
       });
@@ -352,7 +357,7 @@ describe('When using the stream resource', function() {
           [ 'ticket/1', 'open', "fourth" ]
         ]);
         client.stream('short_stream/get/1').get({from: s.notifications[1].id}, function(m) {
-          s.assert_sync_error_get_response(m, { start: 3, end: 4, from: 2, length: 2 });
+          s.assert_sync_error_get_response(m, { start: 3, end: 4, from: 2, size: 2 });
           done();
         });
       });

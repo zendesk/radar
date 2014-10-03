@@ -1,7 +1,8 @@
 var Resource = require('../../resource.js'),
     Persistence = require('persistence'),
     logging = require('minilog')('radar:stream'),
-    StreamCounter = require('./stream_counter.js');
+    StreamCounter = require('./stream_counter.js'),
+    SubscriberState = require('./subscriber_state.js');
 
 var default_options = {
   policy: {
@@ -13,63 +14,13 @@ var default_options = {
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
   this.counter = new StreamCounter(name, this.options.policy.maxPersistence);
-  this.streamSubs = {};
+  this.subscriberState = new SubscriberState(name);
 }
 
 Stream.prototype = new Resource();
 Stream.prototype.type = 'stream';
 
-function StreamSubscriber(clientId) {
-  this.id = clientId;
-  this.sent = null;
-  this.sendDisabled = false;
-}
-
-StreamSubscriber.prototype.startSubscribing = function(from) {
-  this.sent = from;
-  this.sentDisabled = true;
-};
-
-StreamSubscriber.prototype.finishSubscribing = function() {
-  this.sentDisabled = false;
-};
-
-Stream.prototype.update = function(callback) {
-  var self = this;
-  var multi = Persistence.redis().multi();
-
-  multi.lrange(this.name, 0, 0, function(error, values) {
-    if(error) throw new Error(error);
-
-    if(values.length == 1) {
-      self.start = JSON.parse(values[0]).id;
-    } else {
-      delete self.start;
-    }
-  });
-
-  multi.lrange(this.name, -1, -1, function(error, values) {
-    if(error) throw new Error(error);
-
-    if(values.length == 1) {
-      self.end = JSON.parse(values[0]).id;
-    } else {
-      delete self.end;
-    }
-  });
-
-  multi.llen(this.name, function(error, value) {
-    if(error) throw new Error(error);
-
-    self.length = value;
-  });
-
-  multi.exec(function() {
-    if(callback) callback();
-  });
-};
-
-Stream.prototype.getSyncError = function(from) {
+Stream.prototype._getSyncError = function(from) {
   return {
     to: this.name,
     error: {
@@ -77,120 +28,85 @@ Stream.prototype.getSyncError = function(from) {
       from: from,
       start: this.start,
       end: this.end,
-      length: this.length
+      size: this.size
     }
   };
 };
-Stream.prototype.subscribe = function(client, message) {
-  var self = this;
-  var from = message.options && message.options.from;
-  Resource.prototype.subscribe.call(this, client, message);
-  var subscriber = new StreamSubscriber(client.id);
-  this.streamSubs[client.id] = subscriber;
-  if(typeof from === 'undefined') {
+
+Stream.prototype._subscribe = function(client, message) {
+  var self = this,
+      from = message.options && message.options.from,
+      sub = this.subscriberState.get(client.id);
+
+  if(typeof from === 'undefined' || from < 0) {
     return;
   }
-  subscriber.startSubscribing(from);
+
+  sub.startSubscribing(from);
   this._get(from, function(error, values) {
     if(error) {
-      var syncError = self.getSyncError(from);
+      var syncError = self._getSyncError(from);
       syncError.op = 'push';
       client.send(syncError);
     } else {
-      var i, message;
-      for(i = 0; i < values.length; i++) {
-        message = values[i];
+      values.forEach(function(message) {
         message.op = 'push';
         message.to = self.name;
         client.send(message);
-        subscriber.sent = message.id;
-      }
+        sub.sent = message.id;
+      });
     }
-    subscriber.finishSubscribing();
+    sub.finishSubscribing();
   });
 };
 
-// get status
+Stream.prototype.subscribe = function(client, message) {
+  Resource.prototype.subscribe.call(this, client, message);
+  this._subscribe(client, message);
+};
+
 Stream.prototype.get = function(client, message) {
   var stream = this,
-      name = this.name,
-      redis = Persistence.redis(),
-      from = message.options && message.options.from;
+      from = message && message.options && message.options.from;
   logging.debug('#stream - get', this.name,'from: '+from, (client && client.id));
 
   this._get(from, function(error, values) {
     if(error) {
-      var syncError = stream.getSyncError(from);
+      var syncError = stream._getSyncError(from);
       syncError.op = 'get';
       syncError.value = [];
       client.send(syncError);
     } else {
       client.send({
         op: 'get',
-        to: name,
+        to: stream.name,
         value: values || []
       });
     }
   });
 };
 
-Stream.prototype._getReadOffsets = function(from) {
-  var endOffset = -1; //always read to the end
-  var startOffset = 0; //default is from the start
-  if(from > 0) {
-    if(this.length === 0 || from < this.start || from > this.end) {
-      return null;
-    }
-    var distance = this.end - this.start + 1;
-    var skipped = distance - this.length; //if ids were ever skipped
-    startOffset = endOffset - from - this.end - skipped;
-    startOffset = startOffset - 100; //buffer for any newly added members
-  }
-  return [ startOffset, endOffset ];
-};
-
 Stream.prototype._get = function(from, callback) {
-  var stream = this,
-      name = this.name,
-      redis = Persistence.redis();
-
-  this.update(function() {
-    var offsets = stream._getReadOffsets(from);
-    if(!offsets) {
-      //sync error
-      callback('sync-error');
-      return;
-    }
-
-    redis.lrange(name, offsets[0], offsets[1], function(error, replies) {
-      var parsed = [];
-      if(error) throw error;
-
-      replies = replies || [];
-      replies.forEach(function(reply) {
-        var message = JSON.parse(reply);
-        if(from >= 0 && message.id <= from) {
-          return; //filter out
-        }
-        parsed.push(message);
-      });
-
-      logging.debug('#stream -lrange', name, parsed);
-      callback(null, parsed);
-    });
+  var self = this;
+  Persistence.listInfo(this.name, function(error, start, end, size) {
+    self.start = start;
+    self.end = end;
+    self.size = size;
+    Persistence.listRead(self.name, from, start, end, size, callback);
   });
 };
 
 Stream.prototype.push = function(client, message) {
-  var self = this, redis = Persistence.redis();
+  var self = this;
   var policy = this.options.policy || {};
 
   logging.debug('#stream - push', this.name, message, (client && client.id));
 
-  this.counter.increment(function(value) {
+  this.counter.alloc(function(err, value) {
     message.id = value;
     self._push(message, policy, function(error) {
       if(error) {
+        console.log(error);
         logging.error(error);
         return;
       }
@@ -201,35 +117,18 @@ Stream.prototype.push = function(client, message) {
 };
 
 Stream.prototype._push = function(message, policy, callback) {
-  var multi = Persistence.redis().multi();
+  var m = {
+    to: this.name,
+    op: 'push',
+    id: message.id,
+    resource: message.resource,
+    action: message.action,
+    value: message.value,
+    userData: message.userData
+  };
 
-  if(policy.maxLength > 0) {
-    multi.rpush(this.name, JSON.stringify({
-      id: message.id,
-      resource: message.resource,
-      action: message.action,
-      value: message.value,
-      userData: message.userData
-    }), function(error, length) {
-      if(error) {
-        logging.error(error);
-      }
-    });
-  }
 
-  if(policy.maxPersistence) {
-    multi.expire(this.name, policy.maxPersistence);
-  } else {
-    logging.warn('resource created without ttl :', this.name);
-    logging.warn('resource policy was :', policy);
-  }
-
-  if(policy.maxLength) {
-    multi.ltrim(this.name, -policy.maxLength, -1);
-  }
-
-  multi.publish(this.name, JSON.stringify(message), callback);
-  multi.exec();
+  Persistence.listPush(this.name, m, policy.maxLength, policy.maxPersistence, callback);
 };
 
 Stream.prototype.sync = function(client, message) {
@@ -244,15 +143,15 @@ Stream.prototype.redisIn = function(data) {
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
     if (client && client.send) {
-      var streamSub = self.streamSubs[client.id];
-      if(streamSub && data.id > streamSub.sent && !streamSub.sendDisabled) {
+      var sub = self.subscriberState.get(client.id);
+      if(sub && sub.sendable(data)) {
         client.send(data);
-        streamSub.sent = data.id;
+        sub.sent = data.id;
       }
     }
   });
   //someone released the lock, wake up
-  this.counter.wakeUp();
+  this.counter.unblock();
 };
 
 Stream.setBackend = function(backend) { Persistence = backend; };

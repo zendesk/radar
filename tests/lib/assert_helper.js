@@ -437,11 +437,13 @@ StreamMessage.prototype.assert_message_sequence = function(list, from) {
 
 StreamMessage.prototype.assert_get_response = function(response, list, idstart) {
   idstart = idstart || 1;
-  var values = [];
+  var values = [], scope = this.scope;
   for(var i = 0; i< list.length; i++) {
    var listEntry = list[i];
     assert.equal(listEntry.length, 4);
     values.push({
+      to: scope,
+      op: 'push',
       resource: listEntry[0],
       action: listEntry[1],
       value: listEntry[2],
@@ -458,7 +460,7 @@ StreamMessage.prototype.assert_get_response = function(response, list, idstart) 
 };
 
 StreamMessage.prototype.assert_sync_error_notification = function(notification, state) {
-  var error = { type: 'sync-error', from: state.from, length: state.length };
+  var error = { type: 'sync-error', from: state.from, size: state.size };
   if(state.start >= 0) {
     error.start = state.start;
   }
@@ -474,7 +476,7 @@ StreamMessage.prototype.assert_sync_error_notification = function(notification, 
 };
 
 StreamMessage.prototype.assert_sync_error_get_response = function(response, state) {
-  var error = { type: 'sync-error', from: state.from, length: state.length };
+  var error = { type: 'sync-error', from: state.from, size: state.size };
   if(state.start >= 0) {
     error.start = state.start;
   }
