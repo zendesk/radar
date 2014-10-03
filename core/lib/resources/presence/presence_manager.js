@@ -12,8 +12,6 @@ function PresenceManager(scope, policy, sentry) {
 }
 require('util').inherits(PresenceManager, require('events').EventEmitter);
 
-//buffer time for a user to timeout after client implicitly disconnects
-PresenceManager.userTimeout = 15000;
 //filter for message.at for autopublish messages
 PresenceManager.autoPubTimeout = 25000;
 // messages have expiration (legacy) of 1 hour for limited compatibility with old servers
@@ -248,7 +246,7 @@ PresenceManager.prototype.setupExpiry = function(userId, userType) {
 
   if(this.store.userExists(userId)) {
     logging.info('#presence - user expiry setup for', userId, this.scope);
-    this.expiryTimers[userId] = setTimeout(this.expireUser.bind(this, userId, userType), PresenceManager.userTimeout);
+    this.expiryTimers[userId] = setTimeout(this.expireUser.bind(this, userId, userType), this.policy.userExpirySeconds * 1000);
   }
 };
 
