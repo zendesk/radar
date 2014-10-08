@@ -1,7 +1,7 @@
 var Resource = require('../../resource.js'),
     Persistence = require('persistence'),
     logging = require('minilog')('radar:stream'),
-    StreamCounter = require('./stream_counter.js'),
+    MessageId = require('./message_id.js'),
     SubscriberState = require('./subscriber_state.js');
 
 var default_options = {
@@ -13,7 +13,7 @@ var default_options = {
 
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
-  this.counter = new StreamCounter(name, this.options.policy.maxPersistence);
+  this.idGen = new MessageId(name, this.options.policy.maxPersistence);
   this.subscriberState = new SubscriberState(name);
 }
 
@@ -102,7 +102,7 @@ Stream.prototype.push = function(client, message) {
 
   logging.debug('#stream - push', this.name, message, (client && client.id));
 
-  this.counter.alloc(function(err, value) {
+  this.idGen.alloc(function(err, value) {
     message.id = value;
     self._push(message, policy, function(error) {
       if(error) {
@@ -151,7 +151,7 @@ Stream.prototype.redisIn = function(data) {
     }
   });
   //someone released the lock, wake up
-  this.counter.unblock();
+  this.idGen.unblock();
 };
 
 Stream.setBackend = function(backend) { Persistence = backend; };

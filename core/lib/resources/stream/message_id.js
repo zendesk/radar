@@ -1,7 +1,7 @@
 var Persistence = require('persistence'),
     Lock = Persistence.Lock;
 
-function StreamCounter(name, expiry) {
+function MessageId(name, expiry) {
   this.name = name;
   this.scope = 'stream_counter:/'+name;
   this.lock = new Lock(name, 10);
@@ -45,15 +45,15 @@ var processListener = function(counter) {
   });
 };
 
-StreamCounter.prototype.alloc = function(callback) {
+MessageId.prototype.alloc = function(callback) {
   if(callback) {
     this.listeners.push(callback);
   }
   this.unblock();
 };
 
-StreamCounter.prototype.unblock = function(callback) {
+MessageId.prototype.unblock = function(callback) {
   processListener(this);
 };
 
-module.exports = StreamCounter;
+module.exports = MessageId;
