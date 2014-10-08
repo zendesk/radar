@@ -35,7 +35,7 @@
     "minilog": "*",
     "callback_tracker": "*",
     "underscore": "*",
-    "persistence": "*"
+    "persistence": "git://github.com/zendesk/persistence.git#vanchi/stream"
   },
   "devDependencies": {
     "mocha": "*",
