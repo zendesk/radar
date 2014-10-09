@@ -1,7 +1,6 @@
 var Resource = require('../../resource.js'),
     Persistence = require('persistence'),
     logging = require('minilog')('radar:stream'),
-    MessageId = require('./message_id.js'),
     SubscriberState = require('./subscriber_state.js');
 
 var default_options = {
@@ -13,7 +12,7 @@ var default_options = {
 
 function Stream(name, parent, options) {
   Resource.call(this, name, parent, options, default_options);
-  this.idGen = new MessageId(name, this.options.policy.maxPersistence);
+  this.list = new Persistence.List(name, this.options.policy.maxPersistence, this.options.policy.maxLength);
   this.subscriberState = new SubscriberState(name);
 }
 
@@ -88,11 +87,11 @@ Stream.prototype.get = function(client, message) {
 
 Stream.prototype._get = function(from, callback) {
   var self = this;
-  Persistence.listInfo(this.name, function(error, start, end, size) {
+  this.list.info(function(error, start, end, size) {
     self.start = start;
     self.end = end;
     self.size = size;
-    Persistence.listRead(self.name, from, start, end, size, callback);
+    self.list.read(from, start, end, size, callback);
   });
 };
 
@@ -102,25 +101,9 @@ Stream.prototype.push = function(client, message) {
 
   logging.debug('#stream - push', this.name, message, (client && client.id));
 
-  this.idGen.alloc(function(err, value) {
-    message.id = value;
-    self._push(message, policy, function(error) {
-      if(error) {
-        console.log(error);
-        logging.error(error);
-        return;
-      }
-
-      self.ack(client, message.ack);
-    });
-  });
-};
-
-Stream.prototype._push = function(message, policy, callback) {
   var m = {
     to: this.name,
     op: 'push',
-    id: message.id,
     resource: message.resource,
     action: message.action,
     value: message.value,
@@ -128,7 +111,16 @@ Stream.prototype._push = function(message, policy, callback) {
   };
 
 
-  Persistence.listPush(this.name, m, policy.maxLength, policy.maxPersistence, callback);
+  this.list.push(m, function(error, stamped) {
+    if(error) {
+      console.log(error);
+      logging.error(error);
+      return;
+    }
+
+    logging.debug('#stream - push complete with id', self.name, stamped, (client && client.id));
+    self.ack(client, message.ack);
+  });
 };
 
 Stream.prototype.sync = function(client, message) {
@@ -151,7 +143,7 @@ Stream.prototype.redisIn = function(data) {
     }
   });
   //someone released the lock, wake up
-  this.idGen.unblock();
+  this.list.unblock();
 };
 
 Stream.setBackend = function(backend) { Persistence = backend; };
