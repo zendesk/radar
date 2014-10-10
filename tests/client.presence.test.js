@@ -249,6 +249,29 @@ describe('given two clients and a presence resource', function() {
         });
       });
 
+      it('should implicitly disconnect after set(online) if unsubscribed, after default user expiry', function(done){
+        this.timeout(16000);
+        p = new PresenceMessage('dev', 'no_default');
+
+        client2.presence('no_default').on(p.notify).subscribe(function() {
+          client.presence('no_default').set('online');
+        });
+
+        p.on(2, function() {
+          p.for_client(client).assert_message_sequence(
+            [ 'online', 'client_online' ]
+          );
+          client.presence('no_default').unsubscribe();
+        });
+
+        p.on(4, function() {
+          p.for_client(client).assert_message_sequence([
+            'online', 'client_online', 'client_implicit_offline', 'offline'
+          ]);
+          done();
+        });
+      });
+
       it('should notify correctly if disconnecting immediately after online', function(done){
         client2.presence('test').on(p.notify).subscribe(function() {
           client.presence('test').set('online');
