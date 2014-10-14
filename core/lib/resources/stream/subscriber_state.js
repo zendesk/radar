@@ -1,23 +1,23 @@
 function StreamSubscriber(clientId) {
   this.id = clientId;
   this.sent = null;
-  this.sendDisabled = false;
+  this.sendEnabled = true;
 }
 
 StreamSubscriber.prototype.startSubscribing = function(from) {
   this.sent = from;
-  this.sendDisabled = true;
+  this.sendEnabled = false;
 };
 
 StreamSubscriber.prototype.finishSubscribing = function() {
-  this.sendDisabled = false;
+  this.sendEnabled = true;
 };
 
 StreamSubscriber.prototype.sendable = function(data) {
-  return (!this.sendDisabled && this.sent < data.id);
+  return (this.sendEnabled && this.sent < data.id);
 };
 
-function SubscriberState(scope) {
+function SubscriberState() {
   this.subscribers = {};
 }
 
