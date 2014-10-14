@@ -35,11 +35,11 @@
     "minilog": "*",
     "callback_tracker": "*",
     "underscore": "*",
-    "persistence": "git://github.com/zendesk/persistence.git#vanchi/stream"
+    "persistence": "*"
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "git://github.com/zendesk/radar_client.git#vanchi/stream",
+    "radar_client": "0.11.0",
     "simple_sentinel": "*"
   },
   "scripts": {
@@ -56,7 +56,6 @@
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
-    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
-    "prepublish": "npm run check-clean || echo 'You cannot publish with outdated dependecies or uncommitted changes.'"
+    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
   }
 }
