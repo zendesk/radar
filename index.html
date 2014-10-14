@@ -338,7 +338,7 @@ radar_client info {"op":"sync","to":"message:/dev/chat/1","value":[],"time":1363
 
 Type.register('chatMessage', {
     expr: new RegExp('^message:/.+/chat/.+$'),
-    type: 'messageList',
+    type: 'MessageList',
     policy: { cache: true, maxCount: 300 }
 });
 </code></pre>
