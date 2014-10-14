@@ -52,6 +52,18 @@ Type.add([
       type: 'MessageList',
       policy: { cache: true, maxAgeSeconds: 30 }
     },
+    {
+      name: 'short_stream',
+      expression: /^stream:\/dev\/short_stream\/(.+)/,
+      type: 'Stream',
+      policy: { maxLength: 2 }
+    },
+    {
+      name: 'uncached_stream',
+      expression: /^stream:\/dev\/uncached_stream\/(.+)/,
+      type: 'Stream',
+      policy: { maxLength: 0 }
+    }
 ]);
 
 var Service = {};

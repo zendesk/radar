@@ -142,7 +142,6 @@ PresenceMessage.prototype.assert_client_implicit_offline =  function(message) {
 
 PresenceMessage.prototype.assert_message_sequence = function(list, from) {
   var i, messages = this.notifications.slice(from);
-  from = from || 0;
   assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
@@ -340,4 +339,160 @@ PresenceMessage.prototype.assert_delay_between_notifications_within_range = func
   assert.ok(delay <= high, 'delay('+delay+') was not <= '+high);
 };
 
+
+//stream
+
+function StreamMessage(account, name) {
+  this.scope = 'stream:/'+account+'/'+name;
+  this.notifications = [];
+
+  var self = this;
+  this.notify = function(message) {
+    self.notifications.push(message);
+    self.emit(self.notifications.length);
+  };
+}
+require('util').inherits(StreamMessage, EE);
+
+StreamMessage.prototype.notifyFor = function(source) {
+  var self = this;
+  return function(message) {
+    message._source = source;
+    self.notifications.push(message);
+    self.emit(self.notifications.length);
+  };
+};
+
+StreamMessage.prototype.teardown = function() {
+  this.notifications = [];
+  this.removeAllListeners();
+};
+
+StreamMessage.prototype.for_sender = PresenceMessage.prototype.for_client;
+
+StreamMessage.prototype.assert_ack_for = function(type, message, resource, action, value) {
+  var expected = { to: this.scope };
+  var ackNumber = message.ack;
+  delete message.ack;
+
+  switch(type) {
+    case 'subscribe':
+    case 'unsubscribe':
+      expected.op = type;
+      break;
+    case 'push':
+      expected.op = type;
+      expected.resource = resource;
+      expected.action = action;
+      expected.value = value;
+      break;
+    default:
+      assert.ok(false);
+  }
+  expected.userData = this.client.userData;
+
+  assert.deepEqual(expected, message);
+  assert.ok(ackNumber > 0);
+  message.ack = ackNumber; //restore
+};
+
+StreamMessage.prototype.assert_ack_for_subscribe = PresenceMessage.prototype.assert_ack_for_subscribe;
+StreamMessage.prototype.assert_ack_for_unsubscribe = PresenceMessage.prototype.assert_ack_for_unsubscribe;
+StreamMessage.prototype.assert_ack_for_push = function(message, resource, action, value) {
+  this.assert_ack_for('push', message, resource, action, value);
+};
+
+StreamMessage.prototype.assert_push_notification = function(message, resource, action, value, sender) {
+  sender = sender || this.client;
+  var id = message.id;
+  delete message.id;
+  var expected = {
+    to: this.scope,
+    op: 'push',
+    resource: resource,
+    action: action,
+    value: value,
+    userData: this.client.userData
+  };
+  assert.deepEqual(expected, message);
+  message.id = id;
+  assert.ok(message.id);
+};
+
+StreamMessage.prototype.assert_message_sequence = function(list, from) {
+  var i, messages = this.notifications.slice(from);
+  assert.equal(list.length, messages.length, 'mismatch in number of messages');
+  for(i = 0; i < messages.length; i++) {
+    var listEntry = list[i];
+    var resource, action, value, sender;
+    assert.ok(listEntry.length >= 3);
+    assert.ok(listEntry.length <= 4);
+    resource = listEntry[0];
+    action = listEntry[1];
+    value = listEntry[2];
+    sender = listEntry[3];
+    this.assert_push_notification(messages[i], resource, action, value, sender);
+  }
+};
+
+StreamMessage.prototype.assert_get_response = function(response, list, idstart) {
+  idstart = idstart || 1;
+  var values = [], scope = this.scope;
+  for(var i = 0; i< list.length; i++) {
+   var listEntry = list[i];
+    assert.equal(listEntry.length, 4);
+    values.push({
+      to: scope,
+      op: 'push',
+      resource: listEntry[0],
+      action: listEntry[1],
+      value: listEntry[2],
+      userData: listEntry[3].configuration('userData'),
+      id: idstart + i,
+    });
+  }
+
+  assert.deepEqual({
+    op: 'get',
+    to: this.scope,
+    value: values
+  }, response);
+};
+
+StreamMessage.prototype.assert_sync_error_notification = function(notification, state) {
+  var error = { type: 'sync-error', from: state.from, size: state.size };
+  if(state.start >= 0) {
+    error.start = state.start;
+  }
+  if(state.end >= 0) {
+    error.end = state.end;
+  }
+
+  assert.deepEqual({
+    op: 'push',
+    to: this.scope,
+    error: error
+  }, notification);
+};
+
+StreamMessage.prototype.assert_sync_error_get_response = function(response, state) {
+  var error = { type: 'sync-error', from: state.from, size: state.size };
+  if(state.start >= 0) {
+    error.start = state.start;
+  }
+  if(state.end >= 0) {
+    error.end = state.end;
+  }
+
+  assert.deepEqual({
+    op: 'get',
+    to: this.scope,
+    value: [],
+    error: error
+  }, response);
+};
+// sync is implemented as subscribe + get, hence the return op is "get"
+StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;
+StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
 module.exports.PresenceMessage = PresenceMessage;
+module.exports.StreamMessage = StreamMessage;
