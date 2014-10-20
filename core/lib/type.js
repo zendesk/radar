@@ -16,6 +16,11 @@ var Types = [
     type: 'Presence',
     expression: /^presence:/,
     policy: { cache: true, maxAgeSeconds: 15 },
+  },
+  {
+    name: 'general stream',
+    type: 'Stream',
+    expression: /^stream:/
   }
 ];
 

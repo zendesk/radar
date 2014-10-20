@@ -1,3 +1,10 @@
+### 0.11.0
+* Stream resource
+    - Uses an underlying list (with auto incrementing id) abstraction
+    - push: add a message
+    - get(from: x) - get all messages from id x
+    - subscribe(from: x) - get all messages from id x as notifications
+
 ### 0.10.1
 * Bugfix: Fix immediate disconnects after set(online) causing incorrect online messages
     - Rewrite all presence tests to be simpler/readable by extracting asserts into a helper
