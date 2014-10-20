@@ -52,6 +52,12 @@ Type.add([
       type: 'MessageList',
       policy: { cache: true, maxAgeSeconds: 30 }
     },
+    {// For client.presence.test
+      name: 'short_expiry',
+      expression: /^presence:\/dev\/test/,
+      type: 'Presence',
+      policy: { userExpirySeconds : 1 }
+    },
     {
       name: 'short_stream',
       expression: /^stream:\/dev\/short_stream\/(.+)/,

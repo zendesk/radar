@@ -7,7 +7,11 @@ var Resource = require('../../resource.js'),
 
 var default_options = {
   policy: {
-    maxPersistence: 12 * 60 * 60 // 12 hours in seconds
+    // 12 hours in seconds
+    maxPersistence: 12 * 60 * 60,
+
+    // buffer time for a user to timeout after client disconnects (implicit)
+    userExpirySeconds: 15
   }
 };
 
