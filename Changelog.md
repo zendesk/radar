@@ -1,3 +1,6 @@
+### 0.11.1
+* Presence: UserExpiry timeout is now configurable based on resource type
+
 ### 0.11.0
 * Stream resource
     - Uses an underlying list (with auto incrementing id) abstraction
