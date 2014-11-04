@@ -1,3 +1,6 @@
+### 0.12.0
+* Use engine.io 1.4.2, use radar_client 0.12.0
+
 ### 0.11.1
 * Presence: UserExpiry timeout is now configurable based on resource type
 
