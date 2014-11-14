@@ -1,3 +1,6 @@
+### 0.12.1
+* Use radar_client 0.12.1
+
 ### 0.12.0
 * Use engine.io 1.4.2, use radar_client 0.12.0
 
