@@ -277,10 +277,19 @@ console.log('Server listening on localhost:8000');
       <p>The callback is called when the connection is established (if the connection is already there, then it is called immediately).</p>
       <p>If you look at the developer console, you'll see a bunch of log statements when you run that (because we called <code>Minilog.enable()</code> earlier), such as:</p>
 
-<pre class="prettyprint">radar_state debug {"op":"run-state","state":6}
+<pre class="prettyprint">
+radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"] radar_client.js:36
+radar_state before-connect, from: opened, to: connecting ["connect", "opened", "connecting"] radar_client.js:36
+Client {_ackCounter: 1, _channelSyncTimes: Object, _users: Object, _presences: Object, _subscriptions: Object…}
+radar_client socket open jTHdmJJUdvnYS6kKAAAA radar_client.js:36
+radar_state event-state-established, from: connecting, to: connected ["established", "connecting", "connected"] radar_client.js:36
+radar_state event-state-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"] radar_client.js:36
+radar_state before-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"] radar_client.js:36
+radar_state event-state-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"] radar_client.js:36
+radar_state before-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"] radar_client.js:36
 Radar is ready
 </pre>
-      <p>Here you can see that the Radar client is now in state 6 - which, for the internal state machine, means it's ready.</p>
+      <p>Here you can see that the Radar client has transitioned through the following states: connecting, connected, authenticating, and activated.</p>
       <p>The callback runs, and you also receive back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.</p>
 
       <h3>6. Creating a chat - message resource</h3>
@@ -296,8 +305,9 @@ Radar is ready
 
       <p>If you run that you'll see something like this:</p>
 
-<pre class="prettyprint">radar_state info {"op":"sync","to":"message:/dev/chat/1","direction":"out"}
-radar_client info {"op":"sync","to":"message:/dev/chat/1","value":[],"time":1363371832947,"direction":"in"}</pre>
+<pre class="prettyprint">
+Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
+</pre>
 
       <p>
         So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call,
@@ -354,8 +364,8 @@ Type.register('chatMessage', {
 
       <p>OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.</p>
       <p>Another part of any application that allows users to communicate with each other is the ability to track user presence - to do things like showing who is online, or to route chats to people who are ready to accept them.</p>
-      <p>Radar has a presence resource type built specifically to track who is online - that's what the <code>userId</code> information in the configuration is used for.</p>
-      <p>First, let's run this piece of code in both tabs:</p>
+      <p>Radar has a presence resource type built specifically to track who is online - that's the purpose of the <code>userId</code> information in the configuration.</p>
+      <p>First, let's run this piece of code in each of the tabs:</p>
 
 <pre class="prettyprint"><code>RadarClient.alloc('example', function() {
   RadarClient.presence('chat/1').on(function(message) {
@@ -369,45 +379,49 @@ Type.register('chatMessage', {
   }).sync();
 });</code></pre>
 
-      <p>Run this code on each of the tabs:</p>
+      <p>Then, run this code in each of the tabs:</p>
 
       <pre class="prettyprint">RadarClient.presence('chat/1').set('online');</pre>
 
-      <p>You should see a log message that looks somthing like this:</p>
+      <p>You should see a log message that looks something like this:</p>
 
-<pre class="prettyprint">radar_client info {"to":"presence:/dev/chat/1","op":"online","value":{"19":0},"direction":"out"}
-User 19 is now online</pre>
+<pre class="prettyprint">
+Scope {prefix: "presence:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
+User 25 is now online 
+</pre>
 
       <p>
         In the Radar configuration call on the example page, we set the <code>userId</code> option to a random number between 0 and 100,
         so you'll get different user id's for each of the tabs.
       </p>
-      <p>Now, try closing one of the tabs, and look at the remaining tab's messages. You should first see this:</p>
+      <p>Now, close one of the tabs.  Initially, you will not see any additional debug output in the console window.  Then, after about 15 seconds, you will see output similar to this:</p>
 
-      <pre class="prettyprint">radar_client info {"to":"presence:/dev/chat/1","op":"client_offline","explicit":false,"value":{"userId":19,"clientId":"CmuZcU4wvUMTiDx9AAAK"},"direction":"in"}</pre>
-
-      <p>And then, after about 30 seconds, you should see this:</p>
-
-<pre class="prettyprint">radar_client info {"to":"presence:/dev/chat/1","op":"offline","value":{"19":0},"direction":"in"}
+<pre class="prettyprint">
 User 19 is now offline</pre>
 
-      <p>Note that you could also have called:</p>
+      <p>where <b>19</b> is the clientId of the client in the closed tab. Note that in the tab that is now closed, you could have instead issued the command:</p>
 
       <pre class="prettyprint">RadarClient.presence('chat/1').set('offline');</pre>
 
       <p>
-        and this would have triggered a "offline" message immediately - the 30 second delay only applies if you close the tab without telling Radar that
-        you're going offline (a ungraceful exit).
+        and this would have triggered an "offline" message immediately - the 15 second delay only applies if you close the tab without telling Radar that
+        you're going offline (an ungraceful exit).
       </p>
+
+      <p>
+      Though not demonstrable in this test scenario, a single user can have multiple client sessions, and only when the last client session has ended is the user considered a candidate for being "offline".  When the last client session for a user is implicitly made offline, there is a timeout - or grace period - during which the user can create a new client session that will keep the user "online".  If no new client session is created, then the user goes offline once the timeout expires. In contrast, an <b>explicit</b> offline ignores the timeout period, and puts the user in an offline state immediately.
+      </p>
+
       <p>Radar supports two granularities of events:</p>
 
       <ul class="list">
         <li>client_online/client_offline messages are triggered when a client session goes offline. They are less reliable, but quicker to trigger.</li>
+        <br/>
         <li>
           online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you start
           having multiple Radar servers: then you don't want to consider a user to be offline until there are no client sessions that are active for that user
-          on any of the Radar servers. There is also a grace period of up to 30 seconds - this allows users to experience short-term network issues, or to
-          reload a Radar-enabled page without being immediately considered to be offline.
+          on any of the Radar servers. There is also a grace period of 15 seconds (configurable) - this allows users to experience short-term network issues, or to
+          reload a Radar-enabled page without being immediately considered offline.
         </li>
       </ul>
 
