@@ -199,6 +199,12 @@ console.log('Server listening on localhost:8000');
         userType: 0,
         accountName: 'dev'
       });
+      RadarClient.on('message:in', function(message) {
+        console.log(JSON.stringify({incoming: message}));
+      })
+      RadarClient.on('message:out', function(message) {
+        console.log(JSON.stringify({outgoing: message}));
+      })
     &lt;/script&gt;
   &lt;/head&gt;
   &lt;body&gt;
@@ -230,12 +236,8 @@ console.log('Server listening on localhost:8000');
       <h3>4. What's in the Radar client configuration?</h3>
 
       <p>
-        If you looked at the code in index.html, we're doing two function calls: one, to <code>Minilog.enable()</code> which turns on all
-        logging - which includes Radar's internal logging. The other one is to <code>RadarClient.configure()</code>, which configured the host
-        and the port of the Radar server - and three other important pieces of infomation.
+        If you looked at the code in index.html, we're have two function calls: <code>Minilog.enable()</code> which turns on all logging and includes Radar's internal logging. The other is <code>RadarClient.configure()</code>, which configures the host and the port of the Radar server - and three other important pieces of information:
       </p>
-
-      <p>Those are:</p>
 
       <ul class="list">
         <li>userId: any number or string that uniquely identifies a user</li>
@@ -248,11 +250,16 @@ console.log('Server listening on localhost:8000');
         every Zendesk user has that information (and more). But most other applications will have the same constructs, so there was no point in getting
         rid of these fields when we open sourced Radar.
       </p>
+
       <p>
         These are just arbitrary pieces of information, which you can manage in any way you want to. There is no "user management" in Radar and Radar
         doesn't care about what values you use, you just need to pick some values. Sometimes these values are used for key names - for example, all Radar
         data in Redis contains the account name in as a part of the key so you can examine data for a specific account. Feel free to figure out what makes
         sense for your application.
+      </p>
+
+      <p>
+        Lastly, there are two event handlers that are triggered by <b>message:in</b> and <b>message:out</b> events, respectively.
       </p>
 
       <p>OK, with that, let's get started.</p>
@@ -278,19 +285,22 @@ console.log('Server listening on localhost:8000');
       <p>If you look at the developer console, you'll see a bunch of log statements when you run that (because we called <code>Minilog.enable()</code> earlier), such as:</p>
 
 <pre class="prettyprint">
-radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"] radar_client.js:36
-radar_state before-connect, from: opened, to: connecting ["connect", "opened", "connecting"] radar_client.js:36
+radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
+radar_state before-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
 Client {_ackCounter: 1, _channelSyncTimes: Object, _users: Object, _presences: Object, _subscriptions: Object…}
-radar_client socket open jTHdmJJUdvnYS6kKAAAA radar_client.js:36
-radar_state event-state-established, from: connecting, to: connected ["established", "connecting", "connected"] radar_client.js:36
-radar_state event-state-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"] radar_client.js:36
-radar_state before-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"] radar_client.js:36
-radar_state event-state-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"] radar_client.js:36
-radar_state before-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"] radar_client.js:36
+radar_client socket open DeeyNr57kfKqA7oOAAAD
+radar_state event-state-established, from: connecting, to: connected ["established", "connecting", "connected"]
+radar_state event-state-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"]
+radar_state before-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"]
+radar_state event-state-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"]
+radar_state before-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"]
 Radar is ready
+radar_client ready:  example
+radar_state before-established, from: connecting, to: connected ["established", "connecting", "connected"]
+{"incoming":{"server":"6319-pobrien.local","cid":"DeeyNr57kfKqA7oOAAAD"}}
 </pre>
       <p>Here you can see that the Radar client has transitioned through the following states: connecting, connected, authenticating, and activated.</p>
-      <p>The callback runs, and you also receive back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.</p>
+      <p>The callback runs, and you also get back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.</p>
 
       <h3>6. Creating a chat - message resource</h3>
 
@@ -306,17 +316,17 @@ Radar is ready
       <p>If you run that you'll see something like this:</p>
 
 <pre class="prettyprint">
+{"outgoing":{"op":"sync","to":"message:/dev/chat/1"}}
 Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
+{"incoming":{"op":"sync","to":"message:/dev/chat/1","value":[],"time":1416292363640}} 
 </pre>
 
       <p>
-        So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call,
-        which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages
-        on that channel, the message handler would have been triggered.
+        So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call, which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.
       </p>
       <p>Now, let's send a message:</p>
 
-      <pre class="prettyprint">RadarClient.message('chat/1').publish('Hello world');</pre>
+      <pre class="prettyprint">RadarClient.message('chat/1').publish('Hello world 1');</pre>
 
       <p>You should see the message echoed back to you, since your current session is subscribed to the "chat/1" message resource.</p>
       <p>OK, open a second tab and keep it open. Run this code to initialize it:</p>
@@ -328,7 +338,11 @@ Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: functi
 });
 </code></pre>
 
-      <p>Now, try sending another message via <code>.publish</code> - you should see the message arrive to both tabs.</p>
+      <p>Now, send another message via <code>.publish</code> - you should see the message arrive to both tabs.</p>
+
+      <p>Now, enter the following in the first tab, and you should see the message arrive in both tabs.</p>
+
+      <pre class="prettyprint">RadarClient.message('chat/1').publish('Hello world 2');</pre>
 
       <h3>7. Message history</h3>
 
@@ -365,7 +379,8 @@ Type.register('chatMessage', {
       <p>OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.</p>
       <p>Another part of any application that allows users to communicate with each other is the ability to track user presence - to do things like showing who is online, or to route chats to people who are ready to accept them.</p>
       <p>Radar has a presence resource type built specifically to track who is online - that's the purpose of the <code>userId</code> information in the configuration.</p>
-      <p>First, let's run this piece of code in each of the tabs:</p>
+
+      <p>Run this snippet of code in each of the tabs:</p>
 
 <pre class="prettyprint"><code>RadarClient.alloc('example', function() {
   RadarClient.presence('chat/1').on(function(message) {
@@ -379,29 +394,68 @@ Type.register('chatMessage', {
   }).sync();
 });</code></pre>
 
-      <p>Then, run this code in each of the tabs:</p>
+      <p>Then, run this code in the first tab:</p>
 
-      <pre class="prettyprint">RadarClient.presence('chat/1').set('online');</pre>
+      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('online');</code></pre>
 
-      <p>You should see a log message that looks something like this:</p>
+      <p>You will see output like this in the first tab:</p>
 
-<pre class="prettyprint">
+<pre class="prettyprint"><code>{"outgoing":{"op":"set","to":"presence:/dev/chat/1","value":"online","key":80,"type":0}}
 Scope {prefix: "presence:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
-User 25 is now online 
-</pre>
+{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"80":0}}}
+{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":80,"clientId":"Ms1o2g3MqK3wS4Z6AAAC"}}}
+User 80 is now online 
+</code></pre>
+
+      <p>and you will see output like this in the second tab:</p>
+
+<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"80":0}}}
+{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":80,"clientId":"Ms1o2g3MqK3wS4Z6AAAC"}}}
+User 80 is now online 
+</code></pre>
+
+      <p>Run this (i.e. the same) code in the second tab:</p>
+
+      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('online');</code></pre>
+
+      <p>You will see <b>additional</b> output like this in the first tab:</p>
+
+<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"55":0}}}
+{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
+User 55 is now online 
+</code></pre>
+
+      <p>and you will see <b>additional</b> output like this in the second tab:</p>
+
+<pre class="prettyprint"><code>{"outgoing":{"op":"set","to":"presence:/dev/chat/1","value":"online","key":55,"type":0}}
+Scope {prefix: "presence:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
+{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"55":0}}}
+{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
+User 55 is now online 
+</code></pre>
 
       <p>
         In the Radar configuration call on the example page, we set the <code>userId</code> option to a random number between 0 and 100,
         so you'll get different user id's for each of the tabs.
       </p>
-      <p>Now, close one of the tabs.  Initially, you will not see any additional debug output in the console window.  Then, after about 15 seconds, you will see output similar to this:</p>
 
-<pre class="prettyprint">
-User 19 is now offline</pre>
+      <p>Now, close the second tab.  In the first tab you will see something like this:</p>
 
-      <p>where <b>19</b> is the clientId of the client in the closed tab. Note that in the tab that is now closed, you could have instead issued the command:</p>
+<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"client_offline","explicit":false,"value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
+</code></pre>
 
-      <pre class="prettyprint">RadarClient.presence('chat/1').set('offline');</pre>
+      <p>This says that a <b>client_offline</b> message arrived for userId <b>55</b>, but the offline was <b>not explicit</b>, in which case the user remains online for a configurable timeout period (e.g. for 15 seconds.)
+      </p>
+
+      <p>Once the timeout period expires, additional debug text shows up in the first tab:</p>
+
+<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"offline","value":{"55":0}}}
+User 55 is now offline 
+</code></pre>
+
+      <p>Now user 55 is truly offline.  Note that in the second tab you could have instead issued the command:</p>
+
+      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('offline');</code></pre>
 
       <p>
         and this would have triggered an "offline" message immediately - the 15 second delay only applies if you close the tab without telling Radar that
@@ -426,6 +480,8 @@ User 19 is now offline</pre>
       </ul>
 
       <p>Usually, you want to use the "online" and "offline" events unless you want to specifically track client sessions and do the work mentioned above on the client side.</p>
+
+      <p>Lastly, in some of the debug output above, you can clearly see that <b>userId</b> and <b>clientId</b> are two different values.  A single userId can be associated with 1 to many clientIds, but a clientId is associated with 1 and only 1 userId.</p>
 
       <h3>9. Status resources and the REST API</h3>
 
