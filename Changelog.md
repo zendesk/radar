@@ -1,3 +1,7 @@
+### 0.12.2
+* Presence: sentry down does not publish presence offlines to redis
+ - This should prevent large number of redis messages when a sentry fails
+
 ### 0.12.1
 * Use radar_client 0.12.1
 
