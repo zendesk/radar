@@ -42,7 +42,7 @@ PresenceManager.prototype.setup = function() {
   this.sentryListener = function(sentry) {
     store.clientsForSentry(sentry, function(clientId) {
       logging.info('#presence - #sentry down, removing client:', sentry, scope, clientId);
-      manager.disconnectClient(clientId);
+      manager.sentryDownForClient(clientId);
     });
   };
 
@@ -50,6 +50,20 @@ PresenceManager.prototype.setup = function() {
   // since we should not be going down often.
   logging.debug('#presence - add sentry listener', scope);
   this.sentry.on('down', this.sentryListener);
+};
+
+PresenceManager.prototype.sentryDownForClient = function(clientId) {
+  var userId = this.store.userOf(clientId);
+  var userType = this.store.userTypeOf(userId);
+  var message = {
+    userId: userId,
+    userType: userType,
+    clientId: clientId,
+    online: false,
+    explicit: false
+  };
+  this.stampExpiration(message);
+  this.processRedisEntry(message); //directly process
 };
 
 PresenceManager.prototype.destroy = function() {
