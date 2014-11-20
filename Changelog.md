@@ -1,3 +1,7 @@
+### 0.12.3
+* Update Sentry to contain host/port members
+- Log name, host, port when Sentry is down
+
 ### 0.12.2
 * Presence: sentry down does not publish presence offlines to redis
  - This should prevent large number of redis messages when a sentry fails
