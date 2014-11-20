@@ -4,7 +4,7 @@ High level API and backend for writing web apps that use real-time information.
 
 ## Documentation
 
-See http://radar.zendesk.com/ for detailed documentation.
+See http://radar.zendesk.com/index.html for detailed documentation.
 
 [![Build Status](https://travis-ci.org/zendesk/radar.png?branch=master)](https://travis-ci.org/zendesk/radar)
 
