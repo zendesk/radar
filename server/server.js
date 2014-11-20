@@ -40,8 +40,9 @@ Server.prototype._setup = function(http_server, configuration) {
 
   Core.Resources.Presence.sentry.start();
   Core.Resources.Presence.sentry.setMaxListeners(0);
+  Core.Resources.Presence.sentry.setHostPort(hostname, configuration.port);
 
-  if(configuration.engineio) {
+  if (configuration.engineio) {
     engine = configuration.engineio.module;
     engineConf = configuration.engineio.conf;
 
