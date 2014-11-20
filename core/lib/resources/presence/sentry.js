@@ -1,5 +1,4 @@
-var os = require('os'),
-    logging = require('minilog')('radar:presence:sentry'),
+var logging = require('minilog')('radar:presence:sentry'),
     Persistence = require('persistence');
 
 function parse(message) {
@@ -46,8 +45,9 @@ Sentry.prototype._save = function(message) {
 Sentry.prototype._sentryDown = function(name) {
   if(!this.isValid(name)) {
     Persistence.deleteHash(Sentry.channel, name); //cleanup
+    logging.info('#presence - #sentry down:', name, 
+                    sentries[name].host, sentries[name].port);
     delete this.sentries[name];
-    logging.info('#presence - #sentry down:', name);
     this.emit('down', name);
   }
 };
@@ -80,12 +80,17 @@ Sentry.prototype.publishKeepAlive = function(options) {
   options = options || {};
   var name = options.name || this.name; //publish on behalf of someone else
   var expiration = options.expiration || Date.now() + Sentry.expiry;  //custom expiry
+  var host = this.host;
+  var port = this.port;
+
   var message = {
     name: name,
     alive: true,
-    host: os.hostname,
+    host: host,
+    port: port,
     expiration: expiration
   };
+
   this.sentries[name] = message;
 
   if(options.save === false) return; /*specific check*/
@@ -129,6 +134,11 @@ Sentry.prototype.isValid = function(name) {
 
   if(!valid) logging.debug('#presence - #sentry isValid', name, valid, (expiration)?expiration+'/'+Sentry.expiry:'not-present');
   return valid;
+};
+
+Sentry.prototype.setHostPort = function(host, port) {
+  this.host = host;
+  this.port = port;
 };
 
 module.exports = Sentry;

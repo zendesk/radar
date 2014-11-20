@@ -40,13 +40,7 @@ Server.prototype._setup = function(http_server, configuration) {
 
   Core.Resources.Presence.sentry.start();
   Core.Resources.Presence.sentry.setMaxListeners(0);
-
-  if(configuration.engineio) {
-    engine = configuration.engineio.module;
-    engineConf = configuration.engineio.conf;
-
-    this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
-  }
+  Core.Resources.Presence.sentry.setHostPort(hostname, configuration.port);
 
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this.onClientConnection.bind(this));
