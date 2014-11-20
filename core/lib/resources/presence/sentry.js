@@ -46,7 +46,7 @@ Sentry.prototype._sentryDown = function(name) {
   if(!this.isValid(name)) {
     Persistence.deleteHash(Sentry.channel, name); //cleanup
     logging.info('#presence - #sentry down:', name, 
-                    sentries[name].host, sentries[name].port);
+                    this.sentries[name].host, this.sentries[name].port);
     delete this.sentries[name];
     this.emit('down', name);
   }
