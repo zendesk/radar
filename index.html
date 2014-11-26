@@ -24,6 +24,8 @@
 
       <h5><a href="rest.html">REST API</a></h5>
 
+      <h5><a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">Example source code on Github</a></h5>
+
       <h5><a href="https://github.com/zendesk/radar" target="_blank">Full source code on Github</a></h5>
 
       <h5><a href="http://www.zendesk.com/company/careers?jvi=oHiWWfwB,Job" target="_blank">Zendesk is hiring Radar developers</a></h5>
@@ -128,7 +130,7 @@ radar.attach(server, {
 server.listen(8000);
 console.log('Server listening on localhost:8000');
 </code></pre>
-      <p>Note that you need to have Redis running for Radar to work. Save this as "server.js" and run it with "node server.js".</p>
+      <p>Note that Redis must be running for Radar to work. Save this as "server.js" and run it with "node server.js".</p>
 
       <h3>2. Setting up the client</h3>
 
@@ -180,8 +182,8 @@ console.log('Server listening on localhost:8000');
 
       <p>Let's set up the server to serve the files, and a minimal HTML page that initializes the Radar client.</p>
       <p>
-        Rather than building anything more complicated like a UI, let's just take advantage of the developer console that all good modern browsers have
-        to create a chat. Create the following <code>public/index.html</code>:
+        Rather than building anything more complicated like a UI, let's just take advantage of the developer console that all good modern browsers have,
+        and use that to create a chat. Create the following <code>public/index.html</code>:
       </p>
 
 <pre class="prettyprint"><code>&lt;!doctype html&gt;
@@ -218,10 +220,10 @@ console.log('Server listening on localhost:8000');
 <pre class="prettyprint"><code>var server = http.createServer(function(req, res) {
   var pathname = url.parse(req.url).pathname;
 
-  if(/^\/radar_client.js$/.test(pathname)) {
+  if (/^\/radar_client.js$/.test(pathname)) {
     res.setHeader('content-type', 'text/javascript');
     res.end(fs.readFileSync('./public/radar_client.js'));
-  } else if(pathname == '/') {
+  } else if (pathname == '/') {
     res.setHeader('content-type', 'text/html');
     res.end(fs.readFileSync('./public/index.html'));
   } else {
@@ -236,25 +238,36 @@ console.log('Server listening on localhost:8000');
       <h3>4. What's in the Radar client configuration?</h3>
 
       <p>
-        If you looked at the code in index.html, we're have two function calls: <code>Minilog.enable()</code> which turns on all logging and includes Radar's internal logging. The other is <code>RadarClient.configure()</code>, which configures the host and the port of the Radar server - and three other important pieces of information:
+        The code in <code>index.html</code> contains two function calls: 
       </p>
 
+      <p>
       <ul class="list">
-        <li>userId: any number or string that uniquely identifies a user</li>
-        <li>userType: any number or string that represents a user type</li>
-        <li>accountName: any string</li>
+        <li><code>Minilog.enable()</code> which turns on all logging and includes Radar's internal logging</li>
       </ul>
-
-      <p>
-        Every user needs to have a account, a user id and a user type. The reason is basically that Radar was initially built for Zendesk's use and
-        every Zendesk user has that information (and more). But most other applications will have the same constructs, so there was no point in getting
-        rid of these fields when we open sourced Radar.
       </p>
 
       <p>
-        These are just arbitrary pieces of information, which you can manage in any way you want to. There is no "user management" in Radar and Radar
-        doesn't care about what values you use, you just need to pick some values. Sometimes these values are used for key names - for example, all Radar
-        data in Redis contains the account name in as a part of the key so you can examine data for a specific account. Feel free to figure out what makes
+      <ul class="list">
+        <li><code>RadarClient.configure()</code>, which configures the host and the port of the Radar server - and three other important pieces of information:</li>
+        <ul class="list">
+                  <li><code>userId</code>: any number or string that uniquely identifies a user</li>
+          <li><code>userType</code>: any number or string that represents a user type</li>
+          <li><code>accountName</code>: any string</li>
+        </ul>
+      </ul>
+      </p>
+
+      <p>
+        Every user needs an account, a user id and a user type. Radar was initially built for Zendesk's use and data for
+        every Zendesk user has these fields (and more). It is likely that most other applications will have the same or similar constructs, so there was no point in getting
+        rid of these fields once we open sourced Radar.
+      </p>
+
+      <p>
+        These fields represent business data, which you can manage any way you choose. There is no "user management" in Radar, and Radar
+        doesn't care about the values you use. From Radar's perspective, these are opaque application-level data.  Sometimes these values are used for key names - for example, all Radar
+        data in Redis contains the account name as a part of the key so you can identify data for a specific account. It's up to you to determine what makes
         sense for your application.
       </p>
 
@@ -266,26 +279,27 @@ console.log('Server listening on localhost:8000');
 
       <h3>5. Using alloc() to connect</h3>
 
-      <p>First, let's connect to the server by calling <code>.alloc</code>. Copy-paste this into your developer console after loading the page from localhost:</p>
+      <p>First, let's connect to the server by calling <code>alloc</code>. Copy-paste this into your developer console after loading the page from localhost:</p>
 
       <pre class="prettyprint"><code>RadarClient.alloc('example', function() {  console.log('Radar is ready'); });</code></pre>
 
       <p>
         <code>alloc(scopename, [callback])</code> is used to connect to the server. The scope name ("example") is just a name for the functionality you are using.
-        The nice part is that if you have an app consisting of multiple independent features that use Radar, they can each uniquely identify themselves as either
-        needing a Radar connection or not needing a Radar connection (via <code>.dealloc(scopename)</code>).
+        The nice part is that when you have an app consisting of multiple independent features that use Radar, each can uniquely identify itself as either
+        needing a Radar connection or not needing a Radar connection (via <code>dealloc(scopename)</code>).
       </p>
       <p>
-        So the connection is initialized the first time you call <code>.alloc()</code> - any duplicate calls will just use the existing connection rather than
-        creating more connections. And the connection is only disconnected when all of the names passed to <code>alloc</code> have made a corresponding
+        So the connection is initialized the first time you call <code>alloc()</code> - any subsequent calls to <code>alloc</code> will use the existing connection rather than
+        create a new one. Also, the connection is disconnected only when each name passed to <code>alloc</code> has made a corresponding
         <code>dealloc</code> call.
       </p>
 
-      <p>The callback is called when the connection is established (if the connection is already there, then it is called immediately).</p>
-      <p>If you look at the developer console, you'll see a bunch of log statements when you run that (because we called <code>Minilog.enable()</code> earlier), such as:</p>
+      <p>The callback is called when the connection is established (when the connection already exists, the callback is called immediately).  In our example, the callback is
+      an anonymous function that sends 'Radar is ready' to the console log.</p>
 
-<pre class="prettyprint">
-radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
+      <p>In the developer console, the call to <code>alloc</code> generates a number log statements (logging is enabled by the call to <code>Minilog.enable()</code>) in index.html.</p>
+
+<pre class="prettyprint"><code>radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
 radar_state before-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
 Client {_ackCounter: 1, _channelSyncTimes: Object, _users: Object, _presences: Object, _subscriptions: Object…}
 radar_client socket open DeeyNr57kfKqA7oOAAAD
@@ -297,17 +311,18 @@ radar_state before-activate, from: authenticating, to: activated ["activate", "a
 Radar is ready
 radar_client ready:  example
 radar_state before-established, from: connecting, to: connected ["established", "connecting", "connected"]
-{"incoming":{"server":"6319-pobrien.local","cid":"DeeyNr57kfKqA7oOAAAD"}}
-</pre>
-      <p>Here you can see that the Radar client has transitioned through the following states: connecting, connected, authenticating, and activated.</p>
+{"incoming":{"server":"6319-username.local","cid":"DeeyNr57kfKqA7oOAAAD"}}
+</code></pre>
+      <p>Here you can see that the Radar client transitions through the following states: <b>connecting, connected, authenticating, and activated</b>.</p>
       <p>The callback runs, and you also get back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.</p>
 
       <h3>6. Creating a chat - message resource</h3>
 
       <p>What is chat? It's a history of messages, and information about who is online.</p>
-      <p>We'll use a presence scope to track people going online and offline, and a message scope to store a channel of messages.</p>
+      <p>We'll use a <b>message</b> scope to store a channel of messages, and a <b>presence</b> scope to track people going online and offline.</p>
       <p>Let's set that up by subscribing to a message scope:</p>
 
+</code></pre>
 <pre class="prettyprint"><code>RadarClient.message('chat/1').on(function(message) {
   console.log('Chat:', message.value);
 }).sync();
@@ -315,21 +330,20 @@ radar_state before-established, from: connecting, to: connected ["established", 
 
       <p>If you run that you'll see something like this:</p>
 
-<pre class="prettyprint">
-{"outgoing":{"op":"sync","to":"message:/dev/chat/1"}}
+<pre class="prettyprint"><code>{"outgoing":{"op":"sync","to":"message:/dev/chat/1"}}
 Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
 {"incoming":{"op":"sync","to":"message:/dev/chat/1","value":[],"time":1416292363640}} 
-</pre>
+</code></pre>
 
       <p>
-        So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call, which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.
+        So, there are two parts: the <code>on()</code> handler, which is triggered when messages are received, and the <code>sync()</code> call, which reads all old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.
       </p>
       <p>Now, let's send a message:</p>
 
-      <pre class="prettyprint">RadarClient.message('chat/1').publish('Hello world 1');</pre>
+      <pre class="prettyprint"><code>RadarClient.message('chat/1').publish('Hello world 1');</code></pre>
 
       <p>You should see the message echoed back to you, since your current session is subscribed to the "chat/1" message resource.</p>
-      <p>OK, open a second tab and keep it open. Run this code to initialize it:</p>
+      <p>OK, open a second tab and keep it open. Run this code to initialize your second client session:</p>
 
 <pre class="prettyprint"><code>RadarClient.alloc('example', function() {
   RadarClient.message('chat/1').on(function(message) {
@@ -338,25 +352,22 @@ Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: functi
 });
 </code></pre>
 
-      <p>Now, send another message via <code>.publish</code> - you should see the message arrive to both tabs.</p>
+      <p>Now, enter the following in the second tab, and you should see the message <b>Hello World 2</b> arrive in both tabs.</p>
 
-      <p>Now, enter the following in the first tab, and you should see the message arrive in both tabs.</p>
-
-      <pre class="prettyprint">RadarClient.message('chat/1').publish('Hello world 2');</pre>
+      <pre class="prettyprint"><code>RadarClient.message('chat/1').publish('Hello world 2');</code></pre>
 
       <h3>7. Message history</h3>
 
       <p>Here is the cool part: you can run multiple Radar servers that use the same Redis server, and they just work.</p>
       <p>
-        If two clients are on different Radar servers, but those servers use the same backend Redis server, then messages will be routed correctly via Redis.
-        The only caveat is that you need to have source-IP sticky load balancing if you put a load balancer in front of Radar. The need for sticky load balancing
-        is a limitation inherent in how a client id-based transports work.
+        When two or more clients are on different Radar servers, and those servers use the same backend Redis server, then messages will be routed correctly via Redis and, in conjuction with Radar, messages will be routed correctly to the listening clients.
+        The only caveat is that you need source-IP sticky load balancing if you put a load balancer in front of Radar. The need for sticky load balancing
+        is a limitation inherent in how client id-based transports work.
       </p>
       <p>
-        Part of a chat or any message channel is the ability for people to see message history. For example, if you are a new person joining a chat channel,
-        you probably want to see at least a couple of minutes worth of previously sent messages.
+        The ability to access message history is part of chat or any message channel application.
       </p>
-      <p>Radar has the ability to cache data for some time. This is configured through the type system, which is a bit clunky to configure. Here is an example:</p>
+      <p>Radar has the ability to cache a configurable number of messages.  In the following example, the server is configured to store up to 300 messages for each connection. Note that this is configured through the <b>Type</b> system:</p>
 
 <pre class="prettyprint"><code>var Type = require('radar').core.Type;
 
@@ -368,7 +379,7 @@ Type.register('chatMessage', {
 </code></pre>
 
       <p>
-        Here, we're specifying a new type of channel - it is applied to channels that match the regular expression. The <code>policy</code> key defines
+        Here we're registering a new type of channel for any channel whose name matches the regular expression defined by <code>expr</code>. The <code>policy</code> key defines
         that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300
         messages (see the server docs for the other options).
       </p>
@@ -376,18 +387,19 @@ Type.register('chatMessage', {
 
       <h3>8. Creating a chat - presence resource</h3>
 
-      <p>OK, so we can now have two users join a chat channel, and we have configured the caching policy to keep old messages around.</p>
-      <p>Another part of any application that allows users to communicate with each other is the ability to track user presence - to do things like showing who is online, or to route chats to people who are ready to accept them.</p>
-      <p>Radar has a presence resource type built specifically to track who is online - that's the purpose of the <code>userId</code> information in the configuration.</p>
+      <p>At this point two users have joined a chat channel, and we have configured the caching policy to keep old messages around.</p>
 
+      <p>Another useful feature of a chat application is one that allows a given user to know when other users come online, are online, and go offline.  We call this feature <b>presence</b>.  An application can use Radar presence, in particular, to route messages to other users who have indicated they are interested in such messages.</p>
+      <p>Radar has a presence resource type that is built specifically to track users who are online - that's the purpose of the <code>userId</code> information in the original client configuration in <code>index.html</code>.</p>
+      <p>In the example below, the <code>sync</code> method directs Radar to send the client up to <code>maxCount</code> messages, and in addition, <b>subscribes</b> the client to all future messages on this channel.  Note also that we are interested only in the <b>online</b> and <b>offline</b> messages and not, for example, in the <b>client_online</b> or <b>client_offline</b> messages.</p>
       <p>Run this snippet of code in each of the tabs:</p>
 
 <pre class="prettyprint"><code>RadarClient.alloc('example', function() {
   RadarClient.presence('chat/1').on(function(message) {
-    if(!message.op || !message.value) { return; }
-    for(var userId in message.value) {
-      if(!message.value.hasOwnProperty(userId)) { continue; }
-      if(message.op == 'online' || message.op == 'offline') {
+    if (!message.op || !message.value) { return; }
+    for (var userId in message.value) {
+      if (!message.value.hasOwnProperty(userId)) { continue; }
+      if (message.op == 'online' || message.op == 'offline') {
         console.log('User ' + userId+' is now '+message.op);
       }
     }
@@ -435,8 +447,8 @@ User 55 is now online
 </code></pre>
 
       <p>
-        In the Radar configuration call on the example page, we set the <code>userId</code> option to a random number between 0 and 100,
-        so you'll get different user id's for each of the tabs.
+        In the Radar client configuration in Step 3, we set the <code>userId</code> option to a random number between 0 and 100,
+        so you'll get a different user id for each client (tab).
       </p>
 
       <p>Now, close the second tab.  In the first tab you will see something like this:</p>

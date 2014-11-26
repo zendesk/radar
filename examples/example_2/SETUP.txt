@@ -1,0 +1,63 @@
+Tue Nov 25 12:12:45 PST 2014
+*****
+
+0.  Prerequisite:
+
+    You have already run through *example_1* in its entirety.
+
+********************************************************************************
+
+1.  Make sure you are in the example_2 sub-directory, and that you have the files
+    you need:
+
+      o Files already copied from the radar git repo when working on example_1
+
+      o Files created when working on example_1 that you now copy to example_2
+
+        % cp ../example_1/package.json .
+
+
+2.  Install *radar_client* from NPM (which updates package.json):
+
+      % npm install --save radar_client
+
+
+3.  The local directory
+
+      $RADAR_RUN/examples/example_2/public
+
+
+    already exists, and the *Makefile* in this directory is used to create a
+    current version of *radar_client.js*:
+
+      % make build
+    
+    
+    radar_client.js is the implementation of radar_client that is used by our
+    minimal UI:
+
+      $RADAR_RUN/examples/example_2/public/index.html
+
+
+4.  Verify that the code in *server.js* runs
+
+      % node ./server.js
+      Server listening on localhost: 8000
+
+
+5.  In your browser, enter the following URL:
+
+      http://localhost:8000
+
+
+    and you should see
+
+        Open the developer console...
+
+
+    on the screen.
+
+
+6.  When you have gotten this far without error, example_2 has completed
+    successfully.
+
