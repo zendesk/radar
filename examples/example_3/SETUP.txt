@@ -1,0 +1,15 @@
+Tue Nov 25 16:10:04 PST 2014
+*****
+
+0.  Prerequisite:
+
+    You have already run through *example_1* and *example_2_ in their entirety.
+
+
+1.  Make sure you are in the example_3 sub-directory, and that you have the files
+    you need:
+
+      o Files already copied from the radar git repo
+
+
+

@@ -1,0 +1,112 @@
+Tue Nov 25 10:31:12 PST 2014
+*****
+
+0.  Prerequisite:
+
+0.1 Node is installed on your system.  To verify this, type the following at the
+    command-line:
+
+      % node --version
+      v0.10.21
+
+
+0.2 Redis is installed on your system.  To verify this, run the usual *ps*
+    command in terminal:
+
+      % ps auxw | grep redis | grep -v grep
+
+
+    When you see a line that contains *redis-server* then you are good to go; if
+    not, then you need to install it.
+
+      username           90   0.0  0.0  2506736   1780   ??  Ss    8:58AM   0:03.06 /opt/boxen/homebrew/bin/redis-server 127.0.0.1:6379
+
+
+0.3 redis-cli is the tool by which you access redis-server:
+
+      % redis-cli --version
+      redis-cli 2.8.6
+
+      % redis-cli
+      127.0.0.1:6379> keys *
+      (empty list or set)
+      127.0.0.1:6379> quit
+
+    The default prompt shows that *redis-server* is running on localhost, at the
+    default port of 6379.
+
+    The *keys* command lists any existing keys in redis.  For a newly installed
+    instance of redis, you will not see any existing keys.  However, if there are
+    other apps on your dev system that use redis, you very well might find
+    existing keys.
+
+********************************************************************************
+
+1.  git clone the radar source code to your local repo, which we will name
+    RADAR_SOURCE:
+
+      % cd $RADAR_SOURCE
+
+      % git clone git@github.com:zendesk/radar.git .
+      % git checkout gh-pages
+
+
+2.  Do a one-time copy of the *examples* directory and sub-directories from the
+    radar gh-pages branch to your local RADAR_RUN directory:
+
+      % cp -r examples/ $RADAR_RUN/
+
+    Now you have the skeleton directories in place.
+
+
+3.  Start with the code in the example_1 sub-directory:
+
+      % cd $RADAR_RUN/example_1
+      
+
+4.  In this directory issue the commands listed in step 1 of the tutorial:
+
+      % npm init
+
+
+    Rather than provide a version of package.json which will become stale, the
+    *npm init* command always generates a current file.
+
+
+5.  Install the *radar* package, which is available on NPM, in the
+    RADAR_RUN/example_1 directory:
+
+      % npm install --save radar
+
+
+    This will update package.json.
+
+
+6.  Verify that the code in *server.js* runs
+
+      % node ./server.js
+      Server listening on localhost: 8000
+
+
+7.  In your browser, enter the following URL:
+
+      http://localhost:8000
+
+
+    and you should see
+
+        404 page
+
+
+    on the screen.  We see *404* because as of yet we do not have routes
+    established in *server.js*.
+
+
+8.  When you have gotten this far without error, example_1 has completed
+    successfully.
+
+    Close down server.js in your terminal session by issuing a CTRL-c there, or
+    else you will encounter an error when you attempt to run the server in
+    example_2.
+
+
