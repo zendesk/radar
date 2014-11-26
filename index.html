@@ -14,7 +14,7 @@
 
   <div id="toc">
     <div id="toc-inner">
-      <h4>Table of contents</h4>
+      <h4>Table Of Contents</h4>
 
       <h5><a href="index.html">Overview &amp; tutorial</a></h5>
 
@@ -28,7 +28,7 @@
 
       <h5><a href="https://github.com/zendesk/radar" target="_blank">Full source code on Github</a></h5>
 
-      <h5><a href="http://www.zendesk.com/company/careers?jvi=oHiWWfwB,Job" target="_blank">Zendesk is hiring Radar developers</a></h5>
+      <h5><a href="http://www.zendesk.com/company/careers?jvi=okh8Yfwr,Job" target="_blank">Zendesk is hiring Radar developers</a></h5>
 
     </div>
   </div>
@@ -50,30 +50,29 @@
       <h3>Features</h3>
 
       <ul class="list">
-        <li>more than just pub/sub: a resource-based API for presence, messaging and push notifications via a Javascript client library</li>
-        <li>REST API for working with web apps that don't use Node</li>
-        <li>written in Javascript/Node.js, and uses engine.io (the new, lower-level complement to socket.io)</li>
-        <li>backend which can utilize to multiple front-facing servers to serve requests.</li>
+        <p><li>More than just pub/sub: a resource-based API for presence, messaging and push notifications via a Javascript client library</li></p>
+        <p><li>Written in Javascript/Node.js, and uses engine.io (the new, low-level complement to socket.io)</li></p>
+        <p><li>Backend to multiple front-facing servers</li></p>
+        <p><li>REST API for working with web apps that don't use Node (presently, rework in progress)</li></p>
       </ul>
 
       <h2>What is Radar and how is it different from (Socket.io|Sockjs|Faye|Meteor)?</h2>
 
       <p>
-        Radar is built on top of <a href="https://github.com/learnboost/engine.io">engine.io</a>, the next generation backend for socket.io.
+        Radar is built on top of <a href="https://github.com/learnboost/engine.io">engine.io</a>, the next-generation backend for socket.io.
         It uses Redis for backend storage, though the assumption is that this is only for storing currently active data.
       </p>
 
       <p>
-        Radar basically solves a number of real-world problems that need to be solved, and it reduces the need for specialized backend services
-        by providing good primitive operations.
+        Radar solves a number of real-world problems, and it reduces the need for specialized backend services by providing good primitive operations.
       </p>
 
       <ul class="list">
         <li>
           <p>
-            Radar has higher level APIs that cover basic use cases such as presence, persisted message channels. Many push notification frameworks
+            Radar has high-level APIs that cover basic use-cases such as presence, and persisted message channels. Many push notification frameworks
             only expose message passing and do not explicitly handle having multiple backend servers, leaving the implementation for their users.
-            Radar provides higher level constructs, so that you are for example:
+            Radar provides high-level constructs, so that you are for example:
           </p>
           <ul class="list">
             <li>subscribing to notifications about a user going online/offline</li>
@@ -82,18 +81,18 @@
           </ul>
           <p>... rather than just passing messages. More complex systems can be built by combining the Radar API resources.</p>
         </li>
-        <li>REST API for interacting with Radar resources from non-Node web frameworks.</li>
-        <li>Configurable authentication for resources. You can restrict access based on a token.</li>
-        <li>
+        <p><li>REST API for interacting with Radar resources from non-Node web frameworks.</li></p>
+        <p><li>Configurable authentication for resources. You can restrict access based on a token.</li></p>
+        <p><li>
           Robust recovery. Radar takes care of re-establishing subscriptions in the event of a server error. Other frameworks
           can recover a connection, but not the application-level subscriptions and state.
-        </li>
-        <li>Multi-server support via shared Redis instance. Add capacity by adding new server instances behind a load balancer.</li>
-        <li>
-          Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to be able to send recent messages to new
+        </li></p>
+        <p><li>Multi-server support via shared Redis instance. Add capacity by adding new server instances behind a load balancer.</li></p>
+        <p><li>
+          Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to send recent messages to new
           users joining a chat - this can be configured via a policy.
-        </li>
-        <li>Library, not a framework. Doesn't require code changes or structural changes beyond responding to the events from the backend.</li>
+        </li></p>
+        <p><li>Library, not a framework. Doesn't require code changes or structural changes beyond responding to the events from the backend.</li></p>
       </ul>
       <h2>Tutorial: let's write a Radar application</h2>
       <p>
@@ -484,8 +483,8 @@ User 55 is now offline
         <li>client_online/client_offline messages are triggered when a client session goes offline. They are less reliable, but quicker to trigger.</li>
         <br/>
         <li>
-          online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you start
-          having multiple Radar servers: then you don't want to consider a user to be offline until there are no client sessions that are active for that user
+          online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you 
+          have multiple Radar servers: then you don't want to consider a user offline until there are no client sessions that are active for that user
           on any of the Radar servers. There is also a grace period of 15 seconds (configurable) - this allows users to experience short-term network issues, or to
           reload a Radar-enabled page without being immediately considered offline.
         </li>
