@@ -137,18 +137,74 @@ PresenceStore.prototype.userExists = function(userId) {
   return !!this.map[userId];
 };
 
-//This is costly but we only do it when a server goes down.
-//Or a server has no presence resources left (also rare).
-PresenceStore.prototype.clientsForSentry = function(sentry, callback) {
-  var map = this.map;
-  Object.keys(map).forEach(function(userId) {
-    Object.keys(map[userId]).forEach(function(clientId) {
-      var data = map[userId][clientId];
-      if(data && data.sentry == sentry) {
-        if(callback) callback(clientId);
-      }
-    });
-  });
+
+// The following code replaces a tight-loop of invocations to callback() with a
+// chained set of invocations to callback(), with each invocation added to the
+// event-loop with the help of setImmediate().
+
+
+// A costly step, which we do only when a server is determined to have gone down.
+// Or when a server has no presence resources left (also rare).
+PresenceStore.prototype.clientsForSentry = function (sentry, callback) {
+  this._chainInit();
+  this._chainClientsForSentry(sentry, true, callback);
 };
+
+PresenceStore.prototype._chainInit = function () {
+  this.uIds = Object.keys(this.map) || []; // keys of map, which are the userIds
+  this.cIds = [];               // current clientId keys of map[uId]
+  this.uIndex = -1;             // index of current userId key in map
+  this.cIndex = -1;             // index of current clientId key in map[userId]
+  this.uId = undefined;         // current userId key in map
+  this.cId = undefined;         // current clientId key in map[uId]
+};
+
+
+PresenceStore.prototype._uIdNextGet = function () {
+  if (++this.uIndex < this.uIds.length) {
+    return this.uIds[this.uIndex];
+  }
+  return undefined;
+};
+
+
+PresenceStore.prototype._cIdNextGet = function () {
+  if (-1 == this.cIndex) {
+    this.cIds = Object.keys(this.map[this.uId]) || [];
+  }
+
+  if (++this.cIndex < this.cIds.length) {
+    return this.cIds[this.cIndex];
+  }
+  return undefined;
+};
+
+
+PresenceStore.prototype._chainClientsForSentry = function(sentry, uIncr, callback) {
+  if (uIncr) {
+    this.uId = this._uIdNextGet();
+    uIncr = false;
+  }
+
+  if (!this.uId) {
+      return;
+  }
+
+  this.cId = this._cIdNextGet();
+
+  if (!this.cId) {
+    uIncr = true;
+    this.cIndex = -1;
+  }
+  else {
+    var data = this.map[this.uId][this.cId];
+    if (data && data.sentry == sentry) {
+      if (callback) callback(this.cId);
+    }
+  }
+
+  setImmediate(this._chainClientsForSentry.bind(this), sentry, uIncr, callback);
+};
+
 
 module.exports = PresenceStore;
