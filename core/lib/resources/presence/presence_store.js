@@ -142,69 +142,45 @@ PresenceStore.prototype.userExists = function(userId) {
 // chained set of invocations to callback(), with each invocation added to the
 // event-loop with the help of setImmediate().
 
-
 // A costly step, which we do only when a server is determined to have gone down.
 // Or when a server has no presence resources left (also rare).
 PresenceStore.prototype.clientsForSentry = function (sentry, callback) {
   this._chainInit();
-  this._chainClientsForSentry(sentry, true, callback);
+  this._chainClientsForSentry(sentry, callback);
 };
 
 PresenceStore.prototype._chainInit = function () {
-  this.uIds = Object.keys(this.map) || []; // keys of map, which are the userIds
-  this.cIds = [];               // current clientId keys of map[uId]
-  this.uIndex = -1;             // index of current userId key in map
-  this.cIndex = -1;             // index of current clientId key in map[userId]
-  this.uId = undefined;         // current userId key in map
-  this.cId = undefined;         // current clientId key in map[uId]
+  this.userIds = Object.keys(this.map) || []; // keys of map, which are the userIds
+  this.clientIds = [];                        // current clientId keys of map[userId]
+  this.userId = undefined;                    // current userId key in map
+  this.clientId = undefined;                  // current clientId key in map[userId]
 };
 
+PresenceStore.prototype._chainClientsForSentry = function(sentry, callback) {
+  if (!callback) return;
 
-PresenceStore.prototype._uIdNextGet = function () {
-  if (++this.uIndex < this.uIds.length) {
-    return this.uIds[this.uIndex];
-  }
-  return undefined;
-};
+  self = this;
+  map = self.map;
 
+  self.clientId = self.clientIds.pop();
+  if (!self.clientId) {
+    self.userId = self.userIds.pop();
+    if (!self.userId) return;
 
-PresenceStore.prototype._cIdNextGet = function () {
-  if (-1 == this.cIndex) {
-    this.cIds = Object.keys(this.map[this.uId]) || [];
-  }
-
-  if (++this.cIndex < this.cIds.length) {
-    return this.cIds[this.cIndex];
-  }
-  return undefined;
-};
-
-
-PresenceStore.prototype._chainClientsForSentry = function(sentry, uIncr, callback) {
-  if (uIncr) {
-    this.uId = this._uIdNextGet();
-    uIncr = false;
+    self.clientIds = Object.keys(map[self.userId]);
+    self.clientId = self.clientIds.pop();
   }
 
-  if (!this.uId) {
-      return;
-  }
-
-  this.cId = this._cIdNextGet();
-
-  if (!this.cId) {
-    uIncr = true;
-    this.cIndex = -1;
-  }
-  else {
-    var data = this.map[this.uId][this.cId];
+  if (self.clientId) {
+    var data = map[self.userId][self.clientId];
     if (data && data.sentry == sentry) {
-      if (callback) callback(this.cId);
+      callback(self.clientId);
     }
   }
 
-  setImmediate(this._chainClientsForSentry.bind(this), sentry, uIncr, callback);
+  setImmediate(function () {
+    self._chainClientsForSentry(sentry, callback);
+  });
 };
-
 
 module.exports = PresenceStore;
