@@ -138,49 +138,21 @@ PresenceStore.prototype.userExists = function(userId) {
 };
 
 
-// The following code replaces a tight-loop of invocations to callback() with a
-// chained set of invocations to callback(), with each invocation added to the
-// event-loop with the help of setImmediate().
-
-// A costly step, which we do only when a server is determined to have gone down.
-// Or when a server has no presence resources left (also rare).
-PresenceStore.prototype.clientsForSentry = function (sentry, callback) {
-  this._chainInit();
-  this._chainClientsForSentry(sentry, callback);
-};
-
-PresenceStore.prototype._chainInit = function () {
-  this.userIds = Object.keys(this.map) || []; // keys of map, which are the userIds
-  this.clientIds = [];                        // current clientId keys of map[userId]
-  this.userId = undefined;                    // current userId key in map
-  this.clientId = undefined;                  // current clientId key in map[userId]
-};
-
-PresenceStore.prototype._chainClientsForSentry = function(sentry, callback) {
-  if (!callback) return;
-
-  self = this;
-  map = self.map;
-
-  self.clientId = self.clientIds.pop();
-  if (!self.clientId) {
-    self.userId = self.userIds.pop();
-    if (!self.userId) return;
-
-    self.clientIds = Object.keys(map[self.userId]);
-    self.clientId = self.clientIds.pop();
-  }
-
-  if (self.clientId) {
-    var data = map[self.userId][self.clientId];
-    if (data && data.sentry == sentry) {
-      callback(self.clientId);
-    }
-  }
-
-  setImmediate(function () {
-    self._chainClientsForSentry(sentry, callback);
+// This returns a list of clientIds, which is not costly.  The code that calls
+// this code uses each clientId in a separate chained call, the sum of which is
+// costly.
+PresenceStore.prototype.clientsForSentry = function(sentry) {
+  var map = this.map, clientIds = [];
+  Object.keys(map).forEach(function(userId) {
+    Object.keys(map[userId]).forEach(function(clientId) {
+      var data = map[userId][clientId];
+      if (data && data.sentry == sentry) {
+        clientIds.push(clientId);
+      }
+    });
   });
+
+  return clientIds;
 };
 
 module.exports = PresenceStore;
