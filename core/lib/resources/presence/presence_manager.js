@@ -40,10 +40,21 @@ PresenceManager.prototype.setup = function() {
 
   // save so you removeListener on destroy
   this.sentryListener = function(sentry) {
-    store.clientsForSentry(sentry, function(clientId) {
+    var clientIds = store.clientsForSentry(sentry);
+
+    var chain = function (clientIds) {
+      var clientId = clientIds.pop();
+
+      if (!clientId) return;
+
       logging.info('#presence - #sentry down, removing client:', sentry, scope, clientId);
       manager.sentryDownForClient(clientId);
-    });
+      setImmediate(function () {
+        chain(clientIds);
+      });
+    };
+
+    chain(clientIds);
   };
 
   // Listen to all sentries. This should not be costly,

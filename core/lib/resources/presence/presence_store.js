@@ -137,18 +137,22 @@ PresenceStore.prototype.userExists = function(userId) {
   return !!this.map[userId];
 };
 
-//This is costly but we only do it when a server goes down.
-//Or a server has no presence resources left (also rare).
-PresenceStore.prototype.clientsForSentry = function(sentry, callback) {
-  var map = this.map;
+
+// This returns a list of clientIds, which is not costly.  The code that calls
+// this code uses each clientId in a separate chained call, the sum of which is
+// costly.
+PresenceStore.prototype.clientsForSentry = function(sentry) {
+  var map = this.map, clientIds = [];
   Object.keys(map).forEach(function(userId) {
     Object.keys(map[userId]).forEach(function(clientId) {
       var data = map[userId][clientId];
-      if(data && data.sentry == sentry) {
-        if(callback) callback(clientId);
+      if (data && data.sentry == sentry) {
+        clientIds.push(clientId);
       }
     });
   });
+
+  return clientIds;
 };
 
 module.exports = PresenceStore;
