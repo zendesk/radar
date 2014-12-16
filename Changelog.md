@@ -1,3 +1,6 @@
+### 0.12.4
+* Replace tight loops in clientsForSEntry with chained calls, for sentry down
+
 ### 0.12.3
 * Update Sentry to contain host/port members
 - Log name, host, port when Sentry is down
