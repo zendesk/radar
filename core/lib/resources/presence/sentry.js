@@ -45,10 +45,11 @@ Sentry.prototype._save = function(message) {
 Sentry.prototype._sentryDown = function(name) {
   if(!this.isValid(name)) {
     Persistence.deleteHash(Sentry.channel, name); //cleanup
-    logging.info('#presence - #sentry down:', name, 
-                    this.sentries[name].host, this.sentries[name].port);
+    var details = this.sentries[name];
+    logging.info('#presence - #sentry down:', name,
+                    details.host, details.port);
     delete this.sentries[name];
-    this.emit('down', name);
+    this.emit('down', name, details);
   }
 };
 
