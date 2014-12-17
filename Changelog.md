@@ -1,3 +1,6 @@
+### 0.12.5
+* Expose details of sentry down in the listener
+
 ### 0.12.4
 * Replace tight loops in clientsForSEntry with chained calls, for sentry down
 
