@@ -37,6 +37,12 @@ PresenceStore.prototype.add = function(clientId, userId, userType, data) {
     events.push('client_added');
     this.map[userId][clientId] = data;
     this.clientUserMap[clientId] = userId;
+  } else {
+    state_str = JSON.stringify(this.map[userId][clientId].state);
+    if(state_str != JSON.stringify(data.state)) {
+      events.push('client_updated');
+      this.map[userId][clientId].state = data.state;
+    }
   }
 
   events.forEach(function(ev) {
@@ -54,6 +60,7 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
   if(!this.map[userId] || !this.map[userId][clientId]) {
     return; //inexistant, return
   }
+  data.state = this.map[userId][clientId].state;
 
   events.push('client_removed');
   delete this.map[userId][clientId];
@@ -78,6 +85,9 @@ PresenceStore.prototype.removeClient = function(clientId, data) {
   if(!userId) {
     logging.warn('#presence - store.removeClient: cannot find data for', clientId, this.scope);
     return; //inexistant, return
+  }
+  if(this.map[userId][clientId]) {
+    data.state = this.map[userId][clientId].state;
   }
   logging.debug('#presence - store.removeClient', userId, clientId, data, this.scope);
   delete this.map[userId][clientId];

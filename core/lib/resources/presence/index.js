@@ -54,7 +54,7 @@ Presence.prototype.setup = function() {
       value: value
     });
   });
-  this.manager.on('client_online', function(clientId, userId, userType, userData) {
+  this.manager.on('client_online', function(clientId, userId, userType, userData, state) {
     logging.info('#presence - client_online', clientId, userId, self.name);
     self.broadcast({
       to: self.name,
@@ -63,10 +63,24 @@ Presence.prototype.setup = function() {
         userId: userId,
         clientId: clientId,
         userData: userData,
+        state: state
       }
     });
   });
-  this.manager.on('client_offline', function(clientId, userId, explicit) {
+  this.manager.on('client_updated', function(clientId, userId, userType, userData, state) {
+    logging.info('#presence - client_updated', clientId, userId, self.name);
+    self.broadcast({
+      to: self.name,
+      op: 'client_updated',
+      value: {
+        userId: userId,
+        clientId: clientId,
+        userData: userData,
+        state: state
+      }
+    });
+  });
+  this.manager.on('client_offline', function(clientId, userId, state, explicit) {
     logging.info('#presence - client_offline', clientId, userId, explicit, self.name);
     self.broadcast({
       to: self.name,
@@ -74,7 +88,8 @@ Presence.prototype.setup = function() {
       explicit: !!explicit,
       value: {
         userId: userId,
-        clientId: clientId
+        clientId: clientId,
+        state: state
       }
     }, clientId);
   });
@@ -103,7 +118,8 @@ Presence.prototype.set = function(client, message) {
   if(message.value != 'offline') {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    this.manager.addClient(client.id, userId, message.type, message.userData, ackCheck);
+    var state = message.value != 'online' ? message.value : {};
+    this.manager.addClient(client.id, userId, message.type, message.userData, state, ackCheck);
   } else {
     if(!this.subscribers[client.id]) { //if this is client is not subscribed
       //This is possible if a client does .set('offline') without set-online/sync/subscribe

@@ -31,11 +31,15 @@ PresenceManager.prototype.setup = function() {
   });
 
   store.on('client_added', function(message) {
-    manager.emit('client_online', message.clientId, message.userId, message.userType, message.userData);
+    manager.emit('client_online', message.clientId, message.userId, message.userType, message.userData, message.state);
+  });
+
+  store.on('client_updated', function(message) {
+    manager.emit('client_updated', message.clientId, message.userId, message.userType, message.userData, message.state);
   });
 
   store.on('client_removed', function(message) {
-    manager.emit('client_offline', message.clientId, message.userId, message.explicit);
+    manager.emit('client_offline', message.clientId, message.userId, message.state, message.explicit);
   });
 
   // save so you removeListener on destroy
@@ -103,13 +107,14 @@ PresenceManager.prototype.stampExpiration = function(message) {
   message.at = Date.now() + PresenceManager.messageExpiry;
 };
 
-PresenceManager.prototype.addClient = function(clientId, userId, userType, userData, callback) {
+PresenceManager.prototype.addClient = function(clientId, userId, userType, userData, state, callback) {
   var message = {
     userId: userId,
     userType: userType,
     userData: userData,
     clientId: clientId,
     online: true,
+    state: state,
     sentry: this.sentry.name
   };
 
@@ -196,7 +201,8 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
       sentry = this.sentry,
       userId = message.userId,
       clientId = message.clientId,
-      userType = message.userType;
+      userType = message.userType,
+      state = message.state;
 
   logging.debug('#presence - processRedisEntry:', message, this.scope);
   callback = callback || function() {};
@@ -332,7 +338,7 @@ PresenceManager.prototype.getClientsOnline = function() {
 
   function processMessage(message) {
     result[message.userId] = result[message.userId] || { clients: { } , userType: message.userType };
-    result[message.userId].clients[message.clientId] = message.userData || {};
+    result[message.userId].clients[message.clientId] = { userData: message.userData, state: message.state };
   }
 
   store.forEachClient(function(uid, cid, message) {
