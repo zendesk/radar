@@ -97,7 +97,8 @@ PresenceMessage.prototype.assert_client_online = function(message) {
   var value = {
     userId: client.userId,
     clientId: client.clientId,
-    userData: client.userData
+    userData: client.userData,
+    state: {}
   };
 
   assert.deepEqual({
@@ -121,7 +122,8 @@ PresenceMessage.prototype.assert_client_offline = function(message, explicit) {
   var client = this.client;
   var value = {
     userId: client.userId,
-    clientId: client.clientId
+    clientId: client.clientId,
+    state: {}
   };
 
   assert.deepEqual({
@@ -244,7 +246,7 @@ PresenceMessage.prototype.assert_get_v2_response = function(message) {
     } else {
       value[client.userId] = userHash = { clients: {} };
     }
-    userHash.clients[client.clientId] = client.userData;
+    userHash.clients[client.clientId] = { userData: client.userData, state: {} };
     userHash.userType = client.userType;
   });
 

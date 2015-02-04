@@ -296,13 +296,13 @@ describe('given a presence resource',function() {
         assert.deepEqual(local[0],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
-          value: { userId: 1, clientId: client.id }
+          value: { userId: 1, clientId: client.id, state: {} }
         });
         // there should be a client_offline notification for CID 2
         assert.deepEqual(local[1],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
-          value: { userId: 1, clientId: client2.id }
+          value: { userId: 1, clientId: client2.id, state: {} }
         });
         // there should be a broadcast for a offline notification for UID 1
         assert.deepEqual(local[2],  { to: 'aaa', op: 'offline', value: { 1: 2 } });
