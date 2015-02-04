@@ -156,6 +156,15 @@ describe('given two clients and a presence resource', function() {
       });
     });
 
+    it('does not implicitly subscribe to the presence', function(done) {
+      p = p.for_client(client);
+      var presence = client.presence('test').on(p.notify);
+      p.fail_on_any_message(0);
+      client.presence('test').set('online', function() {
+        setTimeout(done, 500);
+      });
+    });
+
     describe('with another client listening for notifications', function() {
       it('should remain online after a while if the state does not change', function(done) {
         client.presence('test').set('online', function() {
