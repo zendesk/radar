@@ -296,13 +296,13 @@ describe('given a presence resource',function() {
         assert.deepEqual(local[0],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
-          value: { userId: 1, clientId: client.id }
+          value: { userId: 1, clientId: client.id, state: null }
         });
         // there should be a client_offline notification for CID 2
         assert.deepEqual(local[1],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
-          value: { userId: 1, clientId: client2.id }
+          value: { userId: 1, clientId: client2.id, state: null }
         });
         // there should be a broadcast for a offline notification for UID 1
         assert.deepEqual(local[2],  { to: 'aaa', op: 'offline', value: { 1: 2 } });
@@ -420,7 +420,7 @@ describe('given a presence resource',function() {
     it('userData should be included as the value of a client in a presence response', function() {
       var data = {
             clients: {},
-            userType: 2,
+            userType: 2
           },
           fakeClient = {
             send: function(msg) {
@@ -428,7 +428,7 @@ describe('given a presence resource',function() {
             }
           };
 
-      data.clients[client.id] = { test: 1 };
+      data.clients[client.id] = { userData: { test: 1 }, state: null };
 
       presence.set(client, { type: 2, key: 123, value: 'online', userData: { test: 1 } });
       presence.get(fakeClient, { options: { version: 2 } });
