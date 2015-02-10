@@ -108,6 +108,15 @@ PresenceManager.prototype.stampExpiration = function(message) {
 };
 
 PresenceManager.prototype.addClient = function(clientId, userId, userType, userData, state, callback) {
+  if(typeof callback === 'undefined') {
+    if (typeof state === 'function') {
+      callback = state;
+      state = null;
+    } else if (typeof state === 'undefined') {
+      state = null;
+    }
+  }
+
   var message = {
     userId: userId,
     userType: userType,
@@ -338,7 +347,10 @@ PresenceManager.prototype.getClientsOnline = function() {
 
   function processMessage(message) {
     result[message.userId] = result[message.userId] || { clients: { } , userType: message.userType };
-    result[message.userId].clients[message.clientId] = { userData: message.userData, state: message.state };
+    result[message.userId].clients[message.clientId] = {
+      userData: message.userData,
+      state: typeof message.state !== 'undefined' ? message.state : null
+    };
   }
 
   store.forEachClient(function(uid, cid, message) {

@@ -98,7 +98,7 @@ PresenceMessage.prototype.assert_client_online = function(message) {
     userId: client.userId,
     clientId: client.clientId,
     userData: client.userData,
-    state: {}
+    state: message.value.state
   };
 
   assert.deepEqual({
@@ -123,7 +123,7 @@ PresenceMessage.prototype.assert_client_offline = function(message, explicit) {
   var value = {
     userId: client.userId,
     clientId: client.clientId,
-    state: {}
+    state: message.value.state
   };
 
   assert.deepEqual({
@@ -246,15 +246,18 @@ PresenceMessage.prototype.assert_get_v2_response = function(message) {
     } else {
       value[client.userId] = userHash = { clients: {} };
     }
-    userHash.clients[client.clientId] = { userData: client.userData, state: {} };
+    userHash.clients[client.clientId] = {
+      userData: client.userData,
+      state: message.state
+    };
     userHash.userType = client.userType;
   });
 
-  assert.deepEqual({
+  assert.deepEqual(message, {
     op: 'get',
     to: this.scope,
     value: value
-  }, message, JSON.stringify(value)+' vs '+JSON.stringify(message.value));
+  });
 };
 
 // sync response:

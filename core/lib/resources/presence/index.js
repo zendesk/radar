@@ -118,7 +118,7 @@ Presence.prototype.set = function(client, message) {
   if(message.value != 'offline') {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
-    var state = message.value != 'online' ? message.value : {};
+    var state = message.value != 'online' ? message.value : null;
     this.manager.addClient(client.id, userId, message.type, message.userData, state, ackCheck);
   } else {
     if(!this.subscribers[client.id]) { //if this is client is not subscribed

@@ -213,7 +213,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scope: 'ticket/1', version: 2 })
         .end(function(error, response) {
-          assert.deepEqual( {'1':{'clients':{'1000':{}},'userType':0}}, response);
+          assert.deepEqual( {'1':{'clients':{'1000':{'state': null}},'userType':0}}, response);
           done();
         });
     },
@@ -222,7 +222,7 @@ exports['Radar api tests'] = {
       Client.get('/node/radar/presence')
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2', version: 2 })
         .end(function(error, response) {
-          assert.deepEqual({ 'ticket/1': {'1':{'clients':{'1000':{}},'userType':0}}, 'ticket/2':{'2':{'clients':{'1001':{}},'userType':4}}}, response);
+          assert.deepEqual({ 'ticket/1': {'1':{'clients':{'1000':{'state':null}},'userType':0}}, 'ticket/2':{'2':{'clients':{'1001':{'state':null}},'userType':4}}}, response);
           done();
         });
     },
