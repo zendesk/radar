@@ -101,8 +101,7 @@ Presence.prototype.set = function(client, message) {
   }
 
   if(message.value != 'offline') {
-    // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
-    this.subscribe(client);
+    this._set_online(client);
     this.manager.addClient(client.id, userId, message.type, message.userData, ackCheck);
   } else {
     if(!this.subscribers[client.id]) { //if this is client is not subscribed
@@ -113,6 +112,20 @@ Presence.prototype.set = function(client, message) {
       this.manager.removeClient(client.id, userId, message.type, ackCheck);
     }
   }
+};
+
+Presence.prototype._set_online = function(client) {
+  if(!this.subscribers[client.id]) {
+    // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
+    this.subscribe(client);
+    // We are subscribed, but not listening
+    this.subscribers[client.id] = { listening: false }
+  }
+};
+
+Presence.prototype.subscribe = function(client, message) {
+  Resource.prototype.subscribe.call( this, client, message);
+  this.subscribers[client.id] = { listening: true };
 };
 
 Presence.prototype.unsubscribe = function(client, message) {
@@ -170,10 +183,11 @@ Presence.prototype.broadcast = function(message, except) {
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    if(client && client.id != except) {
+    if(client && client.id != except && self.subscribers[client.id].listening) {
       client.send(message);
     } else {
-      logging.warn('#client - not sending: ', (client && client.id), message,  except, self.name);
+      logging.warn('#client - not sending: ', (client && client.id), message,  except,
+        'explicit:', (client && client.id && self.subscribers[client.id]), self.name);
     }
   });
 };

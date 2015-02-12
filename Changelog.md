@@ -1,3 +1,7 @@
+### 0.13.0
+* Set(online) for presence no longer subscribes to the resource.
+    - This is a breaking change if the client assumes this behavior
+
 ### 0.12.5
 * Expose details of sentry down in the listener
 

@@ -308,10 +308,9 @@ describe('given a presence resource',function() {
         assert.deepEqual(local[2],  { to: 'aaa', op: 'offline', value: { 1: 2 } });
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // each client should have received two messages, since we don't send client_offline
-        // notifications to the client itself.
-        assert.equal(messages[client.id].length, 2);
-        assert.equal(messages[client2.id].length, 2);
+        // no notifications sent to the client themselves.
+        assert.equal(typeof messages[client.id], 'undefined');
+        assert.equal(typeof messages[client2.id], 'undefined');
       });
 
       it('should emit a user disconnect only after both disconnect (both implicit)', function() {
@@ -354,10 +353,9 @@ describe('given a presence resource',function() {
         assert.equal(local[2].op, 'offline');
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // only CID 2 receives any messages
-        // = one message for the CID1 disconnect, after which no messages are delivered
+        // no notifications sent to the client themselves.
         assert.equal(typeof messages[client.id], 'undefined');
-        assert.equal(messages[client2.id].length, 1);
+        assert.equal(typeof messages[client2.id], 'undefined');
       });
 
       it('should emit a user disconnect only after both disconnect (one implicit, other explicit)', function() {
@@ -393,10 +391,9 @@ describe('given a presence resource',function() {
         assert.equal(local[2].op, 'offline');
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // only CID 2 receives any messages
-        // = two messages, one for CID 1 offline and one for UID1 offline
+        // no notifications sent to the client themselves.
         assert.equal(typeof messages[client.id], 'undefined');
-        assert.equal(messages[client2.id].length, 2);
+        assert.equal(typeof messages[client2.id], 'undefined');
       });
     });
   });
