@@ -41,25 +41,12 @@ PresenceManager.prototype.setup = function() {
 
   // save so you removeListener on destroy
   this.sentryListener = function (sentry) {
-    if (manager.destroying) return;
-
     var clientIds = store.clientsForSentry(sentry);
 
     var chain = function (clientIds) {
-      var immediateObject;
       var clientId = clientIds.pop();
 
-      // Pick up any new users/clients that have subscribed to this resource
-      if (!clientId && !manager.destroying) {
-        clientIds = store.clientsForSentry(sentry);
-        clientId = clientIds.pop();
-      }
-
       if (!clientId || manager.destroying) {
-        if (immediateObject) {
-          clearImmediate(immediateObject);
-        }
-
         logging.info('#presence - #sentry down chain exit: clientId:',
                       clientId, ', manager.destroying:', manager.destroying);
         return;
@@ -71,6 +58,7 @@ PresenceManager.prototype.setup = function() {
         chain(clientIds);
       });
     };
+
     chain(clientIds);
   };
 
