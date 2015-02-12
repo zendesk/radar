@@ -123,6 +123,11 @@ Presence.prototype._set_online = function(client) {
   }
 };
 
+Presence.prototype.subscribe = function(client, message) {
+  Resource.prototype.subscribe.call( this, client, message);
+  this.subscribers[client.id] = { listening: true };
+};
+
 Presence.prototype.unsubscribe = function(client, message) {
   logging.info('#presence - implicit disconnect', client.id, this.name);
   this.manager.disconnectClient(client.id);
@@ -178,7 +183,7 @@ Presence.prototype.broadcast = function(message, except) {
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.parent.server.clients[subscriber];
-    if(client && client.id != except && self.subscribers[client.id] === true) {
+    if(client && client.id != except && self.subscribers[client.id].listening) {
       client.send(message);
     } else {
       logging.warn('#client - not sending: ', (client && client.id), message,  except,
