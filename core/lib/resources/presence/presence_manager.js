@@ -9,6 +9,7 @@ function PresenceManager(scope, policy, sentry) {
   this.store  = new PresenceStore(scope);
   this.expiryTimers = {};
   this.setup();
+  this.destroying = false;
 }
 require('util').inherits(PresenceManager, require('events').EventEmitter);
 
@@ -39,13 +40,17 @@ PresenceManager.prototype.setup = function() {
   });
 
   // save so you removeListener on destroy
-  this.sentryListener = function(sentry) {
+  this.sentryListener = function (sentry) {
     var clientIds = store.clientsForSentry(sentry);
 
     var chain = function (clientIds) {
       var clientId = clientIds.pop();
 
-      if (!clientId) return;
+      if (!clientId || manager.destroying) {
+        logging.info('#presence - #sentry down chain exit: clientId:',
+                      clientId, ', manager.destroying:', manager.destroying);
+        return;
+      }
 
       logging.info('#presence - #sentry down, removing client:', sentry, scope, clientId);
       manager.sentryDownForClient(clientId);
@@ -79,6 +84,8 @@ PresenceManager.prototype.sentryDownForClient = function(clientId) {
 
 PresenceManager.prototype.destroy = function() {
   var manager = this;
+
+  this.destroying = true;
 
   this.store.removeAllListeners();
   Object.keys(this.expiryTimers).forEach(function(userId) {
