@@ -5,7 +5,6 @@ var assert = require('assert'),
 
 var Server = {
   broadcast: function() { },
-  destroy: function() {},
   server: {
     clients: { }
   }

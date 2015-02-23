@@ -13,7 +13,7 @@ describe('given a presence resource',function() {
   var Server = {
     broadcast: function() { },
     terminate: function() { },
-    destroy: function() {},
+    destroyResource: function() {},
     server: {
       clients: { }
     }

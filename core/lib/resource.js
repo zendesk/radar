@@ -60,7 +60,7 @@ Resource.prototype.unsubscribe = function(client, message) {
 
   if (!Object.keys(this.subscribers).length) {
     logging.info('#'+this.type, '- destroying resource', this.name, this.subscribers, client.id);
-    this.parent.destroy(this.name);
+    this.parent.destroyResource(this.name);
   }
 
   this.ack(client, message && message.ack);
