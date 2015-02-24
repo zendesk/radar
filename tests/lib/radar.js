@@ -11,10 +11,10 @@ var http = require('http'),
     formatter = require('./formatter.js'),
     radar, http_server, serverStarted = false;
 
-if(process.env.verbose) {
+if (process.env.verbose) {
   var minilogPipe = Minilog;
   // Configure log output
-  if(process.env.radar_log) {
+  if (process.env.radar_log) {
     minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
   }
   minilogPipe.pipe(formatter)
@@ -100,7 +100,7 @@ Service.stop = function(arg, callback){
   logger.info("stop");
   http_server.on('close', function() {
     logger.info("http_server closed");
-    if(serverStarted) {
+    if (serverStarted) {
       clearTimeout(serverTimeout);
       logger.info("Calling callback, close event");
       serverStarted = false;
@@ -110,7 +110,7 @@ Service.stop = function(arg, callback){
   Persistence.delWildCard('*', function() {
     radar.terminate(function() {
       logger.info("radar terminated");
-      if(!serverStarted) {
+      if (!serverStarted) {
         logger.info("http_server terminated");
         callback();
       }
@@ -121,7 +121,7 @@ Service.stop = function(arg, callback){
         serverTimeout = setTimeout(function() {
           // Failsafe, because server.close does not always
           // throw the close event within time.
-          if(serverStarted) {
+          if (serverStarted) {
             serverStarted = false;
             logger.info("Calling callback, timeout");
             callback();
@@ -143,7 +143,7 @@ process.on('message', function(message) {
     }));
   };
 
-  if(Service[command.action]) {
+  if (Service[command.action]) {
     Service[command.action](command.arg, complete);
   } else {
     complete('NotFound');

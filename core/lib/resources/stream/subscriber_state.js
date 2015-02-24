@@ -22,7 +22,7 @@ function SubscriberState() {
 }
 
 SubscriberState.prototype.get = function(clientId) {
-  if(!this.subscribers[clientId]) {
+  if (!this.subscribers[clientId]) {
     this.subscribers[clientId] = new StreamSubscriber(clientId);
   }
   return this.subscribers[clientId];

@@ -35,7 +35,7 @@ PresenceMessage.prototype.fail_on_any_message = function() {
 };
 
 PresenceMessage.prototype.for_client = function(client) {
-  if(client.configuration) {
+  if (client.configuration) {
     this.client = {
       userId: client.configuration('userId'),
       userType:  client.configuration('userType'),
@@ -161,12 +161,12 @@ PresenceMessage.prototype.assert_onlines_received = function() {
 
     for(i = 0; i < this.notifications.length; i++) {
       var value = this.notifications[i].value;
-      if(typeof value[uid] !== undefined && value[uid] === type) {
+      if (typeof value[uid] !== undefined && value[uid] === type) {
         assert.equal(online_idx, -1);
         online_idx = i;
         this.for_client(client).assert_online(this.notifications[i]);
       }
-      if(value.userId == uid && value.clientId == cid) {
+      if (value.userId == uid && value.clientId == cid) {
         assert.equal(client_online_idx, -1);
         client_online_idx = i;
         this.for_client(client).assert_client_online(this.notifications[i]);
@@ -184,7 +184,7 @@ PresenceMessage.prototype.for_online_clients = function() {
   var self = this;
   clients.forEach(function(client) {
     var clientHash = client;
-    if(client.configuration) {
+    if (client.configuration) {
       clientHash = {
         clientId: client.currentClientId(),
         userId: client.configuration('userId'),
@@ -239,7 +239,7 @@ PresenceMessage.prototype.assert_get_v2_response = function(message) {
   clients = this.online_clients || [];
   clients.forEach(function(client) {
     var userHash;
-    if(value[client.userId]) {
+    if (value[client.userId]) {
       userHash = value[client.userId];
     } else {
       value[client.userId] = userHash = { clients: {} };
@@ -465,10 +465,10 @@ StreamMessage.prototype.assert_get_response = function(response, list, idstart) 
 
 StreamMessage.prototype.assert_sync_error_notification = function(notification, state) {
   var error = { type: 'sync-error', from: state.from, size: state.size };
-  if(state.start >= 0) {
+  if (state.start >= 0) {
     error.start = state.start;
   }
-  if(state.end >= 0) {
+  if (state.end >= 0) {
     error.end = state.end;
   }
 
@@ -481,10 +481,10 @@ StreamMessage.prototype.assert_sync_error_notification = function(notification, 
 
 StreamMessage.prototype.assert_sync_error_get_response = function(response, state) {
   var error = { type: 'sync-error', from: state.from, size: state.size };
-  if(state.start >= 0) {
+  if (state.start >= 0) {
     error.start = state.start;
   }
-  if(state.end >= 0) {
+  if (state.end >= 0) {
     error.end = state.end;
   }
 

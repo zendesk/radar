@@ -212,7 +212,7 @@ describe('given two clients and a presence resource', function() {
         var count = 8;
 
         var toggle = function(index) {
-          if(index % 2 === 0) {
+          if (index % 2 === 0) {
             expected = expected.concat(['online', 'client_online']);
             client.presence('test').set('online');
           } else {

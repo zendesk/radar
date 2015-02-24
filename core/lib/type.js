@@ -36,7 +36,7 @@ function getByExpression(name) {
         continue;
       }
 
-      if(expression.test && expression.test(name) || expression === name) {
+      if (expression.test && expression.test(name) || expression === name) {
         logger.debug('#type - found', name);
         return definition;
       }

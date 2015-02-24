@@ -15,17 +15,17 @@ Router.prototype.route = function(req, res) {
       urlHandler, matching;
 
   while(++i <= len){
-    if(this.urlMap[i] && this.urlMap[i].method == req.method && this.urlMap[i].re.test(pathname)){
+    if (this.urlMap[i] && this.urlMap[i].method == req.method && this.urlMap[i].re.test(pathname)){
       urlHandler = this.urlMap[i];
       break;
     }
   }
 
-  if(!urlHandler) {
+  if (!urlHandler) {
     return false;
   }
 
-  if(req.method == 'POST') {
+  if (req.method == 'POST') {
     var data = '';
 
     req.on('data', function(chunk) {
@@ -60,7 +60,7 @@ Router.prototype.attach = function(httpServer) {
 
   // Add request handler
   httpServer.on('request', function (req, res) {
-    if(!self.route(req, res)) {
+    if (!self.route(req, res)) {
       logging.info('Routing to old listeners');
       for (var i = 0, l = oldListeners.length; i < l; i++) {
         oldListeners[i].call(httpServer, req, res);

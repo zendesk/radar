@@ -42,7 +42,7 @@ Status.prototype.set = function(client, message) {
 
 Status.prototype._set = function(scope, message, policy, callback) {
   Persistence.persistHash(scope, message.key, message.value);
-  if(policy && policy.maxPersistence) {
+  if (policy && policy.maxPersistence) {
     Persistence.expire(scope, policy.maxPersistence);
   } else {
     logger.warn('resource created without ttl :', scope);

@@ -17,9 +17,9 @@ OnlineList.prototype.render = function() {
   this.el || (this.el = document.getElementById(this.elId));
   var str = '';
   for(var userId in model.online) {
-    if(!model.online.hasOwnProperty(userId)) continue;
+    if (!model.online.hasOwnProperty(userId)) continue;
     str += '<li><span class="badge';
-    if(model.online[userId]) {
+    if (model.online[userId]) {
       str += ' badge-success';
     }
     str += '"></span> '+userId+'</li>';
@@ -57,9 +57,9 @@ model = {
 };
 
 function onlineUpdate(message) {
-  if(message.op != 'online' && message.op != 'offline') return;
+  if (message.op != 'online' && message.op != 'offline') return;
   for(var userId in message.value) {
-    if(!message.value.hasOwnProperty(userId)) continue;
+    if (!message.value.hasOwnProperty(userId)) continue;
     model.online[userId] = !!(message.op == 'online');
   }
 }

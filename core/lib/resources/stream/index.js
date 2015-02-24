@@ -37,13 +37,13 @@ Stream.prototype._subscribe = function(client, message) {
       from = message.options && message.options.from,
       sub = this.subscriberState.get(client.id);
 
-  if(typeof from === 'undefined' || from < 0) {
+  if (typeof from === 'undefined' || from < 0) {
     return;
   }
 
   sub.startSubscribing(from);
   this._get(from, function(error, values) {
-    if(error) {
+    if (error) {
       var syncError = self._getSyncError(from);
       syncError.op = 'push';
       client.send(syncError);
@@ -70,7 +70,7 @@ Stream.prototype.get = function(client, message) {
   logging.debug('#stream - get', this.name,'from: '+from, (client && client.id));
 
   this._get(from, function(error, values) {
-    if(error) {
+    if (error) {
       var syncError = stream._getSyncError(from);
       syncError.op = 'get';
       syncError.value = [];
@@ -112,7 +112,7 @@ Stream.prototype.push = function(client, message) {
 
 
   this.list.push(m, function(error, stamped) {
-    if(error) {
+    if (error) {
       console.log(error);
       logging.error(error);
       return;
@@ -136,7 +136,7 @@ Stream.prototype.redisIn = function(data) {
     var client = self.clientGet(subscriber);
     if (client && client.send) {
       var sub = self.subscriberState.get(client.id);
-      if(sub && sub.sendable(data)) {
+      if (sub && sub.sendable(data)) {
         client.send(data);
         sub.sent = data.id;
       }

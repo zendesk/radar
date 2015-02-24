@@ -4,7 +4,7 @@ var formatter = new Minilog.Transform();
 formatter.nameLength = 22;
 formatter.write = function(name, level, args) {
   var i;
-  if(this.nameLength < name.length) {
+  if (this.nameLength < name.length) {
     this.nameLength = name.length;
   }
   for(i = name.length; i < this.nameLength; i++) {
@@ -12,9 +12,9 @@ formatter.write = function(name, level, args) {
   }
   var result = [].concat(args);
   for(i = 0; i < result.length; i++) {
-    if(result[i] && typeof result[i] == 'object') {
+    if (result[i] && typeof result[i] == 'object') {
       // Buffers in Node.js look bad when stringified
-      if(result[i].constructor && result[i].constructor.isBuffer) {
+      if (result[i].constructor && result[i].constructor.isBuffer) {
         result[i] = result[i].toString();
       } else {
         try {

@@ -25,7 +25,7 @@ if (process.env.verbose) {
     .pipe(process.stdout);
 }
 
-if(process.env.radar_connection) {
+if (process.env.radar_connection) {
   configuration.use_connection = process.env.radar_connection;
 }
 
@@ -40,8 +40,8 @@ module.exports = {
       var listener = function(message) {
         message = JSON.parse(message);
         logging.debug("message received", message, action);
-        if(message.action == action) {
-          if(callback) callback(message.error);
+        if (message.action == action) {
+          if (callback) callback(message.error);
         }
       };
       return listener;
@@ -52,7 +52,7 @@ module.exports = {
       var listener = getListener(command, function(error) {
         logging.debug("removing listener", command);
         radarProcess.removeListener('message', listener);
-        if(callback) callback(error);
+        if (callback) callback(error);
       });
 
       radarProcess.on('message', listener);
@@ -83,7 +83,7 @@ module.exports = {
 
   restartRadar: function(radar, configuration, clients, callback) {
     var tracker = Tracker.create('server restart, given clients ready', function() {
-      if(callback) setTimeout(callback,0);
+      if (callback) setTimeout(callback,0);
     });
 
     for(var i = 0; i < clients.length; i++) {
@@ -98,7 +98,7 @@ module.exports = {
   },
 
   startPersistence: function(done) {
-    if(process.env.radar_connection) {
+    if (process.env.radar_connection) {
       configuration.use_connection = process.env.radar_connection;
     }
     Persistence.setConfig(configuration);

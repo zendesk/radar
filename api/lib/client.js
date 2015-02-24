@@ -47,7 +47,7 @@ Client.prototype.header = function(key, value) {
 };
 
 Client.prototype.data = function(data) {
-  if(this.options.method == 'GET') {
+  if (this.options.method == 'GET') {
     // Append to QS
     logging.debug('GET append', data);
     this.options.path += '?'+qs.stringify(data);
@@ -73,7 +73,7 @@ Client.prototype._end = function(callback) {
       res_data = '',
       protocol = (secure ? https : http);
 
-  if(this.beforeRequest) {
+  if (this.beforeRequest) {
     this.beforeRequest(this);
   }
 
@@ -87,12 +87,12 @@ Client.prototype._end = function(callback) {
 
       logging.debug('Response for the request "'+options.method+' '+options.host + options.path+'" has been ended.');
 
-      if(isRedirect && self.options.redirects == 0) {
+      if (isRedirect && self.options.redirects == 0) {
         logging.debug('Redirect to: ', response.headers.location);
         return self._redirect(response);
       }
 
-      if(response.headers['content-type'] && response.headers['content-type'].toLowerCase().indexOf('application/json') > -1 ) {
+      if (response.headers['content-type'] && response.headers['content-type'].toLowerCase().indexOf('application/json') > -1 ) {
         try {
           res_data = JSON.parse(res_data);
         } catch(jsonParseError) {
@@ -101,9 +101,9 @@ Client.prototype._end = function(callback) {
       }
 
       // Detect errors
-      if(response.statusCode >= 400) {
+      if (response.statusCode >= 400) {
         return self._error(new Error('Unexpected HTTP status code ' +response.statusCode), res_data, callback);
-      } else if(res_data == '') {
+      } else if (res_data == '') {
         return self._error(new Error('Response was empty.'), res_data, callback);
       }
 
@@ -134,7 +134,7 @@ Client.prototype._redirect = function(response) {
 
   // Parse location to check for port
   parts = urlmodule.parse(response.headers.location);
-  if(parts.protocol == 'http:') {
+  if (parts.protocol == 'http:') {
     options.secure = false;
     options.port = parts.port || 80;
   }

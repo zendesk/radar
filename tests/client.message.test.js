@@ -68,7 +68,7 @@ describe('When using message list resources:', function() {
         assert.equal(message.state, msg.value.state);
         assert.ok( !finished[client_name] );
         finished[client_name] = true;
-        if(finished.client && finished.client2) {
+        if (finished.client && finished.client2) {
           setTimeout(done,30);
         }
       }
@@ -98,7 +98,7 @@ describe('When using message list resources:', function() {
       });
 
       client.message('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
+        if (msg.value.state == 'test3') {
           done();
         }
       });
@@ -125,7 +125,7 @@ describe('When using message list resources:', function() {
       });
 
       client.message('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
+        if (msg.value.state == 'test3') {
           // Received third message without asserting
           done();
         }
@@ -142,7 +142,7 @@ describe('When using message list resources:', function() {
 
       client2.message('cached_chat/1').subscribe().on(function(m) {
         received.push(m);
-        if(received.length == 4) {
+        if (received.length == 4) {
           setTimeout(verify, 50);
         }
       });
@@ -191,7 +191,7 @@ describe('When using message list resources:', function() {
       var message = { state: 'other'};
 
       client.message('test').when(function(msg) {
-        if(msg.value && msg.value.state && msg.value.state == 'other') {
+        if (msg.value && msg.value.state && msg.value.state == 'other') {
           assert.equal('message:/dev/test', msg.to);
           assert.equal('other', msg.value.state);
           done();
@@ -274,7 +274,7 @@ describe('When using message list resources:', function() {
 
       client2.message('cached_chat/1').subscribe().on(function(m) {
         written++;
-        if(written == messages.length)
+        if (written == messages.length)
           syncTest();
       });
 
@@ -285,7 +285,7 @@ describe('When using message list resources:', function() {
       function syncTest() {
         client.message('cached_chat/1').on(function(msg) {
           received.push(msg);
-          if(received.length == messages.length) {
+          if (received.length == messages.length) {
             setTimeout(function() {
               assert.equal(messages.length, received.length);
               for(var i = 0; i < received.length; i++) {

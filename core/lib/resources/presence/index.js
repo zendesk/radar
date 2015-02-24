@@ -85,7 +85,7 @@ Presence.prototype.setup = function() {
   // Keep track of listener count
   Presence.resource_count++;
   var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
-  if(sentryListenersCount != Presence.resource_count) {
+  if (sentryListenersCount != Presence.resource_count) {
     logging.warn('sentry listener leak detected', sentryListenersCount -
                                                   Presence.resource_count);
   }
@@ -105,12 +105,12 @@ Presence.prototype.set = function(client, message) {
     presence.ack(client, message.ack);
   }
 
-  if(message.value != 'offline') {
+  if (message.value != 'offline') {
     this._set_online(client);
     this.manager.addClient(client.id, userId, message.type, message.userData, ackCheck);
   } else {
     // If this is client is not subscribed
-    if(!this.subscribers[client.id]) {
+    if (!this.subscribers[client.id]) {
       // This is possible if a client does .set('offline') without
       // set-online/sync/subscribe
       Resource.prototype.unsubscribe.call(this, client, message);
@@ -122,7 +122,7 @@ Presence.prototype.set = function(client, message) {
 };
 
 Presence.prototype._set_online = function(client) {
-  if(!this.subscribers[client.id]) {
+  if (!this.subscribers[client.id]) {
     // We use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
 
@@ -147,7 +147,7 @@ Presence.prototype.unsubscribe = function(client, message) {
 Presence.prototype.sync = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
-    if(message.options && message.options.version == 2) {
+    if (message.options && message.options.version == 2) {
       client.send({
         op: 'get',
         to: self.name,
@@ -172,7 +172,7 @@ Presence.prototype.sync = function(client, message) {
 Presence.prototype.get = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
-    if(message.options && message.options.version == 2) {
+    if (message.options && message.options.version == 2) {
       client.send({
         op: 'get',
         to: self.name,
@@ -193,7 +193,7 @@ Presence.prototype.broadcast = function(message, except) {
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
     var client = self.clientGet(subscriber);
-    if(client && client.id != except && self.subscribers[client.id].listening) {
+    if (client && client.id != except && self.subscribers[client.id].listening) {
       client.send(message);
     } else {
       logging.warn('#client - not sending: ', (client && client.id), message,  except,

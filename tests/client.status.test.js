@@ -62,7 +62,7 @@ describe('When using status resources', function() {
         assert.equal(message.state, msg.value.state);
         assert.ok( !finished[client_name] );
         finished[client_name] = true;
-        if(finished.client && finished.client2) {
+        if (finished.client && finished.client2) {
           setTimeout(done,30);
         }
       }
@@ -100,7 +100,7 @@ describe('When using status resources', function() {
       });
 
       client.status('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
+        if (msg.value.state == 'test3') {
           done();
         }
       });
@@ -127,7 +127,7 @@ describe('When using status resources', function() {
       });
 
       client.status('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
+        if (msg.value.state == 'test3') {
           // Received third message without asserting
           done();
         }

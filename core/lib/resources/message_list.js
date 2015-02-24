@@ -29,9 +29,9 @@ MessageList.prototype.publish = function(client, message) {
 };
 
 MessageList.prototype._publish = function(name, policy, message, callback) {
-  if(policy && policy.cache) {
+  if (policy && policy.cache) {
     Persistence.persistOrdered(name, message);
-    if(policy.maxPersistence) {
+    if (policy.maxPersistence) {
       Persistence.expire(name, policy.maxPersistence);
     }
   }
@@ -53,7 +53,7 @@ MessageList.prototype.sync = function(client, message) {
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
-  if(policy && policy.maxPersistence) {
+  if (policy && policy.maxPersistence) {
     Persistence.expire(name, policy.maxPersistence);
   }
   Persistence.readOrderedWithScores(name, policy, callback);

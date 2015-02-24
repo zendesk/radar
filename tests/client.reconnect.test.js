@@ -77,7 +77,7 @@ describe('When radar server restarts', function() {
 
       var presence_done = tracker('presence updated');
       client.presence('restore').on(function (message) {
-        if(message.op === 'online') {
+        if (message.op === 'online') {
           assert.equal(message.to, 'presence:/test/restore');
           presence_done();
         }
@@ -122,7 +122,7 @@ describe('When radar server restarts', function() {
       client2.alloc('test', function() {
         client.message('foo').on(function(msg) {
           messages.push(msg);
-          if(messages.length == 2) {
+          if (messages.length == 2) {
             // When we have enough, wait a while and check
             setTimeout(verifySubscriptions, 100);
           }

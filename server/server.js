@@ -104,7 +104,7 @@ Server.prototype.handlePubSubMessage = function(name, data) {
     this.resources[name].redisIn(data);
   } else {
     // Don't log sentry channel pub messages
-    if(name == Core.Presence.Sentry.channel) return;
+    if (name == Core.Presence.Sentry.channel) return;
 
     logging.warn('#redis - message not handled', name, data);
   }
@@ -115,7 +115,7 @@ Server.prototype.message = function(client, data) {
   var message = parseJSON(data);
 
   // Format check
-  if(!message || !message.op || !message.to) {
+  if (!message || !message.op || !message.to) {
     logging.warn('#client.message - rejected', (client && client.id), data);
     return;
   }
@@ -128,10 +128,10 @@ Server.prototype.message = function(client, data) {
   var resource = this.resourceGet(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    if(!this.subs[resource.name]) {
+    if (!this.subs[resource.name]) {
       logging.info('#redis - subscribe', resource.name, (client && client.id));
       this.subscriber.subscribe(resource.name, function(err) {
-        if(err) {
+        if (err) {
           logging.error('#redis - subscribe failed', resource.name,
                                           (client && client.id), err);
         } else {
@@ -169,7 +169,7 @@ Server.prototype.resourceGet = function(name) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function(name) {
-  if(this.resources[name]) {
+  if (this.resources[name]) {
     this.resources[name].destroy();
   }
   delete this.resources[name];

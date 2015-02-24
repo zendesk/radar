@@ -62,7 +62,7 @@ describe('When using the stream resource', function() {
       function validate(msg, client_name) {
         assert.ok( !finished[client_name] );
         finished[client_name] = true;
-        if(finished.client && finished.client2) {
+        if (finished.client && finished.client2) {
           setTimeout(done,30);
         }
       }

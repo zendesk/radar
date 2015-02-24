@@ -99,14 +99,14 @@ PresenceManager.prototype.destroy = function() {
     manager.clearExpiry(userId);
   });
 
-  if(this.sentryListener) {
+  if (this.sentryListener) {
     logging.debug('#presence - remove sentry listener', this.scope);
     this.sentry.removeListener('down', this.sentryListener);
     delete this.sentryListener;
   }
 
   // Client issues a full read and then dies and destroy is called.
-  if(this.handleRedisReply) {
+  if (this.handleRedisReply) {
     this.handleRedisReply = function() {};
   }
 
@@ -136,7 +136,7 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType,
 
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
 
-  if(this.policy && this.policy.maxPersistence) {
+  if (this.policy && this.policy.maxPersistence) {
     Persistence.expire(this.scope, this.policy.maxPersistence);
   }
 
@@ -166,9 +166,9 @@ PresenceManager.prototype.disconnectClient = function(clientId, callback) {
   // If there is no userid, then we've already removed the user (e.g. via a remove
   // call) or, we have not added this client to the store yet. (redis reply for
   // addClient has not come)
-  if(!userId) {
+  if (!userId) {
     var message = this.store.cacheRemove(clientId);
-    if(!message) {
+    if (!message) {
       // This is possible if multiple servers are expiring a fallen server's clients
       logging.warn('#presence - no userId/userType found for', clientId,
                                     'in store, userId:', userId, this.scope);
@@ -220,8 +220,8 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
   logging.debug('#presence - processRedisEntry:', message, this.scope);
   callback = callback || function() {};
 
-  if(this.isOnline(message)) {
-    if(!message.sentry) {
+  if (this.isOnline(message)) {
+    if (!message.sentry) {
       logging.info('#presence - #autopub - received online message without sentry',
                                                               message, this.scope);
       message.sentry = userId + '.' + clientId;
@@ -230,7 +230,7 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
       sentry.publishKeepAlive({ name: message.sentry, save: false });
     }
 
-    if(sentry.isValid(message.sentry)) {
+    if (sentry.isValid(message.sentry)) {
       logging.debug('#presence - processRedisEntry: sentry.isValid true',
                                               message.sentry, this.scope);
       manager.clearExpiry(userId);
@@ -246,7 +246,7 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
     }
     callback();
   } else {
-    if(this.isExpired(message)) {
+    if (this.isExpired(message)) {
       logging.info('#autopub - received online message - expired', message,
                                                                 this.scope);
 
@@ -272,7 +272,7 @@ PresenceManager.prototype.handleOffline = function(clientId, userId, userType, e
   // Only if explicit present and false.
   // When user has an expiry timer running, then don't force remove yet
   // Remove user after 15 seconds when no other clients exist
-  if(explicit === false || this.isUserExpiring(userId)) {
+  if (explicit === false || this.isUserExpiring(userId)) {
     this.store.removeClient(clientId, message);
     this.setupExpiry(userId, userType);
   } else {
@@ -286,7 +286,7 @@ PresenceManager.prototype.isUserExpiring = function(userId) {
 };
 
 PresenceManager.prototype.clearExpiry = function(userId) {
-  if(this.expiryTimers[userId]) {
+  if (this.expiryTimers[userId]) {
     logging.info('#presence - clear user expiry timeout:', userId, this.scope);
     clearTimeout(this.expiryTimers[userId]);
     delete this.expiryTimers[userId];
@@ -295,7 +295,7 @@ PresenceManager.prototype.clearExpiry = function(userId) {
 PresenceManager.prototype.setupExpiry = function(userId, userType) {
   this.clearExpiry(userId);
 
-  if(this.store.userExists(userId)) {
+  if (this.store.userExists(userId)) {
     logging.info('#presence - user expiry setup for', userId, this.scope);
     this.expiryTimers[userId] = setTimeout(this.expireUser.bind(this, userId, userType),
                                               this.policy.userExpirySeconds * 1000);
@@ -318,7 +318,7 @@ PresenceManager.prototype.fullRead = function(callback) {
 
   this.handleRedisReply = function(replies) {
     logging.debug('#presence - fullRead replies', self.scope, replies);
-    if(!replies) {
+    if (!replies) {
       if (callback) callback(self.getOnline());
       return;
     }
@@ -326,7 +326,7 @@ PresenceManager.prototype.fullRead = function(callback) {
     var count = 0, keys = Object.keys(replies);
     var completed = function() {
       count++;
-      if(count == keys.length) {
+      if (count == keys.length) {
         if (callback) callback(self.getOnline());
       }
     };
