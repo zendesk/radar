@@ -23,9 +23,11 @@ describe('given a client and a server,', function() {
       m.at = Date.now();
     };
     publish_client_online(client);
-    //restore
+    // Restore
     sentry.name = 'test-sentry';
-    delete presenceManager.stampExpiration; //restore from prototype
+
+    // Restore from prototype
+    delete presenceManager.stampExpiration;
   };
 
   before(function(done) {
@@ -45,7 +47,9 @@ describe('given a client and a server,', function() {
   beforeEach(function(done) {
     p = new PresenceAssert('dev', 'test');
     p.client = { userId: 100, clientId: 'abc', userData: { name: 'tester' }, userType: 2 };
-    sentry.publishKeepAlive(); //set ourselves alive
+
+    // Set ourselves alive
+    sentry.publishKeepAlive();
     var track = Tracker.create('beforeEach', done);
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
   });
@@ -69,11 +73,16 @@ describe('given a client and a server,', function() {
         this.timeout(8000);
         var validate = function() {
           var ts = p.times;
-          p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline', 'offline']);
-          assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1])); //sentry expiry = 4000
-          assert.ok((ts[2] - ts[1]) < 6000, 'sentry expiry was '+(ts[2] - ts[1])); //sentry expiry = 4000
-          assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2])); //user expiry = 1000
-          assert.ok((ts[3] - ts[2]) < 2000, 'user expiry was '+(ts[3] - ts[2])); //user expiry = 1000
+          p.assert_message_sequence(['online', 'client_online',
+                                'client_implicit_offline', 'offline']);
+
+          // sentry expiry = 4000
+          assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1]));
+          // sentry expiry = 4000
+          assert.ok((ts[2] - ts[1]) < 6000, 'sentry expiry was '+(ts[2] - ts[1]));
+          // user expiry = 1000
+          assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
+          assert.ok((ts[3] - ts[2]) < 2000, 'user expiry was '+(ts[3] - ts[2]));
           done();
         };
 
@@ -90,7 +99,8 @@ describe('given a client and a server,', function() {
 
         publish_client_online(p.client);
         setTimeout(function() {
-          sentry.publishKeepAlive(); //renew sentry
+          // Renew sentry
+          sentry.publishKeepAlive();
         }, 2000);
 
         p.fail_on_more_than(2);
@@ -104,16 +114,18 @@ describe('given a client and a server,', function() {
           this.timeout(8000);
           var validate = function() {
             var ts = p.times;
-            p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline', 'offline']);
+            p.assert_message_sequence(['online', 'client_online',
+                                      'client_implicit_offline', 'offline']);
 
-            assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1])); //sentry expiry = 4000
-            assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2])); //user expiry = 1000
-            assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2])); //user expiry = 1000
-            assert.ok((ts[3] - ts[2]) < 1900, 'user expiry was '+(ts[3] - ts[2])); //user expiry = 1000
+            // sentry expiry = 4000
+            assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1]));
+            // user expiry = 1000
+            assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
+            assert.ok((ts[3] - ts[2]) < 1900, 'user expiry was '+(ts[3] - ts[2]));
             done();
           };
 
-          //simulate autopub
+          // Simulate autopub
           publish_autopub(p.client);
 
           p.once(4, validate);
@@ -126,11 +138,11 @@ describe('given a client and a server,', function() {
             done();
           };
 
-          //simulate autopub
+          // Simulate autopub
           publish_autopub(p.client);
 
           setTimeout(function() {
-            //send an autopub message
+            // Send an autopub message
             publish_autopub(p.client);
           }, 2000);
 
