@@ -124,7 +124,7 @@ describe('given a status resource', function() {
       status.sync({
         id: 123,
         send: function(msg) {
-          // check message
+          // Check message
           assert.equal('get', msg.op);
           assert.equal('aaa', msg.to);
           assert.deepEqual([1, 2], msg.value);
