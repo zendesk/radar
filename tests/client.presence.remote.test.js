@@ -33,7 +33,10 @@ describe('given a client and a server,', function() {
     p.client = { clientId: 'abc', userId: 100, userType: 2, userData: { name: 'tester' } };
     var track = Tracker.create('beforeEach', done);
     sentry.name = 'test-sentry';
-    sentry.publishKeepAlive(); //set ourselves alive
+
+    // Set ourselves alive
+    sentry.publishKeepAlive();
+
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     notifications = [];
   });
@@ -109,7 +112,10 @@ describe('given a client and a server,', function() {
 
       describe('from legacy servers, ', function() {
         it('should emit online if message is not expired', function(done) {
-          delete sentry.name; //remove sentry and add autopub level expiry
+
+          // Remove sentry and add autopub level expiry
+          delete sentry.name;
+
           presenceManager.stampExpiration = function(message) {
             message.at = Date.now();
           };
@@ -125,7 +131,9 @@ describe('given a client and a server,', function() {
           });
         });
         it('should ignore expired messages', function(done) {
-          delete sentry.name; //remove sentry and add autopub level expiry
+
+          // Remove sentry and add autopub level expiry
+          delete sentry.name;
           presenceManager.stampExpiration = function(message) {
             message.at = Date.now() - 5000;
           };

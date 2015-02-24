@@ -95,7 +95,7 @@ describe('For a message list', function() {
 
       message_list.sync({
         send: function(msg) {
-          // check message
+          // Check message
           assert.equal('sync', msg.op);
           assert.equal('aab', msg.to);
           assert.deepEqual([1, 2], msg.value);
@@ -127,7 +127,7 @@ describe('For a message list', function() {
   describe('unsubscribing', function() {
     it('renews expiry for maxPersistence', function(done) {
       var message_list = new MessageList('aab', Radar, { policy : { cache : true, maxPersistence : 24 * 60 * 60 } });
-      message_list.parent = { destroy: function() {} };
+      message_list.parent = { destroyResource: function() {} };
       FakePersistence.expire = function(name, expiry) {
         assert.equal(expiry, 24 * 60 * 60);
         setTimeout(done,1);

@@ -7,6 +7,7 @@ var default_options = {
     maxPersistence: 14 * 24 * 60 * 60 // 2 weeks in seconds
   }
 };
+
 // Every time we use this channel, we prolong expiry to maxPersistence
 // This includes even the final unsubscribe, in case a client decides to rejoin
 // after being the last user.
@@ -28,9 +29,9 @@ MessageList.prototype.publish = function(client, message) {
 };
 
 MessageList.prototype._publish = function(name, policy, message, callback) {
-  if(policy && policy.cache) {
+  if (policy && policy.cache) {
     Persistence.persistOrdered(name, message);
-    if(policy.maxPersistence) {
+    if (policy.maxPersistence) {
       Persistence.expire(name, policy.maxPersistence);
     }
   }
@@ -52,7 +53,7 @@ MessageList.prototype.sync = function(client, message) {
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
-  if(policy && policy.maxPersistence) {
+  if (policy && policy.maxPersistence) {
     Persistence.expire(name, policy.maxPersistence);
   }
   Persistence.readOrderedWithScores(name, policy, callback);
@@ -60,10 +61,12 @@ MessageList.prototype._sync = function(name, policy, callback) {
 
 MessageList.prototype.unsubscribe = function(client, message) {
   Resource.prototype.unsubscribe.call(this, client, message);
-  // note that since this is not synchronized across multiple backend servers, it is possible
-  // for a channel that is subscribed elsewhere to have a TTL set on it again. The assumption is that the
-  // TTL is so long that any normal workflow will terminate before it is triggered.
-  if (this.options && this.options.policy && this.options.policy.cache && this.options.policy.maxPersistence) {
+  // Note that since this is not synchronized across multiple backend servers,
+  // it is possible for a channel that is subscribed elsewhere to have a TTL set
+  // on it again. The assumption is that the TTL is so long that any normal
+  // workflow will terminate before it is triggered.
+  if (this.options && this.options.policy && this.options.policy.cache &&
+                                      this.options.policy.maxPersistence) {
     Persistence.expire(this.name, this.options.policy.maxPersistence);
   }
 };

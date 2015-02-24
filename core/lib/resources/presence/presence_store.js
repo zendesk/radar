@@ -10,7 +10,7 @@ function PresenceStore(scope) {
 
 require('util').inherits(PresenceStore, require('events').EventEmitter);
 
-//cache the client data without adding
+// Cache the client data without adding
 PresenceStore.prototype.cacheAdd = function(clientId, data) {
   this.cache[clientId] = data;
 };
@@ -27,13 +27,13 @@ PresenceStore.prototype.add = function(clientId, userId, userType, data) {
   logging.debug('#presence - store.add', userId, clientId, data, this.scope);
   this.cacheRemove(clientId);
 
-  if(!this.map[userId]) {
+  if (!this.map[userId]) {
     events.push('user_added');
     this.map[userId] = {};
     this.userTypes[userId] = userType;
   }
 
-  if(!this.map[userId][clientId]) {
+  if (!this.map[userId][clientId]) {
     events.push('client_added');
     this.map[userId][clientId] = data;
     this.clientUserMap[clientId] = userId;
@@ -51,16 +51,17 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
   logging.debug('#presence - store.remove', userId, clientId, data, this.scope);
   this.cacheRemove(clientId);
 
-  if(!this.map[userId] || !this.map[userId][clientId]) {
-    return; //inexistant, return
+  // When non-existent, return
+  if (!this.map[userId] || !this.map[userId][clientId]) {
+    return;
   }
 
   events.push('client_removed');
   delete this.map[userId][clientId];
   delete this.clientUserMap[clientId];
 
-  //Empty user
-  if(Object.keys(this.map[userId]).length === 0) {
+  // Empty user
+  if (Object.keys(this.map[userId]).length === 0) {
     events.push('user_removed');
     delete this.map[userId];
     delete this.userTypes[userId];
@@ -75,19 +76,24 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
 PresenceStore.prototype.removeClient = function(clientId, data) {
   var userId = this.clientUserMap[clientId];
   this.cacheRemove(clientId);
-  if(!userId) {
-    logging.warn('#presence - store.removeClient: cannot find data for', clientId, this.scope);
-    return; //inexistant, return
+
+  // When non-existent, return
+  if (!userId) {
+    logging.warn('#presence - store.removeClient: cannot find data for',
+                                                      clientId, this.scope);
+    return;
   }
+
   logging.debug('#presence - store.removeClient', userId, clientId, data, this.scope);
   delete this.map[userId][clientId];
   delete this.clientUserMap[clientId];
+
   logging.debug('#presence - store.emit', 'client_removed', data, this.scope);
   this.emit('client_removed', data);
 };
 
 PresenceStore.prototype.removeUserIfEmpty = function(userId, data) {
-  if(this.userExists(userId) && this.userEmpty(userId)) {
+  if (this.userExists(userId) && this.userEmpty(userId)) {
     logging.debug('#presence - store.removeUserIfEmpty', userId, data, this.scope);
     delete this.map[userId];
     delete this.userTypes[userId];
@@ -116,17 +122,13 @@ PresenceStore.prototype.forEachClient = function(callback) {
   var store = this;
   this.users().forEach(function(userId) {
     store.clients(userId).forEach(function(clientId) {
-      if(callback) callback(userId, clientId, store.get(clientId, userId));
+      if (callback) callback(userId, clientId, store.get(clientId, userId));
     });
   });
 };
 
 PresenceStore.prototype.userEmpty = function(userId) {
-  if(this.map[userId] &&
-     Object.keys(this.map[userId]).length === 0) {
-    return true;
-  }
-  return false;
+  return !!(this.map[userId] && Object.keys(this.map[userId]).length === 0);
 };
 
 PresenceStore.prototype.userTypeOf = function(userId) {

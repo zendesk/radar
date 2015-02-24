@@ -31,11 +31,12 @@ function getByExpression(name) {
       definition = Types[i];
       expression = definition.expression || definition.expr;
       if (!expression) {
-        logger.error('#type - there is a type definition without an expression.', i, definition.name);
+        logger.error('#type - there is a type definition without an expression.',
+                                                              i, definition.name);
         continue;
       }
 
-      if(expression.test && expression.test(name) || expression === name) {
+      if (expression.test && expression.test(name) || expression === name) {
         logger.debug('#type - found', name);
         return definition;
       }
@@ -46,7 +47,7 @@ function getByExpression(name) {
 
 module.exports = {
   getByExpression: getByExpression,
-  // deprecated
+  // Deprecated
   register: function(name, type) {
     logger.debug('#type - register', type);
     Types.unshift(type);

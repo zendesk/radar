@@ -4,7 +4,7 @@ var Resource = require('../resource.js'),
 
 var default_options = {
   policy: {
-    maxPersistence: 12 * 60 * 60 // 12 hours in seconds
+    maxPersistence: 12 * 60 * 60            // 12 hours in seconds
   }
 };
 
@@ -15,7 +15,7 @@ function Status(name, parent, options) {
 Status.prototype = new Resource();
 Status.prototype.type = 'status';
 
-// get status
+// Get status
 Status.prototype.get = function(client) {
   var name = this.name;
   logger.debug('#status - get', this.name, (client && client.id));
@@ -42,7 +42,7 @@ Status.prototype.set = function(client, message) {
 
 Status.prototype._set = function(scope, message, policy, callback) {
   Persistence.persistHash(scope, message.key, message.value);
-  if(policy && policy.maxPersistence) {
+  if (policy && policy.maxPersistence) {
     Persistence.expire(scope, policy.maxPersistence);
   } else {
     logger.warn('resource created without ttl :', scope);
