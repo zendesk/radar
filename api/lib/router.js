@@ -54,11 +54,11 @@ Router.prototype.post = function(regexp, callback) {
 
 Router.prototype.attach = function(httpServer) {
   var self = this,
-      // cache and clean up listeners
+      // Cache and clean up listeners
       oldListeners = httpServer.listeners('request');
   httpServer.removeAllListeners('request');
 
-  // add request handler
+  // Add request handler
   httpServer.on('request', function (req, res) {
     if(!self.route(req, res)) {
       logging.info('Routing to old listeners');

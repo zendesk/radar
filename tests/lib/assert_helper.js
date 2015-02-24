@@ -1,7 +1,7 @@
 var assert = require('assert'),
     EE = require('events').EventEmitter;
 
-//presence helper
+// Presence helper
 function PresenceMessage(account, name) {
   this.scope = 'presence:/'+account+'/'+name;
   this.notifications = [];
@@ -220,8 +220,8 @@ PresenceMessage.prototype.assert_get_response = function(message) {
   }, message);
 };
 
-//get v2 response:
-//{ op:"get",
+// get v2 response:
+// { op:"get",
 //  to:"presence:/<account>/<scope>",
 //  value: {
 //    <user_id>: {
@@ -233,7 +233,7 @@ PresenceMessage.prototype.assert_get_response = function(message) {
 //    },
 //   ...
 //  }
-//}
+// }
 PresenceMessage.prototype.assert_get_v2_response = function(message) {
   var value = {};
   clients = this.online_clients || [];
@@ -278,7 +278,7 @@ PresenceMessage.prototype.assert_sync_response = function(message) {
   }, message);
 };
 
-//sync v2 response: same as get v2
+// Sync v2 response: same as get v2
 PresenceMessage.prototype.assert_sync_v2_response = PresenceMessage.prototype.assert_get_v2_response;
 // ack format
 // { op: 'set/subscribe/unsubscribe',
@@ -312,7 +312,9 @@ PresenceMessage.prototype.assert_ack_for = function(type, message) {
 
   assert.deepEqual(expected, message);
   assert.ok(ackNumber > 0);
-  message.ack = ackNumber; //restore
+
+  // Restore
+  message.ack = ackNumber;
 };
 
 PresenceMessage.prototype.assert_ack_for_set_online = function(message) {
@@ -331,7 +333,7 @@ PresenceMessage.prototype.assert_ack_for_unsubscribe = function(message) {
   this.assert_ack_for('unsubscribe', message);
 };
 
-//timing of messages
+// Timing of messages
 PresenceMessage.prototype.assert_delay_between_notifications_within_range = function(i, j, low, high) {
   var delay;
   delay = this.times[j] - this.times[i];
@@ -340,7 +342,7 @@ PresenceMessage.prototype.assert_delay_between_notifications_within_range = func
 };
 
 
-//stream
+// Stream
 
 function StreamMessage(account, name) {
   this.scope = 'stream:/'+account+'/'+name;
@@ -393,7 +395,9 @@ StreamMessage.prototype.assert_ack_for = function(type, message, resource, actio
 
   assert.deepEqual(expected, message);
   assert.ok(ackNumber > 0);
-  message.ack = ackNumber; //restore
+
+  // Restore
+  message.ack = ackNumber;
 };
 
 StreamMessage.prototype.assert_ack_for_subscribe = PresenceMessage.prototype.assert_ack_for_subscribe;
@@ -491,7 +495,7 @@ StreamMessage.prototype.assert_sync_error_get_response = function(response, stat
     error: error
   }, response);
 };
-// sync is implemented as subscribe + get, hence the return op is "get"
+// Sync is implemented as subscribe + get, hence the return op is "get"
 StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;
 StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
 module.exports.PresenceMessage = PresenceMessage;

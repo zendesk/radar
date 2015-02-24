@@ -21,8 +21,9 @@ function recursiveMerge(target) {
   Array.prototype.slice.call(arguments, 1).forEach(function(source) {
     if (source) {
       Object.keys(source).forEach(function(name) {
-        if (target[name] !== undefined) {//catch 0s and false too
-          // extend the object if it is an Object
+        // Catch 0s and false too
+        if (target[name] !== undefined) {
+          // Extend the object if it is an Object
           if (target[name] === Object(target[name])) {
             target[name] = recursiveMerge(target[name], source[name]);
           }
@@ -48,7 +49,9 @@ Resource.prototype.type = 'default';
 // Add a subscriber (Engine.io client)
 Resource.prototype.subscribe = function(client, message) {
   this.subscribers[client.id] = true;
-  logging.debug('#'+this.type, '- subscribe', this.name, client.id, this.subscribers, message && message.ack);
+  logging.debug('#'+this.type, '- subscribe', this.name, client.id,
+                              this.subscribers, message && message.ack);
+
   this.ack(client, message && message.ack);
 };
 
@@ -56,10 +59,12 @@ Resource.prototype.subscribe = function(client, message) {
 Resource.prototype.unsubscribe = function(client, message) {
   delete this.subscribers[client.id];
 
-  logging.info('#'+this.type, '- unsubscribe', this.name, client.id, 'subscribers left:', Object.keys(this.subscribers).length);
+  logging.info('#'+this.type, '- unsubscribe', this.name, client.id,
+                    'subscribers left:', Object.keys(this.subscribers).length);
 
   if (!Object.keys(this.subscribers).length) {
-    logging.info('#'+this.type, '- destroying resource', this.name, this.subscribers, client.id);
+    logging.info('#'+this.type, '- destroying resource', this.name,
+                                          this.subscribers, client.id);
     this.parent.destroyResource(this.name);
   }
 
@@ -68,24 +73,33 @@ Resource.prototype.unsubscribe = function(client, message) {
 
 var noop = function(name) {
   return function() {
-    logging.error('#'+this.type+ '- undefined_method called for resource', name, this.name);
+    logging.error('#'+this.type+ '- undefined_method called for resource',
+                                                              name, this.name);
   };
 };
+
 'get set sync publish'.split(' ').forEach(function(method) {
   Resource.prototype[method] = noop(method);
 });
 
-// send to Engine.io clients
+// Send to Engine.io clients
 Resource.prototype.redisIn = function(data) {
   var self = this;
-  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
+  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:',
+                                          Object.keys(this.subscribers).length );
+
   Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.parent.server.clients[subscriber];
+    var client = self.clientGet(subscriber);
     if (client && client.send) {
       client.send(data);
     }
   });
 };
+
+// Return a client reference
+Resource.prototype.clientGet = function (id) {
+  return this.parent.server.clients[id];
+}
 
 Resource.prototype.ack = function(client, sendAck) {
   if (client && client.send && sendAck) {

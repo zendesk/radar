@@ -13,7 +13,7 @@ var http = require('http'),
 Sentry.expiry = 4000;
 if (process.env.verbose) {
   var Minilog = require('minilog');
-  // configure log output
+  // Configure log output
   Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
     .pipe(formatter)
     .pipe(Minilog.backends.nodeConsole.formatColor)

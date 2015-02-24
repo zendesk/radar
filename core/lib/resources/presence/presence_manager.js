@@ -13,9 +13,11 @@ function PresenceManager(scope, policy, sentry) {
 }
 require('util').inherits(PresenceManager, require('events').EventEmitter);
 
-//filter for message.at for autopublish messages
+// Filter for message.at for autopublish messages
 PresenceManager.autoPubTimeout = 25000;
-// messages have expiration (legacy) of 1 hour for limited compatibility with old servers
+
+// Messages have expiration (legacy) of 1 hour for limited compatibility with old
+// servers
 PresenceManager.messageExpiry = 60*60000;
 
 PresenceManager.prototype.setup = function() {
@@ -24,7 +26,8 @@ PresenceManager.prototype.setup = function() {
   var manager = this;
 
   store.on('user_added', function(message) {
-    manager.emit('user_online', message.userId, message.userType, message.userData);
+    manager.emit('user_online', message.userId, message.userType,
+                                                  message.userData);
   });
 
   store.on('user_removed', function(message) {
@@ -32,14 +35,16 @@ PresenceManager.prototype.setup = function() {
   });
 
   store.on('client_added', function(message) {
-    manager.emit('client_online', message.clientId, message.userId, message.userType, message.userData);
+    manager.emit('client_online', message.clientId, message.userId,
+                                  message.userType, message.userData);
   });
 
   store.on('client_removed', function(message) {
-    manager.emit('client_offline', message.clientId, message.userId, message.explicit);
+    manager.emit('client_offline', message.clientId, message.userId,
+                                                    message.explicit);
   });
 
-  // save so you removeListener on destroy
+  // Save so you removeListener on destroy
   this.sentryListener = function (sentry) {
     var clientIds = store.clientsForSentry(sentry);
 
@@ -79,7 +84,9 @@ PresenceManager.prototype.sentryDownForClient = function(clientId) {
     explicit: false
   };
   this.stampExpiration(message);
-  this.processRedisEntry(message); //directly process
+
+  // Process directly
+  this.processRedisEntry(message);
 };
 
 PresenceManager.prototype.destroy = function() {
@@ -91,13 +98,14 @@ PresenceManager.prototype.destroy = function() {
   Object.keys(this.expiryTimers).forEach(function(userId) {
     manager.clearExpiry(userId);
   });
+
   if(this.sentryListener) {
     logging.debug('#presence - remove sentry listener', this.scope);
     this.sentry.removeListener('down', this.sentryListener);
     delete this.sentryListener;
   }
 
-  //Client issues a full read and then dies and destroy is called.
+  // Client issues a full read and then dies and destroy is called.
   if(this.handleRedisReply) {
     this.handleRedisReply = function() {};
   }
@@ -105,12 +113,13 @@ PresenceManager.prototype.destroy = function() {
   delete this.store;
 };
 
-// for backwards compatibility, add a '.at' to message
+// For backwards compatibility, add a '.at' to message
 PresenceManager.prototype.stampExpiration = function(message) {
   message.at = Date.now() + PresenceManager.messageExpiry;
 };
 
-PresenceManager.prototype.addClient = function(clientId, userId, userType, userData, callback) {
+PresenceManager.prototype.addClient = function(clientId, userId, userType,
+                                                      userData, callback) {
   var message = {
     userId: userId,
     userType: userType,
@@ -122,7 +131,7 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType, userD
 
   this.stampExpiration(message);
 
-  //we might need the details before we actually do a store.add
+  // We might need the details before we actually do a store.add
   this.store.cacheAdd(clientId, message);
 
   Persistence.persistHash(this.scope, userId + '.' + clientId, message);
@@ -134,7 +143,7 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType, userD
   Persistence.publish(this.scope, message, callback);
 };
 
-// explicit disconnect (set('offline'))
+// Explicit disconnect (set('offline'))
 PresenceManager.prototype.removeClient = function(clientId, userId, userType, callback) {
   var message = {
     userId: userId,
@@ -149,17 +158,20 @@ PresenceManager.prototype.removeClient = function(clientId, userId, userType, ca
   Persistence.publish(this.scope, message, callback);
 };
 
-// implicit disconnect (broken connection)
+// Implicit disconnect (broken connection)
 PresenceManager.prototype.disconnectClient = function(clientId, callback) {
   var userId = this.store.userOf(clientId);
   var userType;
-  // if there is no userid, then we've already removed the user (e.g. via a remove call)
-  // or, we have not added this client to the store yet. (redis reply for addClient has not come)
+
+  // If there is no userid, then we've already removed the user (e.g. via a remove
+  // call) or, we have not added this client to the store yet. (redis reply for
+  // addClient has not come)
   if(!userId) {
     var message = this.store.cacheRemove(clientId);
     if(!message) {
-      //this is possible if multiple servers are expiring a fallen server's clients
-      logging.warn('#presence - no userId/userType found for', clientId, 'in store, userId:', userId, this.scope);
+      // This is possible if multiple servers are expiring a fallen server's clients
+      logging.warn('#presence - no userId/userType found for', clientId,
+                                    'in store, userId:', userId, this.scope);
       return;
     } else {
       userId = message.userId;
@@ -171,7 +183,8 @@ PresenceManager.prototype.disconnectClient = function(clientId, callback) {
   this._implicitDisconnect(clientId, userId, userType, callback);
 };
 
-PresenceManager.prototype._implicitDisconnect = function(clientId, userId, userType, callback) {
+PresenceManager.prototype._implicitDisconnect = function(clientId, userId,
+                                                      userType, callback) {
   var message = {
     userId: userId,
     userType: userType,
@@ -186,14 +199,13 @@ PresenceManager.prototype._implicitDisconnect = function(clientId, userId, userT
 };
 
 PresenceManager.prototype.isOnline = function(message) {
-  return (message.online && //online
-      (message.sentry || //with sentry or
-       (message.at && message.at >= (Date.now() - PresenceManager.autoPubTimeout)))); //unexpired legacy msg
+  // Return with online, or with sentry, or with unexpired legacy msg
+  return (message.online && (message.sentry ||
+       (message.at && message.at >= (Date.now() - PresenceManager.autoPubTimeout))));
 };
 
 PresenceManager.prototype.isExpired = function(message) {
-  return (message.online &&
-      !message.sentry &&
+  return (message.online && !message.sentry &&
       message.at && message.at < (Date.now() - PresenceManager.autoPubTimeout));
 };
 
@@ -210,28 +222,35 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
 
   if(this.isOnline(message)) {
     if(!message.sentry) {
-      logging.info('#presence - #autopub - received online message without sentry', message, this.scope);
+      logging.info('#presence - #autopub - received online message without sentry',
+                                                              message, this.scope);
       message.sentry = userId + '.' + clientId;
-      //publish fake entry, autopub will renew it
+
+      // Publish fake entry, autopub will renew it
       sentry.publishKeepAlive({ name: message.sentry, save: false });
     }
 
     if(sentry.isValid(message.sentry)) {
-      logging.debug('#presence - processRedisEntry: sentry.isValid true', message.sentry, this.scope);
+      logging.debug('#presence - processRedisEntry: sentry.isValid true',
+                                              message.sentry, this.scope);
       manager.clearExpiry(userId);
       store.add(clientId, userId, userType, message);
     } else {
-      logging.debug('#presence - processRedisEntry: sentry.isValid false', message.sentry, this.scope);
-      //Orphan redis entry: silently remove from redis
-      //then remove from store implicitly.
+      logging.debug('#presence - processRedisEntry: sentry.isValid false',
+                                              message.sentry, this.scope);
+
+      // Orphan redis entry: silently remove from redis then remove from store
+      // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + clientId);
-      manager.handleOffline(clientId, userId, userType, false/*explicit*/);
+      manager.handleOffline(clientId, userId, userType, false /*explicit*/);
     }
     callback();
   } else {
     if(this.isExpired(message)) {
-      logging.info('#autopub - received online message - expired', message, this.scope);
-      //Orphan autopub redis entry: silently remove from redis
+      logging.info('#autopub - received online message - expired', message,
+                                                                this.scope);
+
+      // Orphan autopub redis entry: silently remove from redis
       Persistence.deleteHash(this.scope, userId + '.' + clientId);
       message.explicit = false;
     }
@@ -250,9 +269,9 @@ PresenceManager.prototype.handleOffline = function(clientId, userId, userType, e
     explicit: explicit
   };
 
-  //Only if explicit present and false.
-  //if user has an expiry timer running, then dont force remove yet
-  //Remove user after 15 seconds if no other clients exist
+  // Only if explicit present and false.
+  // When user has an expiry timer running, then don't force remove yet
+  // Remove user after 15 seconds when no other clients exist
   if(explicit === false || this.isUserExpiring(userId)) {
     this.store.removeClient(clientId, message);
     this.setupExpiry(userId, userType);
@@ -278,7 +297,8 @@ PresenceManager.prototype.setupExpiry = function(userId, userType) {
 
   if(this.store.userExists(userId)) {
     logging.info('#presence - user expiry setup for', userId, this.scope);
-    this.expiryTimers[userId] = setTimeout(this.expireUser.bind(this, userId, userType), this.policy.userExpirySeconds * 1000);
+    this.expiryTimers[userId] = setTimeout(this.expireUser.bind(this, userId, userType),
+                                              this.policy.userExpirySeconds * 1000);
   }
 };
 
@@ -292,7 +312,8 @@ PresenceManager.prototype.expireUser = function(userId, userType) {
 // For sync
 PresenceManager.prototype.fullRead = function(callback) {
   var self = this;
-  // sync scope presence
+
+  // Sync scope presence
   logging.debug('#presence - fullRead', this.scope);
 
   this.handleRedisReply = function(replies) {
@@ -309,7 +330,7 @@ PresenceManager.prototype.fullRead = function(callback) {
         if (callback) callback(self.getOnline());
       }
     };
-    // process all messages in one go before updating subscribers to avoid
+    // Process all messages in one go before updating subscribers to avoid
     // sending multiple messages
     keys.forEach(function(key) {
       var message = replies[key];
@@ -322,7 +343,7 @@ PresenceManager.prototype.fullRead = function(callback) {
   });
 };
 
-//sync v1
+// Sync v1
 PresenceManager.prototype.getOnline = function() {
   var result = {}, store = this.store;
   function setUid(userId) {
@@ -332,13 +353,14 @@ PresenceManager.prototype.getOnline = function() {
   return result;
 };
 
-//sync v2
+// Sync v2
 PresenceManager.prototype.getClientsOnline = function() {
   var store = this.store;
   var result = {};
 
   function processMessage(message) {
-    result[message.userId] = result[message.userId] || { clients: { } , userType: message.userType };
+    result[message.userId] = result[message.userId] ||
+                { clients: { } , userType: message.userType };
     result[message.userId].clients[message.clientId] = message.userData || {};
   }
 

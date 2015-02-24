@@ -10,7 +10,7 @@ var default_options = {
     // 12 hours in seconds
     maxPersistence: 12 * 60 * 60,
 
-    // buffer time for a user to timeout after client disconnects (implicit)
+    // Buffer time for a user to timeout after client disconnects (implicit)
     userExpirySeconds: 15
   }
 };
@@ -44,6 +44,7 @@ Presence.prototype.setup = function() {
       userData: userData,
     });
   });
+
   this.manager.on('user_offline', function(userId, userType) {
     logging.info('#presence - user_offline', userId, userType, self.name);
     var value = {};
@@ -54,6 +55,7 @@ Presence.prototype.setup = function() {
       value: value
     });
   });
+
   this.manager.on('client_online', function(clientId, userId, userType, userData) {
     logging.info('#presence - client_online', clientId, userId, self.name);
     self.broadcast({
@@ -66,6 +68,7 @@ Presence.prototype.setup = function() {
       }
     });
   });
+
   this.manager.on('client_offline', function(clientId, userId, explicit) {
     logging.info('#presence - client_offline', clientId, userId, explicit, self.name);
     self.broadcast({
@@ -79,16 +82,18 @@ Presence.prototype.setup = function() {
     }, clientId);
   });
 
-  //keep track of listeners count
+  // Keep track of listener count
   Presence.resource_count++;
   var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
   if(sentryListenersCount != Presence.resource_count) {
-    logging.warn('sentry listener leak detected', sentryListenersCount - Presence.resource_count);
+    logging.warn('sentry listener leak detected', sentryListenersCount -
+                                                  Presence.resource_count);
   }
 };
 
 Presence.prototype.redisIn = function(message) {
-  logging.info('#presence - incoming from #redis', this.name, message, 'subs:', Object.keys(this.subscribers).length );
+  logging.info('#presence - incoming from #redis', this.name, message, 'subs:',
+                                          Object.keys(this.subscribers).length );
   this.manager.processRedisEntry(message);
 };
 
@@ -104,11 +109,13 @@ Presence.prototype.set = function(client, message) {
     this._set_online(client);
     this.manager.addClient(client.id, userId, message.type, message.userData, ackCheck);
   } else {
-    if(!this.subscribers[client.id]) { //if this is client is not subscribed
-      //This is possible if a client does .set('offline') without set-online/sync/subscribe
+    // If this is client is not subscribed
+    if(!this.subscribers[client.id]) {
+      // This is possible if a client does .set('offline') without
+      // set-online/sync/subscribe
       Resource.prototype.unsubscribe.call(this, client, message);
     } else {
-      // remove from local
+      // Remove from local
       this.manager.removeClient(client.id, userId, message.type, ackCheck);
     }
   }
@@ -116,8 +123,9 @@ Presence.prototype.set = function(client, message) {
 
 Presence.prototype._set_online = function(client) {
   if(!this.subscribers[client.id]) {
-    // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
+    // We use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
+
     // We are subscribed, but not listening
     this.subscribers[client.id] = { listening: false }
   }
@@ -131,7 +139,8 @@ Presence.prototype.subscribe = function(client, message) {
 Presence.prototype.unsubscribe = function(client, message) {
   logging.info('#presence - implicit disconnect', client.id, this.name);
   this.manager.disconnectClient(client.id);
-  // call parent
+
+  // Call parent
   Resource.prototype.unsubscribe.call(this, client, message);
 };
 
@@ -146,7 +155,8 @@ Presence.prototype.sync = function(client, message) {
       });
     } else {
       logging.warn('presence v1 received, sending online', self.name, client.id);
-      // will be deprecated when syncs no longer need to use "online" to look like
+
+      // Will deprecate when syncs no longer need to use "online" to look like
       // regular messages
       client.send({
         op: 'online',
@@ -158,7 +168,7 @@ Presence.prototype.sync = function(client, message) {
   this.subscribe(client, message);
 };
 
-// this is a full sync of the online status from Redis
+// This is a full sync of the online status from Redis
 Presence.prototype.get = function(client, message) {
   var self = this;
   this.fullRead(function(online) {
@@ -182,7 +192,7 @@ Presence.prototype.broadcast = function(message, except) {
   logging.debug('#presence - update subscribed clients', message, except, this.name);
   var self = this;
   Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.parent.server.clients[subscriber];
+    var client = self.clientGet(subscriber);
     if(client && client.id != except && self.subscribers[client.id].listening) {
       client.send(message);
     } else {

@@ -102,7 +102,7 @@ describe('given a presence resource',function() {
     });
 
     it('setting twice does not cause duplicate notifications', function() {
-      // see also: presence_monitor.test.js / test with the same name
+      // See also: presence_monitor.test.js / test with the same name
       var calls = 0;
       Persistence.publish = function(scope, m) {
         var online = m.online,
@@ -117,7 +117,9 @@ describe('given a presence resource',function() {
       };
       presence.set(client, { key: 1, type: 2, value: 'online' });
       presence.set(client, { key: 1, type: 2, value: 'online' });
-      assert.equal(2, calls); //persist twice, but only update once
+
+      // Persist twice, but only update once
+      assert.equal(2, calls);
       assert.ok(presence.manager.hasUser(1));
     });
   });
@@ -130,7 +132,7 @@ describe('given a presence resource',function() {
         var client_online_called = false;
 
         Persistence.publish = function(scope, m) {
-          //10ms delay
+          // 10ms delay
           setTimeout(function() {
             presence.redisIn(m);
           }, 10);
@@ -160,14 +162,18 @@ describe('given a presence resource',function() {
         presence.unsubscribe(client);
         // userExpiry timer is added
         assert.ok(presence.manager.expiryTimers[1]);
-        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0); //active
+
+        // Active
+        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0);
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 1);
 
         presence.set(client2, { key: 1, type: 2, value: 'online' } );
         presence.unsubscribe(client2);
-        // no duplicates
+        // No duplicates
         assert.ok(presence.manager.expiryTimers[1]);
-        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0); //active
+
+        // Active
+        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0);
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 1);
 
         done();
@@ -182,17 +188,21 @@ describe('given a presence resource',function() {
         assert.ok(!presence.manager.expiryTimers[1]);
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 0);
         presence.unsubscribe(client);
-        // disconnect is queued
-        // userExpiry timer is added
+
+        // Disconnect is queued; userExpiry timer is added
         assert.ok(presence.manager.expiryTimers[1]);
-        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0); //active
+
+        // Active
+        assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0);
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 1);
 
         presence.set(client2, { key: 123, type: 0, value: 'online' } );
         presence.unsubscribe(client2);
         // userExpiry timer is added
         assert.ok(presence.manager.expiryTimers[123]);
-        assert.ok(presence.manager.expiryTimers[123]._idleTimeout > 0); //active
+
+        // Active
+        assert.ok(presence.manager.expiryTimers[123]._idleTimeout > 0);
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 2);
 
 
@@ -206,20 +216,20 @@ describe('given a presence resource',function() {
         presence.broadcast = function(data) {
           local.push(data);
         };
-        // now client 1 reconnects
+        // Now client 1 reconnects
         presence.set(client, { key: 1, type: 2, value: 'online' } );
         // client 1 should emit periodic online and 123 should have emitted offline
         // one autopublish message
         assert.ok(remote.some(function(msg) { return msg.userId == 1 && msg.userType == 2 && msg.online; } ));
-        //timer is cleared
+        // Timer is cleared
         assert.ok(!presence.manager.expiryTimers[1]);
 
-        //invoke the timer fn manually:
+        // Invoke the timer fn manually:
         presence.manager.expiryTimers[123]._onTimeout();
         clearTimeout(presence.manager.expiryTimers[123]);
 
-        // one broadcast of a user offline
-        // first message is client_online for user 1
+        // One broadcast of a user offline
+        // First message is client_online for user 1
         assert.deepEqual(local[1], { to: 'aaa', op: 'offline', value: { '123': 0 } });
 
         presence.broadcast = oldBroadcast;
@@ -267,7 +277,7 @@ describe('given a presence resource',function() {
         presence.set(client, { key: 1, type: 2, value: 'offline' } );
 
         assert.equal(remote.length, 1);
-        // a client_offline should be sent for CID 1
+        // A client_offline should be sent for CID 1
         assert.ok(remote[0].at > Date.now()+59*60000);
         delete remote[0].at;
         assert.deepEqual(remote[0], { userId: 1,
@@ -279,7 +289,7 @@ describe('given a presence resource',function() {
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' } );
 
-        // there should be a client_offline notification for CID 2
+        // There should be a client_offline notification for CID 2
         assert.equal(remote.length, 2);
         assert.ok(remote[1].at > Date.now()+59*60000);
         delete remote[1].at;
@@ -290,25 +300,25 @@ describe('given a presence resource',function() {
           explicit: true
         });
 
-        // check local broadcast
+        // Check local broadcast
         assert.equal(local.length, 3);
-        // there should be a client_offline notification for CID 1
+        // There should be a client_offline notification for CID 1
         assert.deepEqual(local[0],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
           value: { userId: 1, clientId: client.id }
         });
-        // there should be a client_offline notification for CID 2
+        // There should be a client_offline notification for CID 2
         assert.deepEqual(local[1],{ to: 'aaa',
           op: 'client_offline',
           explicit: true,
           value: { userId: 1, clientId: client2.id }
         });
-        // there should be a broadcast for a offline notification for UID 1
+        // There should be a broadcast for a offline notification for UID 1
         assert.deepEqual(local[2],  { to: 'aaa', op: 'offline', value: { 1: 2 } });
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // no notifications sent to the client themselves.
+        // No notifications sent to the client themselves.
         assert.equal(typeof messages[client.id], 'undefined');
         assert.equal(typeof messages[client2.id], 'undefined');
       });
@@ -318,7 +328,7 @@ describe('given a presence resource',function() {
         presence.unsubscribe(client);
 
         assert.equal(remote.length, 1);
-        // a client_offline should be sent for CID 1
+        // A client_offline should be sent for CID 1
         assert.equal(remote[0].online, false);
         assert.equal(remote[0].userId, 1);
         assert.equal(remote[0].clientId, client.id);
@@ -327,33 +337,33 @@ describe('given a presence resource',function() {
         presence.unsubscribe(client2);
 
         assert.equal(remote.length, 2);
-        // there should be a client_offline notification for CID 2
+        // There should be a client_offline notification for CID 2
         assert.equal(remote[1].userId, 1);
         assert.equal(remote[1].clientId, client2.id);
         assert.equal(remote[1].online, false);
         assert.ok(remote[1].at > Date.now()+59*60000);
 
-        // check local broadcast
+        // Check local broadcast
         assert.equal(local.length, 2);
-        // there should be a client_offline notification for CID 1
+        // There should be a client_offline notification for CID 1
         assert.equal(local[0].op, 'client_offline');
         assert.equal(local[0].value.userId, 1);
         assert.equal(local[0].value.clientId, client.id);
-        // there should be a client_offline notification for CID 2
+        // There should be a client_offline notification for CID 2
         assert.equal(local[1].op, 'client_offline');
         assert.equal(local[1].value.userId, 1);
         assert.equal(local[1].value.clientId, client2.id);
 
-        //Manually expire the timer
+        // Manually expire the timer
         presence.manager.expiryTimers[1]._onTimeout();
         clearTimeout(presence.manager.expiryTimers[1]);
 
-        // there should be a broadcast for a offline notification for UID 1
+        // There should be a broadcast for a offline notification for UID 1
         assert.equal(local.length, 3);
         assert.equal(local[2].op, 'offline');
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // no notifications sent to the client themselves.
+        // No notifications sent to the client themselves.
         assert.equal(typeof messages[client.id], 'undefined');
         assert.equal(typeof messages[client2.id], 'undefined');
       });
@@ -363,7 +373,7 @@ describe('given a presence resource',function() {
         presence.unsubscribe(client);
 
         assert.equal(remote.length, 1);
-        // a client_offline should be sent for CID 1
+        // A client_offline should be sent for CID 1
         assert.equal(remote[0].online, false);
         assert.equal(remote[0].userId, 1);
         assert.equal(remote[0].clientId, client.id);
@@ -371,27 +381,27 @@ describe('given a presence resource',function() {
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' } );
 
-        // check local broadcast
+        // Check local broadcast
         assert.equal(local.length, 2);
-        // there should be a client_offline notification for CID 1
+        // There should be a client_offline notification for CID 1
         assert.equal(local[0].op, 'client_offline');
         assert.equal(local[0].value.userId, 1);
         assert.equal(local[0].value.clientId, client.id);
-        // there should be a client_offline notification for CID 2
+        // There should be a client_offline notification for CID 2
         assert.equal(local[1].op, 'client_offline');
         assert.equal(local[1].value.userId, 1);
         assert.equal(local[1].value.clientId, client2.id);
 
-        //Manually expire the timer
+        // Manually expire the timer
         presence.manager.expiryTimers[1]._onTimeout();
         clearTimeout(presence.manager.expiryTimers[1]);
 
-        // there should be a broadcast for a offline notification for UID 1
+        // There should be a broadcast for a offline notification for UID 1
         assert.equal(local.length, 3);
         assert.equal(local[2].op, 'offline');
         assert.deepEqual(local[2].value, { 1: 2 });
 
-        // no notifications sent to the client themselves.
+        // No notifications sent to the client themselves.
         assert.equal(typeof messages[client.id], 'undefined');
         assert.equal(typeof messages[client2.id], 'undefined');
       });

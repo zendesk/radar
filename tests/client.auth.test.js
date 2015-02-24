@@ -44,7 +44,7 @@ describe('auth test', function() {
     });
 
     it('publish fails, emits err and is not persisted', function(done) {
-      //cache policy true for this type
+      // Cache policy true for this type
       client.on('err', function(message) {
         assert.ok(message.origin);
         assert.equal(message.origin.op, 'publish');
@@ -74,7 +74,7 @@ describe('auth test', function() {
         assert.ok(false);
       });
 
-      //Messages of the form 'disabled' are disabled
+      // Messages of the form 'disabled' are disabled
       client.message('enabled').subscribe().publish(originalMessage);
     });
   });

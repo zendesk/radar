@@ -46,7 +46,7 @@ describe('given two clients and a presence resource', function() {
 
       p.fail_on_more_than(4);
       p.once(4, function() {
-        // ensure that no more messages come
+        // Ensure that no more messages come
         setTimeout(function() {
           p.for_client(client2).assert_message_sequence([
             'online', 'client_online', 'client_explicit_offline', 'offline'
@@ -62,7 +62,7 @@ describe('given two clients and a presence resource', function() {
 
       p.fail_on_more_than(2);
       p.on(2, function() {
-        // online and client_online
+        // Online and client_online
         p.for_client(client2).assert_message_sequence(
           [ 'online', 'client_online' ]
         );
@@ -77,12 +77,12 @@ describe('given two clients and a presence resource', function() {
 
     describe('with a client subscribed', function() {
       it('should receive presence notifications if a client comes online', function(done) {
-        // subscribe online with client 2
+        // Subscribe online with client 2
         client2.presence('test').on(p.notify).subscribe(function() {
-          // set client 1 to online
+          // Set client 1 to online
           client.presence('test').set('online', function() {
             client2.presence('test').get(function(message) {
-              // should show client 1 as online
+              // Should show client 1 as online
               p.for_online_clients(client).assert_get_response(message);
               p.for_client(client).assert_message_sequence(
                 [ 'online', 'client_online' ]
@@ -95,7 +95,7 @@ describe('given two clients and a presence resource', function() {
 
       it('should not receive any notification if an offline client unsubscribes', function(done) {
         p.fail_on_any_message();
-        // subscribe online with client 2
+        // Subscribe online with client 2
         client2.presence('test').on(p.notify).subscribe(function() {
           // client 1 disconnect
           client.presence('test').unsubscribe();
@@ -104,7 +104,7 @@ describe('given two clients and a presence resource', function() {
       });
 
       it('should not receive notifications after we unsubscribe', function(done) {
-        // subscribe online with client 2
+        // Subscribe online with client 2
         client2.presence('test').on(p.notify).subscribe(function() {
           client.presence('test').set('online');
         });
@@ -170,19 +170,21 @@ describe('given two clients and a presence resource', function() {
         client.presence('test').set('online', function() {
           var presence = client2.presence('test').sync({ version: 2 }, function(message) {
             p.for_online_clients(client).assert_sync_v2_response(message);
+
+            // Reread after a while
             setTimeout(function() {
               presence.get({ version: 2 }, function(message) {
                 p.for_online_clients(client).assert_get_v2_response(message);
                 done();
               });
-            }, 1500); //reread after a while
+            }, 1500);
           });
         });
       });
 
       it('should not send notifications for a set(offline) if already offline', function(done) {
         p.fail_on_any_message();
-        // subscribe online with client 2
+        // Subscribe online with client 2
         client2.presence('test').on(p.notify).subscribe(function() {
           client.presence('test').set('offline');
           setTimeout(done, 50);
@@ -190,7 +192,7 @@ describe('given two clients and a presence resource', function() {
       });
 
       it('should send online notification only once for multiple set(online)', function(done) {
-        // subscribe online with client 2
+        // Subscribe online with client 2
         client2.presence('test').on(p.notify)
           .subscribe(function() {
             client.presence('test').set('online');
@@ -341,12 +343,12 @@ describe('given two clients and a presence resource', function() {
     it('can be called multiple times without changing the result', function(done) {
       this.timeout(6000);
       client2.presence('test').on(p.notify).subscribe(function() {
-        // set client 1 to online
+        // Set client 1 to online
         client.presence('test').set('online', function() {
 
           var foo = setInterval(function() {
             client2.presence('test').get(function(message) {
-              // both should show client 1 as online
+              // Both should show client 1 as online
               p.for_online_clients(client).assert_get_response(message);
               p.for_client(client).assert_message_sequence(
                 ['online', 'client_online']
@@ -375,12 +377,12 @@ describe('given two clients and a presence resource', function() {
     });
 
     it('should respond correctly when using via v2 API (with userData)', function(done) {
-      // not supported in v1 api because the result.op == "online" which is handled by the message
-      // listener but not by the sync() callback
+      // Not supported in v1 api because the result.op == "online" which is handled
+      // by the message listener but not by the sync() callback
 
       client.presence('test').set('online', function() {
         client.presence('test').sync({ version: 2 }, function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           p.for_online_clients(client).assert_sync_v2_response(message);
           done();
         });
@@ -388,12 +390,12 @@ describe('given two clients and a presence resource', function() {
     });
 
     it('should respond correctly when using via v2 API (without userData)', function(done) {
-      // not supported in v1 api because the result.op == "online" which is handled by the message
-      // listener but not by the sync() callback
+      // Not supported in v1 api because the result.op == "online" which is handled
+      // by the message listener but not by the sync() callback
 
       client3.presence('test').set('online', function() {
         client3.presence('test').sync({ version: 2 }, function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           p.for_online_clients(client3).assert_sync_v2_response(message);
           done();
         });
@@ -402,7 +404,7 @@ describe('given two clients and a presence resource', function() {
 
     it('should also subscribe to that resource', function(done) {
       client.presence('test').on(p.notify).sync(function(message) {
-        // wait for sync to complete
+        // Wait for sync to complete
         p.for_online_clients().assert_sync_response(message);
         client.presence('test').set('online');
       });
@@ -417,15 +419,15 @@ describe('given two clients and a presence resource', function() {
     it('can be called multiple times without changing the result', function(done) {
       this.timeout(6000);
       client2.presence('test').on(p.notify).subscribe(function() {
-        // set client 1 to online
+        // Set client 1 to online
         client.presence('test').set('online', function() {
 
           var foo = setInterval(function() {
             client2.presence('test').sync(function(message) {
-              // both should show client 1 as online
+              // Both should show client 1 as online
               p.for_online_clients(client).assert_sync_response(message);
 
-              //Not more than 2 notifications ever
+              // Not more than 2 notifications ever
               p.for_client(client).assert_message_sequence(
                 ['online', 'client_online']);
             });
@@ -448,7 +450,7 @@ describe('given two clients and a presence resource', function() {
         // Hack a bit so that socketId is saved
         var clientId = client2.currentClientId();
         client2.currentClientId = function() { return clientId; };
-        //disconnect, causing a request timeout or socket close
+        // Disconnect, causing a request timeout or socket close
         client2.manager.close();
       },10);
     });
@@ -483,7 +485,8 @@ describe('given two clients and a presence resource', function() {
           p.for_online_clients(client).assert_get_response(message);
         });
         p.on(4, function() {
-          assert.ok(Date.now() - time > 950); //timeout is 1 second
+          // Timeout is 1 second
+          assert.ok(Date.now() - time > 950);
           p.for_client(client).assert_message_sequence([
             'online', 'client_online', 'client_implicit_offline', 'offline'
           ]);

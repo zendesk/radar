@@ -6,7 +6,7 @@ var https = require('https'),
     logging = require('minilog')('client');
 
 function Scope(defaults) {
-  // clone Client.def. We don't want to change the defaults when we modify options further.
+  // Clone Client.def. We don't want to change the defaults when we modify options further.
   this.defaults = JSON.parse(JSON.stringify(defaults));
 }
 
@@ -48,7 +48,7 @@ Client.prototype.header = function(key, value) {
 
 Client.prototype.data = function(data) {
   if(this.options.method == 'GET') {
-    // append to QS
+    // Append to QS
     logging.debug('GET append', data);
     this.options.path += '?'+qs.stringify(data);
   } else {
@@ -100,7 +100,7 @@ Client.prototype._end = function(callback) {
         }
       }
 
-      // detect errors
+      // Detect errors
       if(response.statusCode >= 400) {
         return self._error(new Error('Unexpected HTTP status code ' +response.statusCode), res_data, callback);
       } else if(res_data == '') {
@@ -132,7 +132,7 @@ Client.prototype._redirect = function(response) {
     response.headers.location = urlmodule.resolve(options.url, response.headers.location);
   }
 
-  // parse location to check for port
+  // Parse location to check for port
   parts = urlmodule.parse(response.headers.location);
   if(parts.protocol == 'http:') {
     options.secure = false;

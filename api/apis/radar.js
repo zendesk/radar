@@ -118,7 +118,7 @@ function getPresence(req, res) {
       q = parts.query;
   if(!q || !q.accountName) { return res.end(); }
   if(!(q.scope || q.scopes)) { return res.end(); }
-  // sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
+  // Sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
   if(q.scope) {
     var monitor = new PresenceManager('presence:/'+q.accountName+'/'+q.scope, {}, Presence.sentry);
     monitor.fullRead(function(online) {

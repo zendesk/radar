@@ -95,7 +95,7 @@ describe('For a message list', function() {
 
       message_list.sync({
         send: function(msg) {
-          // check message
+          // Check message
           assert.equal('sync', msg.op);
           assert.equal('aab', msg.to);
           assert.deepEqual([1, 2], msg.value);

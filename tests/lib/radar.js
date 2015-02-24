@@ -13,7 +13,7 @@ var http = require('http'),
 
 if(process.env.verbose) {
   var minilogPipe = Minilog;
-  // configure log output
+  // Configure log output
   if(process.env.radar_log) {
     minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
   }
@@ -119,8 +119,8 @@ Service.stop = function(arg, callback){
         logger.info('connections left', http_server._connections);
         var val = http_server.close();
         serverTimeout = setTimeout(function() {
-          //failsafe, because server.close does not always
-          //throw the close event within time.
+          // Failsafe, because server.close does not always
+          // throw the close event within time.
           if(serverStarted) {
             serverStarted = false;
             logger.info("Calling callback, timeout");

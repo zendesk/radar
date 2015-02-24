@@ -20,8 +20,8 @@ formatter.write = function(name, level, args) {
         try {
           result[i] = JSON.stringify(result[i]);
         } catch(stringifyError) {
-          // happens when an object has a circular structure
-          // do not throw an error, when printing, the toString() method of the object will be used
+          // Happens when an object has a circular structure
+          // Do not throw an error, when printing, the toString() method of the object will be used
         }
       }
     } else {

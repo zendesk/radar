@@ -4,7 +4,7 @@ var Resource = require('../resource.js'),
 
 var default_options = {
   policy: {
-    maxPersistence: 12 * 60 * 60 // 12 hours in seconds
+    maxPersistence: 12 * 60 * 60            // 12 hours in seconds
   }
 };
 
@@ -15,7 +15,7 @@ function Status(name, parent, options) {
 Status.prototype = new Resource();
 Status.prototype.type = 'status';
 
-// get status
+// Get status
 Status.prototype.get = function(client) {
   var name = this.name;
   logger.debug('#status - get', this.name, (client && client.id));

@@ -56,7 +56,7 @@ describe('When using message list resources:', function() {
       });
     });
 
-    // sending a message should only send to each subscriber, but only once
+    // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function(done) {
       var message = { state: 'test1'};
 
@@ -86,8 +86,8 @@ describe('When using message list resources:', function() {
     });
 
     it('should only receive message when subscribed', function(done) {
-      //send three messages, client2 will assert if it receieves any,
-      //Stop test when we receive all three at client 1
+      // Send three messages, client2 will assert if it receieves any
+      // Stop test when we receive all three at client 1
 
       var message = { state: 'test1'},
           message2 = { state: 'test2' },
@@ -109,9 +109,9 @@ describe('When using message list resources:', function() {
     });
 
     it('should not receive messages after unsubscribe', function(done) {
-      //send two messages after client2 unsubscribes,
+      // Send two messages after client2 unsubscribes,
       // client2 will assert if it receives message 2 and 3
-      //Stop test when we receive all three at client 1
+      // Stop test when we receive all three at client 1
 
       var message = { state: 'test1'};
       var message2 = { state: 'test2'};
@@ -126,7 +126,7 @@ describe('When using message list resources:', function() {
 
       client.message('test').on(function(msg) {
         if(msg.value.state == 'test3') {
-          //received third message without asserting
+          // Received third message without asserting
           done();
         }
       });

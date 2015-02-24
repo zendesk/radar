@@ -5,7 +5,7 @@ var Resource = require('../../resource.js'),
 
 var default_options = {
   policy: {
-    maxPersistence: 7 * 24 * 60 * 60, // 1 week in seconds
+    maxPersistence: 7 * 24 * 60 * 60,         // 1 week in seconds
     maxLength: 100000
   }
 };
@@ -133,7 +133,7 @@ Stream.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
   Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.parent.server.clients[subscriber];
+    var client = self.clientGet(subscriber);
     if (client && client.send) {
       var sub = self.subscriberState.get(client.id);
       if(sub && sub.sendable(data)) {
@@ -142,7 +142,8 @@ Stream.prototype.redisIn = function(data) {
       }
     }
   });
-  //someone released the lock, wake up
+
+  // Someone released the lock, wake up
   this.list.unblock();
 };
 
