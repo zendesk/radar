@@ -22,7 +22,7 @@ var Client = new ClientScope({
 exports['Radar api tests'] = {
   before: function(done) {
     Common.startPersistence(function() {
-      // create frontend server
+      // Create frontend server
       frontend = http.createServer(function(req, res){ res.end('404 error');});
       Api.attach(frontend);
 

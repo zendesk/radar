@@ -1,3 +1,8 @@
+### 0.14.0
+* Code cleanup
+  - comment capitalization, comment line length, code line length
+  - minor code standardization, minor test code cleanup
+
 ### 0.13.0
 * Set(online) for presence no longer subscribes to the resource.
     - This is a breaking change if the client assumes this behavior
