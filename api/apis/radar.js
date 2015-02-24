@@ -23,7 +23,7 @@ function parseData(response, data, ResourceType) {
     }
   }
 
-  if(!parameters || !parameters.accountName || !parameters.scope) {
+  if (!parameters || !parameters.accountName || !parameters.scope) {
     return jsonResponse(response, {});
   }
 
@@ -116,16 +116,16 @@ function getMessage(req, res) {
 function getPresence(req, res) {
   var parts = url.parse(req.url, true),
       q = parts.query;
-  if(!q || !q.accountName) { return res.end(); }
-  if(!(q.scope || q.scopes)) { return res.end(); }
-  // sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
-  if(q.scope) {
+  if (!q || !q.accountName) { return res.end(); }
+  if (!(q.scope || q.scopes)) { return res.end(); }
+  // Sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
+  if (q.scope) {
     var monitor = new PresenceManager('presence:/'+q.accountName+'/'+q.scope, {}, Presence.sentry);
     monitor.fullRead(function(online) {
       res.setHeader('Content-type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('X-Radar-Host', hostname);
-      if(q.version == 2) {
+      if (q.version == 2) {
         res.end(JSON.stringify(monitor.getClientsOnline())+'\n');
       } else {
         res.end(JSON.stringify(online)+'\n');
@@ -137,7 +137,7 @@ function getPresence(req, res) {
     scopes.forEach(function(scope) {
       var monitor = new PresenceManager('presence:/'+q.accountName+'/'+scope, {}, Presence.sentry);
       monitor.fullRead(function(online) {
-        if(q.version == 2) {
+        if (q.version == 2) {
           result[scope] = monitor.getClientsOnline();
         } else {
           result[scope] = online;

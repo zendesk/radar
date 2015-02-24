@@ -5,7 +5,7 @@ var Resource = require('../../resource.js'),
 
 var default_options = {
   policy: {
-    maxPersistence: 7 * 24 * 60 * 60, // 1 week in seconds
+    maxPersistence: 7 * 24 * 60 * 60,         // 1 week in seconds
     maxLength: 100000
   }
 };
@@ -37,13 +37,13 @@ Stream.prototype._subscribe = function(client, message) {
       from = message.options && message.options.from,
       sub = this.subscriberState.get(client.id);
 
-  if(typeof from === 'undefined' || from < 0) {
+  if (typeof from === 'undefined' || from < 0) {
     return;
   }
 
   sub.startSubscribing(from);
   this._get(from, function(error, values) {
-    if(error) {
+    if (error) {
       var syncError = self._getSyncError(from);
       syncError.op = 'push';
       client.send(syncError);
@@ -70,7 +70,7 @@ Stream.prototype.get = function(client, message) {
   logging.debug('#stream - get', this.name,'from: '+from, (client && client.id));
 
   this._get(from, function(error, values) {
-    if(error) {
+    if (error) {
       var syncError = stream._getSyncError(from);
       syncError.op = 'get';
       syncError.value = [];
@@ -112,7 +112,7 @@ Stream.prototype.push = function(client, message) {
 
 
   this.list.push(m, function(error, stamped) {
-    if(error) {
+    if (error) {
       console.log(error);
       logging.error(error);
       return;
@@ -132,17 +132,18 @@ Stream.prototype.sync = function(client, message) {
 Stream.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
-  Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.parent.server.clients[subscriber];
+  Object.keys(this.subscribers).forEach(function(clientId) {
+    var client = self.clientGet(clientId);
     if (client && client.send) {
       var sub = self.subscriberState.get(client.id);
-      if(sub && sub.sendable(data)) {
+      if (sub && sub.sendable(data)) {
         client.send(data);
         sub.sent = data.id;
       }
     }
   });
-  //someone released the lock, wake up
+
+  // Someone released the lock, wake up
   this.list.unblock();
 };
 

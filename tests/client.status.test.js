@@ -50,7 +50,7 @@ describe('When using status resources', function() {
       });
     });
 
-    // sending a message should only send to each subscriber, but only once
+    // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function(done) {
       var message  = { state: 'test1'},
           finished = {};
@@ -62,7 +62,7 @@ describe('When using status resources', function() {
         assert.equal(message.state, msg.value.state);
         assert.ok( !finished[client_name] );
         finished[client_name] = true;
-        if(finished.client && finished.client2) {
+        if (finished.client && finished.client2) {
           setTimeout(done,30);
         }
       }
@@ -88,8 +88,8 @@ describe('When using status resources', function() {
     });
 
     it('should only receive message when subscribed', function(done) {
-      //send three messages, client2 will assert if it receieves any,
-      //Stop test when we receive all three at client 1
+      // Send three messages, client2 will assert if it receieves any
+      // Stop test when we receive all three at client 1
 
       var message = { state: 'test1'},
           message2 = { state: 'test2' },
@@ -100,7 +100,7 @@ describe('When using status resources', function() {
       });
 
       client.status('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
+        if (msg.value.state == 'test3') {
           done();
         }
       });
@@ -111,9 +111,9 @@ describe('When using status resources', function() {
     });
 
     it('should not receive messages after unsubscribe', function(done) {
-      //send two messages after client2 unsubscribes,
+      // Send two messages after client2 unsubscribes,
       // client2 will assert if it receives message 2 and 3
-      //Stop test when we receive all three at client 1
+      // Stop test when we receive all three at client 1
 
       var message = { state: 'test1'};
       var message2 = { state: 'test2'};
@@ -127,8 +127,8 @@ describe('When using status resources', function() {
       });
 
       client.status('test').on(function(msg) {
-        if(msg.value.state == 'test3') {
-          //received third message without asserting
+        if (msg.value.state == 'test3') {
+          // Received third message without asserting
           done();
         }
       });
@@ -216,12 +216,12 @@ describe('When using status resources', function() {
 
   describe('sync', function() {
     it('calls back with the value, does not notify', function(done) {
-      //Make sure redis message has reflected.
+      // Make sure redis message has reflected.
       client2.status('test').subscribe().set('foo').once(function() {
         client.status('test').on(function(message) {
           assert.ok(false);
         }).sync(function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op);
           assert.deepEqual({ 246: 'foo'}, message.value);
           setTimeout(done,50);
@@ -239,7 +239,7 @@ describe('When using status resources', function() {
           assert.deepEqual(0, message.type);
           done();
         }).sync(function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op);
           assert.deepEqual({ 123: 'foo'}, message.value);
           client.status('test').set('bar');
@@ -249,7 +249,7 @@ describe('When using status resources', function() {
     it('can sync a String', function(done) {
       client.status('test').set('foo', function() {
         client.status('test').sync(function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op);
           assert.deepEqual({ 123: 'foo'}, message.value);
           done();
@@ -259,7 +259,7 @@ describe('When using status resources', function() {
     it('can sync an Object', function(done) {
       client.status('test').set({ foo: 'bar' }, function() {
         client.status('test').sync(function(message) {
-          // sync is implemented as subscribe + get, hence the return op is "get"
+          // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op);
           assert.deepEqual({ 123: { foo: 'bar' } }, message.value);
           done();
@@ -268,7 +268,7 @@ describe('When using status resources', function() {
     });
     it('returns {} when not set', function(done) {
       client.status('test').sync(function(message) {
-        // sync is implemented as subscribe + get, hence the return op is "get"
+        // Sync is implemented as subscribe + get, hence the return op is "get"
         assert.equal('get', message.op);
         assert.deepEqual({}, message.value);
         done();

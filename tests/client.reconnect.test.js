@@ -12,9 +12,9 @@ describe('When radar server restarts', function() {
   var client, client2;
 
   before(function(done) {
-    //FIXME: Need to fix transport.close in radar_client, probably not needed in 0.7.4
-    //Backoff.durations = [ 500, 600, 700, 800, 900 ]; //make them quicker
-    //Backoff.fallback = 200;
+    // FIXME: Need to fix transport.close in radar_client, probably not needed in 0.7.4
+    // Backoff.durations = [ 500, 600, 700, 800, 900 ]; //make them quicker
+    // Backoff.fallback = 200;
     radar = common.spawnRadar();
     radar.sendCommand('start', common.configuration, done);
   });
@@ -77,7 +77,7 @@ describe('When radar server restarts', function() {
 
       var presence_done = tracker('presence updated');
       client.presence('restore').on(function (message) {
-        if(message.op === 'online') {
+        if (message.op === 'online') {
           assert.equal(message.to, 'presence:/test/restore');
           presence_done();
         }
@@ -122,8 +122,8 @@ describe('When radar server restarts', function() {
       client2.alloc('test', function() {
         client.message('foo').on(function(msg) {
           messages.push(msg);
-          if(messages.length == 2) {
-            //when we have enough, wait a while and check
+          if (messages.length == 2) {
+            // When we have enough, wait a while and check
             setTimeout(verifySubscriptions, 100);
           }
         }).sync();

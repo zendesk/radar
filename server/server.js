@@ -16,7 +16,7 @@ function parseJSON(data) {
 
 function Server() {
   this.server = null;
-  this.channels = {};
+  this.resources = {};
   this.subscriber = null;
   this.subs = {};
 }
@@ -36,7 +36,7 @@ Server.prototype._setup = function(http_server, configuration) {
   configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
-  this.subscriber.on('message', this.handleMessage.bind(this));
+  this.subscriber.on('message', this.handlePubSubMessage.bind(this));
 
   Core.Resources.Presence.sentry.start();
   Core.Resources.Presence.sentry.setMaxListeners(0);
@@ -46,7 +46,8 @@ Server.prototype._setup = function(http_server, configuration) {
     engine = configuration.engineio.module;
     engineConf = configuration.engineio.conf;
 
-    this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default';
+    this.engineioPath = configuration.engineio.conf ?
+                configuration.engineio.conf.path : 'default';
   }
 
   this.server = engine.attach(http_server, engineConf);
@@ -60,13 +61,13 @@ Server.prototype.onClientConnection = function(client) {
   var self = this;
   var oldSend = client.send;
 
-  // always send data as json
+  // Always send data as json
   client.send = function(data) {
     logging.info('#client - sending data', client.id, data);
     oldSend.call(client, JSON.stringify(data));
   };
 
-  // event: client connected
+  // Event: client connected
   logging.info('#client - connect', client.id);
 
   client.send({
@@ -79,20 +80,20 @@ Server.prototype.onClientConnection = function(client) {
   });
 
   client.on('close', function() {
-    // event: client disconnected
+    // Event: client disconnected
     logging.info('#client - disconnect', client.id);
 
-    Object.keys(self.channels).forEach(function(name) {
-      var channel = self.channels[name];
-      if (channel.subscribers[client.id]) {
-        channel.unsubscribe(client, false);
+    Object.keys(self.resources).forEach(function(name) {
+      var resource = self.resources[name];
+      if (resource.subscribers[client.id]) {
+        resource.unsubscribe(client, false);
       }
     });
   });
 };
 
-Server.prototype.handleMessage = function(name, data) {
-  if (this.channels[name]) {
+Server.prototype.handlePubSubMessage = function(name, data) {
+  if (this.resources[name]) {
     try {
       data = JSON.parse(data);
     } catch(parseError) {
@@ -100,9 +101,11 @@ Server.prototype.handleMessage = function(name, data) {
       return;
     }
 
-    this.channels[name].redisIn(data);
+    this.resources[name].redisIn(data);
   } else {
-    if(name == Core.Presence.Sentry.channel) return; //limit unwanted logs
+    // Don't log sentry channel pub messages
+    if (name == Core.Presence.Sentry.channel) return;
+
     logging.warn('#redis - message not handled', name, data);
   }
 };
@@ -111,27 +114,29 @@ Server.prototype.handleMessage = function(name, data) {
 Server.prototype.message = function(client, data) {
   var message = parseJSON(data);
 
-  // format check
-  if(!message || !message.op || !message.to) {
+  // Format check
+  if (!message || !message.op || !message.to) {
     logging.warn('#client.message - rejected', (client && client.id), data);
     return;
   }
 
   logging.info('#client.message - received', (client && client.id), message,
-     (this.channels[message.to] ? 'exists' : 'not instantiated'),
+     (this.resources[message.to] ? 'exists' : 'not instantiated'),
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
 
-  var resource = this.resource(message.to);
+  var resource = this.resourceGet(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    if(!this.subs[resource.name]) {
+    if (!this.subs[resource.name]) {
       logging.info('#redis - subscribe', resource.name, (client && client.id));
       this.subscriber.subscribe(resource.name, function(err) {
-        if(err) {
-          logging.error('#redis - subscribe failed', resource.name, (client && client.id), err);
+        if (err) {
+          logging.error('#redis - subscribe failed', resource.name,
+                                          (client && client.id), err);
         } else {
-          logging.info('#redis - subscribe successful', resource.name, (client && client.id));
+          logging.info('#redis - subscribe successful', resource.name,
+                                          (client && client.id));
         }
       });
       this.subs[resource.name] = true;
@@ -148,26 +153,26 @@ Server.prototype.message = function(client, data) {
   }
 };
 
-// Get or create channel by name
-Server.prototype.resource = function(name) {
-  if (!this.channels[name]) {
+// Get or create resource by name
+Server.prototype.resourceGet = function(name) {
+  if (!this.resources[name]) {
     var definition = Type.getByExpression(name);
 
     if (definition && Core.Resources[definition.type]) {
-      this.channels[name] = new Core.Resources[definition.type](name, this, definition);
+      this.resources[name] = new Core.Resources[definition.type](name, this, definition);
     } else {
       logging.error('#resource - unknown_type', name, definition);
     }
   }
-  return this.channels[name];
+  return this.resources[name];
 };
 
-// Destroy empty channel
-Server.prototype.destroy = function(name) {
-  if(this.channels[name]) {
-    this.channels[name].destroy();
+// Destroy empty resource
+Server.prototype.destroyResource = function(name) {
+  if (this.resources[name]) {
+    this.resources[name].destroy();
   }
-  delete this.channels[name];
+  delete this.resources[name];
   delete this.subs[name];
   logging.info('#redis - unsubscribe', name);
   this.subscriber.unsubscribe(name);
@@ -175,8 +180,8 @@ Server.prototype.destroy = function(name) {
 
 Server.prototype.terminate = function(done) {
   var self = this;
-  Object.keys(this.channels).forEach(function(name) {
-    self.destroy(name);
+  Object.keys(this.resources).forEach(function(name) {
+    self.destroyResource(name);
   });
 
   Core.Resources.Presence.sentry.stop();

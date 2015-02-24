@@ -4,9 +4,7 @@ var http = require('http'),
     Api = require('./api/api.js'),
     Minilog = require('minilog');
 
-var server;
-
-// configure log output
+// Configure log output
 Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
     .pipe(Minilog.backends.nodeConsole.formatWithStack)
     .pipe(Minilog.backends.nodeConsole);
@@ -17,7 +15,8 @@ function p404(req, res){
   res.end('404 Not Found');
 }
 
-server = http.createServer(p404);
+var server = http.createServer(p404);
+
 // Radar API
 Api.attach(server);
 

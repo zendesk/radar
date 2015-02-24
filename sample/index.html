@@ -75,7 +75,7 @@ RadarClient.configure({
     <div id="messages"></div>
 
     <input type="text" id="send" onkeypress="e = event;
-      if(e.which == 13) {
+      if (e.which == 13) {
         e.preventDefault();
         RadarClient.message('chat/foo/messages').publish(this.value);
         this.value = '';
