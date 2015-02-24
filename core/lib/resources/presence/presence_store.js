@@ -51,7 +51,6 @@ PresenceStore.prototype.remove = function(clientId, userId, data) {
   logging.debug('#presence - store.remove', userId, clientId, data, this.scope);
   this.cacheRemove(clientId);
 
-  // When non-existent, return
   if (!this.map[userId] || !this.map[userId][clientId]) {
     return;
   }
@@ -77,7 +76,6 @@ PresenceStore.prototype.removeClient = function(clientId, data) {
   var userId = this.clientUserMap[clientId];
   this.cacheRemove(clientId);
 
-  // When non-existent, return
   if (!userId) {
     logging.warn('#presence - store.removeClient: cannot find data for',
                                                       clientId, this.scope);

@@ -199,7 +199,6 @@ PresenceManager.prototype._implicitDisconnect = function(clientId, userId,
 };
 
 PresenceManager.prototype.isOnline = function(message) {
-  // Return with online, or with sentry, or with unexpired legacy msg
   return (message.online && (message.sentry ||
        (message.at && message.at >= (Date.now() - PresenceManager.autoPubTimeout))));
 };
@@ -270,7 +269,7 @@ PresenceManager.prototype.handleOffline = function(clientId, userId, userType, e
   };
 
   // Only if explicit present and false.
-  // When user has an expiry timer running, then don't force remove yet
+  // When user has an expiry timer running, don't force remove the user yet
   // Remove user after 15 seconds when no other clients exist
   if (explicit === false || this.isUserExpiring(userId)) {
     this.store.removeClient(clientId, message);

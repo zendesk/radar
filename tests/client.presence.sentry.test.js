@@ -82,7 +82,10 @@ describe('given a client and a server,', function() {
           assert.ok((ts[2] - ts[1]) < 6000, 'sentry expiry was '+(ts[2] - ts[1]));
           // user expiry = 1000
           assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
+<<<<<<< HEAD
+=======
           // user expiry = 1000
+>>>>>>> origin/master
           assert.ok((ts[3] - ts[2]) < 2000, 'user expiry was '+(ts[3] - ts[2]));
           done();
         };
@@ -122,9 +125,6 @@ describe('given a client and a server,', function() {
             assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1]));
             // user expiry = 1000
             assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
-            // user expiry = 1000
-            assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
-            // user expiry = 1000
             assert.ok((ts[3] - ts[2]) < 1900, 'user expiry was '+(ts[3] - ts[2]));
             done();
           };
