@@ -128,11 +128,7 @@ PresenceStore.prototype.forEachClient = function(callback) {
 };
 
 PresenceStore.prototype.userEmpty = function(userId) {
-  if (this.map[userId] &&
-     Object.keys(this.map[userId]).length === 0) {
-    return true;
-  }
-  return false;
+  return !!(this.map[userId] && Object.keys(this.map[userId]).length === 0);
 };
 
 PresenceStore.prototype.userTypeOf = function(userId) {

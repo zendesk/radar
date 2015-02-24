@@ -71,25 +71,14 @@ Resource.prototype.unsubscribe = function(client, message) {
   this.ack(client, message && message.ack);
 };
 
-var noop = function(name) {
-  return function() {
-    logging.error('#'+this.type+ '- undefined_method called for resource',
-                                                              name, this.name);
-  };
-};
-
-'get set sync publish'.split(' ').forEach(function(method) {
-  Resource.prototype[method] = noop(method);
-});
-
 // Send to Engine.io clients
 Resource.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:',
                                           Object.keys(this.subscribers).length );
 
-  Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.clientGet(subscriber);
+  Object.keys(this.subscribers).forEach(function(clientId) {
+    var client = self.clientGet(clientId);
     if (client && client.send) {
       client.send(data);
     }

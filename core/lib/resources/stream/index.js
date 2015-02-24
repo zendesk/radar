@@ -132,8 +132,8 @@ Stream.prototype.sync = function(client, message) {
 Stream.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
-  Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.clientGet(subscriber);
+  Object.keys(this.subscribers).forEach(function(clientId) {
+    var client = self.clientGet(clientId);
     if (client && client.send) {
       var sub = self.subscriberState.get(client.id);
       if (sub && sub.sendable(data)) {

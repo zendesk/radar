@@ -191,8 +191,8 @@ Presence.prototype.get = function(client, message) {
 Presence.prototype.broadcast = function(message, except) {
   logging.debug('#presence - update subscribed clients', message, except, this.name);
   var self = this;
-  Object.keys(this.subscribers).forEach(function(subscriber) {
-    var client = self.clientGet(subscriber);
+  Object.keys(this.subscribers).forEach(function(clientId) {
+    var client = self.clientGet(clientId);
     if (client && client.id != except && self.subscribers[client.id].listening) {
       client.send(message);
     } else {
