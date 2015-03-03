@@ -114,7 +114,7 @@ PresenceManager.prototype.addClient = function(clientId, userOpts, callback) {
     userData: userOpts.userData,
     clientId: clientId,
     online:   true,
-    state:    userOpts.state,
+    state:    userOpts.state || null,
     sentry:   this.sentry.name
   };
 
@@ -340,7 +340,7 @@ PresenceManager.prototype.getClientsOnline = function() {
     result[message.userId] = result[message.userId] || { clients: { } , userType: message.userType };
     result[message.userId].clients[message.clientId] = {
       userData: message.userData,
-      state: typeof message.state !== 'undefined' ? message.state : null
+      state: message.state
     };
   }
 
