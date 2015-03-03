@@ -14,6 +14,8 @@ describe('given a client and a server,', function() {
   var p, sentry = new Sentry('test-sentry');
   var presenceManager = new PresenceManager('presence:/dev/test',{}, sentry);
   var stampExpiration = presenceManager.stampExpiration;
+  var abc_opts = { userId: 100, userType: 2, userData: { name: 'tester' }, state: null };
+
   before(function(done) {
     common.startPersistence(function() {
       radar = common.spawnRadar();
@@ -72,7 +74,7 @@ describe('given a client and a server,', function() {
           p.assert_message_sequence([ 'online', 'client_online' ]);
           done();
         };
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+        presenceManager.addClient('abc', abc_opts);
 
         p.fail_on_more_than(2);
         p.on(2, function() {
@@ -85,8 +87,8 @@ describe('given a client and a server,', function() {
           p.assert_message_sequence([ 'online', 'client_online' ]);
           done();
         };
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+        presenceManager.addClient('abc', abc_opts);
+        presenceManager.addClient('abc', abc_opts);
         p.on(2, function() {
           setTimeout(validate, 20);
         });
@@ -94,7 +96,7 @@ describe('given a client and a server,', function() {
 
       it('should ignore messages from dead servers (sentry expired and gone)', function(done) {
         sentry.name = 'dead';
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+        presenceManager.addClient('abc', abc_opts);
         p.fail_on_any_message();
         setTimeout(done, 10);
       });
@@ -102,7 +104,7 @@ describe('given a client and a server,', function() {
       it('should ignore messages from dead servers (sentry expired but not gone)', function(done) {
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+        presenceManager.addClient('abc', abc_opts);
         p.fail_on_any_message();
         setTimeout(done, 10);
       });
@@ -117,7 +119,7 @@ describe('given a client and a server,', function() {
             p.assert_message_sequence([ 'online', 'client_online' ]);
             done();
           };
-          presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+          presenceManager.addClient('abc', abc_opts);
 
           p.fail_on_more_than(2);
           p.on(2, function() {
@@ -129,7 +131,7 @@ describe('given a client and a server,', function() {
           presenceManager.stampExpiration = function(message) {
             message.at = Date.now() - 5000;
           };
-          presenceManager.addClient('abc', 100, 2, { name: 'tester' });
+          presenceManager.addClient('abc', abc_opts);
           p.fail_on_any_message();
           setTimeout(done, 10);
         });
@@ -137,7 +139,7 @@ describe('given a client and a server,', function() {
     });
     describe('for incoming offline messages,', function() {
       beforeEach(function(done) {
-        presenceManager.addClient('abc', 100, 2, { name: 'tester' }, done);
+        presenceManager.addClient('abc', abc_opts, done);
       });
 
       it('should emit user/client offline for explicit disconnect', function(done) {
@@ -145,7 +147,7 @@ describe('given a client and a server,', function() {
           p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ]);
           done();
         };
-        presenceManager.removeClient('abc', 100, 2);
+        presenceManager.removeClient('abc', abc_opts);
         p.on(4, function() {
           setTimeout(validate,10);
         });
@@ -156,8 +158,8 @@ describe('given a client and a server,', function() {
           p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ]);
           done();
         };
-        presenceManager.removeClient('abc', 100, 2);
-        presenceManager.removeClient('abc', 100, 2);
+        presenceManager.removeClient('abc', abc_opts);
+        presenceManager.removeClient('abc', abc_opts);
         p.on(4, function() {
           setTimeout(validate, 10);
         });
@@ -201,21 +203,26 @@ describe('given a client and a server,', function() {
 
 
   describe('with existing persistence entries, ', function() {
-    var clients = {};
-    beforeEach(function(done) {
-      sentry.name = 'server1';
-      sentry.publishKeepAlive();
-      presenceManager.addClient('abc', 100, 2, { name: 'tester1' });
-      sentry.name = 'server2';
-      sentry.publishKeepAlive();
-      presenceManager.addClient('def', 200, 0, { name: 'tester2' }, done);
-      clients =  {
+    var clients =  {
         abc: { clientId: 'abc', userId: 100, userType: 2, userData: { name: 'tester1' } },
         def: { clientId: 'def', userId: 200, userType: 0, userData: { name: 'tester2' } },
         hij: { clientId: 'hij', userId: 300, userType: 2, userData: { name: 'tester3' } },
         pqr: { clientId: 'pqr', userId: 100, userType: 2, userData: { name: 'tester1' } },
         klm: { clientId: 'klm', userId: 400, userType: 2, userData: { name: 'tester4' } }
       };
+    var abc_opts = { userId: 100, userType: 2, userData: { name: 'tester1' }, state: null };
+    var def_opts = { userId: 200, userType: 0, userData: { name: 'tester2' }, state: null };
+    var hij_opts = { userId: 300, userType: 2, userData: { name: 'tester3' }, state: null };
+    var pqr_opts = { userId: 100, userType: 2, userData: { name: 'tester1' }, state: null };
+    var klm_opts = { userId: 400, userType: 2, userData: { name: 'tester4' }, state: null };
+
+    beforeEach(function(done) {
+      sentry.name = 'server1';
+      sentry.publishKeepAlive();
+      presenceManager.addClient('abc', abc_opts);
+      sentry.name = 'server2';
+      sentry.publishKeepAlive();
+      presenceManager.addClient('def', def_opts, done);
     });
 
     describe('when syncing (v2), ', function() {
@@ -246,7 +253,7 @@ describe('given a client and a server,', function() {
           assert.ok(callback);
           done();
         };
-        presenceManager.addClient('pqr', 100, 2, { name: 'tester1' }, function() {
+        presenceManager.addClient('pqr', pqr_opts, function() {
           client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
             p.for_online_clients(clients.abc, clients.def, clients.pqr)
               .assert_sync_v2_response(message);
@@ -281,7 +288,7 @@ describe('given a client and a server,', function() {
         p.on(4, function() {
           sentry.name = 'server1';
           sentry.publishKeepAlive();
-          presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
+          presenceManager.addClient('hij', hij_opts);
         });
 
         p.fail_on_more_than(6);
@@ -299,7 +306,7 @@ describe('given a client and a server,', function() {
         };
 
         sentry.name = 'unknown';
-        presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+        presenceManager.addClient('klm', klm_opts, function() {
           client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
             p.for_online_clients(clients.abc, clients.def).assert_sync_v2_response(message);
             callback = true;
@@ -322,7 +329,7 @@ describe('given a client and a server,', function() {
 
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
-        presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+        presenceManager.addClient('klm', klm_opts, function() {
           client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
             p.for_online_clients(clients.abc, clients.def)
               .assert_sync_v2_response(message);
@@ -349,7 +356,7 @@ describe('given a client and a server,', function() {
             message.at = Date.now();
           };
 
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+          presenceManager.addClient('klm', klm_opts, function() {
             client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
               p.for_online_clients(clients.abc, clients.def, clients.klm)
                 .assert_sync_v2_response(message);
@@ -376,7 +383,7 @@ describe('given a client and a server,', function() {
             message.at = Date.now() - 30000;
           };
 
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+          presenceManager.addClient('klm', klm_opts, function() {
             client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
               p.for_online_clients(clients.abc, clients.def)
                 .assert_sync_v2_response(message);
@@ -429,7 +436,7 @@ describe('given a client and a server,', function() {
           // After sync's online has come, add another client
           sentry.name = 'server1';
           sentry.publishKeepAlive();
-          presenceManager.addClient('hij', 300, 2, { name: 'tester3' });
+          presenceManager.addClient('hij', hij_opts);
         });
 
         p.on(6, function() {
@@ -454,7 +461,7 @@ describe('given a client and a server,', function() {
 
       it('should ignore dead server clients (sentry expired and gone)', function(done) {
         sentry.name = 'unknown';
-        presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+        presenceManager.addClient('klm', klm_opts, function() {
           client.presence('test').on(p.notify).get(function(message) {
             p.for_online_clients(clients.abc, clients.def)
               .assert_get_response(message);
@@ -468,7 +475,7 @@ describe('given a client and a server,', function() {
       it('should ignore dead server clients (sentry expired but not gone)', function(done) {
         sentry.name = 'expired';
         sentry.publishKeepAlive({ expiration: Date.now() - 10});
-        presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+        presenceManager.addClient('klm', klm_opts, function() {
           client.presence('test').on(p.notify).get(function(message) {
             p.for_online_clients(clients.abc, clients.def)
               .assert_get_response(message);
@@ -488,7 +495,7 @@ describe('given a client and a server,', function() {
             message.at = Date.now();
           };
 
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+          presenceManager.addClient('klm', klm_opts, function() {
             client.presence('test').on(p.notify).get(function(message) {
               p.for_online_clients(clients.abc, clients.def, clients.klm)
                 .assert_get_response(message);
@@ -505,7 +512,7 @@ describe('given a client and a server,', function() {
             message.at = Date.now() - 5000;
           };
 
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
+          presenceManager.addClient('klm', klm_opts, function() {
             client.presence('test').on(p.notify).get(function(message) {
               p.for_online_clients(clients.abc, clients.def)
                 .assert_get_response(message);

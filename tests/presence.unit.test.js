@@ -26,6 +26,8 @@ describe('given a presence resource',function() {
   beforeEach(function(done) {
     Persistence.delWildCard('*', function() {
       Presence.sentry.start();
+      Presence.sentry.setMaxListeners(1000);
+
       presence = new Presence('aaa', Server, {});
       client = new MiniEE();
       client.send = function() {};

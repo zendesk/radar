@@ -14,7 +14,8 @@ describe('given a client and a server,', function() {
   var p, sentry = new Sentry('test-sentry');
   var presenceManager = new PresenceManager('presence:/dev/test', {}, sentry);
   var publish_client_online = function(client) {
-    presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData);
+    var userOpts = { userId: client.userId, userType: client.userType, userData: client.userData, state: null };
+    presenceManager.addClient(client.clientId, userOpts);
   };
   var publish_autopub = function(client) {
     delete sentry.name;
