@@ -107,24 +107,15 @@ PresenceManager.prototype.stampExpiration = function(message) {
   message.at = Date.now() + PresenceManager.messageExpiry;
 };
 
-PresenceManager.prototype.addClient = function(clientId, userId, userType, userData, state, callback) {
-  if(typeof callback === 'undefined') {
-    if (typeof state === 'function') {
-      callback = state;
-      state = null;
-    } else if (typeof state === 'undefined') {
-      state = null;
-    }
-  }
-
+PresenceManager.prototype.addClient = function(clientId, userOpts, callback) {
   var message = {
-    userId: userId,
-    userType: userType,
-    userData: userData,
+    userId:   userOpts.userId,
+    userType: userOpts.userType,
+    userData: userOpts.userData,
     clientId: clientId,
-    online: true,
-    state: state,
-    sentry: this.sentry.name
+    online:   true,
+    state:    userOpts.state,
+    sentry:   this.sentry.name
   };
 
   this.stampExpiration(message);
@@ -132,7 +123,7 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType, userD
   //we might need the details before we actually do a store.add
   this.store.cacheAdd(clientId, message);
 
-  Persistence.persistHash(this.scope, userId + '.' + clientId, message);
+  Persistence.persistHash(this.scope, userOpts.userId + '.' + clientId, message);
 
   if(this.policy && this.policy.maxPersistence) {
     Persistence.expire(this.scope, this.policy.maxPersistence);
@@ -142,17 +133,17 @@ PresenceManager.prototype.addClient = function(clientId, userId, userType, userD
 };
 
 // explicit disconnect (set('offline'))
-PresenceManager.prototype.removeClient = function(clientId, userId, userType, callback) {
+PresenceManager.prototype.removeClient = function(clientId, userOpts, callback) {
   var message = {
-    userId: userId,
-    userType: userType,
+    userId:   userOpts.userId,
+    userType: userOpts.userType,
     clientId: clientId,
-    online: false,
+    online:   false,
     explicit: true
   };
   this.stampExpiration(message);
 
-  Persistence.deleteHash(this.scope, userId + '.' + clientId);
+  Persistence.deleteHash(this.scope, userOpts.userId + '.' + clientId);
   Persistence.publish(this.scope, message, callback);
 };
 

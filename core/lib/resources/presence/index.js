@@ -119,14 +119,16 @@ Presence.prototype.set = function(client, message) {
     // we use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(client);
     var state = message.value != 'online' ? message.value : null;
-    this.manager.addClient(client.id, userId, message.type, message.userData, state, ackCheck);
+    var userOpts = { userId: userId, userType: message.type, userData: message.userData, state: state };
+    this.manager.addClient(client.id, userOpts, ackCheck);
   } else {
     if(!this.subscribers[client.id]) { //if this is client is not subscribed
       //This is possible if a client does .set('offline') without set-online/sync/subscribe
       Resource.prototype.unsubscribe.call(this, client, message);
     } else {
       // remove from local
-      this.manager.removeClient(client.id, userId, message.type, ackCheck);
+      var userOpts = { userId: userId, userType: message.type };
+      this.manager.removeClient(client.id, userOpts, ackCheck);
     }
   }
 };
