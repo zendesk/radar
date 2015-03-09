@@ -5,23 +5,14 @@ var MiniEventEmitter = require('miniee'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
 
-// Parse JSON
-function parseJSON(data) {
-  try {
-    var message = JSON.parse(data);
-    return message;
-  } catch(e) { }
-  return false;
-}
-
-MiniEventEmitter.mixin(Server);
-
 function Server() {
   this.server = null;
   this.resources = {};
   this.subscriber = null;
   this.subs = {};
 }
+
+MiniEventEmitter.mixin(Server);
 
 // Public API
 
@@ -139,7 +130,7 @@ Server.prototype._handlePubSubMessage = function(name, data) {
 
 // Process a client message
 Server.prototype._handleClientMessage = function(client, data) {
-  var message = parseJSON(data);
+  var message = _parseJSON(data);
 
   // Format check
   if (!message || !message.op || !message.to) {
@@ -193,5 +184,13 @@ Server.prototype._resourceGet = function(name) {
   }
   return this.resources[name];
 };
+
+function _parseJSON(data) {
+  try {
+    var message = JSON.parse(data);
+    return message;
+  } catch(e) { }
+  return false;
+}
 
 module.exports = Server;
