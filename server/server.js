@@ -5,15 +5,6 @@ var MiniEventEmitter = require('miniee'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
 
-// Parse JSON
-function parseJSON(data) {
-  try {
-    var message = JSON.parse(data);
-    return message;
-  } catch(e) { }
-  return false;
-}
-
 function Server() {
   this.server = null;
   this.resources = {};
@@ -23,11 +14,37 @@ function Server() {
 
 MiniEventEmitter.mixin(Server);
 
+// Public API
+
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {
   Core.Persistence.setConfig(configuration);
   Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
 };
+
+// Destroy empty resource
+Server.prototype.destroyResource = function(name) {
+  if (this.resources[name]) {
+    this.resources[name].destroy();
+  }
+  delete this.resources[name];
+  delete this.subs[name];
+  logging.info('#redis - unsubscribe', name);
+  this.subscriber.unsubscribe(name);
+};
+
+Server.prototype.terminate = function(done) {
+  var self = this;
+  Object.keys(this.resources).forEach(function(name) {
+    self.destroyResource(name);
+  });
+
+  Core.Resources.Presence.sentry.stop();
+  this.server.close();
+  Core.Persistence.disconnect(done);
+};
+
+// Private API
 
 Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
@@ -36,7 +53,7 @@ Server.prototype._setup = function(http_server, configuration) {
   configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
-  this.subscriber.on('message', this.handlePubSubMessage.bind(this));
+  this.subscriber.on('message', this._handlePubSubMessage.bind(this));
 
   Core.Resources.Presence.sentry.start();
   Core.Resources.Presence.sentry.setMaxListeners(0);
@@ -51,13 +68,13 @@ Server.prototype._setup = function(http_server, configuration) {
   }
 
   this.server = engine.attach(http_server, engineConf);
-  this.server.on('connection', this.onClientConnection.bind(this));
+  this.server.on('connection', this._onClientConnection.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
 };
 
-Server.prototype.onClientConnection = function(client) {
+Server.prototype._onClientConnection = function(client) {
   var self = this;
   var oldSend = client.send;
 
@@ -76,7 +93,7 @@ Server.prototype.onClientConnection = function(client) {
   });
 
   client.on('message', function(data) {
-    self.message(client, data);
+    self._handleClientMessage(client, data);
   });
 
   client.on('close', function() {
@@ -92,7 +109,8 @@ Server.prototype.onClientConnection = function(client) {
   });
 };
 
-Server.prototype.handlePubSubMessage = function(name, data) {
+// Process a persistence (i.e. subscriber) message
+Server.prototype._handlePubSubMessage = function(name, data) {
   if (this.resources[name]) {
     try {
       data = JSON.parse(data);
@@ -110,9 +128,9 @@ Server.prototype.handlePubSubMessage = function(name, data) {
   }
 };
 
-// Process a message
-Server.prototype.message = function(client, data) {
-  var message = parseJSON(data);
+// Process a client message
+Server.prototype._handleClientMessage = function(client, data) {
+  var message = _parseJSON(data);
 
   // Format check
   if (!message || !message.op || !message.to) {
@@ -125,7 +143,7 @@ Server.prototype.message = function(client, data) {
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
 
-  var resource = this.resourceGet(message.to);
+  var resource = this._resourceGet(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
     if (!this.subs[resource.name]) {
@@ -154,7 +172,7 @@ Server.prototype.message = function(client, data) {
 };
 
 // Get or create resource by name
-Server.prototype.resourceGet = function(name) {
+Server.prototype._resourceGet = function(name) {
   if (!this.resources[name]) {
     var definition = Type.getByExpression(name);
 
@@ -167,26 +185,12 @@ Server.prototype.resourceGet = function(name) {
   return this.resources[name];
 };
 
-// Destroy empty resource
-Server.prototype.destroyResource = function(name) {
-  if (this.resources[name]) {
-    this.resources[name].destroy();
-  }
-  delete this.resources[name];
-  delete this.subs[name];
-  logging.info('#redis - unsubscribe', name);
-  this.subscriber.unsubscribe(name);
-};
-
-Server.prototype.terminate = function(done) {
-  var self = this;
-  Object.keys(this.resources).forEach(function(name) {
-    self.destroyResource(name);
-  });
-
-  Core.Resources.Presence.sentry.stop();
-  this.server.close();
-  Core.Persistence.disconnect(done);
-};
+function _parseJSON(data) {
+  try {
+    var message = JSON.parse(data);
+    return message;
+  } catch(e) { }
+  return false;
+}
 
 module.exports = Server;
