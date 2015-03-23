@@ -103,6 +103,7 @@ Resource.prototype.ack = function(client, sendAck) {
 
 Resource.prototype.authorize = function(message, client) {
   var authProvider = this.options.authProvider;
+  //console.log('authProvider:', authProvider);
   if (authProvider && authProvider.authorize) {
     return authProvider.authorize(this.options, message, client);
   }

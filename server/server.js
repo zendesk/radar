@@ -6,6 +6,8 @@ var MiniEventEmitter = require('miniee'),
     DefaultEngineIO = require('engine.io');
 
 function Server() {
+  this.clientData = {};
+  this.clientNames = {};
   this.server = null;
   this.resources = {};
   this.subscriber = null;
@@ -46,6 +48,12 @@ Server.prototype.terminate = function(done) {
 
 // Private API
 
+// 86400000:  number of milliseconds in 1 day
+var DEFAULT_TTL = 50000;
+
+// 900000:  number of milliseconds in 15 minutes
+var DEFAULT_PERIOD = 20000;
+
 Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
@@ -67,6 +75,11 @@ Server.prototype._setup = function(http_server, configuration) {
                 configuration.engineio.conf.path : 'default';
   }
 
+  // Set up unique name for server
+  this.name = hostname + '_' + configuration.port;
+
+  this._setupClientData(configuration);
+
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this._onClientConnection.bind(this));
 
@@ -87,11 +100,6 @@ Server.prototype._onClientConnection = function(client) {
   // Event: client connected
   logging.info('#client - connect', client.id);
 
-  client.send({
-    server: hostname,
-    cid: client.id
-  });
-
   client.on('message', function(data) {
     self._handleClientMessage(client, data);
   });
@@ -109,7 +117,7 @@ Server.prototype._onClientConnection = function(client) {
   });
 };
 
-// Process a persistence (i.e. subscriber) message
+// Process a message from persistence (i.e. subscriber)
 Server.prototype._handlePubSubMessage = function(name, data) {
   if (this.resources[name]) {
     try {
@@ -132,13 +140,31 @@ Server.prototype._handlePubSubMessage = function(name, data) {
 Server.prototype._handleClientMessage = function(client, data) {
   var message = _parseJSON(data);
 
-  // Format check
-  if (!message || !message.op || !message.to) {
-    logging.warn('#client.message - rejected', (client && client.id), data);
+  if (!client) {
+    logging.info('_handleClientMessage: client is NULL...');
     return;
   }
 
-  logging.info('#client.message - received', (client && client.id), message,
+  // Format check
+  if (!message || !message.op || !message.to) {
+    logging.warn('#client.message - rejected', client.id, data);
+    return;
+  }
+
+  // Sync the client name to the current client id
+  if (message.op == 'name_id_sync') {
+    this.clientNames[message.value.id] = message.value.name;
+    //console.log('***** client.id', message.value.id, 'client name', message.value.name);
+    return;
+  }
+
+  if (!this._clientDataStore(client.id, message)) {
+    return;
+  }
+
+  console.log('_handleClientMessage:', this.clientData);
+
+  logging.info('#client.message - received', client.id, message,
      (this.resources[message.to] ? 'exists' : 'not instantiated'),
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
@@ -146,19 +172,7 @@ Server.prototype._handleClientMessage = function(client, data) {
   var resource = this._resourceGet(message.to);
 
   if (resource && resource.authorize(message, client, data)) {
-    if (!this.subs[resource.name]) {
-      logging.info('#redis - subscribe', resource.name, (client && client.id));
-      this.subscriber.subscribe(resource.name, function(err) {
-        if (err) {
-          logging.error('#redis - subscribe failed', resource.name,
-                                          (client && client.id), err);
-        } else {
-          logging.info('#redis - subscribe successful', resource.name,
-                                          (client && client.id));
-        }
-      });
-      this.subs[resource.name] = true;
-    }
+    this._persistenceSubscribe(resource.name, client.id)
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
   } else {
@@ -170,6 +184,21 @@ Server.prototype._handleClientMessage = function(client, data) {
     });
   }
 };
+
+// Subscribe to the persistence pubsub channel for a single resource
+Server.prototype._persistenceSubscribe = function (name, id) {
+  if (!this.subs[name]) {
+    logging.info('#redis - subscribe', name, id);
+    this.subscriber.subscribe(name, function(err) {
+      if (err) {
+        logging.error('#redis - subscribe failed', name, id, err);
+      } else {
+        logging.info('#redis - subscribe successful', name, id);
+      }
+    });
+    this.subs[name] = true;
+  }
+}
 
 // Get or create resource by name
 Server.prototype._resourceGet = function(name) {
@@ -191,6 +220,134 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
+}
+
+Server.prototype._clientDataStore = function (id, message) {
+  var clientName;
+  console.log('message0:', message);
+  if (this.clientNames[id]) {
+    clientName = this.clientNames[id];
+  }
+  else {
+    logging.error('client.id:', id, 'does not have corresponding name');
+    console.log('Did NOT find client name for client.id', id);
+    return false;
+  }
+
+  // Fetch the current instance, or create a new one
+  var clientDatum = this.clientData[clientName];
+  if (!clientDatum) {
+    clientDatum = {
+      timestamp: Date.now(),
+      subscriptions : {},
+      presences : {}
+    };
+    this.clientData[clientName] = clientDatum;
+  }
+  subscriptions = clientDatum.subscriptions;
+  presences = clientDatum.presences;
+
+  // Persist the message data, according to type
+  var changed = true;
+  switch(message.op) {
+    case 'unsubscribe':
+      if (subscriptions[message.to]) {
+        delete subscriptions[message.to];
+      }
+      break;
+
+    case 'sync':
+    case 'subscribe':
+      clientDatum.timestamp = Date.now();
+      subscriptions[message.to] = message.op;
+      break;
+
+    case 'set':
+      clientDatum.timestamp = Date.now();
+      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
+        presences[message.to] = message.value;
+      }
+      break;
+
+    default:
+      changed = false;
+  }
+
+  // TODO: perhaps do this every N "stores"
+  if (changed) {
+    Core.Persistence.persistHash(this.name, clientName, clientDatum);
+  }
+
+  return true;
+};
+
+// Determine whether or not client data is current for a given clientName
+Server.prototype._isCurrent = function(clientName, timestamp) {
+  var current = timestamp + this.clientDataOnServerTTL >= Date.now();
+
+  console.log('timestamp + this.clientDataOnServerTTL:',
+                timestamp + this.clientDataOnServerTTL, 'Date.now():', Date.now());
+
+  logging.debug('#clientdata - _isCurrent', clientName, current,
+                    !!timestamp ? timestamp : 'not-present');
+  return current;
+};
+
+// For a given clientName, remove client data from persistence and from memory
+Server.prototype._purgeClientData = function(clientName) {
+  if (this.clientData[clientName] &&
+          !this._isCurrent(clientName, this.clientData[clientName].timestamp)) {
+
+    Core.Persistence.deleteHash(this.name, clientName);
+    delete this.clientData[clientName];
+
+    console.log('#clientdata - purge data for clientName:', clientName);
+    console.log('#clientdata - remaining data:', this.clientData);
+    console.log('#clientdata - remaining names:', this.clientNames);
+
+    logging.info('#clientdata - remove for clientName:', clientName);
+  }
+};
+
+// For each client attached to this server, purge aged-out client data
+Server.prototype._scheduleClientDataPurge = function() {
+  //console.log('clientData keys:', Object.keys(this.clientData));
+  Object.keys(this.clientData).forEach(this._purgeClientData.bind(this));
+  this.timer = setTimeout(this._scheduleClientDataPurge.bind(this),
+                                  this.clientDataOnServerCurrentPeriod);
+};
+
+// Read client state from persistence, deleting expired data on load
+Server.prototype._loadClientDataFromPersistence = function () {
+  var clientData = this.clientData;
+  var self = this;
+
+  Core.Persistence.readHashAll(this.name, function (valueObj) {
+    var vo = valueObj || {};
+
+    Object.keys(vo).forEach(function (clientName) {
+      var clientDatum = vo[clientName];
+      if (!self._isCurrent(clientName, vo[clientName].timestamp)) {
+        console.log('Drop persistence data for clientName:', clientName);
+        Core.Persistence.deleteHash(self.name, clientName);
+      }
+      else {
+        self.clientData[clientName] = vo[clientName];
+      }
+    });
+  });
+};
+
+// Load client data load from persistence, set up client data attributes, and
+// schedule purge of old client data
+Server.prototype._setupClientData = function (configuration) {
+  this.clientDataOnServerTTL = configuration.clientDataOnServerTTL || DEFAULT_TTL;
+  this.clientDataOnServerCurrentPeriod =
+    configuration.clientDataOnServerCurrentPeriod || DEFAULT_PERIOD;
+
+  this._loadClientDataFromPersistence();
+
+  this.timer = this._scheduleClientDataPurge();
 }
 
 module.exports = Server;

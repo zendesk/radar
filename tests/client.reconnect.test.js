@@ -95,7 +95,7 @@ describe('When radar server restarts', function() {
   it('reestablishes presence', function(done) {
     this.timeout(4000);
     var verifySubscriptions = function() {
-      client2.presence('restore').get(function(message) {
+      client.presence('restore').get(function(message) {
         assert.equal('get', message.op);
         assert.equal('presence:/test/restore', message.to);
         assert.deepEqual({ 123 : 0 }, message.value);
@@ -104,9 +104,10 @@ describe('When radar server restarts', function() {
     };
 
     client.presence('restore').set('online', function() {
-      common.restartRadar(radar, common.configuration, [client, client2], verifySubscriptions);
+      common.restartRadar(radar, common.configuration, [client], verifySubscriptions);
     });
   });
+
   it('must not repeat synced chat (messagelist) messages, with two clients', function(done) {
     this.timeout(4000);
     var messages = [];
