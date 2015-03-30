@@ -30,12 +30,13 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
+    "callback_tracker": "*",
     "engine.io": "1.4.2",
     "miniee": "*",
     "minilog": "*",
-    "callback_tracker": "*",
-    "underscore": "*",
-    "persistence": "*"
+    "persistence": "*",
+    "semver": "^4.3.1",
+    "underscore": "*"
   },
   "devDependencies": {
     "mocha": "*",
@@ -56,6 +57,7 @@
     "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
+    "test-one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
   }
 }

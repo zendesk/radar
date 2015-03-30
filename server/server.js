@@ -4,6 +4,7 @@ var MiniEventEmitter = require('miniee'),
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
+    Semver = require('semver');
 
 function Server() {
   this.clientData = {};
@@ -93,11 +94,13 @@ Server.prototype._onClientConnection = function(client) {
 
   // Always send data as json
   client.send = function(data) {
+    console.log('#client - sending data', client.id, data);
     logging.info('#client - sending data', client.id, data);
     oldSend.call(client, JSON.stringify(data));
   };
 
   // Event: client connected
+  console.log('#client - connect', client.id);
   logging.info('#client - connect', client.id);
 
   client.on('message', function(data) {
@@ -106,6 +109,7 @@ Server.prototype._onClientConnection = function(client) {
 
   client.on('close', function() {
     // Event: client disconnected
+    console.log('#client - disconnect', client.id);
     logging.info('#client - disconnect', client.id);
 
     Object.keys(self.resources).forEach(function(name) {
@@ -153,12 +157,16 @@ Server.prototype._handleClientMessage = function(client, data) {
 
   // Sync the client name to the current client id
   if (message.op == 'name_id_sync') {
+    console.log('message:', message);
     this.clientNames[message.value.id] = message.value.name;
-    //console.log('***** client.id', message.value.id, 'client name', message.value.name);
+    this.clientVersion = message.client_version;
+
+    // TEMPORARY: remove once resource/message division is worked out
     return;
   }
 
-  if (!this._clientDataStore(client.id, message)) {
+  if (this.clientVersion && Semver.gt(this.clientVersion, '0.13.0') &&
+                              !this._clientDataStore(client.id, message)) {
     return;
   }
 
@@ -176,7 +184,7 @@ Server.prototype._handleClientMessage = function(client, data) {
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
   } else {
-    logging.warn('#client.message - auth_invalid', data, (client && client.id));
+    logging.warn('#client.message - auth_invalid', data, client.id);
     client.send({
       op: 'err',
       value: 'auth',

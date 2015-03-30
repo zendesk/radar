@@ -31,6 +31,7 @@ describe('auth test', function() {
   describe('if type is disabled', function() {
     it('subscribe fails and emits err', function(done) {
       client.on('err', function(message) {
+        if (message.origin.op == 'name_id_sync') { return; }
         assert.ok(message.origin);
         assert.equal(message.origin.op, 'subscribe');
         assert.equal(message.origin.to, 'message:/client_auth/disabled');
