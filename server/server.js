@@ -4,6 +4,8 @@ var MiniEventEmitter = require('miniee'),
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
+    Semver = require('semver'),
+    Client = require('../client/client.js');
 
 function Server() {
   this.server = null;
@@ -67,6 +69,12 @@ Server.prototype._setup = function(http_server, configuration) {
                 configuration.engineio.conf.path : 'default';
   }
 
+  // Set up unique name for server
+  this.name = hostname + '_' + configuration.port;
+  Client.serverNameSet(this.name);
+
+  Client.dataSetup(configuration);
+
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this._onClientConnection.bind(this));
 
@@ -87,11 +95,6 @@ Server.prototype._onClientConnection = function(client) {
   // Event: client connected
   logging.info('#client - connect', client.id);
 
-  client.send({
-    server: hostname,
-    cid: client.id
-  });
-
   client.on('message', function(data) {
     self._handleClientMessage(client, data);
   });
@@ -109,7 +112,7 @@ Server.prototype._onClientConnection = function(client) {
   });
 };
 
-// Process a persistence (i.e. subscriber) message
+// Process a message from persistence (i.e. subscriber)
 Server.prototype._handlePubSubMessage = function(name, data) {
   if (this.resources[name]) {
     try {
@@ -132,44 +135,66 @@ Server.prototype._handlePubSubMessage = function(name, data) {
 Server.prototype._handleClientMessage = function(client, data) {
   var message = _parseJSON(data);
 
-  // Format check
-  if (!message || !message.op || !message.to) {
-    logging.warn('#client.message - rejected', (client && client.id), data);
+  if (!client) {
+    logging.info('_handleClientMessage: client is NULL...');
     return;
   }
 
-  logging.info('#client.message - received', (client && client.id), message,
-     (this.resources[message.to] ? 'exists' : 'not instantiated'),
-     (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
-    );
+  // Format check
+  if (!message || !message.op || !message.to) {
+    logging.warn('#client.message - rejected', client.id, data);
+    return;
+  }
 
-  var resource = this._resourceGet(message.to);
-
-  if (resource && resource.authorize(message, client, data)) {
-    if (!this.subs[resource.name]) {
-      logging.info('#redis - subscribe', resource.name, (client && client.id));
-      this.subscriber.subscribe(resource.name, function(err) {
-        if (err) {
-          logging.error('#redis - subscribe failed', resource.name,
-                                          (client && client.id), err);
-        } else {
-          logging.info('#redis - subscribe successful', resource.name,
-                                          (client && client.id));
-        }
-      });
-      this.subs[resource.name] = true;
-    }
-    resource.handleMessage(client, message);
-    this.emit(message.op, client, message);
-  } else {
-    logging.warn('#client.message - auth_invalid', data, (client && client.id));
+  // Authorize message
+  if (!Core.Auth.authorize(message, client, Core)) {
+    logging.warn('#client.message - auth_invalid', data, client.id);
     client.send({
       op: 'err',
       value: 'auth',
       origin: message
     });
+    return;
+  }
+  
+  // Sync the client name to the current client id
+  if (message.op == 'name_id_sync') {
+    Client.nameSet(message.value.id, message.value.name);
+    this.clientVersion = message.client_version;
+  }
+
+  if (this.clientVersion && Semver.gt(this.clientVersion, '0.13.0') &&
+                              !Client.dataStore(client.id, message)) {
+    return;
+  }
+
+  logging.info('#client.message - received', client.id, message,
+     (this.resources[message.to] ? 'exists' : 'not instantiated'),
+     (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
+    );
+
+  var resource = this._resourceGet(message.to);
+  if (resource) {
+    this._persistenceSubscribe(resource.name, client.id)
+    resource.handleMessage(client, message);
+    this.emit(message.op, client, message);
   }
 };
+
+// Subscribe to the persistence pubsub channel for a single resource
+Server.prototype._persistenceSubscribe = function (name, id) {
+  if (!this.subs[name]) {
+    logging.info('#redis - subscribe', name, id);
+    this.subscriber.subscribe(name, function(err) {
+      if (err) {
+        logging.error('#redis - subscribe failed', name, id, err);
+      } else {
+        logging.info('#redis - subscribe successful', name, id);
+      }
+    });
+    this.subs[name] = true;
+  }
+}
 
 // Get or create resource by name
 Server.prototype._resourceGet = function(name) {

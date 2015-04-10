@@ -21,7 +21,12 @@ var Types = [
     name: 'general stream',
     type: 'Stream',
     expression: /^stream:/
-  }
+  },
+  {
+    name: 'general control',
+    type: 'Control',
+    expression: /^control:/,
+  },
 ];
 
 // Get the type by resource name.

@@ -47,5 +47,11 @@ module.exports = {
 
   // Radar config: (optional), not currently set, interval for datadog reporting
   healthReportInterval: 10000,
+
+  // TTL for client data stored on the server, in milliseconds: 24 hours
+  clientDataOnServerTTL : 86400000,
+
+  // Check the freshness of TTL data, in milliseconds: 15 minutes
+  clientDataOnServerCurrentPeriod : 900000,
 };
 
