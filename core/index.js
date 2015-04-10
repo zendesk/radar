@@ -5,6 +5,7 @@ var Resource = require('./lib/resource.js'),
     Stream = require('./lib/resources/stream/index.js');
 
 module.exports = {
+  Auth: require('./lib/auth.js'),
   Persistence: require('persistence'),
   Type: require('./lib/type.js'),
   PresenceManager: require('./lib/resources/presence/presence_manager.js'),

@@ -101,6 +101,7 @@ Resource.prototype.ack = function(client, sendAck) {
   }
 };
 
+/*
 Resource.prototype.authorize = function(message, client) {
   var authProvider = this.options.authProvider;
   if (authProvider && authProvider.authorize) {
@@ -108,6 +109,7 @@ Resource.prototype.authorize = function(message, client) {
   }
   return true;
 };
+*/
 
 Resource.prototype.handleMessage = function(client, message) {
   switch(message.op) {

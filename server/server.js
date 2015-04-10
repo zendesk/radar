@@ -4,11 +4,10 @@ var MiniEventEmitter = require('miniee'),
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io');
-    Semver = require('semver');
+    Semver = require('semver'),
+    Client = require('../client/client.js');
 
 function Server() {
-  this.clientData = {};
-  this.clientNames = {};
   this.server = null;
   this.resources = {};
   this.subscriber = null;
@@ -49,12 +48,6 @@ Server.prototype.terminate = function(done) {
 
 // Private API
 
-// 86400000:  number of milliseconds in 1 day
-var DEFAULT_TTL = 50000;
-
-// 900000:  number of milliseconds in 15 minutes
-var DEFAULT_PERIOD = 20000;
-
 Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
@@ -78,8 +71,9 @@ Server.prototype._setup = function(http_server, configuration) {
 
   // Set up unique name for server
   this.name = hostname + '_' + configuration.port;
+  Client.serverNameSet(this.name);
 
-  this._setupClientData(configuration);
+  Client.dataSetup(configuration);
 
   this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this._onClientConnection.bind(this));
@@ -94,13 +88,11 @@ Server.prototype._onClientConnection = function(client) {
 
   // Always send data as json
   client.send = function(data) {
-    console.log('#client - sending data', client.id, data);
     logging.info('#client - sending data', client.id, data);
     oldSend.call(client, JSON.stringify(data));
   };
 
   // Event: client connected
-  console.log('#client - connect', client.id);
   logging.info('#client - connect', client.id);
 
   client.on('message', function(data) {
@@ -109,7 +101,6 @@ Server.prototype._onClientConnection = function(client) {
 
   client.on('close', function() {
     // Event: client disconnected
-    console.log('#client - disconnect', client.id);
     logging.info('#client - disconnect', client.id);
 
     Object.keys(self.resources).forEach(function(name) {
@@ -155,22 +146,27 @@ Server.prototype._handleClientMessage = function(client, data) {
     return;
   }
 
+  // Authorize message
+  if (!Core.Auth.authorize(message, client, Core)) {
+    logging.warn('#client.message - auth_invalid', data, client.id);
+    client.send({
+      op: 'err',
+      value: 'auth',
+      origin: message
+    });
+    return;
+  }
+  
   // Sync the client name to the current client id
   if (message.op == 'name_id_sync') {
-    console.log('message:', message);
-    this.clientNames[message.value.id] = message.value.name;
+    Client.nameSet(message.value.id, message.value.name);
     this.clientVersion = message.client_version;
-
-    // TEMPORARY: remove once resource/message division is worked out
-    return;
   }
 
   if (this.clientVersion && Semver.gt(this.clientVersion, '0.13.0') &&
-                              !this._clientDataStore(client.id, message)) {
+                              !Client.dataStore(client.id, message)) {
     return;
   }
-
-  console.log('_handleClientMessage:', this.clientData);
 
   logging.info('#client.message - received', client.id, message,
      (this.resources[message.to] ? 'exists' : 'not instantiated'),
@@ -178,18 +174,10 @@ Server.prototype._handleClientMessage = function(client, data) {
     );
 
   var resource = this._resourceGet(message.to);
-
-  if (resource && resource.authorize(message, client, data)) {
+  if (resource) {
     this._persistenceSubscribe(resource.name, client.id)
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
-  } else {
-    logging.warn('#client.message - auth_invalid', data, client.id);
-    client.send({
-      op: 'err',
-      value: 'auth',
-      origin: message
-    });
   }
 };
 
@@ -228,134 +216,6 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
-}
-
-Server.prototype._clientDataStore = function (id, message) {
-  var clientName;
-  console.log('message0:', message);
-  if (this.clientNames[id]) {
-    clientName = this.clientNames[id];
-  }
-  else {
-    logging.error('client.id:', id, 'does not have corresponding name');
-    console.log('Did NOT find client name for client.id', id);
-    return false;
-  }
-
-  // Fetch the current instance, or create a new one
-  var clientDatum = this.clientData[clientName];
-  if (!clientDatum) {
-    clientDatum = {
-      timestamp: Date.now(),
-      subscriptions : {},
-      presences : {}
-    };
-    this.clientData[clientName] = clientDatum;
-  }
-  subscriptions = clientDatum.subscriptions;
-  presences = clientDatum.presences;
-
-  // Persist the message data, according to type
-  var changed = true;
-  switch(message.op) {
-    case 'unsubscribe':
-      if (subscriptions[message.to]) {
-        delete subscriptions[message.to];
-      }
-      break;
-
-    case 'sync':
-    case 'subscribe':
-      clientDatum.timestamp = Date.now();
-      subscriptions[message.to] = message.op;
-      break;
-
-    case 'set':
-      clientDatum.timestamp = Date.now();
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        presences[message.to] = message.value;
-      }
-      break;
-
-    default:
-      changed = false;
-  }
-
-  // TODO: perhaps do this every N "stores"
-  if (changed) {
-    Core.Persistence.persistHash(this.name, clientName, clientDatum);
-  }
-
-  return true;
-};
-
-// Determine whether or not client data is current for a given clientName
-Server.prototype._isCurrent = function(clientName, timestamp) {
-  var current = timestamp + this.clientDataOnServerTTL >= Date.now();
-
-  console.log('timestamp + this.clientDataOnServerTTL:',
-                timestamp + this.clientDataOnServerTTL, 'Date.now():', Date.now());
-
-  logging.debug('#clientdata - _isCurrent', clientName, current,
-                    !!timestamp ? timestamp : 'not-present');
-  return current;
-};
-
-// For a given clientName, remove client data from persistence and from memory
-Server.prototype._purgeClientData = function(clientName) {
-  if (this.clientData[clientName] &&
-          !this._isCurrent(clientName, this.clientData[clientName].timestamp)) {
-
-    Core.Persistence.deleteHash(this.name, clientName);
-    delete this.clientData[clientName];
-
-    console.log('#clientdata - purge data for clientName:', clientName);
-    console.log('#clientdata - remaining data:', this.clientData);
-    console.log('#clientdata - remaining names:', this.clientNames);
-
-    logging.info('#clientdata - remove for clientName:', clientName);
-  }
-};
-
-// For each client attached to this server, purge aged-out client data
-Server.prototype._scheduleClientDataPurge = function() {
-  //console.log('clientData keys:', Object.keys(this.clientData));
-  Object.keys(this.clientData).forEach(this._purgeClientData.bind(this));
-  this.timer = setTimeout(this._scheduleClientDataPurge.bind(this),
-                                  this.clientDataOnServerCurrentPeriod);
-};
-
-// Read client state from persistence, deleting expired data on load
-Server.prototype._loadClientDataFromPersistence = function () {
-  var clientData = this.clientData;
-  var self = this;
-
-  Core.Persistence.readHashAll(this.name, function (valueObj) {
-    var vo = valueObj || {};
-
-    Object.keys(vo).forEach(function (clientName) {
-      var clientDatum = vo[clientName];
-      if (!self._isCurrent(clientName, vo[clientName].timestamp)) {
-        console.log('Drop persistence data for clientName:', clientName);
-        Core.Persistence.deleteHash(self.name, clientName);
-      }
-      else {
-        self.clientData[clientName] = vo[clientName];
-      }
-    });
-  });
-};
-
-// Load client data load from persistence, set up client data attributes, and
-// schedule purge of old client data
-Server.prototype._setupClientData = function (configuration) {
-  this.clientDataOnServerTTL = configuration.clientDataOnServerTTL || DEFAULT_TTL;
-  this.clientDataOnServerCurrentPeriod =
-    configuration.clientDataOnServerCurrentPeriod || DEFAULT_PERIOD;
-
-  this._loadClientDataFromPersistence();
-
-  this.timer = this._scheduleClientDataPurge();
 }
 
 module.exports = Server;
