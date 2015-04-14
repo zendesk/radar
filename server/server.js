@@ -186,12 +186,12 @@ Server.prototype._resourceGet = function(name) {
 // Subscribe to the persistence pubsub channel for a single resource
 Server.prototype._persistenceSubscribe = function (name, id) {
   if (!this.subs[name]) {
-    logging.info('#redis - subscribe', name, id);
+    logging.debug('#redis - subscribe', name, id);
     this.subscriber.subscribe(name, function(err) {
       if (err) {
         logging.error('#redis - subscribe failed', name, id, err);
       } else {
-        logging.info('#redis - subscribe successful', name, id);
+        logging.debug('#redis - subscribe successful', name, id);
       }
     });
     this.subs[name] = true;
