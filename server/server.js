@@ -134,41 +134,39 @@ Server.prototype._handleClientMessage = function(client, data) {
 
   // Format check
   if (!message || !message.op || !message.to) {
-    logging.warn('#client.message - rejected', (client && client.id), data);
+    logging.warn('#client.message - rejected', client.id, data);
     return;
   }
 
-  logging.info('#client.message - received', (client && client.id), message,
+  if (!this._messageAuthorize(message, client)) {
+    return;
+  }
+
+  logging.info('#client.message - received', client.id, message,
      (this.resources[message.to] ? 'exists' : 'not instantiated'),
      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
     );
 
   var resource = this._resourceGet(message.to);
-
-  if (resource && resource.authorize(message, client, data)) {
-    if (!this.subs[resource.name]) {
-      logging.info('#redis - subscribe', resource.name, (client && client.id));
-      this.subscriber.subscribe(resource.name, function(err) {
-        if (err) {
-          logging.error('#redis - subscribe failed', resource.name,
-                                          (client && client.id), err);
-        } else {
-          logging.info('#redis - subscribe successful', resource.name,
-                                          (client && client.id));
-        }
-      });
-      this.subs[resource.name] = true;
-    }
+  if (resource) {
+    this._persistenceSubscribe(resource.name, client.id)
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
-  } else {
-    logging.warn('#client.message - auth_invalid', data, (client && client.id));
+  }
+};
+
+// Authorize client message
+Server.prototype._messageAuthorize =  function (message, client, data) {
+  var rtn = Core.Auth.authorize(message, client);
+  if (!rtn) {
+    logging.warn('#client.message - auth_invalid', data, client.id);
     client.send({
       op: 'err',
       value: 'auth',
       origin: message
     });
   }
+  return rtn; 
 };
 
 // Get or create resource by name
@@ -184,6 +182,21 @@ Server.prototype._resourceGet = function(name) {
   }
   return this.resources[name];
 };
+
+// Subscribe to the persistence pubsub channel for a single resource
+Server.prototype._persistenceSubscribe = function (name, id) {
+  if (!this.subs[name]) {
+    logging.debug('#redis - subscribe', name, id);
+    this.subscriber.subscribe(name, function(err) {
+      if (err) {
+        logging.error('#redis - subscribe failed', name, id, err);
+      } else {
+        logging.debug('#redis - subscribe successful', name, id);
+      }
+    });
+    this.subs[name] = true;
+  }
+}
 
 function _parseJSON(data) {
   try {

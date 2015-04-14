@@ -8,6 +8,7 @@ module.exports = {
   Persistence: require('persistence'),
   Type: require('./lib/type.js'),
   PresenceManager: require('./lib/resources/presence/presence_manager.js'),
+  Auth: require('./lib/auth.js'),
 
   Resource: Resource,
   MessageList: MessageList,
