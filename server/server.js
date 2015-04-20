@@ -3,7 +3,9 @@ var MiniEventEmitter = require('miniee'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
-    DefaultEngineIO = require('engine.io');
+    DefaultEngineIO = require('engine.io'),
+    Semver = require('semver'),
+    Client = require('../client/client.js');
 
 function Server() {
   this.server = null;
@@ -46,6 +48,8 @@ Server.prototype.terminate = function(done) {
 
 // Private API
 
+var VERSION_CLIENT_DATASTORE = '0.13.1';
+
 Server.prototype._setup = function(http_server, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
@@ -87,11 +91,6 @@ Server.prototype._onClientConnection = function(client) {
   // Event: client connected
   logging.info('#client - connect', client.id);
 
-  client.send({
-    server: hostname,
-    cid: client.id
-  });
-
   client.on('message', function(data) {
     self._handleClientMessage(client, data);
   });
@@ -109,7 +108,7 @@ Server.prototype._onClientConnection = function(client) {
   });
 };
 
-// Process a persistence (i.e. subscriber) message
+// Process a message from persistence (i.e. subscriber)
 Server.prototype._handlePubSubMessage = function(name, data) {
   if (this.resources[name]) {
     try {
@@ -132,6 +131,11 @@ Server.prototype._handlePubSubMessage = function(name, data) {
 Server.prototype._handleClientMessage = function(client, data) {
   var message = _parseJSON(data);
 
+  if (!client) {
+    logging.info('_handleClientMessage: client is null');
+    return;
+  }
+
   // Format check
   if (!message || !message.op || !message.to) {
     logging.warn('#client.message - rejected', client.id, data);
@@ -142,24 +146,49 @@ Server.prototype._handleClientMessage = function(client, data) {
     return;
   }
 
-  logging.info('#client.message - received', client.id, message,
-     (this.resources[message.to] ? 'exists' : 'not instantiated'),
-     (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
-    );
+  if (!this._clientDataPersist(client.id, message)) {
+    return;
+  }
 
+  this._resourceMessageHandle(client, message);
+};
+
+// Initialize a client, and persist messages where required
+Server.prototype._clientDataPersist = function (id, message) {
+  // Sync the client name to the current client id
+  if (message.op == 'name_id_sync') {
+    this._clientInit(message);
+    this.clientVersion = message.client_version;
+  }
+  else if (this.clientVersion &&
+        Semver.gte(this.clientVersion, VERSION_CLIENT_DATASTORE) &&
+        !Client.dataStore(id, message)) {
+    return false;
+  }
+
+  return true;
+};
+
+// Get a resource, subscribe where required, and handle associated message
+Server.prototype._resourceMessageHandle = function (client, message) {
   var resource = this._resourceGet(message.to);
   if (resource) {
+    logging.info('#client.message - received', client.id, message,
+      (this.resources[message.to] ? 'exists' : 'not instantiated'),
+      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
+      );
+
     this._persistenceSubscribe(resource.name, client.id)
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
   }
 };
 
-// Authorize client message
-Server.prototype._messageAuthorize =  function (message, client, data) {
+// Authorize a client message
+Server.prototype._messageAuthorize =  function (message, client) {
   var rtn = Core.Auth.authorize(message, client);
   if (!rtn) {
-    logging.warn('#client.message - auth_invalid', data, client.id);
+    logging.warn('#client.message - auth_invalid', message, client.id);
     client.send({
       op: 'err',
       value: 'auth',
@@ -196,7 +225,12 @@ Server.prototype._persistenceSubscribe = function (name, id) {
     });
     this.subs[name] = true;
   }
-}
+};
+
+// On name_id_sync, initialize the current client
+Server.prototype._clientInit = function (message) {
+  Client.get(message.value.id, message.value.name, message.accountName);
+};
 
 function _parseJSON(data) {
   try {
@@ -204,6 +238,6 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
-}
+};
 
 module.exports = Server;
