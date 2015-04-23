@@ -49,5 +49,5 @@ module.exports = {
   healthReportInterval: 10000,
 
   // TTL for data stored on the server, in seconds (86400 = 1 day)
-  clientDataOnServerTTL: 86400
+  clientDataTTL: 86400
 };

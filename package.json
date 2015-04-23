@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "0.13.1",
+    "radar_client": "0.14.0",
     "simple_sentinel": "*"
   },
   "scripts": {

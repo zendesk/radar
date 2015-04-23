@@ -20,8 +20,9 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {
+  this.configuration = configuration;
   Core.Persistence.setConfig(configuration);
-  Core.Persistence.connect(this._setup.bind(this, http_server, configuration));
+  Core.Persistence.connect(this._setup.bind(this, http_server));
 };
 
 // Destroy empty resource
@@ -50,11 +51,11 @@ Server.prototype.terminate = function(done) {
 
 var VERSION_CLIENT_DATASTORE = '0.13.1';
 
-Server.prototype._setup = function(http_server, configuration) {
+Server.prototype._setup = function(http_server) {
   var engine = DefaultEngineIO,
       engineConf;
 
-  configuration = configuration || {};
+  configuration = this.configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
@@ -146,7 +147,7 @@ Server.prototype._handleClientMessage = function(client, data) {
     return;
   }
 
-  if (!this._clientDataPersist(client.id, message)) {
+  if (!this._clientDataPersist(client, message)) {
     return;
   }
 
@@ -154,16 +155,19 @@ Server.prototype._handleClientMessage = function(client, data) {
 };
 
 // Initialize a client, and persist messages where required
-Server.prototype._clientDataPersist = function (id, message) {
-  // Sync the client name to the current client id
-  if (message.op == 'name_id_sync') {
+Server.prototype._clientDataPersist = function (socket, message) {
+  // Sync the client name to the current socket
+  if (message.op == 'nameSync') {
     this._clientInit(message);
-    this.clientVersion = message.client_version;
+
+    socket.send({ op: 'ack', value: message && message.ack });
   }
-  else if (this.clientVersion &&
-        Semver.gte(this.clientVersion, VERSION_CLIENT_DATASTORE) &&
-        !Client.dataStore(id, message)) {
-    return false;
+  else {
+    var client = Client.clientGet(socket.id);
+    if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE) &&
+        !Client.dataStore(socket.id, message)) {
+      return false;
+    }
   }
 
   return true;
@@ -186,8 +190,8 @@ Server.prototype._resourceMessageHandle = function (client, message) {
 
 // Authorize a client message
 Server.prototype._messageAuthorize =  function (message, client) {
-  var rtn = Core.Auth.authorize(message, client);
-  if (!rtn) {
+  var isAuthorized = Core.Auth.authorize(message, client);
+  if (!isAuthorized) {
     logging.warn('#client.message - auth_invalid', message, client.id);
     client.send({
       op: 'err',
@@ -195,7 +199,8 @@ Server.prototype._messageAuthorize =  function (message, client) {
       origin: message
     });
   }
-  return rtn; 
+
+  return isAuthorized; 
 };
 
 // Get or create resource by name
@@ -228,8 +233,9 @@ Server.prototype._persistenceSubscribe = function (name, id) {
 };
 
 // On name_id_sync, initialize the current client
-Server.prototype._clientInit = function (message) {
-  Client.get(message.value.id, message.value.name, message.accountName);
+Server.prototype._clientInit = function (initMessage) {
+  Client.dataTTLSet(this.configuration.clientDataTTL);
+  Client.create(initMessage);
 };
 
 function _parseJSON(data) {
