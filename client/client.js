@@ -57,8 +57,8 @@ Client.create = function (message) {
 
 // Persist subscriptions and presences
 Client.prototype.dataStore = function (message) {
-  subscriptions = this.subscriptions;
-  presences = this.presences;
+  var subscriptions = this.subscriptions;
+  var presences = this.presences;
 
   // Persist the message data, according to type
   var changed = true;
