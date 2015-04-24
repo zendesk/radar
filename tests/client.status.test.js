@@ -36,7 +36,6 @@ describe('When using status resources', function() {
     it('should subscribe successfully with ack', function(done) {
 
       client.status('test').subscribe(function(msg) {
-        console.log('msg:', msg);
         assert.equal('subscribe', msg.op);
         assert.equal('status:/dev/test', msg.to);
         done();
