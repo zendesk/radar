@@ -21,6 +21,7 @@ MiniEventEmitter.mixin(Server);
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {
   this.configuration = configuration;
+  Client.dataTTLSet(this.configuration.clientDataTTL);
   Core.Persistence.setConfig(configuration);
   Core.Persistence.connect(this._setup.bind(this, http_server));
 };
@@ -165,9 +166,8 @@ Server.prototype._clientDataPersist = function (socket, message) {
   }
   else {
     var client = Client.clientGet(socket.id);
-    if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE) &&
-        !Client.dataStore(socket.id, message)) {
-      return false;
+    if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
+      client.dataStore(message);
     }
   }
 
@@ -235,7 +235,6 @@ Server.prototype._persistenceSubscribe = function (name, id) {
 
 // On name_id_sync, initialize the current client
 Server.prototype._clientInit = function (initMessage) {
-  Client.dataTTLSet(this.configuration.clientDataTTL);
   Client.create(initMessage);
 };
 

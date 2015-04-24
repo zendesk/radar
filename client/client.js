@@ -47,31 +47,18 @@ Client.clientGet = function (id) {
 Client.create = function (message) {
   var association = message.options.association;
   Client.names[association.id] = association.name;
-  var client = Client._create(association.name, association.id,
-                              message.accountName, message.options.clientVersion);
+  var client = new Client(association.name, association.id,
+                            message.accountName, message.options.clientVersion);
 
   Client.clients[association.name] = client;
 
   return client;
 }
 
-// For a given client id/name pair, store the associated message
-Client.dataStore = function (id, message) {
-  var name;
-
-  if (Client.names[id]) {
-    name = Client.names[id];
-  }
-  else {
-    log.error('client id:', id, 'does not have corresponding name');
-    return false;
-  }
-
-  // Fetch the instance associated with the current name
-  var client = Client.clients[name];
-
-  subscriptions = client.subscriptions;
-  presences = client.presences;
+// Persist subscriptions and presences
+Client.prototype.dataStore = function (message) {
+  subscriptions = this.subscriptions;
+  presences = this.presences;
 
   // Persist the message data, according to type
   var changed = true;
@@ -98,8 +85,8 @@ Client.dataStore = function (id, message) {
   }
 
   if (changed) {
-    client.lastModified = Date.now();
-    Core.Persistence.persistKey(client.key, client, Client.dataTTL);
+    this.lastModified = Date.now();
+    Core.Persistence.persistKey(this.key, this, Client.dataTTL);
   }
 
   return true;
@@ -114,11 +101,6 @@ Client.prototype._keyGet = function (accountName) {
   key += this.name;
 
   return key;
-};
-
-// Create new Client instance
-Client._create = function (name, id, accountName, version) {
-  return new Client(name, id, accountName, version);
 };
 
 module.exports = Client;
