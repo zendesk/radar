@@ -161,6 +161,7 @@ Server.prototype._clientDataPersist = function (socket, message) {
     this._clientInit(message);
 
     socket.send({ op: 'ack', value: message && message.ack });
+    return false;
   }
   else {
     var client = Client.clientGet(socket.id);
