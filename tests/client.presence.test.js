@@ -281,7 +281,7 @@ describe('given two clients and a presence resource', function() {
           ]);
 
           // Ensure time between implicit_offline and offline is within range
-          p.assert_delay_between_notifications_within_range(2, 3, 14500, 15500)
+          p.assert_delay_between_notifications_within_range(2, 3, 14500, 15500);
 
           done();
         });

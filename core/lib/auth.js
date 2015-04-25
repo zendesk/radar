@@ -1,7 +1,7 @@
 var log = require('minilog')('radar:auth'),
     Type = require('./type.js');
 
-function Auth () { };
+function Auth () { }
 
 Auth.authorize = function (message, client, Core) {
   var rtn = true;
@@ -18,6 +18,6 @@ Auth.authorize = function (message, client, Core) {
   }
 
   return rtn;
-}
+};
 
 module.exports = Auth;

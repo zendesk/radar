@@ -183,7 +183,7 @@ Server.prototype._resourceMessageHandle = function (client, message) {
       (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
       );
 
-    this._persistenceSubscribe(resource.name, client.id)
+    this._persistenceSubscribe(resource.name, client.id);
     resource.handleMessage(client, message);
     this.emit(message.op, client, message);
   }
@@ -244,6 +244,6 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
-};
+}
 
 module.exports = Server;

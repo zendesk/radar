@@ -10,14 +10,14 @@ function Client (name, id, accountName, version) {
   this.presences = {};
   this.key = this._keyGet(accountName);
   this.version = version;
-};
+}
 
 // 86400:  number of seconds in 1 day
 var DEFAULT_DATA_TTL = 86400;
 
 // Class properties
 Client.clients = {};                  // keyed by name
-Client.names = {}                     // keyed by id
+Client.names = {};                    // keyed by id
 Client.dataTTL = DEFAULT_DATA_TTL;
 
 require('util').inherits(Client, require('events').EventEmitter);
@@ -53,7 +53,7 @@ Client.create = function (message) {
   Client.clients[association.name] = client;
 
   return client;
-}
+};
 
 // Persist subscriptions and presences
 Client.prototype.dataStore = function (message) {
