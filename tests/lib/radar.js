@@ -69,7 +69,12 @@ Type.add([
       expression: /^stream:\/dev\/uncached_stream\/(.+)/,
       type: 'Stream',
       policy: { maxLength: 0 }
-    }
+    },
+  {
+    name: 'general control',
+    type: 'Control',
+    expression: /^control:/
+  }
 ]);
 
 var Service = {};

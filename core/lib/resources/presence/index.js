@@ -127,7 +127,7 @@ Presence.prototype._set_online = function(client) {
     this.subscribe(client);
 
     // We are subscribed, but not listening
-    this.subscribers[client.id] = { listening: false }
+    this.subscribers[client.id] = { listening: false };
   }
 };
 

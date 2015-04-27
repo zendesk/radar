@@ -7,7 +7,6 @@ var common = require('./common.js'),
     Tracker = require('callback_tracker'),
     radar;
 
-
 describe('When radar server restarts', function() {
   var client, client2;
 

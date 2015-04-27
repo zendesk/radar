@@ -88,7 +88,7 @@ Resource.prototype.redisIn = function(data) {
 // Return a client reference
 Resource.prototype.clientGet = function (id) {
   return this.parent.server.clients[id];
-}
+};
 
 Resource.prototype.ack = function(client, sendAck) {
   if (client && client.send && sendAck) {
