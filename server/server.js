@@ -74,37 +74,37 @@ Server.prototype._setup = function(http_server) {
   }
 
   this.server = engine.attach(http_server, engineConf);
-  this.server.on('connection', this._onClientConnection.bind(this));
+  this.server.on('connection', this._onSocketConnection.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
 };
 
-Server.prototype._onClientConnection = function(client) {
+Server.prototype._onSocketConnection = function(socket) {
   var self = this;
-  var oldSend = client.send;
+  var oldSend = socket.send;
 
   // Always send data as json
-  client.send = function(data) {
-    logging.info('#client - sending data', client.id, data);
-    oldSend.call(client, JSON.stringify(data));
+  socket.send = function(data) {
+    logging.info('#socket - sending data', socket.id, data);
+    oldSend.call(socket, JSON.stringify(data));
   };
 
-  // Event: client connected
-  logging.info('#client - connect', client.id);
+  // Event: socket connected
+  logging.info('#socket - connect', socket.id);
 
-  client.on('message', function(data) {
-    self._handleClientMessage(client, data);
+  socket.on('message', function(data) {
+    self._handleSocketMessage(socket, data);
   });
 
-  client.on('close', function() {
-    // Event: client disconnected
-    logging.info('#client - disconnect', client.id);
+  socket.on('close', function() {
+    // Event: socket disconnected
+    logging.info('#socket - disconnect', socket.id);
 
     Object.keys(self.resources).forEach(function(name) {
       var resource = self.resources[name];
-      if (resource.subscribers[client.id]) {
-        resource.unsubscribe(client, false);
+      if (resource.subscribers[socket.id]) {
+        resource.unsubscribe(socket, false);
       }
     });
   });
@@ -129,30 +129,30 @@ Server.prototype._handlePubSubMessage = function(name, data) {
   }
 };
 
-// Process a client message
-Server.prototype._handleClientMessage = function(client, data) {
+// Process a socket message
+Server.prototype._handleSocketMessage = function(socket, data) {
   var message = _parseJSON(data);
 
-  if (!client) {
-    logging.info('_handleClientMessage: client is null');
+  if (!socket) {
+    logging.info('_handleSocketMessage: socket is null');
     return;
   }
 
   // Format check
   if (!message || !message.op || !message.to) {
-    logging.warn('#client.message - rejected', client.id, data);
+    logging.warn('#socket.message - rejected', socket.id, data);
     return;
   }
 
-  if (!this._messageAuthorize(message, client)) {
+  if (!this._messageAuthorize(message, socket)) {
     return;
   }
 
-  if (!this._clientDataPersist(client, message)) {
+  if (!this._clientDataPersist(socket, message)) {
     return;
   }
 
-  this._resourceMessageHandle(client, message);
+  this._resourceMessageHandle(socket, message);
 };
 
 // Initialize a client, and persist messages where required
@@ -165,7 +165,7 @@ Server.prototype._clientDataPersist = function (socket, message) {
     return false;
   }
   else {
-    var client = Client.clientGet(socket.id);
+    var client = Client.get(socket.id);
     if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
       client.dataStore(message);
     }
@@ -175,26 +175,26 @@ Server.prototype._clientDataPersist = function (socket, message) {
 };
 
 // Get a resource, subscribe where required, and handle associated message
-Server.prototype._resourceMessageHandle = function (client, message) {
+Server.prototype._resourceMessageHandle = function (socket, message) {
   var resource = this._resourceGet(message.to);
   if (resource) {
-    logging.info('#client.message - received', client.id, message,
+    logging.info('#socket.message - received', socket.id, message,
       (this.resources[message.to] ? 'exists' : 'not instantiated'),
       (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
       );
 
-    this._persistenceSubscribe(resource.name, client.id);
-    resource.handleMessage(client, message);
-    this.emit(message.op, client, message);
+    this._persistenceSubscribe(resource.name, socket.id);
+    resource.handleMessage(socket, message);
+    this.emit(message.op, socket, message);
   }
 };
 
-// Authorize a client message
-Server.prototype._messageAuthorize =  function (message, client) {
-  var isAuthorized = Core.Auth.authorize(message, client);
+// Authorize a socket message
+Server.prototype._messageAuthorize =  function (message, socket) {
+  var isAuthorized = Core.Auth.authorize(message, socket);
   if (!isAuthorized) {
-    logging.warn('#client.message - auth_invalid', message, client.id);
-    client.send({
+    logging.warn('#socket.message - auth_invalid', message, socket.id);
+    socket.send({
       op: 'err',
       value: 'auth',
       origin: message
@@ -233,7 +233,7 @@ Server.prototype._persistenceSubscribe = function (name, id) {
   }
 };
 
-// On name_id_sync, initialize the current client
+// Initialize the current client
 Server.prototype._clientInit = function (initMessage) {
   Client.create(initMessage);
 };

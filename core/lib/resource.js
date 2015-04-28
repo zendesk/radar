@@ -46,62 +46,62 @@ function Resource(name, parent, options, default_options) {
 
 Resource.prototype.type = 'default';
 
-// Add a subscriber (Engine.io client)
-Resource.prototype.subscribe = function(client, message) {
-  this.subscribers[client.id] = true;
-  logging.debug('#'+this.type, '- subscribe', this.name, client.id,
+// Add a subscriber (Engine.io socket)
+Resource.prototype.subscribe = function(socket, message) {
+  this.subscribers[socket.id] = true;
+  logging.debug('#'+this.type, '- subscribe', this.name, socket.id,
                               this.subscribers, message && message.ack);
 
-  this.ack(client, message && message.ack);
+  this.ack(socket, message && message.ack);
 };
 
-// Remove a subscriber (Engine.io client)
-Resource.prototype.unsubscribe = function(client, message) {
-  delete this.subscribers[client.id];
+// Remove a subscriber (Engine.io socket)
+Resource.prototype.unsubscribe = function(socket, message) {
+  delete this.subscribers[socket.id];
 
-  logging.info('#'+this.type, '- unsubscribe', this.name, client.id,
+  logging.info('#'+this.type, '- unsubscribe', this.name, socket.id,
                     'subscribers left:', Object.keys(this.subscribers).length);
 
   if (!Object.keys(this.subscribers).length) {
     logging.info('#'+this.type, '- destroying resource', this.name,
-                                          this.subscribers, client.id);
+                                          this.subscribers, socket.id);
     this.parent.destroyResource(this.name);
   }
 
-  this.ack(client, message && message.ack);
+  this.ack(socket, message && message.ack);
 };
 
-// Send to Engine.io clients
+// Send to Engine.io sockets
 Resource.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:',
                                           Object.keys(this.subscribers).length );
 
-  Object.keys(this.subscribers).forEach(function(clientId) {
-    var client = self.clientGet(clientId);
-    if (client && client.send) {
-      client.send(data);
+  Object.keys(this.subscribers).forEach(function(socketId) {
+    var socket = self.socketGet(socketId);
+    if (socket && socket.send) {
+      socket.send(data);
     }
   });
 };
 
-// Return a client reference
-Resource.prototype.clientGet = function (id) {
+// Return a socket reference; eio server hash is "clients", not "sockets"
+Resource.prototype.socketGet = function (id) {
   return this.parent.server.clients[id];
 };
 
-Resource.prototype.ack = function(client, sendAck) {
-  if (client && client.send && sendAck) {
-    logging.debug('#client - send_ack', client.id, this.name, sendAck);
+Resource.prototype.ack = function(socket, sendAck) {
+  if (socket && socket.send && sendAck) {
+    logging.debug('#socket - send_ack', socket.id, this.name, sendAck);
 
-    client.send({
+    socket.send({
       op: 'ack',
       value: sendAck
     });
   }
 };
 
-Resource.prototype.handleMessage = function(client, message) {
+Resource.prototype.handleMessage = function(socket, message) {
   switch(message.op) {
     case 'subscribe':
     case 'unsubscribe':
@@ -110,10 +110,10 @@ Resource.prototype.handleMessage = function(client, message) {
     case 'set':
     case 'publish':
     case 'push':
-      this[message.op](client, message);
+      this[message.op](socket, message);
       break;
     default:
-      logging.error('#resource - Unknown message.op, ignoring', message, client && client.id);
+      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id);
   }
 };
 

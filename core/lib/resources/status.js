@@ -16,11 +16,11 @@ Status.prototype = new Resource();
 Status.prototype.type = 'status';
 
 // Get status
-Status.prototype.get = function(client) {
+Status.prototype.get = function(socket) {
   var name = this.name;
-  logger.debug('#status - get', this.name, (client && client.id));
+  logger.debug('#status - get', this.name, (socket && socket.id));
   this._get(name, function(replies) {
-    client.send({
+    socket.send({
       op: 'get',
       to: name,
       value: replies || {}
@@ -32,11 +32,11 @@ Status.prototype._get = function(name, callback) {
   Persistence.readHashAll(name, callback);
 };
 
-Status.prototype.set = function(client, message) {
+Status.prototype.set = function(socket, message) {
   var self = this;
-  logger.debug('#status - set', this.name, message, (client && client.id));
+  logger.debug('#status - set', this.name, message, (socket && socket.id));
   Status.prototype._set(this.name, message, this.options.policy, function() {
-    self.ack(client, message.ack);
+    self.ack(socket, message.ack);
   });
 };
 
@@ -51,10 +51,10 @@ Status.prototype._set = function(scope, message, policy, callback) {
   Persistence.publish(scope, message, callback);
 };
 
-Status.prototype.sync = function(client) {
-  logger.debug('#status - sync', this.name, (client && client.id));
-  this.subscribe(client, false);
-  this.get(client);
+Status.prototype.sync = function(socket) {
+  logger.debug('#status - sync', this.name, (socket && socket.id));
+  this.subscribe(socket, false);
+  this.get(socket);
 };
 
 Status.setBackend = function(backend) { Persistence = backend; };

@@ -1,5 +1,5 @@
-function StreamSubscriber(clientId) {
-  this.id = clientId;
+function StreamSubscriber(socketId) {
+  this.id = socketId;
   this.sent = null;
   this.sendEnabled = true;
 }
@@ -21,15 +21,15 @@ function SubscriberState() {
   this.subscribers = {};
 }
 
-SubscriberState.prototype.get = function(clientId) {
-  if (!this.subscribers[clientId]) {
-    this.subscribers[clientId] = new StreamSubscriber(clientId);
+SubscriberState.prototype.get = function(socketId) {
+  if (!this.subscribers[socketId]) {
+    this.subscribers[socketId] = new StreamSubscriber(socketId);
   }
-  return this.subscribers[clientId];
+  return this.subscribers[socketId];
 };
 
-SubscriberState.prototype.remove = function(clientId) {
-  delete this.subscribers[clientId];
+SubscriberState.prototype.remove = function(socketId) {
+  delete this.subscribers[socketId];
 };
 
 module.exports = SubscriberState;

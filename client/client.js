@@ -36,7 +36,7 @@ Client.dataTTLGet = function () {
 };
 
 // Get current client associated with a given socket id
-Client.clientGet = function (id) {
+Client.get = function (id) {
   var name = Client.names[id];
   if (name) {
     return Client.clients[name];

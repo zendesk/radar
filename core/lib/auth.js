@@ -3,14 +3,14 @@ var log = require('minilog')('radar:auth'),
 
 function Auth () { }
 
-Auth.authorize = function (message, client, Core) {
+Auth.authorize = function (message, socket) {
   var rtn = true;
 
   var options = Type.getByExpression(message.to);
   if (options) {
     var provider = options && options.authProvider;
     if (provider && provider.authorize) {
-      rtn = provider.authorize(options, message, client);
+      rtn = provider.authorize(options, message, socket);
     }
   }
   else {
