@@ -20,11 +20,11 @@ MessageList.prototype = new Resource();
 MessageList.prototype.type = 'message';
 
 // Publish to Redis
-MessageList.prototype.publish = function(client, message) {
+MessageList.prototype.publish = function(socket, message) {
   var self = this;
-  logger.debug('#message_list - publish', this.name, message, client && client.id);
+  logger.debug('#message_list - publish', this.name, message, socket && socket.id);
   this._publish(this.name, this.options.policy, message, function() {
-    self.ack(client, message.ack);
+    self.ack(socket, message.ack);
   });
 };
 
@@ -38,18 +38,18 @@ MessageList.prototype._publish = function(name, policy, message, callback) {
   Persistence.publish(name, message, callback);
 };
 
-MessageList.prototype.sync = function(client, message) {
+MessageList.prototype.sync = function(socket, message) {
   var name = this.name;
-  logger.debug('#message_list - sync', this.name, message, client && client.id);
+  logger.debug('#message_list - sync', this.name, message, socket && socket.id);
   this._sync(name, this.options.policy, function(replies) {
-    client.send({
+    socket.send({
       op: 'sync',
       to: name,
       value: replies,
       time: Date.now()
     });
   });
-  this.subscribe(client, message);
+  this.subscribe(socket, message);
 };
 
 MessageList.prototype._sync = function(name, policy, callback) {
@@ -59,8 +59,8 @@ MessageList.prototype._sync = function(name, policy, callback) {
   Persistence.readOrderedWithScores(name, policy, callback);
 };
 
-MessageList.prototype.unsubscribe = function(client, message) {
-  Resource.prototype.unsubscribe.call(this, client, message);
+MessageList.prototype.unsubscribe = function(socket, message) {
+  Resource.prototype.unsubscribe.call(this, socket, message);
   // Note that since this is not synchronized across multiple backend servers,
   // it is possible for a channel that is subscribed elsewhere to have a TTL set
   // on it again. The assumption is that the TTL is so long that any normal

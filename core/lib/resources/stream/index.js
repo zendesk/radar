@@ -32,10 +32,10 @@ Stream.prototype._getSyncError = function(from) {
   };
 };
 
-Stream.prototype._subscribe = function(client, message) {
+Stream.prototype._subscribe = function(socket, message) {
   var self = this,
       from = message.options && message.options.from,
-      sub = this.subscriberState.get(client.id);
+      sub = this.subscriberState.get(socket.id);
 
   if (typeof from === 'undefined' || from < 0) {
     return;
@@ -46,12 +46,12 @@ Stream.prototype._subscribe = function(client, message) {
     if (error) {
       var syncError = self._getSyncError(from);
       syncError.op = 'push';
-      client.send(syncError);
+      socket.send(syncError);
     } else {
       values.forEach(function(message) {
         message.op = 'push';
         message.to = self.name;
-        client.send(message);
+        socket.send(message);
         sub.sent = message.id;
       });
     }
@@ -59,24 +59,24 @@ Stream.prototype._subscribe = function(client, message) {
   });
 };
 
-Stream.prototype.subscribe = function(client, message) {
-  Resource.prototype.subscribe.call(this, client, message);
-  this._subscribe(client, message);
+Stream.prototype.subscribe = function(socket, message) {
+  Resource.prototype.subscribe.call(this, socket, message);
+  this._subscribe(socket, message);
 };
 
-Stream.prototype.get = function(client, message) {
+Stream.prototype.get = function(socket, message) {
   var stream = this,
       from = message && message.options && message.options.from;
-  logging.debug('#stream - get', this.name,'from: '+from, (client && client.id));
+  logging.debug('#stream - get', this.name,'from: '+from, (socket && socket.id));
 
   this._get(from, function(error, values) {
     if (error) {
       var syncError = stream._getSyncError(from);
       syncError.op = 'get';
       syncError.value = [];
-      client.send(syncError);
+      socket.send(syncError);
     } else {
-      client.send({
+      socket.send({
         op: 'get',
         to: stream.name,
         value: values || []
@@ -95,11 +95,11 @@ Stream.prototype._get = function(from, callback) {
   });
 };
 
-Stream.prototype.push = function(client, message) {
+Stream.prototype.push = function(socket, message) {
   var self = this;
   var policy = this.options.policy || {};
 
-  logging.debug('#stream - push', this.name, message, (client && client.id));
+  logging.debug('#stream - push', this.name, message, (socket && socket.id));
 
   var m = {
     to: this.name,
@@ -118,26 +118,26 @@ Stream.prototype.push = function(client, message) {
       return;
     }
 
-    logging.debug('#stream - push complete with id', self.name, stamped, (client && client.id));
-    self.ack(client, message.ack);
+    logging.debug('#stream - push complete with id', self.name, stamped, (socket && socket.id));
+    self.ack(socket, message.ack);
   });
 };
 
-Stream.prototype.sync = function(client, message) {
-  logging.debug('#stream - sync', this.name, (client && client.id));
-  this.get(client, message);
-  this.subscribe(client, false);
+Stream.prototype.sync = function(socket, message) {
+  logging.debug('#stream - sync', this.name, (socket && socket.id));
+  this.get(socket, message);
+  this.subscribe(socket, false);
 };
 
 Stream.prototype.redisIn = function(data) {
   var self = this;
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
-  Object.keys(this.subscribers).forEach(function(clientId) {
-    var client = self.clientGet(clientId);
-    if (client && client.send) {
-      var sub = self.subscriberState.get(client.id);
+  Object.keys(this.subscribers).forEach(function(socketId) {
+    var socket = self.socketGet(socketId);
+    if (socket && socket.send) {
+      var sub = self.subscriberState.get(socket.id);
       if (sub && sub.sendable(data)) {
-        client.send(data);
+        socket.send(data);
         sub.sent = data.id;
       }
     }

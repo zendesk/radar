@@ -56,30 +56,30 @@ Presence.prototype.setup = function() {
     });
   });
 
-  this.manager.on('client_online', function(clientId, userId, userType, userData) {
-    logging.info('#presence - client_online', clientId, userId, self.name);
+  this.manager.on('client_online', function(socketId, userId, userType, userData) {
+    logging.info('#presence - client_online', socketId, userId, self.name);
     self.broadcast({
       to: self.name,
       op: 'client_online',
       value: {
         userId: userId,
-        clientId: clientId,
+        clientId: socketId,
         userData: userData,
       }
     });
   });
 
-  this.manager.on('client_offline', function(clientId, userId, explicit) {
-    logging.info('#presence - client_offline', clientId, userId, explicit, self.name);
+  this.manager.on('client_offline', function(socketId, userId, explicit) {
+    logging.info('#presence - client_offline', socketId, userId, explicit, self.name);
     self.broadcast({
       to: self.name,
       op: 'client_offline',
       explicit: !!explicit,
       value: {
         userId: userId,
-        clientId: clientId
+        clientId: socketId
       }
-    }, clientId);
+    }, socketId);
   });
 
   // Keep track of listener count
@@ -97,89 +97,89 @@ Presence.prototype.redisIn = function(message) {
   this.manager.processRedisEntry(message);
 };
 
-Presence.prototype.set = function(client, message) {
+Presence.prototype.set = function(socket, message) {
   var presence = this,
       userId = message.key;
 
   function ackCheck() {
-    presence.ack(client, message.ack);
+    presence.ack(socket, message.ack);
   }
 
   if (message.value != 'offline') {
-    this._set_online(client);
-    this.manager.addClient(client.id, userId, message.type, message.userData, ackCheck);
+    this._set_online(socket);
+    this.manager.addClient(socket.id, userId, message.type, message.userData, ackCheck);
   } else {
     // If this is client is not subscribed
-    if (!this.subscribers[client.id]) {
+    if (!this.subscribers[socket.id]) {
       // This is possible if a client does .set('offline') without
       // set-online/sync/subscribe
-      Resource.prototype.unsubscribe.call(this, client, message);
+      Resource.prototype.unsubscribe.call(this, socket, message);
     } else {
       // Remove from local
-      this.manager.removeClient(client.id, userId, message.type, ackCheck);
+      this.manager.removeClient(socket.id, userId, message.type, ackCheck);
     }
   }
 };
 
-Presence.prototype._set_online = function(client) {
-  if (!this.subscribers[client.id]) {
+Presence.prototype._set_online = function(socket) {
+  if (!this.subscribers[socket.id]) {
     // We use subscribe/unsubscribe to trap the "close" event, so subscribe now
-    this.subscribe(client);
+    this.subscribe(socket);
 
     // We are subscribed, but not listening
-    this.subscribers[client.id] = { listening: false };
+    this.subscribers[socket.id] = { listening: false };
   }
 };
 
-Presence.prototype.subscribe = function(client, message) {
-  Resource.prototype.subscribe.call( this, client, message);
-  this.subscribers[client.id] = { listening: true };
+Presence.prototype.subscribe = function(socket, message) {
+  Resource.prototype.subscribe.call( this, socket, message);
+  this.subscribers[socket.id] = { listening: true };
 };
 
-Presence.prototype.unsubscribe = function(client, message) {
-  logging.info('#presence - implicit disconnect', client.id, this.name);
-  this.manager.disconnectClient(client.id);
+Presence.prototype.unsubscribe = function(socket, message) {
+  logging.info('#presence - implicit disconnect', socket.id, this.name);
+  this.manager.disconnectClient(socket.id);
 
   // Call parent
-  Resource.prototype.unsubscribe.call(this, client, message);
+  Resource.prototype.unsubscribe.call(this, socket, message);
 };
 
-Presence.prototype.sync = function(client, message) {
+Presence.prototype.sync = function(socket, message) {
   var self = this;
   this.fullRead(function(online) {
     if (message.options && message.options.version == 2) {
-      client.send({
+      socket.send({
         op: 'get',
         to: self.name,
         value: self.manager.getClientsOnline()
       });
     } else {
-      logging.warn('presence v1 received, sending online', self.name, client.id);
+      logging.warn('presence v1 received, sending online', self.name, socket.id);
 
       // Will deprecate when syncs no longer need to use "online" to look like
       // regular messages
-      client.send({
+      socket.send({
         op: 'online',
         to: self.name,
         value: online
       });
     }
   });
-  this.subscribe(client, message);
+  this.subscribe(socket, message);
 };
 
 // This is a full sync of the online status from Redis
-Presence.prototype.get = function(client, message) {
+Presence.prototype.get = function(socket, message) {
   var self = this;
   this.fullRead(function(online) {
     if (message.options && message.options.version == 2) {
-      client.send({
+      socket.send({
         op: 'get',
         to: self.name,
         value: self.manager.getClientsOnline()
       });
     } else {
-      client.send({
+      socket.send({
         op: 'get',
         to: self.name,
         value: online
@@ -191,13 +191,13 @@ Presence.prototype.get = function(client, message) {
 Presence.prototype.broadcast = function(message, except) {
   logging.debug('#presence - update subscribed clients', message, except, this.name);
   var self = this;
-  Object.keys(this.subscribers).forEach(function(clientId) {
-    var client = self.clientGet(clientId);
-    if (client && client.id != except && self.subscribers[client.id].listening) {
-      client.send(message);
+  Object.keys(this.subscribers).forEach(function(socketId) {
+    var socket = self.socketGet(socketId);
+    if (socket && socket.id != except && self.subscribers[socket.id].listening) {
+      socket.send(message);
     } else {
-      logging.warn('#client - not sending: ', (client && client.id), message,  except,
-        'explicit:', (client && client.id && self.subscribers[client.id]), self.name);
+      logging.warn('#socket - not sending: ', (socket && socket.id), message,  except,
+        'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.name);
     }
   });
 };
