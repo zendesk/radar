@@ -243,13 +243,13 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
-};
+}
 
 
 // Transforms Redis URL into persistence configuration object
 function setupPersistence(configuration, done) {
   Core.Persistence.setConfig(configuration.persistence);
   Core.Persistence.connect(done);
-};
+}
 
 module.exports = Server;

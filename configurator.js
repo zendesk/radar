@@ -74,7 +74,6 @@ function parserCli(argv) {
     });
   });
 
-
   return parser.parse(argv);
 }
 
@@ -108,12 +107,14 @@ function pickFirst(propName) {
 }
 
 function forPersistence(configuration) {
-  var connection, url = require('url');
+  var url = require('url'), 
+      connection;
 
   // Using sentinel
   if (configuration.sentinelMasterName) {
-    if (!configuration.sentinelUrls) 
+    if (!configuration.sentinelUrls) {
       throw Error('sentinelMasterName present but no sentinelUrls was provided. ');
+    }
     
     connection = { id: configuration.sentinelMasterName, sentinels: []};
 
@@ -125,7 +126,6 @@ function forPersistence(configuration) {
         port: parsedUrl.port
       });
     });
-
   } else { // Using standalone redis. 
     var parsedUrl = url.parse(configuration.redisUrl);
     connection = {
@@ -139,21 +139,23 @@ function forPersistence(configuration) {
     connection_settings: {
       main: connection 
     } 
-  }
-};
+  };
+}
 
 // TODO: Move to Util module, or somewhere. 
 function merge(destination, source) {
-  for (name in source) {
-    if (source.hasOwnProperty(name))
+  for (var name in source) {
+    if (source.hasOwnProperty(name)) {
       destination[name] = source[name];
+    }
   }
+
   return destination;
-};
+}
 
 // Public
 function load() {
-  var options = (arguments.length == 1 ? arguments[0] : {}),
+  var options = (arguments.length === 1 ? arguments[0] : {}),
       cli = parserCli((options.argv || process.argv)),
       env = parserEnv((options.env  || process.env)),
       config = defaultConfiguration();

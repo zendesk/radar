@@ -7,13 +7,13 @@ var assert = require('assert'),
 
 describe('the Configurator', function() {
 
-  it ('has a default configuration', function() {
+  it('has a default configuration', function() {
     var config = Configurator.load();
     assert.equal(8000, config.port);
   });
 
   describe('while dealing with env vars', function() {
-    it ('env vars should win over default configuration', function() {
+    it('env vars should win over default configuration', function() {
       var config = Configurator.load({
             config: { port: 8000 },
             argv: noArgs,
@@ -23,7 +23,7 @@ describe('the Configurator', function() {
       assert.equal(8001, config.port);
     });
 
-    it ('should only overwrite the right keys', function() {
+    it('should only overwrite the right keys', function() {
       var config = Configurator.load({
         config: {port: 8004},
         env: { 
@@ -40,7 +40,7 @@ describe('the Configurator', function() {
   function describeOptionTest(name, options){
     describe('option: ' + name, function() {
       if (options.default) {
-        it('default must be ' + options.expected, function() {
+        it ('default must be ' + options.expected, function() {
           var config = Configurator.load({});
           assert.equal(config[name], options.default);
         });
