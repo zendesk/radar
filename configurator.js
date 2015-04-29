@@ -34,6 +34,12 @@ var variables = [
     default:  '10000'
   },
   {
+    name:     'clientDataTTL', description: 'TTL for data stored on the server, in seconds (86400 = 1 day)',
+    env:      'RADAR_CLIENT_DATA_TTL',
+    full:     'client_data_ttl',
+    default:  86400
+  },
+  {
     name:     'sentinelMasterName', description: 'sentinel master name',
     env:      'RADAR_SENTINEL_MASTER_NAME', 
     full:     'sentinel_master_name'
