@@ -43,7 +43,7 @@ var variables = [
     env:      'RADAR_SENTINEL_URLS',
     full:     'sentinel_urls'
   }
-]
+];
 
 function defaultConfiguration() {
   var config = {};
@@ -135,13 +135,24 @@ function forPersistence(configuration) {
     } 
   }
 };
+
+// TODO: Move to Util module, or somewhere. 
+function merge(destination, source) {
+  for (name in source) {
+    if (source.hasOwnProperty(name))
+      destination[name] = source[name];
+  }
+  return destination;
+};
+
 // Public
 function load() {
   var options = (arguments.length == 1 ? arguments[0] : {}),
       cli = parserCli((options.argv || process.argv)),
       env = parserEnv((options.env  || process.env)),
-      config = (options.config || defaultConfiguration());
-
+      config = defaultConfiguration();
+  
+  merge(config, options.config || {});
 
   variables.forEach(function(variable) {
     config[variable.name] = pickFirst(variable.name, cli, env, config); 
