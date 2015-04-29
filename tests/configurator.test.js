@@ -5,48 +5,40 @@ var assert = require('assert'),
 
 describe('the Configurator', function() {
 
-  it ('has a default configuration', function(done) {
+  it ('has a default configuration', function() {
     var config = Configurator.load();
     assert.equal(8000, config.port);
-    done();
   });
 
-  it ('overwrites default configuration with inline configuration object', function(done) {
     var testConfig = {port: 8000};
     var config = Configurator.load({config: testConfig });
     assert.equal(testConfig, config);
-    done();
   });
 
   describe('while dealing with env vars', function() {
-    it ('env vars should win over default configuration', function(done) {
+    it ('env vars should win over default configuration', function() {
       var config = Configurator.load({
         config: { port: 8000 },
         env: { 'RADAR_PORT': 8001 }
       });
       assert.equal(8001, config.port);
 
-      done();
     });
 
-    it ('should camel case keys to JS style and remove RADAR_ prefix', function(done) {
       var config = Configurator.load({
         env: { 'RADAR_SENTINEL_MASTER_NAME': 'mymaster' }
       });
       assert.equal('mymaster', config.sentinelMasterName);
 
-      done();
     });
 
-    it ('should only overwrite the right keys', function(done) {
+    it ('should only overwrite the right keys', function() {
       var config = Configurator.load({
         config: {port: 8004},
         env: { 'RADAR_SENTINEL_MASTER_NAME': 'mymaster' }
       });
       assert.equal(8004, config.port);
       assert.equal('mymaster', config.sentinelMasterName);
-
-      done();
     });
 
   });
