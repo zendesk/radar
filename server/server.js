@@ -248,8 +248,7 @@ function _parseJSON(data) {
 
 // Transforms Redis URL into persistence configuration object
 function setupPersistence(configuration, done) {
-  Core.Persistence.setConfig(configuration.persi:0
-      stence);
+  Core.Persistence.setConfig(configuration.persistence);
   Core.Persistence.connect(done);
 };
 
