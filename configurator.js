@@ -101,6 +101,40 @@ function pickFirst(propName) {
   return value;
 }
 
+function forPersistence(configuration) {
+  var connection, url = require('url');
+
+  // Using sentinel
+  if (configuration.sentinelMasterName) {
+    if (!configuration.sentinelUrls) 
+      throw Error('sentinelMasterName present but no sentinelUrls was provided. ');
+    
+    connection = { id: configuration.sentinelMasterName, sentinels: []};
+
+    var urls = configuration.sentinelUrls.split(',');
+    urls.forEach(function(uri) {
+      var parsedUrl = url.parse(uri);
+      connection.sentinels.push({ 
+        host: parsedUrl.hostname,
+        port: parsedUrl.port
+      });
+    });
+
+  } else { // Using standalone redis. 
+    var parsedUrl = url.parse(configuration.redisUrl);
+    connection = {
+      host: parsedUrl.hostname,
+      port: parsedUrl.port
+    };
+  }
+
+  return { 
+    use_connection: 'main', 
+    connection_settings: {
+      main: connection 
+    } 
+  }
+};
 // Public
 function load() {
   var options = (arguments.length == 1 ? arguments[0] : {}),
@@ -112,6 +146,10 @@ function load() {
   variables.forEach(function(variable) {
     config[variable.name] = pickFirst(variable.name, cli, env, config); 
   });
+
+  if (options.persistence) {
+    config.persistence = forPersistence(config);
+  }
 
   return config;
 }
