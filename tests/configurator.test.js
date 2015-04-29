@@ -1,6 +1,8 @@
 /* global describe, it */
 
 var assert = require('assert'),
+    noArgs = ['', ''], 
+    noEnv = {}, 
     Configurator = require('../configurator.js');
 
 describe('the Configurator', function() {
@@ -10,32 +12,24 @@ describe('the Configurator', function() {
     assert.equal(8000, config.port);
   });
 
-    var testConfig = {port: 8000};
-    var config = Configurator.load({config: testConfig });
-    assert.equal(testConfig, config);
-  });
-
   describe('while dealing with env vars', function() {
     it ('env vars should win over default configuration', function() {
       var config = Configurator.load({
-        config: { port: 8000 },
-        env: { 'RADAR_PORT': 8001 }
-      });
+            config: { port: 8000 },
+            argv: noArgs,
+            env: { 'RADAR_PORT': 8001 }
+          });
+
       assert.equal(8001, config.port);
-
-    });
-
-      var config = Configurator.load({
-        env: { 'RADAR_SENTINEL_MASTER_NAME': 'mymaster' }
-      });
-      assert.equal('mymaster', config.sentinelMasterName);
-
     });
 
     it ('should only overwrite the right keys', function() {
       var config = Configurator.load({
         config: {port: 8004},
-        env: { 'RADAR_SENTINEL_MASTER_NAME': 'mymaster' }
+        env: { 
+          'RADAR_SENTINEL_MASTER_NAME': 'mymaster',
+          'RADAR_SENTINEL_URLS': 'sentinel://localhost:7777'
+        }
       });
       assert.equal(8004, config.port);
       assert.equal('mymaster', config.sentinelMasterName);
@@ -55,7 +49,7 @@ describe('the Configurator', function() {
       it('config: ' + name, function() {
         var configOptions = {}
         configOptions[name] = options.expected;
-        var config = Configurator.load({ config: configOptions });
+        var config = Configurator.load({ config: configOptions, argv: noArgs, env: noEnv });
         assert.equal(config[name], options.expected);
       });
 

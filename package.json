@@ -55,7 +55,7 @@
     "test": "npm run test-sentinel && npm run test-redis",
     "test-redis": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
     "pretest-sentinel": "./node_modules/.bin/simple_sentinel start",
-    "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" radar_connection=cluster1 npm run test-one'",
+    "test-sentinel": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" RADAR_SENTINEL_URLS=sentinel://localhost:26379 RADAR_SENTINEL_MASTER_NAME=mymaster npm run test-one'",
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
