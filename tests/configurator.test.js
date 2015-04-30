@@ -11,19 +11,19 @@ function describeOptionTest(configurator, name, options){
     if (options.default) {
       it ('default must be ' + options.default, function() {
         var config = configurator.load({});
-        assert.equal(config[name], options.default, "Expected " + config[name] + "to equal " + options.default);
+        assert.equal(config[name], options.default);
       });
-    };
+    }
 
     it('config: ' + name, function() {
-      var configOptions = {}
+      var configOptions = {};
       configOptions[name] = options.expected;
       var config = configurator.load({ config: configOptions, argv: noArgs, env: noEnv });
-      assert.equal(config[name], options.expected, "Expected " + config[name] + " to equal " + options.expected);
+      assert.equal(config[name], options.expected);
     });
 
     it('env: ' + options.env, function() {
-      var envOptions = {}
+      var envOptions = {};
       envOptions[options.env] = options.expected;
       var config = configurator.load({ env: envOptions });
       assert.equal(config[name], options.expected);
@@ -133,7 +133,7 @@ describe('the Configurator', function() {
       long:       '--exp', 
       short:      '-e', 
       env:        'RADAR_TEST'
-    })
+    });
 
   });
 });

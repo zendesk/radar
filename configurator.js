@@ -11,6 +11,20 @@
  *
  */
 
+// TODO: Move to Util module, or somewhere else. 
+function merge(destination, source) {
+  for (var name in source) {
+    if (source.hasOwnProperty(name)) {
+      destination[name] = source[name];
+    }
+  }
+
+  return destination;
+}
+
+function clone(object) {
+  return JSON.parse(JSON.stringify(object));
+}
 // Minimal radar settings. 
 // Use it to enhance Configurator's knowledge, but do not remove anything. 
 var defaultSettings = [
@@ -61,8 +75,8 @@ var Configurator = function(settings) {
     settings.forEach(function(setting) {
       self.settings.push(clone(setting));
     });
-  };
-}
+  }
+};
 
 // Creates a Configurator and returns loaded configuration. 
 Configurator.load = function() {
@@ -70,7 +84,7 @@ Configurator.load = function() {
       configuration = configurator.load.apply(configurator, arguments);
 
   return configuration;
-}
+};
 
 // Instance level methods
 Configurator.prototype.load = function() {
@@ -79,18 +93,18 @@ Configurator.prototype.load = function() {
       env =     this._parseEnv((options.env  || process.env)),
       config =  this._defaultConfiguration();
   
-  merge(config, options.config || {});
+  merge(config, options.config);
 
   this.settings.forEach(function(variable) {
-    config[variable.name] = pickFirst(variable.name, cli, env, config); 
+    config[variable.name] = Configurator.pickFirst(variable.name, cli, env, config); 
   });
 
   if (options.persistence) {
-    config.persistence = forPersistence(config);
+    config.persistence = Configurator.forPersistence(config);
   }
 
   return config;
-}
+};
 
 Configurator.prototype._parseCli = function(argv) {
   var parser = require('nomnom')();
@@ -104,7 +118,7 @@ Configurator.prototype._parseCli = function(argv) {
   });
 
   return parser.parse(argv);
-}
+};
 
 Configurator.prototype._parseEnv = function(env) {
   var cleanEnv = {},
@@ -118,7 +132,7 @@ Configurator.prototype._parseEnv = function(env) {
   });
 
   return cleanEnv;
-}
+};
 
 Configurator.prototype._defaultConfiguration = function() {
   var config = {};
@@ -130,9 +144,9 @@ Configurator.prototype._defaultConfiguration = function() {
   });
 
   return config;
-}
+};
 
-function pickFirst(propName) {
+Configurator.pickFirst = function(propName) {
   var values = [].slice.call(arguments, 1),
       i = 0,
       value;
@@ -145,9 +159,9 @@ function pickFirst(propName) {
   }
 
   return value;
-}
+};
 
-function forPersistence(configuration) {
+Configurator.forPersistence = function(configuration) {
   var url = require('url'), 
       connection;
 
@@ -181,22 +195,6 @@ function forPersistence(configuration) {
       main: connection 
     } 
   };
-}
+};
 
-// TODO: Move to Util module, or somewhere else. 
-function merge(destination, source) {
-  for (var name in source) {
-    if (source.hasOwnProperty(name)) {
-      destination[name] = source[name];
-    }
-  };
-
-  return destination;
-}
-
-function clone(object) {
-  return JSON.parse(JSON.stringify(object));
-}
-
-// Public
 module.exports = Configurator;
