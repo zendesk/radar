@@ -88,7 +88,8 @@ Configurator.load = function() {
 
 // Instance level methods
 Configurator.prototype.load = function() {
-  var options = (arguments.length === 1 ? arguments[0] : {}),
+  var self =    this,
+      options = (arguments.length === 1 ? arguments[0] : {}),
       cli =     this._parseCli((options.argv || process.argv)),
       env =     this._parseEnv((options.env  || process.env)),
       config =  this._defaultConfiguration();
@@ -96,11 +97,11 @@ Configurator.prototype.load = function() {
   merge(config, options.config);
 
   this.settings.forEach(function(variable) {
-    config[variable.name] = Configurator.pickFirst(variable.name, cli, env, config); 
+    config[variable.name] = self._pickFirst(variable.name, cli, env, config); 
   });
 
   if (options.persistence) {
-    config.persistence = Configurator.forPersistence(config);
+    config.persistence = self._forPersistence(config);
   }
 
   return config;
@@ -146,7 +147,7 @@ Configurator.prototype._defaultConfiguration = function() {
   return config;
 };
 
-Configurator.pickFirst = function(propName) {
+Configurator.prototype._pickFirst = function(propName) {
   var values = [].slice.call(arguments, 1),
       i = 0,
       value;
@@ -161,7 +162,7 @@ Configurator.pickFirst = function(propName) {
   return value;
 };
 
-Configurator.forPersistence = function(configuration) {
+Configurator.prototype._forPersistence = function(configuration) {
   var url = require('url'), 
       connection;
 
