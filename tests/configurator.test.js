@@ -5,16 +5,56 @@ var assert = require('assert'),
     noEnv = {}, 
     Configurator = require('../configurator.js');
 
+// Helper function. It tests multiple features of a given configuration option. 
+function describeOptionTest(configurator, name, options){
+  describe('option: ' + name, function() {
+    if (options.default) {
+      it ('default must be ' + options.default, function() {
+        var config = configurator.load({});
+        assert.equal(config[name], options.default, "Expected " + config[name] + "to equal " + options.default);
+      });
+    };
+
+    it('config: ' + name, function() {
+      var configOptions = {}
+      configOptions[name] = options.expected;
+      var config = configurator.load({ config: configOptions, argv: noArgs, env: noEnv });
+      assert.equal(config[name], options.expected, "Expected " + config[name] + " to equal " + options.expected);
+    });
+
+    it('env: ' + options.env, function() {
+      var envOptions = {}
+      envOptions[options.env] = options.expected;
+      var config = configurator.load({ env: envOptions });
+      assert.equal(config[name], options.expected);
+    });
+
+    if (options.short) {
+      it('short arg: ' + options.short, function() {
+        var config = configurator.load({ argv: ['', '', options.short, options.expected ] });
+        assert.equal(config[name], options.expected);
+      });
+    }
+
+    if (options.long) {
+      it('long arg: ' + options.long, function() {
+        var config = configurator.load({ argv: ['', '', options.long, options.expected ] });
+        assert.equal(config[name], options.expected);
+      });
+    }
+  });
+}
+
 describe('the Configurator', function() {
 
   it('has a default configuration', function() {
-    var config = Configurator.load();
+    var config = new Configurator().load();
     assert.equal(8000, config.port);
   });
 
   describe('while dealing with env vars', function() {
     it('env vars should win over default configuration', function() {
-      var config = Configurator.load({
+      var config = new Configurator().load({
             config: { port: 8000 },
             argv: noArgs,
             env: { 'RADAR_PORT': 8001 }
@@ -37,46 +77,10 @@ describe('the Configurator', function() {
 
   });
 
-  function describeOptionTest(name, options){
-    describe('option: ' + name, function() {
-      if (options.default) {
-        it ('default must be ' + options.expected, function() {
-          var config = Configurator.load({});
-          assert.equal(config[name], options.default);
-        });
-      };
+  describe('default settings', function() {
+    var configurator = new Configurator();
 
-      it('config: ' + name, function() {
-        var configOptions = {}
-        configOptions[name] = options.expected;
-        var config = Configurator.load({ config: configOptions, argv: noArgs, env: noEnv });
-        assert.equal(config[name], options.expected);
-      });
-
-      it('env: ' + options.env, function() {
-        var envOptions = {}
-        envOptions[options.env] = options.expected;
-        var config = Configurator.load({ env: envOptions });
-        assert.equal(config[name], options.expected);
-      });
-  
-      if (options.short) {
-        it('short arg: ' + options.short, function() {
-          var config = Configurator.load({ argv: ['', '', options.short, options.expected ] });
-          assert.equal(config[name], options.expected);
-        });
-      }
-
-      if (options.long) {
-        it('long arg: ' + options.long, function() {
-          var config = Configurator.load({ argv: ['', '', options.long, options.expected ] });
-          assert.equal(config[name], options.expected);
-        });
-      }
-    });
-  }
-  describe('supported options', function() {
-    describeOptionTest('port', {
+    describeOptionTest(configurator, 'port', {
       default:  8000, 
       expected: 8004, 
       short:    '-p',
@@ -84,7 +88,7 @@ describe('the Configurator', function() {
       env:      'RADAR_PORT'
     });
 
-    describeOptionTest('redisUrl', {
+    describeOptionTest(configurator, 'redisUrl', {
       default:    'redis://localhost:6379', 
       expected:   'redis://localhost:9000', 
       short:      '-r', 
@@ -92,7 +96,7 @@ describe('the Configurator', function() {
       env:        'RADAR_REDIS_URL'
     });
 
-    describeOptionTest('healthReportInterval', {
+    describeOptionTest(configurator, 'healthReportInterval', {
       default:    '10000', 
       expected:   '10001', 
       long:       '--interval', 
@@ -100,17 +104,37 @@ describe('the Configurator', function() {
       env:        'RADAR_HEALTH_REPORT_INTERVAL'
     });
 
-    describeOptionTest('sentinelMasterName', {
+    describeOptionTest(configurator, 'sentinelMasterName', {
       expected:   'mymaster', 
       long:       '--sentinel_master_name', 
       env:        'RADAR_SENTINEL_MASTER_NAME'
     });
 
-    describeOptionTest('sentinelUrls', {
+    describeOptionTest(configurator, 'sentinelUrls', {
       expected:   'sentinel://localhost:1000', 
       long:       '--sentinel_urls', 
       env:        'RADAR_SENTINEL_URLS'
     });
+  });
+
+  describe('custom setting', function(){
+    var newOption = {
+          name:     'testOption', description: 'test option',
+          env:      'RADAR_TEST', 
+          abbr:     'e',
+          full:     'exp',
+          default:  'testDefault'
+        },
+        configurator = new Configurator([newOption]);
+    
+    describeOptionTest(configurator, 'testOption', {
+      default:    'testDefault', 
+      expected:   'expected', 
+      long:       '--exp', 
+      short:      '-e', 
+      env:        'RADAR_TEST'
+    })
+
   });
 });
 

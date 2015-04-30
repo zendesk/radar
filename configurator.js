@@ -11,7 +11,9 @@
  *
  */
 
-var variables = [
+// Minimal radar settings. 
+// Use it to enhance Configurator's knowledge, but do not remove anything. 
+var defaultSettings = [
   {
     name:     'port', description: 'port to listen',
     env:      'RADAR_PORT', 
@@ -51,22 +53,49 @@ var variables = [
   }
 ];
 
-function defaultConfiguration() {
-  var config = {};
+var Configurator = function(settings) {
+  this.settings = clone(defaultSettings);
+  
+  if (settings) {
+    var self = this;
+    settings.forEach(function(setting) {
+      self.settings.push(clone(setting));
+    });
+  };
+}
 
-  variables.forEach(function(element) {
-    if (element.hasOwnProperty('default')) {
-      config[element.name] = element.default;
-    }
+// Creates a Configurator and returns loaded configuration. 
+Configurator.load = function() {
+  var configurator  = new Configurator(),
+      configuration = configurator.load.apply(configurator, arguments);
+
+  return configuration;
+}
+
+// Instance level methods
+Configurator.prototype.load = function() {
+  var options = (arguments.length === 1 ? arguments[0] : {}),
+      cli =     this._parseCli((options.argv || process.argv)),
+      env =     this._parseEnv((options.env  || process.env)),
+      config =  this._defaultConfiguration();
+  
+  merge(config, options.config || {});
+
+  this.settings.forEach(function(variable) {
+    config[variable.name] = pickFirst(variable.name, cli, env, config); 
   });
+
+  if (options.persistence) {
+    config.persistence = forPersistence(config);
+  }
 
   return config;
 }
 
-function parserCli(argv) {
+Configurator.prototype._parseCli = function(argv) {
   var parser = require('nomnom')();
   
-  variables.forEach(function(element){
+  this.settings.forEach(function(element){
     parser.option(element.name, {
       help:     element.description, 
       full:     element.full,
@@ -77,11 +106,11 @@ function parserCli(argv) {
   return parser.parse(argv);
 }
 
-function parserEnv(env) {
+Configurator.prototype._parseEnv = function(env) {
   var cleanEnv = {},
       value;
 
-  variables.forEach(function(element){
+  this.settings.forEach(function(element){
     value = env[element.env];
     if (value) {
       cleanEnv[element.name] = value;
@@ -89,6 +118,18 @@ function parserEnv(env) {
   });
 
   return cleanEnv;
+}
+
+Configurator.prototype._defaultConfiguration = function() {
+  var config = {};
+
+  this.settings.forEach(function(element) {
+    if (element.hasOwnProperty('default')) {
+      config[element.name] = element.default;
+    }
+  });
+
+  return config;
 }
 
 function pickFirst(propName) {
@@ -142,37 +183,20 @@ function forPersistence(configuration) {
   };
 }
 
-// TODO: Move to Util module, or somewhere. 
+// TODO: Move to Util module, or somewhere else. 
 function merge(destination, source) {
   for (var name in source) {
     if (source.hasOwnProperty(name)) {
       destination[name] = source[name];
     }
-  }
+  };
 
   return destination;
 }
 
-// Public
-function load() {
-  var options = (arguments.length === 1 ? arguments[0] : {}),
-      cli = parserCli((options.argv || process.argv)),
-      env = parserEnv((options.env  || process.env)),
-      config = defaultConfiguration();
-  
-  merge(config, options.config || {});
-
-  variables.forEach(function(variable) {
-    config[variable.name] = pickFirst(variable.name, cli, env, config); 
-  });
-
-  if (options.persistence) {
-    config.persistence = forPersistence(config);
-  }
-
-  return config;
+function clone(object) {
+  return JSON.parse(JSON.stringify(object));
 }
 
-module.exports = {
-  load: load
-};
+// Public
+module.exports = Configurator;
