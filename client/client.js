@@ -6,11 +6,16 @@ function Client (name, id, accountName, version) {
   this.lastModified = Date.now();
   this.name = name;
   this.id = id;
-  this.subscriptions = {};
-  this.presences = {};
   this.key = this._keyGet(accountName);
   this.version = version;
+  this.state = STATE_WAIT_FOR_LOAD;
+  this.messagesDelayed = [];
+  this.subscriptions = {};
+  this.presences = {};
 }
+
+var STATE_WAIT_FOR_LOAD = 1,
+    STATE_LOAD_DONE = 2;
 
 // 86400:  number of seconds in 1 day
 var DEFAULT_DATA_TTL = 86400;
@@ -55,10 +60,17 @@ Client.create = function (message) {
   return client;
 };
 
+// Instance methods
+
 // Persist subscriptions and presences
 Client.prototype.dataStore = function (message) {
   var subscriptions = this.subscriptions;
   var presences = this.presences;
+
+  if (STATE_WAIT_FOR_LOAD === this.state) {
+    this.messagesDelayed.push(message);
+    return false;
+  }
 
   // Persist the message data, according to type
   var changed = true;
@@ -71,12 +83,12 @@ Client.prototype.dataStore = function (message) {
 
     case 'sync':
     case 'subscribe':
-      subscriptions[message.to] = message.op;
+      subscriptions[message.to] = message;
       break;
 
     case 'set':
       if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        presences[message.to] = message.value;
+        presences[message.to] = message;
       }
       break;
 
@@ -85,14 +97,54 @@ Client.prototype.dataStore = function (message) {
   }
 
   if (changed) {
-    this.lastModified = Date.now();
-    Core.Persistence.persistKey(this.key, this, Client.dataTTL);
+    this._persist();
   }
 
   return true;
 };
 
+Client.prototype.dataLoad = function (callback) {
+  var self = this;
+
+  // When we touch a client, refresh the TTL
+  Core.Persistence.expire(self.key, Client.dataTTLGet());
+
+  // Update persisted subscriptions/presences
+  Core.Persistence.readKey(self.key, function (clientOld) {
+    if (clientOld) {
+      self.subscriptions = clientOld.subscriptions;
+      self.presences = clientOld.presences;
+
+      Client._presencesDelete(self.presences, clientOld.id);
+
+      if (callback) {
+        callback();
+        self._persist();
+      }
+    }
+
+    self.state = STATE_LOAD_DONE;
+    Client.clients[self.name] = self;
+  });
+};
+
+
+
 // Private API
+
+// Class methods
+
+// Remove old "userId"."socketId" entry from Persistence
+Client._presencesDelete = function (presences, socketId) {
+  for (var presenceKey in presences) {
+    var _hash = presenceKey;
+    var _key = presences[presenceKey].key + '.' + socketId;
+    Core.Persistence.deleteHash(_hash, _key);
+  }
+};
+
+
+// Instance methods
 
 // Return the key used to persist client data
 Client.prototype._keyGet = function (accountName) {
@@ -101,6 +153,11 @@ Client.prototype._keyGet = function (accountName) {
   key += this.name;
 
   return key;
+};
+
+Client.prototype._persist = function () {
+  this.lastModified = Date.now();
+  Core.Persistence.persistKey(this.key, this, Client.dataTTLGet());
 };
 
 module.exports = Client;

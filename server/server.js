@@ -94,7 +94,7 @@ Server.prototype._onSocketConnection = function(socket) {
   logging.info('#socket - connect', socket.id);
 
   socket.on('message', function(data) {
-    self._handleSocketMessage(socket, data);
+    self._socketMessageHandle(socket, data);
   });
 
   socket.on('close', function() {
@@ -130,11 +130,11 @@ Server.prototype._handlePubSubMessage = function(name, data) {
 };
 
 // Process a socket message
-Server.prototype._handleSocketMessage = function(socket, data) {
+Server.prototype._socketMessageHandle = function(socket, data) {
   var message = _parseJSON(data);
 
   if (!socket) {
-    logging.info('_handleSocketMessage: socket is null');
+    logging.info('_socketMessageHandle: socket is null');
     return;
   }
 
@@ -144,7 +144,7 @@ Server.prototype._handleSocketMessage = function(socket, data) {
     return;
   }
 
-  if (!this._messageAuthorize(message, socket)) {
+  if (!this._messageAuthorize(socket, message)) {
     return;
   }
 
@@ -159,7 +159,7 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 Server.prototype._clientDataPersist = function (socket, message) {
   // Sync the client name to the current socket
   if (message.op == 'nameSync') {
-    this._clientInit(message);
+    this._clientInit(socket, message);
 
     socket.send({ op: 'ack', value: message && message.ack });
     return false;
@@ -189,8 +189,27 @@ Server.prototype._resourceMessageHandle = function (socket, message) {
   }
 };
 
+// Process the resource messages associated with a single client
+Server.prototype._resourceMessagesHandle = function (socket, client) {
+  var subscriptions = client.subscriptions;
+  var presences = client.presences;
+
+  for (var key in presences) {
+    this._resourceMessageHandle(socket, presences[key]);
+  }
+
+  for (var key in subscriptions) {
+    this._resourceMessageHandle(socket, subscriptions[key]);
+  }
+
+  var messagesDelayed = client.messagesDelayed;
+  for (var i = 0, len = messagesDelayed.length; i < len; i++) {
+    this._resourceMessageHandle(socket, messagesDelayed[i]);
+  }
+};
+
 // Authorize a socket message
-Server.prototype._messageAuthorize =  function (message, socket) {
+Server.prototype._messageAuthorize =  function (socket, message) {
   var isAuthorized = Core.Auth.authorize(message, socket);
   if (!isAuthorized) {
     logging.warn('#socket.message - auth_invalid', message, socket.id);
@@ -234,8 +253,11 @@ Server.prototype._persistenceSubscribe = function (name, id) {
 };
 
 // Initialize the current client
-Server.prototype._clientInit = function (initMessage) {
-  Client.create(initMessage);
+Server.prototype._clientInit = function (socket, initMessage) {
+  var client = Client.create(initMessage);
+  if (client) {
+    client.dataLoad(this._resourceMessagesHandle.bind(this, socket, client));
+  }
 };
 
 function _parseJSON(data) {

@@ -113,7 +113,6 @@ Stream.prototype.push = function(socket, message) {
 
   this.list.push(m, function(error, stamped) {
     if (error) {
-      console.log(error);
       logging.error(error);
       return;
     }
