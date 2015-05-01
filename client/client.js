@@ -115,12 +115,14 @@ Client.prototype.dataLoad = function (callback) {
       self.subscriptions = clientOld.subscriptions;
       self.presences = clientOld.presences;
 
+      // Remove obsolete presences
       Client._presencesDelete(self.presences, clientOld.id);
 
       if (callback) {
         callback();
-        self._persist();
       }
+
+      self._persist();
     }
 
     self.state = STATE_LOAD_DONE;
