@@ -47,7 +47,7 @@ var defaultSettings = [
     env:      'RADAR_HEALTH_REPORT_INTERVAL',
     full:     'interval',
     abbr:     'i',
-    default:  '10000'
+    default:  10000
   },
   {
     name:     'clientDataTTL', description: 'TTL for data stored on the server, in seconds (86400 = 1 day)',
