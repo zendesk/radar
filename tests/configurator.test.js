@@ -96,14 +96,6 @@ describe('the Configurator', function() {
       env:        'RADAR_REDIS_URL'
     });
 
-    describeOptionTest(configurator, 'healthReportInterval', {
-      default:    '10000', 
-      expected:   '10001', 
-      long:       '--interval', 
-      short:      '-i', 
-      env:        'RADAR_HEALTH_REPORT_INTERVAL'
-    });
-
     describeOptionTest(configurator, 'sentinelMasterName', {
       expected:   'mymaster', 
       long:       '--sentinel_master_name', 
