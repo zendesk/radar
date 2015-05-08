@@ -8,14 +8,9 @@ function Client (name, id, accountName, version) {
   this.id = id;
   this.key = this._keyGet(accountName);
   this.version = version;
-  this.state = STATE_WAIT_FOR_LOAD;
-  this.messagesDelayed = [];
   this.subscriptions = {};
   this.presences = {};
 }
-
-var STATE_WAIT_FOR_LOAD = 1,
-    STATE_LOAD_DONE = 2;
 
 // 86400:  number of seconds in 1 day
 var DEFAULT_DATA_TTL = 86400;
@@ -67,11 +62,6 @@ Client.prototype.dataStore = function (message) {
   var subscriptions = this.subscriptions;
   var presences = this.presences;
 
-  if (STATE_WAIT_FOR_LOAD === this.state) {
-    this.messagesDelayed.push(message);
-    return false;
-  }
-
   // Persist the message data, according to type
   var changed = true;
   switch(message.op) {
@@ -115,17 +105,13 @@ Client.prototype.dataLoad = function (callback) {
       self.subscriptions = clientOld.subscriptions;
       self.presences = clientOld.presences;
 
-      // Remove obsolete presences
-      Client._presencesDelete(self.presences, clientOld.id);
+      self._persist();
 
       if (callback) {
         callback();
       }
-
-      self._persist();
     }
 
-    self.state = STATE_LOAD_DONE;
     Client.clients[self.name] = self;
   });
 };
@@ -133,18 +119,6 @@ Client.prototype.dataLoad = function (callback) {
 
 
 // Private API
-
-// Class methods
-
-// Remove old "userId"."socketId" entry from Persistence
-Client._presencesDelete = function (presences, socketId) {
-  for (var presenceKey in presences) {
-    var _hash = presenceKey;
-    var _key = presences[presenceKey].key + '.' + socketId;
-    Core.Persistence.deleteHash(_hash, _key);
-  }
-};
-
 
 // Instance methods
 

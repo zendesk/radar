@@ -36,7 +36,8 @@
     "callback_tracker": "*",
     "underscore": "*",
     "persistence": "*",
-    "semver": "*"
+    "semver": "*",
+    "pauseable": "*"
   },
   "devDependencies": {
     "mocha": "*",

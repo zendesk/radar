@@ -5,7 +5,8 @@ var MiniEventEmitter = require('miniee'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
-    Client = require('../client/client.js');
+    Client = require('../client/client.js'),
+    Pausable = require('pauseable');
 
 function Server() {
   this.server = null;
@@ -194,18 +195,19 @@ Server.prototype._resourceMessagesHandle = function (socket, client) {
   var subscriptions = client.subscriptions;
   var presences = client.presences;
 
-  for (var key in presences) {
-    this._resourceMessageHandle(socket, presences[key]);
-  }
+  // Pause events on the inbound socket
+  Pausable.pause(socket); 
 
   for (var key in subscriptions) {
     this._resourceMessageHandle(socket, subscriptions[key]);
   }
 
-  var messagesDelayed = client.messagesDelayed;
-  for (var i = 0, len = messagesDelayed.length; i < len; i++) {
-    this._resourceMessageHandle(socket, messagesDelayed[i]);
+  for (var key in presences) {
+    this._resourceMessageHandle(socket, presences[key]);
   }
+
+  // Resume events on the inbound socket
+  Pausable.resume(socket); 
 };
 
 // Authorize a socket message
