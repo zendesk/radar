@@ -1,3 +1,20 @@
+### 0.14.0
+* Add server side client state
+  - Initial code refactoring
+    - do not use the naked _me reference
+    - Identify APIs as public/private by
+    - prefixing with _ (e.g. _handleClientMessage) where appropriate
+    - regrouping of APIs in source files into public/private groups
+    - rename APIs where needed (all private APIs)
+    - expand comments minimally to clarify purpose of APIs
+  - Change Auth to work on messages rather than on resources
+  - Add Client module
+  - Add nameSync message
+  - Persist client data on the server, with client data TTL
+  - Additional refactoring of server/server.js
+  - Add use of semver
+  - In many places, replace old *client* with *socket* for the sake of clarity
+
 ### 0.13.1
 * Code cleanup
   - comment capitalization, comment line length, code line length
