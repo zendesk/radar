@@ -8,8 +8,8 @@ var default_options = {
   }
 };
 
-function Status(name, parent, options) {
-  Resource.call(this, name, parent, options, default_options);
+function Status(name, server, options) {
+  Resource.call(this, name, server, options, default_options);
 }
 
 Status.prototype = new Resource();

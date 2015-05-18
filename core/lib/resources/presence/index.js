@@ -19,8 +19,8 @@ shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now())
 var sentryName = shasum.digest('hex').slice(0,15);
 Presence.sentry = new Sentry(sentryName);
 
-function Presence(name, parent, options) {
-  Resource.call(this, name, parent, options, default_options);
+function Presence(name, server, options) {
+  Resource.call(this, name, server, options, default_options);
   this.setup();
 }
 
@@ -140,7 +140,6 @@ Presence.prototype.unsubscribe = function(socket, message) {
   logging.info('#presence - implicit disconnect', socket.id, this.name);
   this.manager.disconnectClient(socket.id);
 
-  // Call parent
   Resource.prototype.unsubscribe.call(this, socket, message);
 };
 

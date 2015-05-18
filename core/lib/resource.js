@@ -37,10 +37,10 @@ function recursiveMerge(target) {
   return target;
 }
 
-function Resource(name, parent, options, default_options) {
+function Resource(name, server, options, default_options) {
   this.name = name;
   this.subscribers = {};
-  this.parent = parent;
+  this.server = server; // RadarServer instance
   this.options = recursiveMerge({}, options || {}, default_options || {});
 }
 
@@ -65,7 +65,7 @@ Resource.prototype.unsubscribe = function(socket, message) {
   if (!Object.keys(this.subscribers).length) {
     logging.info('#'+this.type, '- destroying resource', this.name,
                                           this.subscribers, socket.id);
-    this.parent.destroyResource(this.name);
+    this.server.destroyResource(this.name);
   }
 
   this.ack(socket, message && message.ack);
@@ -87,7 +87,7 @@ Resource.prototype.redisIn = function(data) {
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
 Resource.prototype.socketGet = function (id) {
-  return this.parent.server.clients[id];
+  return this.server.socketServer.clients[id];
 };
 
 Resource.prototype.ack = function(socket, sendAck) {

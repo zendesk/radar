@@ -12,8 +12,8 @@ var default_options = {
 // This includes even the final unsubscribe, in case a client decides to rejoin
 // after being the last user.
 
-function MessageList(name, parent, options) {
-  Resource.call(this, name, parent, options, default_options);
+function MessageList(name, server, options) {
+  Resource.call(this, name, server, options, default_options);
 }
 
 MessageList.prototype = new Resource();

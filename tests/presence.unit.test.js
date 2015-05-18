@@ -14,7 +14,7 @@ describe('given a presence resource',function() {
     broadcast: function() { },
     terminate: function() { },
     destroyResource: function() {},
-    server: {
+    socketServer: {
       clients: { }
     }
   };
@@ -258,8 +258,8 @@ describe('given a presence resource',function() {
           local.push(data);
         };
 
-        Server.server.clients[client.id] = client;
-        Server.server.clients[client2.id] = client2;
+        Server.socketServer.clients[client.id] = client;
+        Server.socketServer.clients[client2.id] = client2;
         messages = {};
         client.send = function(msg) {
           (messages[client.id] || (messages[client.id] = [])).push(msg);
