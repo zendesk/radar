@@ -140,7 +140,6 @@ Presence.prototype.unsubscribe = function(socket, message) {
   logging.info('#presence - implicit disconnect', socket.id, this.name);
   this.manager.disconnectClient(socket.id);
 
-  // Call server
   Resource.prototype.unsubscribe.call(this, socket, message);
 };
 
