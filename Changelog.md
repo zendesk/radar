@@ -1,3 +1,11 @@
+### 0.14.2
+* Update Changelog.md to be current
+  - Bumped version of radar now matches that of radar_client
+
+### 0.14.1
+* Update dev dependency for radar_client to * (from 0.14.0)
+  (Note: Changelog.md was not current in the 0.14.1 release)
+
 ### 0.14.0
 * Add server side client state
   - Initial code refactoring
