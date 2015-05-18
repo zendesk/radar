@@ -15,13 +15,13 @@ function p404(req, res){
   res.end('404 Not Found');
 }
 
-var server = http.createServer(p404);
+var httpServer = http.createServer(p404);
 
 // Radar API
-Api.attach(server);
+Api.attach(httpServer);
 
 // Radar server
 var radar = new Radar();
-radar.attach(server, configuration);
+radar.attach(httpServer, configuration);
 
-server.listen(configuration.port);
+httpServer.listen(configuration.port);

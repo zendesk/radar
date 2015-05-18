@@ -9,7 +9,7 @@ var http = require('http'),
     Minilog = require('minilog'),
     logger = require('minilog')('lib_radar'),
     formatter = require('./formatter.js'),
-    radar, http_server, serverStarted = false;
+    radar, httpServer, serverStarted = false;
 
 if (process.env.verbose) {
   var minilogPipe = Minilog;
@@ -81,7 +81,7 @@ var Service = {};
 
 Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);
-  http_server = http.createServer(p404);
+  httpServer = http.createServer(p404);
   PresenceManager.userTimeout = 1000;
   Sentry.expiry = 4000;
   PresenceManager.autoPubTimeout = 4000;
@@ -89,8 +89,8 @@ Service.start = function(configuration, callback) {
   radar = new Radar.server();
   radar.once('ready', function() {
     logger.debug('radar ready');
-    http_server.listen(configuration.port, function() {
-      logger.debug('http_server listening on', configuration.port);
+    httpServer.listen(configuration.port, function() {
+      logger.debug('httpServer listening on', configuration.port);
       serverStarted = true;
       Persistence.delWildCard('*',function() {
         logger.info('Persistence cleared');
@@ -98,13 +98,13 @@ Service.start = function(configuration, callback) {
       });
     });
   });
-  radar.attach(http_server, configuration);
+  radar.attach(httpServer, configuration);
 };
 
 Service.stop = function(arg, callback){
   logger.info("stop");
-  http_server.on('close', function() {
-    logger.info("http_server closed");
+  httpServer.on('close', function() {
+    logger.info("httpServer closed");
     if (serverStarted) {
       clearTimeout(serverTimeout);
       logger.info("Calling callback, close event");
@@ -116,13 +116,13 @@ Service.stop = function(arg, callback){
     radar.terminate(function() {
       logger.info("radar terminated");
       if (!serverStarted) {
-        logger.info("http_server terminated");
+        logger.info("httpServer terminated");
         callback();
       }
       else {
-        logger.info("closing http_server");
-        logger.info('connections left', http_server._connections);
-        var val = http_server.close();
+        logger.info("closing httpServer");
+        logger.info('connections left', httpServer._connections);
+        var val = httpServer.close();
         serverTimeout = setTimeout(function() {
           // Failsafe, because server.close does not always
           // throw the close event within time.

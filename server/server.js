@@ -19,11 +19,11 @@ MiniEventEmitter.mixin(Server);
 // Public API
 
 // Attach to a http server
-Server.prototype.attach = function(http_server, configuration) {
+Server.prototype.attach = function(httpServer, configuration) {
   this.configuration = configuration;
   Client.dataTTLSet(this.configuration.clientDataTTL);
   Core.Persistence.setConfig(configuration);
-  Core.Persistence.connect(this._setup.bind(this, http_server));
+  Core.Persistence.connect(this._setup.bind(this, httpServer));
 };
 
 // Destroy empty resource
@@ -52,7 +52,7 @@ Server.prototype.terminate = function(done) {
 
 var VERSION_CLIENT_DATASTORE = '0.13.1';
 
-Server.prototype._setup = function(http_server) {
+Server.prototype._setup = function(httpServer) {
   var engine = DefaultEngineIO,
       engineConf;
 
@@ -73,8 +73,8 @@ Server.prototype._setup = function(http_server) {
                 configuration.engineio.conf.path : 'default';
   }
 
-  this.server = engine.attach(http_server, engineConf);
   this.server.on('connection', this._onSocketConnection.bind(this));
+  this.socketServer = engine.attach(httpServer, engineConf);
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
