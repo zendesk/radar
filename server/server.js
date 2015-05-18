@@ -8,7 +8,7 @@ var MiniEventEmitter = require('miniee'),
     Client = require('../client/client.js');
 
 function Server() {
-  this.server = null;
+  this.socketServer = null;
   this.resources = {};
   this.subscriber = null;
   this.subs = {};
@@ -44,7 +44,7 @@ Server.prototype.terminate = function(done) {
   });
 
   Core.Resources.Presence.sentry.stop();
-  this.server.close();
+  this.socketServer.close();
   Core.Persistence.disconnect(done);
 };
 
@@ -73,8 +73,8 @@ Server.prototype._setup = function(httpServer) {
                 configuration.engineio.conf.path : 'default';
   }
 
-  this.server.on('connection', this._onSocketConnection.bind(this));
   this.socketServer = engine.attach(httpServer, engineConf);
+  this.socketServer.on('connection', this._onSocketConnection.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');

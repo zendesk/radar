@@ -10,8 +10,8 @@ var default_options = {
   }
 };
 
-function Stream(name, parent, options) {
-  Resource.call(this, name, parent, options, default_options);
+function Stream(name, server, options) {
+  Resource.call(this, name, server, options, default_options);
   this.list = new Persistence.List(name, this.options.policy.maxPersistence, this.options.policy.maxLength);
   this.subscriberState = new SubscriberState();
 }
