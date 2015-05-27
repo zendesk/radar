@@ -1,3 +1,8 @@
+### 0.15.0
+* Add new configuration support. 
+  - Configuration can be specified from configuration.js file (legacy),
+    environment and cli. Run `node server --help` to see supported options. 
+
 ### 0.14.2
 * Update Changelog.md to be current
   - Bumped version of radar now matches that of radar_client
