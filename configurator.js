@@ -11,22 +11,7 @@
  *
  */
 
-// TODO: Move to Util module, or somewhere else. 
-function merge(destination, source) {
-  for (var name in source) {
-    if (source.hasOwnProperty(name)) {
-      destination[name] = source[name];
-    }
-  }
-
-  return destination;
-}
-
-function clone(object) {
-  return JSON.parse(JSON.stringify(object));
-}
 // Minimal radar settings. 
-// Use it to enhance Configurator's knowledge, but do not remove anything. 
 var defaultSettings = [
   {
     name:     'port', description: 'port to listen',
@@ -71,6 +56,8 @@ var Configurator = function(settings) {
   }
 };
 
+// Class methods
+
 // Creates a Configurator and returns loaded configuration. 
 Configurator.load = function() {
   var configurator  = new Configurator(),
@@ -79,7 +66,8 @@ Configurator.load = function() {
   return configuration;
 };
 
-// Instance level methods
+// Instance methods
+
 Configurator.prototype.load = function() {
   var self =    this,
       options = (arguments.length === 1 ? arguments[0] : {}),
@@ -99,6 +87,8 @@ Configurator.prototype.load = function() {
 
   return config;
 };
+
+// Private instance methods
 
 Configurator.prototype._parseCli = function(argv) {
   var parser = require('nomnom')();
@@ -190,5 +180,21 @@ Configurator.prototype._forPersistence = function(configuration) {
     } 
   };
 };
+
+// Private methods
+// TODO: Move to Util module, or somewhere else. 
+function merge(destination, source) {
+  for (var name in source) {
+    if (source.hasOwnProperty(name)) {
+      destination[name] = source[name];
+    }
+  }
+
+  return destination;
+}
+
+function clone(object) {
+  return JSON.parse(JSON.stringify(object));
+}
 
 module.exports = Configurator;
