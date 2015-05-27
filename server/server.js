@@ -20,7 +20,7 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(http_server, configuration) {
-  Client.dataTTLSet(this.configuration.clientDataTTL);
+  Client.dataTTLSet(configuration.clientDataTTL);
   var finishSetup = this._setup.bind(this, http_server, configuration);
   setupPersistence(configuration, finishSetup);
 };
