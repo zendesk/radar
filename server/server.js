@@ -19,11 +19,10 @@ MiniEventEmitter.mixin(Server);
 // Public API
 
 // Attach to a http server
-Server.prototype.attach = function(httpServer, configuration) {
-  this.configuration = configuration;
-  Client.dataTTLSet(this.configuration.clientDataTTL);
-  Core.Persistence.setConfig(configuration);
-  Core.Persistence.connect(this._setup.bind(this, httpServer));
+Server.prototype.attach = function(http_server, configuration) {
+  Client.dataTTLSet(configuration.clientDataTTL);
+  var finishSetup = this._setup.bind(this, http_server, configuration);
+  setupPersistence(configuration, finishSetup);
 };
 
 // Destroy empty resource
@@ -244,6 +243,13 @@ function _parseJSON(data) {
     return message;
   } catch(e) { }
   return false;
+}
+
+
+// Transforms Redis URL into persistence configuration object
+function setupPersistence(configuration, done) {
+  Core.Persistence.setConfig(configuration.persistence);
+  Core.Persistence.connect(done);
 }
 
 module.exports = Server;

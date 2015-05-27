@@ -3,7 +3,7 @@ var http = require('http'),
     formatter = require('./lib/formatter.js'),
     Persistence = require('persistence'),
     RadarServer = new require('../index.js').server,
-    configuration = require('../configuration.js'),
+    configuration = require('../configurator.js').load({persistence: true}),
     Sentry = require('../core/lib/resources/presence/sentry.js'),
     Client = require('radar_client').constructor,
     fork = require('child_process').fork,
@@ -24,11 +24,6 @@ if (process.env.verbose) {
     .pipe(Minilog.backends.nodeConsole.formatColor)
     .pipe(process.stdout);
 }
-
-if (process.env.radar_connection) {
-  configuration.use_connection = process.env.radar_connection;
-}
-
 
 http.globalAgent.maxSockets = 10000;
 
@@ -98,10 +93,7 @@ module.exports = {
   },
 
   startPersistence: function(done) {
-    if (process.env.radar_connection) {
-      configuration.use_connection = process.env.radar_connection;
-    }
-    Persistence.setConfig(configuration);
+    Persistence.setConfig(configuration.persistence);
     Persistence.connect(function() {
       Persistence.delWildCard('*', done);
     });

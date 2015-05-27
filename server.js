@@ -1,5 +1,5 @@
 var http = require('http'),
-    configuration = require('./configuration.js'),
+    configuration = require('./configurator.js').load({persistence: true}),
     Radar = require('./server/server.js'),
     Api = require('./api/api.js'),
     Minilog = require('minilog');
@@ -24,4 +24,6 @@ Api.attach(httpServer);
 var radar = new Radar();
 radar.attach(httpServer, configuration);
 
-httpServer.listen(configuration.port);
+httpServer.listen(configuration.port, function() {
+  console.log('Radar Server listening on port ' + configuration.port);
+});

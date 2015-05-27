@@ -2,7 +2,7 @@ var hostname = require('os').hostname(),
     Router = require('./lib/router.js'),
     RadarApi = require('./apis/radar.js');
 
-api = new Router();
+var api = new Router();
 
 function homepage(req, res) {
   res.setHeader('Content-Type', 'text/plain'); // IE will otherwise try to save the response instead of just showing it.
