@@ -25,5 +25,5 @@ var radar = new Radar();
 radar.attach(httpServer, configuration);
 
 httpServer.listen(configuration.port, function() {
-  console.log('Radar Server listening on port ' + configuration.port)
+  console.log('Radar Server listening on port ' + configuration.port);
 });
