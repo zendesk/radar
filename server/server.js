@@ -51,11 +51,11 @@ Server.prototype.terminate = function(done) {
 
 var VERSION_CLIENT_DATASTORE = '0.13.1';
 
-Server.prototype._setup = function(httpServer) {
+Server.prototype._setup = function(httpServer, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
 
-  configuration = this.configuration || {};
+  configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
