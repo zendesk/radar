@@ -19,9 +19,9 @@ MiniEventEmitter.mixin(Server);
 // Public API
 
 // Attach to a http server
-Server.prototype.attach = function(http_server, configuration) {
+Server.prototype.attach = function(httpServer, configuration) {
   Client.dataTTLSet(configuration.clientDataTTL);
-  var finishSetup = this._setup.bind(this, http_server, configuration);
+  var finishSetup = this._setup.bind(this, httpServer, configuration);
   setupPersistence(configuration, finishSetup);
 };
 
