@@ -19,9 +19,9 @@ MiniEventEmitter.mixin(Server);
 // Public API
 
 // Attach to a http server
-Server.prototype.attach = function(http_server, configuration) {
+Server.prototype.attach = function(httpServer, configuration) {
   Client.dataTTLSet(configuration.clientDataTTL);
-  var finishSetup = this._setup.bind(this, http_server, configuration);
+  var finishSetup = this._setup.bind(this, httpServer, configuration);
   setupPersistence(configuration, finishSetup);
 };
 
@@ -51,11 +51,11 @@ Server.prototype.terminate = function(done) {
 
 var VERSION_CLIENT_DATASTORE = '0.13.1';
 
-Server.prototype._setup = function(httpServer) {
+Server.prototype._setup = function(httpServer, configuration) {
   var engine = DefaultEngineIO,
       engineConf;
 
-  configuration = this.configuration || {};
+  configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
