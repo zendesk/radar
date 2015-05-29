@@ -1,3 +1,8 @@
+### 0.15.1
+* Fix configuration not being passed back properly after setting up persistence 
+  connection.
+* Remove .node-version included by mistake.
+
 ### 0.15.0
 * Add new configuration support. 
   - Configuration can be specified from configuration.js file (legacy),
