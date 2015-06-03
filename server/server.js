@@ -180,12 +180,15 @@ Server.prototype._persistClientData = function(socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function(socket, message, resource) {
+  var name = message.to;
+
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
-      (this.resources[message.to] ? 'exists' : 'not instantiated'),
-      (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
+      (this.resources[name] ? 'exists' : 'not instantiated'),
+      (this.subs[name] ? 'is subscribed' : 'not subscribed')
     );
 
+    this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
     resource.handleMessage(socket, message);
     this.emit(message.op, socket, message);
@@ -220,17 +223,24 @@ Server.prototype._getMessageType = function(message) {
 // Get or create resource by name
 Server.prototype._getResource = function(message, messageType) {
   var name = message.to,
-      type = messageType.type;
+      type = messageType.type,
+      resource = this.resources[name];
 
-  if (!this.resources[name]) {
+  if (!resource) {
     if (type && Core.Resources[type]) {
-      this.resources[name] = new Core.Resources[type](name, this, messageType);
+      resource = new Core.Resources[type](name, this, messageType);
     } else {
       logging.error('#resource - unknown_type', name, messageType);
     }
   }
-  return this.resources[name];
+  return resource;
 };
+
+Server.prototype._storeResource = function(resource) {
+  if (!this.resources[resource.name]) {
+    this.resources[resource.name] = resource;
+  }
+}
 
 // Subscribe to the persistence pubsub channel for a single resource
 Server.prototype._persistenceSubscribe = function (name, id) {
