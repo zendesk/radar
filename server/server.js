@@ -142,8 +142,9 @@ Server.prototype._handleSocketMessage = function(socket, data) {
     logging.warn('#socket.message - rejected', socket.id, data);
     return;
   }
+  var messageType = this._getMessageType(message);
 
-  if (!this._messageAuthorize(message, socket)) {
+  if (!this._messageAuthorize(message, socket, messageType)) {
     return;
   }
 
@@ -189,8 +190,14 @@ Server.prototype._resourceMessageHandle = function (socket, message) {
 };
 
 // Authorize a socket message
-Server.prototype._messageAuthorize =  function (message, socket) {
-  var isAuthorized = Core.Auth.authorize(message, socket);
+Server.prototype._messageAuthorize =  function (message, socket, messageType) {
+  var isAuthorized = true,
+      provider = messageType && messageType.authProvider;
+  
+  if (provider && provider.authorize) {
+    isAuthorized = provider.authorize(messageType, message, socket);
+  }
+
   if (!isAuthorized) {
     logging.warn('#socket.message - auth_invalid', message, socket.id);
     socket.send({
@@ -201,6 +208,10 @@ Server.prototype._messageAuthorize =  function (message, socket) {
   }
 
   return isAuthorized; 
+};
+
+Server.prototype._getMessageType = function(message) {
+  return Type.getByExpression(message.to);
 };
 
 // Get or create resource by name
