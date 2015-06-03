@@ -142,46 +142,49 @@ Server.prototype._handleSocketMessage = function(socket, data) {
     logging.warn('#socket.message - rejected', socket.id, data);
     return;
   }
-  var messageType = this._getMessageType(message);
+  
+  this._processMessage(socket, message);
+}
 
-  if (!this._messageAuthorize(message, socket, messageType)) {
+Server.prototype._processMessage = function(socket, message) {
+  var messageType = this._getMessageType(message),
+      resource = this._getResource(message, messageType);
+
+  if (!this._authorizeMessage(socket, message, messageType)) {
     return;
   }
 
-  if (!this._clientDataPersist(socket, message)) {
+  if (!this._persistClientData(socket, message)) {
     return;
   }
 
-  this._resourceMessageHandle(socket, message);
+  this._handleResourceMessage(socket, message, resource);
 };
 
 // Initialize a client, and persist messages where required
-Server.prototype._clientDataPersist = function (socket, message) {
+Server.prototype._persistClientData = function(socket, message) {
   // Sync the client name to the current socket
   if (message.op == 'nameSync') {
-    this._clientInit(message);
-
+    Client.create(message);
     socket.send({ op: 'ack', value: message && message.ack });
     return false;
   }
-  else {
-    var client = Client.get(socket.id);
-    if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
-      client.dataStore(message);
-    }
+
+  var client = Client.get(socket.id);
+  if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
+    client.dataStore(message);
   }
 
   return true;
 };
 
 // Get a resource, subscribe where required, and handle associated message
-Server.prototype._resourceMessageHandle = function (socket, message) {
-  var resource = this._resourceGet(message.to);
+Server.prototype._handleResourceMessage = function(socket, message, resource) {
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
       (this.resources[message.to] ? 'exists' : 'not instantiated'),
       (this.subs[message.to] ? 'is subscribed' : 'not subscribed')
-      );
+    );
 
     this._persistenceSubscribe(resource.name, socket.id);
     resource.handleMessage(socket, message);
@@ -190,7 +193,7 @@ Server.prototype._resourceMessageHandle = function (socket, message) {
 };
 
 // Authorize a socket message
-Server.prototype._messageAuthorize =  function (message, socket, messageType) {
+Server.prototype._authorizeMessage = function(socket, message, messageType) {
   var isAuthorized = true,
       provider = messageType && messageType.authProvider;
   
@@ -215,14 +218,15 @@ Server.prototype._getMessageType = function(message) {
 };
 
 // Get or create resource by name
-Server.prototype._resourceGet = function(name) {
-  if (!this.resources[name]) {
-    var definition = Type.getByExpression(name);
+Server.prototype._getResource = function(message, messageType) {
+  var name = message.to,
+      type = messageType.type;
 
-    if (definition && Core.Resources[definition.type]) {
-      this.resources[name] = new Core.Resources[definition.type](name, this, definition);
+  if (!this.resources[name]) {
+    if (type && Core.Resources[type]) {
+      this.resources[name] = new Core.Resources[type](name, this, messageType);
     } else {
-      logging.error('#resource - unknown_type', name, definition);
+      logging.error('#resource - unknown_type', name, messageType);
     }
   }
   return this.resources[name];
@@ -243,11 +247,6 @@ Server.prototype._persistenceSubscribe = function (name, id) {
   }
 };
 
-// Initialize the current client
-Server.prototype._clientInit = function (initMessage) {
-  Client.create(initMessage);
-};
-
 function _parseJSON(data) {
   try {
     var message = JSON.parse(data);
@@ -255,7 +254,6 @@ function _parseJSON(data) {
   } catch(e) { }
   return false;
 }
-
 
 // Transforms Redis URL into persistence configuration object
 function setupPersistence(configuration, done) {
