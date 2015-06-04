@@ -5,13 +5,15 @@ var MiniEventEmitter = require('miniee'),
     hostname = require('os').hostname(),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
-    Client = require('../client/client.js');
+    Client = require('../client/client.js'),
+    RateLimiter = require('../core/rate_limiter.js');
 
 function Server() {
   this.socketServer = null;
   this.resources = {};
   this.subscriber = null;
   this.subs = {};
+  this._rateLimiters = {};
 }
 
 MiniEventEmitter.mixin(Server);
@@ -22,14 +24,21 @@ MiniEventEmitter.mixin(Server);
 Server.prototype.attach = function(httpServer, configuration) {
   Client.dataTTLSet(configuration.clientDataTTL);
   var finishSetup = this._setup.bind(this, httpServer, configuration);
-  setupPersistence(configuration, finishSetup);
+  this._setupPersistence(configuration, finishSetup);
 };
 
 // Destroy empty resource
 Server.prototype.destroyResource = function(name) {
+  var messageType = this._getMessageType(name);
+
   if (this.resources[name]) {
     this.resources[name].destroy();
   }
+
+  if (this._rateLimiters[messageType.name]) {
+    this._rateLimiters[messageType.name].removeByName(name);
+  }
+
   delete this.resources[name];
   delete this.subs[name];
   logging.info('#redis - unsubscribe', name);
@@ -101,7 +110,13 @@ Server.prototype._onSocketConnection = function(socket) {
     logging.info('#socket - disconnect', socket.id);
 
     Object.keys(self.resources).forEach(function(name) {
-      var resource = self.resources[name];
+      var resource = self.resources[name],
+          rateLimiter = self._getRateLimiterForMessageType(resource.options);
+
+      if (rateLimiter) {
+        rateLimiter.remove(socket.id, name);
+      }
+
       if (resource.subscribers[socket.id]) {
         resource.unsubscribe(socket, false);
       }
@@ -122,7 +137,9 @@ Server.prototype._handlePubSubMessage = function(name, data) {
     this.resources[name].redisIn(data);
   } else {
     // Don't log sentry channel pub messages
-    if (name == Core.Presence.Sentry.channel) return;
+    if (name == Core.Presence.Sentry.channel) {
+      return;
+    }
 
     logging.warn('#redis - message not handled', name, data);
   }
@@ -144,13 +161,21 @@ Server.prototype._handleSocketMessage = function(socket, data) {
   }
   
   this._processMessage(socket, message);
-}
+};
 
 Server.prototype._processMessage = function(socket, message) {
-  var messageType = this._getMessageType(message),
+  var messageType = this._getMessageType(message.to),
       resource = this._getResource(message, messageType);
 
   if (!this._authorizeMessage(socket, message, messageType)) {
+    logging.warn('#socket.message - auth_invalid', message, socket.id);
+    this._sendErrorMessage(socket, 'auth', message);
+    return;
+  }
+
+  if (this._limited(socket, message, messageType, message.to)) {
+    logging.warn('#socket.message - rate_limited', message, socket.id);
+    this._sendErrorMessage(socket, 'rate limited', message);
     return;
   }
 
@@ -190,6 +215,7 @@ Server.prototype._handleResourceMessage = function(socket, message, resource) {
 
     this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
+    this._updateLimits(socket, message, resource.options);
     resource.handleMessage(socket, message);
     this.emit(message.op, socket, message);
   }
@@ -204,20 +230,60 @@ Server.prototype._authorizeMessage = function(socket, message, messageType) {
     isAuthorized = provider.authorize(messageType, message, socket);
   }
 
-  if (!isAuthorized) {
-    logging.warn('#socket.message - auth_invalid', message, socket.id);
-    socket.send({
-      op: 'err',
-      value: 'auth',
-      origin: message
-    });
-  }
-
   return isAuthorized; 
 };
 
-Server.prototype._getMessageType = function(message) {
-  return Type.getByExpression(message.to);
+Server.prototype._limited = function(socket, message, messageType) {
+  var isLimited = false,
+      rateLimiter = this._getRateLimiterForMessageType(messageType);
+
+  if (message.op !== 'subscribe') {
+    return false;
+  }
+
+  if (rateLimiter && rateLimiter.isAboveLimit(socket.id)) {
+    isLimited = true;
+  }
+
+  return isLimited;
+};
+
+Server.prototype._updateLimits = function(socket, message, messageType) {
+  var rateLimiter = this._getRateLimiterForMessageType(messageType);
+
+  if (rateLimiter) {
+    switch(message.op) {
+      case 'subscribe': 
+        rateLimiter.add(socket.id, message.to);
+        break;
+      case 'unsubscribe': 
+        rateLimiter.remove(socket.id, message.to);
+        break;
+      default: 
+        logging.debug('#rate_limiting - SKIP update limits', message, socket.id);
+        
+    }
+  }
+};
+
+Server.prototype._getRateLimiterForMessageType = function(messageType) {
+  var rateLimiter;
+
+  if (messageType && messageType.policy && messageType.policy.limit) {
+    rateLimiter = this._rateLimiters[messageType.name];
+
+    if (!rateLimiter) {
+      // TODO: subscribe, as rate limiter operation, should be configurable. 
+      rateLimiter = new RateLimiter(messageType.policy.limit);
+      this._rateLimiters[messageType.name] = rateLimiter;
+    }
+  }
+  
+  return rateLimiter;
+};
+
+Server.prototype._getMessageType = function(messageScope) {
+  return Type.getByExpression(messageScope);
 };
 
 // Get or create resource by name
@@ -240,7 +306,7 @@ Server.prototype._storeResource = function(resource) {
   if (!this.resources[resource.name]) {
     this.resources[resource.name] = resource;
   }
-}
+};
 
 // Subscribe to the persistence pubsub channel for a single resource
 Server.prototype._persistenceSubscribe = function (name, id) {
@@ -257,18 +323,26 @@ Server.prototype._persistenceSubscribe = function (name, id) {
   }
 };
 
+// Transforms Redis URL into persistence configuration object
+Server.prototype._setupPersistence = function(configuration, done) {
+  Core.Persistence.setConfig(configuration.persistence);
+  Core.Persistence.connect(done);
+};
+
+Server.prototype._sendErrorMessage = function(socket, value, origin) {
+  socket.send({
+    op: 'err',
+    value: value,
+    origin: origin
+  });
+};
+
 function _parseJSON(data) {
   try {
     var message = JSON.parse(data);
     return message;
   } catch(e) { }
   return false;
-}
-
-// Transforms Redis URL into persistence configuration object
-function setupPersistence(configuration, done) {
-  Core.Persistence.setConfig(configuration.persistence);
-  Core.Persistence.connect(done);
 }
 
 module.exports = Server;
