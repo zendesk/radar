@@ -164,8 +164,7 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 };
 
 Server.prototype._processMessage = function(socket, message) {
-  var messageType = this._getMessageType(message.to),
-      resource = this._getResource(message, messageType);
+  var messageType = this._getMessageType(message.to);
 
   if (!this._authorizeMessage(socket, message, messageType)) {
     logging.warn('#socket.message - auth_invalid', message, socket.id);
@@ -179,33 +178,30 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  if (!this._persistClientData(socket, message)) {
+  if (message.op === 'nameSync') {
+    logging.info('#socket.message - nameSync', message, socket.id);
+    Client.create(message);
+    socket.send({ op: 'ack', value: message && message.ack });
     return;
   }
 
-  this._handleResourceMessage(socket, message, resource);
+  this._handleResourceMessage(socket, message, messageType);
 };
 
 // Initialize a client, and persist messages where required
 Server.prototype._persistClientData = function(socket, message) {
-  // Sync the client name to the current socket
-  if (message.op == 'nameSync') {
-    Client.create(message);
-    socket.send({ op: 'ack', value: message && message.ack });
-    return false;
-  }
-
   var client = Client.get(socket.id);
+
   if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
+    logging.info('#socket.message - nameSync', message, socket.id);
     client.dataStore(message);
   }
-
-  return true;
 };
 
 // Get a resource, subscribe where required, and handle associated message
-Server.prototype._handleResourceMessage = function(socket, message, resource) {
-  var name = message.to;
+Server.prototype._handleResourceMessage = function(socket, message, messageType) {
+  var name = message.to,
+      resource = this._getResource(message, messageType);
 
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
@@ -213,6 +209,7 @@ Server.prototype._handleResourceMessage = function(socket, message, resource) {
       (this.subs[name] ? 'is subscribed' : 'not subscribed')
     );
 
+    this._persistClientData(socket, message);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
     this._updateLimits(socket, message, resource.options);
