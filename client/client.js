@@ -55,8 +55,10 @@ Client.create = function (message) {
   return client;
 };
 
+// Instance methods
+
 // Persist subscriptions and presences
-Client.prototype.dataStore = function (message) {
+Client.prototype.storeData = function (message) {
   var subscriptions = this.subscriptions;
   var presences = this.presences;
 
@@ -71,12 +73,12 @@ Client.prototype.dataStore = function (message) {
 
     case 'sync':
     case 'subscribe':
-      subscriptions[message.to] = message.op;
+      subscriptions[message.to] = message;
       break;
 
     case 'set':
       if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        presences[message.to] = message.value;
+        presences[message.to] = message;
       }
       break;
 
@@ -85,14 +87,38 @@ Client.prototype.dataStore = function (message) {
   }
 
   if (changed) {
-    this.lastModified = Date.now();
-    Core.Persistence.persistKey(this.key, this, Client.dataTTL);
+    this._persist();
   }
 
   return true;
 };
 
+Client.prototype.loadData = function (callback) {
+  var self = this;
+
+  // When we touch a client, refresh the TTL
+  Core.Persistence.expire(self.key, Client.dataTTLGet());
+
+  // Update persisted subscriptions/presences
+  Core.Persistence.readKey(self.key, function (clientOld) {
+    if (clientOld) {
+      self.subscriptions = clientOld.subscriptions;
+      self.presences = clientOld.presences;
+
+      self._persist();
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    Client.clients[self.name] = self;
+  });
+};
+
 // Private API
+
+// Instance methods
 
 // Return the key used to persist client data
 Client.prototype._keyGet = function (accountName) {
@@ -101,6 +127,11 @@ Client.prototype._keyGet = function (accountName) {
   key += this.name;
 
   return key;
+};
+
+Client.prototype._persist = function () {
+  this.lastModified = Date.now();
+  Core.Persistence.persistKey(this.key, this, Client.dataTTLGet());
 };
 
 module.exports = Client;
