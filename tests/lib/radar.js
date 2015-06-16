@@ -29,52 +29,61 @@ function p404(req, res) {
 
 
 Type.add([
-    {// For client.auth.test
-      name: 'client_auth',
-      expression: /^message:\/client_auth\/disabled$/,
-      type: 'MessageList',
-      policy: { cache: true, maxAgeSeconds: 30 },
-      authProvider: {
-        authorize: function() { return false; }
-      }
-    },
-    {
-      name: 'client_auth',
-      expression: /^message:\/client_auth\/enabled$/,
-      type: 'MessageList',
-      authProvider: {
-        authorize: function() { return true; }
-      }
-    },
-    {// For client.message.test
-      name: 'cached_chat',
-      expression: /^message:\/dev\/cached_chat\/(.+)/,
-      type: 'MessageList',
-      policy: { cache: true, maxAgeSeconds: 30 }
-    },
-    {// For client.presence.test
-      name: 'short_expiry',
-      expression: /^presence:\/dev\/test/,
-      type: 'Presence',
-      policy: { userExpirySeconds : 1 }
-    },
-    {
-      name: 'short_stream',
-      expression: /^stream:\/dev\/short_stream\/(.+)/,
-      type: 'Stream',
-      policy: { maxLength: 2 }
-    },
-    {
-      name: 'uncached_stream',
-      expression: /^stream:\/dev\/uncached_stream\/(.+)/,
-      type: 'Stream',
-      policy: { maxLength: 0 }
-    },
+  {// For client.auth.test
+    name: 'client_auth',
+    expression: /^message:\/client_auth\/disabled$/,
+    type: 'MessageList',
+    policy: { cache: true, maxAgeSeconds: 30 },
+    authProvider: {
+      authorize: function() { return false; }
+    }
+  },
+  {
+    name: 'client_auth',
+    expression: /^message:\/client_auth\/enabled$/,
+    type: 'MessageList',
+    authProvider: {
+      authorize: function() { return true; }
+    }
+  },
+  {// For client.message.test
+    name: 'cached_chat',
+    expression: /^message:\/dev\/cached_chat\/(.+)/,
+    type: 'MessageList',
+    policy: { cache: true, maxAgeSeconds: 30 }
+  },
+  {// For client.presence.test
+    name: 'short_expiry',
+    expression: /^presence:\/dev\/test/,
+    type: 'Presence',
+    policy: { userExpirySeconds : 1 }
+  },
+  {
+    name: 'short_stream',
+    expression: /^stream:\/dev\/short_stream\/(.+)/,
+    type: 'Stream',
+    policy: { maxLength: 2 }
+  },
+  {
+    name: 'uncached_stream',
+    expression: /^stream:\/dev\/uncached_stream\/(.+)/,
+    type: 'Stream',
+    policy: { maxLength: 0 }
+  },
   {
     name: 'general control',
     type: 'Control',
     expression: /^control:/
-  }
+  },
+  {// For client.presence.test
+    name: 'limited',
+    expression: /^presence:\/dev\/limited/,
+    type: 'Presence',
+    policy: { 
+      maxLength: 0, // FIXME: policy requires maxLength. It should not. 
+      limit: 1
+    }
+  },
 ]);
 
 var Service = {};
