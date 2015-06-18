@@ -1,5 +1,6 @@
 var log = require('minilog')('radar:client'),
-    Core = require('../core');
+    Core = require('../core'),
+    _ = require('underscore');
 
 function Client (name, id, accountName, version) {
   this.createdAt = Date.now();
@@ -27,11 +28,11 @@ require('util').inherits(Client, require('events').EventEmitter);
 // Class methods
 
 // Set/Get the global client TTL
-Client.dataTTLSet = function (dataTTL) {
+Client.setDataTTL = function (dataTTL) {
   Client.dataTTL = dataTTL;
 };
 
-Client.dataTTLGet = function () {
+Client.getDataTTL = function () {
   return Client.dataTTL;
 };
 
@@ -57,10 +58,10 @@ Client.create = function (message) {
 
 // Instance methods
 
-// Persist subscriptions and presences
+// Persist subscriptions and presences when not already persisted in memory
 Client.prototype.storeData = function (message) {
-  var subscriptions = this.subscriptions;
-  var presences = this.presences;
+  var subscriptions = this.subscriptions,
+      presences = this.presences;
 
   // Persist the message data, according to type
   var changed = true;
@@ -73,11 +74,16 @@ Client.prototype.storeData = function (message) {
 
     case 'sync':
     case 'subscribe':
-      subscriptions[message.to] = message;
+      if (subscriptions[message.to] &&
+            !_.isEqual(subscriptions[message.to], message)) {
+        subscriptions[message.to] = message;
+      }
       break;
 
     case 'set':
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
+      if (message.to.substr(0, 'presence:/'.length) == 'presence:/' &&
+            presences[message.to] &&
+            !_.isEqual(presences[message.to], message)) {
         presences[message.to] = message;
       }
       break;
@@ -97,15 +103,13 @@ Client.prototype.loadData = function (callback) {
   var self = this;
 
   // When we touch a client, refresh the TTL
-  Core.Persistence.expire(self.key, Client.dataTTLGet());
+  Core.Persistence.expire(self.key, Client.getDataTTL());
 
   // Update persisted subscriptions/presences
   Core.Persistence.readKey(self.key, function (clientOld) {
     if (clientOld) {
       self.subscriptions = clientOld.subscriptions;
       self.presences = clientOld.presences;
-
-      self._persist();
 
       if (callback) {
         callback();
@@ -131,7 +135,7 @@ Client.prototype._keyGet = function (accountName) {
 
 Client.prototype._persist = function () {
   this.lastModified = Date.now();
-  Core.Persistence.persistKey(this.key, this, Client.dataTTLGet());
+  Core.Persistence.persistKey(this.key, this, Client.getDataTTL());
 };
 
 module.exports = Client;

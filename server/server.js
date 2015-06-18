@@ -23,7 +23,7 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(httpServer, configuration) {
-  Client.dataTTLSet(configuration.clientDataTTL);
+  Client.setDataTTL(configuration.clientDataTTL);
   var finishSetup = this._setup.bind(this, httpServer, configuration);
   this._setupPersistence(configuration, finishSetup);
 };
@@ -90,8 +90,8 @@ Server.prototype._setup = function(httpServer, configuration) {
 };
 
 Server.prototype._onSocketConnection = function(socket) {
-  var self = this;
-  var oldSend = socket.send;
+  var self = this,
+      oldSend = socket.send;
 
   // Always send data as json
   socket.send = function(data) {
@@ -219,23 +219,25 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
   }
 };
 
-// Process the resource messages associated with a single client
-Server.prototype._handleResourceMessages = function (socket, client) {
-  var subscriptions = client.subscriptions;
-  var presences = client.presences;
+// Process the existing persisted messages associated with a single client
+Server.prototype._replayMessagesFromClient = function (socket, client) {
+  var subscriptions = client.subscriptions,
+      presences = client.presences,
+      message, messageType;
+
 
   // Pause events on the inbound socket
   Pauseable.pause(socket);
 
   for (var key in subscriptions) {
-    var message = subscriptions[key];
-    var messageType = this._getMessageType(message.to);
+    message = subscriptions[key],
+    messageType = this._getMessageType(message.to);
     this._handleResourceMessage(socket, message, messageType); 
   }
 
   for (var key in presences) {
-    var message = presences[key];
-    var messageType = this._getMessageType(message.to);
+    message = presences[key];
+    messageType = this._getMessageType(message.to);
     this._handleResourceMessage(socket, message, messageType);
   }
 
@@ -363,7 +365,7 @@ Server.prototype._sendErrorMessage = function(socket, value, origin) {
 Server.prototype._initClient = function (socket, message) {
   var client = Client.create(message);
   if (client) {
-    client.loadData(this._handleResourceMessages.bind(this, socket, client));
+    client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
   }
 };
 
