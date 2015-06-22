@@ -1,4 +1,5 @@
-var logging = require('minilog')('radar:rate_limiter');
+var logging = require('minilog')('radar:rate_limiter'),
+    MiniEventEmitter = require('miniee');
 
 var RateLimiter = function(limit) {
  this._limit = limit;
@@ -8,17 +9,21 @@ var RateLimiter = function(limit) {
  };
 };
 
+MiniEventEmitter.mixin(RateLimiter);
+
 RateLimiter.prototype.add = function(id, name) {
   if (!this._isNewResource(id, name)) {
     return false;
   }
 
   if (this.isAboveLimit(id)) {
+    this.emit('rate:limited', this._stateForId(id, name));
     logging.warn('rate limiting client: ' + id + ' name: ' + name);
     return false;
   }
 
   this._add(id, name);
+  this.emit('rate:add', this._stateForId(id, name));
 
   return true;
 };
@@ -26,6 +31,7 @@ RateLimiter.prototype.add = function(id, name) {
 RateLimiter.prototype.remove = function(id, name) {
   delete this._resources.id[id][name];
   delete this._resources.name[name][id];
+  this.emit('rate:remove', this._stateForId(id, name));
 };
 
 RateLimiter.prototype.isAboveLimit = function(id) {
@@ -48,10 +54,12 @@ RateLimiter.prototype.count = function(id) {
 };
 
 RateLimiter.prototype.removeById = function(id) {
+  this.emit('rate:remove_by_id', this._stateForId(id));
   this._removeByType('id', 'name', id);
 };
 
 RateLimiter.prototype.removeByName = function(name) {
+  this.emit('rate:remove_by_name', this._stateForId(undefined, name));
   this._removeByType('name', 'id', name);
 };
 
@@ -105,6 +113,14 @@ RateLimiter.prototype._deepRemove = function(type, key, results, lookup) {
       if (keys) { delete keys[key]; }
     });
   }
+};
+RateLimiter.prototype._stateForId = function(id, name) {
+  return { 
+    id: id, 
+    name: name,
+    limit: this._limit,
+    count: this.count(id)
+  };
 };
 
 module.exports = RateLimiter;
