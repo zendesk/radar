@@ -61,14 +61,15 @@ Client.create = function (message) {
 // Persist subscriptions and presences when not already persisted in memory
 Client.prototype.storeData = function (message) {
   var subscriptions = this.subscriptions,
-      presences = this.presences;
+      presences = this.presences,
+      changed = false;
 
   // Persist the message data, according to type
-  var changed = true;
   switch(message.op) {
     case 'unsubscribe':
       if (subscriptions[message.to]) {
         delete subscriptions[message.to];
+        changed = true;
       }
       break;
 
@@ -77,6 +78,7 @@ Client.prototype.storeData = function (message) {
       if (subscriptions[message.to] &&
             !_.isEqual(subscriptions[message.to], message)) {
         subscriptions[message.to] = message;
+        changed = true;
       }
       break;
 
@@ -85,11 +87,9 @@ Client.prototype.storeData = function (message) {
             presences[message.to] &&
             !_.isEqual(presences[message.to], message)) {
         presences[message.to] = message;
+        changed = true;
       }
       break;
-
-    default:
-      changed = false;
   }
 
   if (changed) {

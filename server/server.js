@@ -194,7 +194,7 @@ Server.prototype._persistClientData = function(socket, message) {
   var client = Client.get(socket.id);
 
   if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
-    logging.info('#socket.message - nameSync', message, socket.id);
+    logging.info('#socket.message - _persistClientData', message, socket.id);
     client.storeData(message);
   }
 };

@@ -147,6 +147,8 @@ Presence.prototype.sync = function(socket, message) {
   var self = this;
   this.fullRead(function(online) {
     if (message.options && message.options.version == 2) {
+      // pob
+      logging.info('#presence - sync', self.manager.getClientsOnline);
       socket.send({
         op: 'get',
         to: self.name,
@@ -172,6 +174,8 @@ Presence.prototype.get = function(socket, message) {
   var self = this;
   this.fullRead(function(online) {
     if (message.options && message.options.version == 2) {
+      // pob
+      logging.info('#presence - get', self.manager.getClientsOnline);
       socket.send({
         op: 'get',
         to: self.name,
