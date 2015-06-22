@@ -1,6 +1,6 @@
 var assert = require('assert'),
     EE = require('events').EventEmitter,
-    underscore = require('underscore');
+    _ = require('underscore');
 
 // Presence helper
 function PresenceMessage(account, name) {
@@ -250,7 +250,7 @@ PresenceMessage.prototype.assert_get_v2_response = function(message, clientData)
     userHash.userType = client.userType;
 
     if (clientData) {
-      userHash.clients[client.clientId] = underscore.extend({}, client.userData, clientData);
+      userHash.clients[client.clientId] = _.extend({}, client.userData, clientData);
     } else {
       userHash.clients[client.clientId] = client.userData;
     }

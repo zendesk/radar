@@ -1,7 +1,7 @@
 var PresenceStore = require('./presence_store.js'),
     Persistence = require('persistence'),
     logging = require('minilog')('radar:presence_manager'),
-    underscore = require('underscore');
+    _ = require('underscore');
 
 function PresenceManager(scope, policy, sentry) {
   this.scope  = scope;
@@ -380,7 +380,7 @@ PresenceManager.prototype.getClientsOnline = function() {
       userType: message.userType
     };
     
-    var payload = underscore.extend({}, 
+    var payload = _.extend({}, 
                                     (message.userData || {}), 
                                     (message.clientData || {}));
 
