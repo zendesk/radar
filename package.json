@@ -41,8 +41,8 @@
     "nomnom": "*"
   },
   "devDependencies": {
-    "mocha": "*",
-    "radar_client": "*",
+    "mocha": "*",	
+    "radar_client": "git+https://github.com/zendesk/radar_client.git#lflorio/presence_states",
     "simple_sentinel": "*"
   },
   "scripts": {
