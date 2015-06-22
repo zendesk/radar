@@ -225,12 +225,11 @@ Server.prototype._replayMessagesFromClient = function (socket, client) {
       presences = client.presences,
       message, messageType;
 
-
   // Pause events on the inbound socket
   Pauseable.pause(socket);
 
   for (var key in subscriptions) {
-    message = subscriptions[key],
+    message = subscriptions[key];
     messageType = this._getMessageType(message.to);
     this._handleResourceMessage(socket, message, messageType); 
   }
