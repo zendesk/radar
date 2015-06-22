@@ -297,12 +297,16 @@ Server.prototype._getRateLimiterForMessageType = function(messageType) {
 
     if (!rateLimiter) {
       // TODO: subscribe, as rate limiter operation, should be configurable. 
-      rateLimiter = new RateLimiter(messageType.policy.limit);
+      rateLimiter = this._buildRateLimiter(messageType);
       this._rateLimiters[messageType.name] = rateLimiter;
     }
   }
   
   return rateLimiter;
+};
+
+Server.prototype._buildRateLimiter = function(type) {
+  return new RateLimiter(type.policy.limit);
 };
 
 Server.prototype._getMessageType = function(messageScope) {
