@@ -1,3 +1,8 @@
+### 0.15.2
+* Load from persistence client data on receipt of the *nameSync* message
+  - apply *subscriptions* and *presences* from the restored client data
+  - this is related to code release in 0.14.0
+
 ### 0.15.1
 * Fix configuration not being passed back properly after setting up persistence 
   connection.
