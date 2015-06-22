@@ -37,6 +37,7 @@
     "underscore": "*",
     "persistence": "*",
     "semver": "*",
+    "pauseable": "*",
     "nomnom": "*"
   },
   "devDependencies": {

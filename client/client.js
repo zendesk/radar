@@ -1,5 +1,6 @@
 var log = require('minilog')('radar:client'),
-    Core = require('../core');
+    Core = require('../core'),
+    _ = require('underscore');
 
 function Client (name, id, accountName, version) {
   this.createdAt = Date.now();
@@ -27,11 +28,11 @@ require('util').inherits(Client, require('events').EventEmitter);
 // Class methods
 
 // Set/Get the global client TTL
-Client.dataTTLSet = function (dataTTL) {
+Client.setDataTTL = function (dataTTL) {
   Client.dataTTL = dataTTL;
 };
 
-Client.dataTTLGet = function () {
+Client.getDataTTL = function () {
   return Client.dataTTL;
 };
 
@@ -55,44 +56,73 @@ Client.create = function (message) {
   return client;
 };
 
-// Persist subscriptions and presences
-Client.prototype.dataStore = function (message) {
-  var subscriptions = this.subscriptions;
-  var presences = this.presences;
+// Instance methods
+
+// Persist subscriptions and presences when not already persisted in memory
+Client.prototype.storeData = function (message) {
+  var subscriptions = this.subscriptions,
+      presences = this.presences,
+      changed = false;
 
   // Persist the message data, according to type
-  var changed = true;
   switch(message.op) {
     case 'unsubscribe':
       if (subscriptions[message.to]) {
         delete subscriptions[message.to];
+        changed = true;
       }
       break;
 
     case 'sync':
     case 'subscribe':
-      subscriptions[message.to] = message.op;
-      break;
-
-    case 'set':
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        presences[message.to] = message.value;
+      if (subscriptions[message.to] &&
+            !_.isEqual(subscriptions[message.to], message)) {
+        subscriptions[message.to] = message;
+        changed = true;
       }
       break;
 
-    default:
-      changed = false;
+    case 'set':
+      if (message.to.substr(0, 'presence:/'.length) == 'presence:/' &&
+            presences[message.to] &&
+            !_.isEqual(presences[message.to], message)) {
+        presences[message.to] = message;
+        changed = true;
+      }
+      break;
   }
 
   if (changed) {
-    this.lastModified = Date.now();
-    Core.Persistence.persistKey(this.key, this, Client.dataTTL);
+    this._persist();
   }
 
   return true;
 };
 
+Client.prototype.loadData = function (callback) {
+  var self = this;
+
+  // When we touch a client, refresh the TTL
+  Core.Persistence.expire(self.key, Client.getDataTTL());
+
+  // Update persisted subscriptions/presences
+  Core.Persistence.readKey(self.key, function (clientOld) {
+    if (clientOld) {
+      self.subscriptions = clientOld.subscriptions;
+      self.presences = clientOld.presences;
+
+      if (callback) {
+        callback();
+      }
+    }
+
+    Client.clients[self.name] = self;
+  });
+};
+
 // Private API
+
+// Instance methods
 
 // Return the key used to persist client data
 Client.prototype._keyGet = function (accountName) {
@@ -101,6 +131,11 @@ Client.prototype._keyGet = function (accountName) {
   key += this.name;
 
   return key;
+};
+
+Client.prototype._persist = function () {
+  this.lastModified = Date.now();
+  Core.Persistence.persistKey(this.key, this, Client.getDataTTL());
 };
 
 module.exports = Client;

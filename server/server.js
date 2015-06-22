@@ -6,6 +6,7 @@ var MiniEventEmitter = require('miniee'),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
+    Pauseable = require('pauseable'),
     RateLimiter = require('../core/rate_limiter.js');
 
 function Server() {
@@ -22,7 +23,7 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(httpServer, configuration) {
-  Client.dataTTLSet(configuration.clientDataTTL);
+  Client.setDataTTL(configuration.clientDataTTL);
   var finishSetup = this._setup.bind(this, httpServer, configuration);
   this._setupPersistence(configuration, finishSetup);
 };
@@ -58,7 +59,7 @@ Server.prototype.terminate = function(done) {
 
 // Private API
 
-var VERSION_CLIENT_DATASTORE = '0.13.1';
+var VERSION_CLIENT_STOREDATA = '0.13.1';
 
 Server.prototype._setup = function(httpServer, configuration) {
   var engine = DefaultEngineIO,
@@ -89,8 +90,8 @@ Server.prototype._setup = function(httpServer, configuration) {
 };
 
 Server.prototype._onSocketConnection = function(socket) {
-  var self = this;
-  var oldSend = socket.send;
+  var self = this,
+      oldSend = socket.send;
 
   // Always send data as json
   socket.send = function(data) {
@@ -180,7 +181,7 @@ Server.prototype._processMessage = function(socket, message) {
 
   if (message.op === 'nameSync') {
     logging.info('#socket.message - nameSync', message, socket.id);
-    Client.create(message);
+    this._initClient(socket, message);
     socket.send({ op: 'ack', value: message && message.ack });
     return;
   }
@@ -192,9 +193,9 @@ Server.prototype._processMessage = function(socket, message) {
 Server.prototype._persistClientData = function(socket, message) {
   var client = Client.get(socket.id);
 
-  if (client && Semver.gte(client.version, VERSION_CLIENT_DATASTORE)) {
-    logging.info('#socket.message - nameSync', message, socket.id);
-    client.dataStore(message);
+  if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
+    logging.info('#socket.message - _persistClientData', message, socket.id);
+    client.storeData(message);
   }
 };
 
@@ -216,6 +217,31 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
     resource.handleMessage(socket, message);
     this.emit(message.op, socket, message);
   }
+};
+
+// Process the existing persisted messages associated with a single client
+Server.prototype._replayMessagesFromClient = function (socket, client) {
+  var subscriptions = client.subscriptions,
+      presences = client.presences,
+      message, messageType, key;
+
+  // Pause events on the inbound socket
+  Pauseable.pause(socket);
+
+  for (key in subscriptions) {
+    message = subscriptions[key];
+    messageType = this._getMessageType(message.to);
+    this._handleResourceMessage(socket, message, messageType); 
+  }
+
+  for (key in presences) {
+    message = presences[key];
+    messageType = this._getMessageType(message.to);
+    this._handleResourceMessage(socket, message, messageType);
+  }
+
+  // Resume events on the inbound socket
+  Pauseable.resume(socket);
 };
 
 // Authorize a socket message
@@ -332,6 +358,14 @@ Server.prototype._sendErrorMessage = function(socket, value, origin) {
     value: value,
     origin: origin
   });
+};
+
+// Initialize the current client
+Server.prototype._initClient = function (socket, message) {
+  var client = Client.create(message);
+  if (client) {
+    client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
+  }
 };
 
 function _parseJSON(data) {
