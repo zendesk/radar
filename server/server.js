@@ -223,18 +223,18 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
 Server.prototype._replayMessagesFromClient = function (socket, client) {
   var subscriptions = client.subscriptions,
       presences = client.presences,
-      message, messageType;
+      message, messageType, key;
 
   // Pause events on the inbound socket
   Pauseable.pause(socket);
 
-  for (var key in subscriptions) {
+  for (key in subscriptions) {
     message = subscriptions[key];
     messageType = this._getMessageType(message.to);
     this._handleResourceMessage(socket, message, messageType); 
   }
 
-  for (var key in presences) {
+  for (key in presences) {
     message = presences[key];
     messageType = this._getMessageType(message.to);
     this._handleResourceMessage(socket, message, messageType);
