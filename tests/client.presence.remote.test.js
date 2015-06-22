@@ -45,7 +45,7 @@ describe('given a client and a server,', function() {
     client.presence('test').set('offline').removeAllListeners();
     client.dealloc('test');
     presenceManager.stampExpiration = stampExpiration;
-    Persistence.delWildCard('*',done);
+    Persistence.delWildCard('*', done);
   });
 
   describe('without listening to a presence, ', function(done) {

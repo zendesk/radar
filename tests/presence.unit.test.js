@@ -57,6 +57,7 @@ describe('given a presence resource',function() {
         assert.equal(1, m.userId);
         assert.equal(2, m.userType);
         assert.equal(true, m.online);
+        assert.equal(undefined, m.clientData);
         assert.ok(m.at > Date.now()+59*60000);
         presence.redisIn(m);
         published = true;
@@ -71,7 +72,7 @@ describe('given a presence resource',function() {
       Persistence.publish = function(scope, m) {
         presence.redisIn(m);
       };
-      presence.set(client,  { key: 1, type: 2, value: 'online' });
+      presence.set(client,  { key: 1, type: 2, value: 'online'});
       assert.ok(presence.manager.hasUser(1));
       Persistence.publish = function(scope, m) {
         assert.equal(1, m.userId);
@@ -83,6 +84,24 @@ describe('given a presence resource',function() {
       };
       presence.set(client, { key: 1, type: 2, value: 'offline' });
       assert.ok(!presence.manager.hasUser(1));
+      assert.ok(published);
+    });
+
+    it('can be set to online and include arbitrary client data', function() {
+      var published,
+          clientData = { 'abc': 'abc' };
+
+      Persistence.publish = function(scope, m) {
+        assert.equal(1, m.userId);
+        assert.equal(2, m.userType);
+        assert.equal(true, m.online);
+        assert.equal(clientData, m.clientData);
+        assert.ok(m.at > Date.now()+59*60000);
+        published = true;
+        presence.redisIn(m);
+      };
+      presence.set(client, { key: 1, type: 2, value: 'online', clientData: clientData});
+      assert.ok(presence.manager.hasUser(1));
       assert.ok(published);
     });
 

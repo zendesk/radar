@@ -340,6 +340,20 @@ describe('given two clients and a presence resource', function() {
       });
     });
 
+    it('should respond correctly when using v2 API (with clientData)', function(done) {
+      var clientData = { '1': '1' };
+
+      client.presence('test').get({ version: 2 }, function(message) {
+        p.for_online_clients().assert_get_v2_response(message);
+        client.presence('test').set('online', clientData, function() {
+          client.presence('test').get({ version: 2 }, function(message) {
+            p.for_online_clients(client).assert_get_v2_response(message, clientData);
+            done();
+          });
+        });
+      });
+    });
+
     it('can be called multiple times without changing the result', function(done) {
       this.timeout(6000);
       client2.presence('test').on(p.notify).subscribe(function() {
@@ -397,6 +411,18 @@ describe('given two clients and a presence resource', function() {
         client3.presence('test').sync({ version: 2 }, function(message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           p.for_online_clients(client3).assert_sync_v2_response(message);
+          done();
+        });
+      });
+    });
+
+    it('should respond correctly when using v2 API (with clientData)', function(done) {
+      var clientData = { '1': '1' };
+
+      client3.presence('test').set('online', clientData, function() {
+        client3.presence('test').sync({ version: 2 }, function(message) {
+          // Sync is implemented as subscribe + get, hence the return op is "get"
+          p.for_online_clients(client3).assert_sync_v2_response(message, clientData);
           done();
         });
       });

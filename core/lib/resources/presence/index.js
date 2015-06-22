@@ -41,7 +41,7 @@ Presence.prototype.setup = function() {
       to: self.name,
       op: 'online',
       value: value,
-      userData: userData,
+      userData: userData
     });
   });
 
@@ -56,8 +56,8 @@ Presence.prototype.setup = function() {
     });
   });
 
-  this.manager.on('client_online', function(socketId, userId, userType, userData) {
-    logging.info('#presence - client_online', socketId, userId, self.name);
+  this.manager.on('client_online', function(socketId, userId, userType, userData, clientData) {
+    logging.info('#presence - client_online', socketId, userId, self.name, userData, clientData);
     self.broadcast({
       to: self.name,
       op: 'client_online',
@@ -65,6 +65,21 @@ Presence.prototype.setup = function() {
         userId: userId,
         clientId: socketId,
         userData: userData,
+        clientData: clientData
+      }
+    });
+  });
+
+  this.manager.on('client_updated', function(socketId, userId, userType, userData, clientData) {
+    logging.info('#presence - client_updated', socketId, userId, self.name, userData, clientData);
+    self.broadcast({
+      to: self.name,
+      op: 'client_updated',
+      value: {
+        userId: userId,
+        clientId: socketId,
+        userData: userData,
+        clientData: clientData
       }
     });
   });
@@ -98,36 +113,48 @@ Presence.prototype.redisIn = function(message) {
 };
 
 Presence.prototype.set = function(socket, message) {
-  var presence = this,
-      userId = message.key;
-
-  function ackCheck() {
-    presence.ack(socket, message.ack);
-  }
-
   if (message.value != 'offline') {
-    this._set_online(socket);
-    this.manager.addClient(socket.id, userId, message.type, message.userData, ackCheck);
+    this._setOnline(socket, message);
   } else {
-    // If this is client is not subscribed
-    if (!this.subscribers[socket.id]) {
-      // This is possible if a client does .set('offline') without
-      // set-online/sync/subscribe
-      Resource.prototype.unsubscribe.call(this, socket, message);
-    } else {
-      // Remove from local
-      this.manager.removeClient(socket.id, userId, message.type, ackCheck);
-    }
+    this._setOffline(socket, message);
   }
 };
 
-Presence.prototype._set_online = function(socket) {
+Presence.prototype._setOnline = function(socket, message) {
+  var presence = this,
+      userId = message.key,
+      ackCheck = function() { presence.ack(socket, message.ack); };
+
+  this.manager.addClient(socket.id, userId, 
+                         message.type, 
+                         message.userData, 
+                         message.clientData, 
+                         ackCheck);
+
   if (!this.subscribers[socket.id]) {
     // We use subscribe/unsubscribe to trap the "close" event, so subscribe now
     this.subscribe(socket);
 
     // We are subscribed, but not listening
     this.subscribers[socket.id] = { listening: false };
+  }
+};
+
+Presence.prototype._setOffline = function(socket, message) {
+  var presence = this,
+      userId = message.key,
+      ackCheck = function() {
+        presence.ack(socket, message.ack);
+      };
+
+  // If this is client is not subscribed
+  if (!this.subscribers[socket.id]) {
+    // This is possible if a client does .set('offline') without
+    // set-online/sync/subscribe
+    Resource.prototype.unsubscribe.call(this, socket, message);
+  } else {
+    // Remove from local
+    this.manager.removeClient(socket.id, userId, message.type, ackCheck);
   }
 };
 
@@ -148,11 +175,13 @@ Presence.prototype.sync = function(socket, message) {
   this.fullRead(function(online) {
     if (message.options && message.options.version == 2) {
       // pob
-      logging.info('#presence - sync', self.manager.getClientsOnline);
+      var value = self.manager.getClientsOnline();
+      logging.info('#presence - sync', value);
+
       socket.send({
         op: 'get',
         to: self.name,
-        value: self.manager.getClientsOnline()
+        value: value
       });
     } else {
       logging.warn('presence v1 received, sending online', self.name, socket.id);
@@ -173,21 +202,21 @@ Presence.prototype.sync = function(socket, message) {
 Presence.prototype.get = function(socket, message) {
   var self = this;
   this.fullRead(function(online) {
+    var value;
+
     if (message.options && message.options.version == 2) {
       // pob
-      logging.info('#presence - get', self.manager.getClientsOnline);
-      socket.send({
-        op: 'get',
-        to: self.name,
-        value: self.manager.getClientsOnline()
-      });
+      value = self.manager.getClientsOnline();
+      logging.info('#presence - get', value);
     } else {
-      socket.send({
-        op: 'get',
-        to: self.name,
-        value: online
-      });
+      value = online;
     }
+
+    socket.send({
+      op: 'get',
+      to: self.name,
+      value: value
+    });
   });
 };
 
