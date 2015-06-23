@@ -39,6 +39,22 @@ describe('When radar server restarts', function() {
     common.stopRadar(radar, done);
   });
 
+  it('reestablishes presence', function(done) {
+    this.timeout(4000);
+    var verifySubscriptions = function() {
+      client2.presence('restore').get(function(message) {
+        assert.equal('get', message.op);
+        assert.equal('presence:/test/restore', message.to);
+        assert.deepEqual({ 123 : 0 }, message.value);
+        done();
+      });
+    };
+
+    client.presence('restore').set('online', function() {
+      common.restartRadar(radar, common.configuration, [client, client2], verifySubscriptions);
+    });
+  });
+
   it('reconnects existing clients', function(done) {
     this.timeout(4000);
     var clientEvents = [], client2Events = [];
@@ -91,21 +107,6 @@ describe('When radar server restarts', function() {
     client.status('restore').subscribe(tracker('status subscribed'));
   });
 
-  it('reestablishes presence', function(done) {
-    this.timeout(4000);
-    var verifySubscriptions = function() {
-      client2.presence('restore').get(function(message) {
-        assert.equal('get', message.op);
-        assert.equal('presence:/test/restore', message.to);
-        assert.deepEqual({ 123 : 0 }, message.value);
-        done();
-      });
-    };
-
-    client.presence('restore').set('online', function() {
-      common.restartRadar(radar, common.configuration, [client, client2], verifySubscriptions);
-    });
-  });
   it('must not repeat synced chat (messagelist) messages, with two clients', function(done) {
     this.timeout(4000);
     var messages = [];

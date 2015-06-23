@@ -7,6 +7,7 @@ var Resource = require('./lib/resource.js'),
 module.exports = {
   Persistence: require('persistence'),
   Type: require('./lib/type.js'),
+  RateLimiter: require('./rate_limiter.js'),
   PresenceManager: require('./lib/resources/presence/presence_manager.js'),
 
   Resource: Resource,
