@@ -17,7 +17,7 @@ RateLimiter.prototype.add = function(id, name) {
   }
 
   if (this.isAboveLimit(id)) {
-    this.emit('rate:limited', this._stateForId(id, name));
+    this.emit('rate:limit', this._stateForId(id, name));
     logging.warn('rate limiting client: ' + id + ' name: ' + name);
     return false;
   }
