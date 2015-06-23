@@ -46,6 +46,10 @@ Server.prototype.destroyResource = function(name) {
   this.subscriber.unsubscribe(name);
 };
 
+Server.prototype.buildRateLimiter = function(type) {
+  return new RateLimiter(type.policy.limit);
+};
+
 Server.prototype.terminate = function(done) {
   var self = this;
   Object.keys(this.resources).forEach(function(name) {
@@ -297,16 +301,12 @@ Server.prototype._getRateLimiterForMessageType = function(messageType) {
 
     if (!rateLimiter) {
       // TODO: subscribe, as rate limiter operation, should be configurable. 
-      rateLimiter = this._buildRateLimiter(messageType);
+      rateLimiter = this.buildRateLimiter(messageType);
       this._rateLimiters[messageType.name] = rateLimiter;
     }
   }
   
   return rateLimiter;
-};
-
-Server.prototype._buildRateLimiter = function(type) {
-  return new RateLimiter(type.policy.limit);
 };
 
 Server.prototype._getMessageType = function(messageScope) {
