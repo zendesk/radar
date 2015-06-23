@@ -1,3 +1,6 @@
+### 0.15.3
+* Allow Server and RateLimiter to emit events related to the former. 
+
 ### 0.15.2
 * Load from persistence client data on receipt of the *nameSync* message
   - apply *subscriptions* and *presences* from the restored client data
