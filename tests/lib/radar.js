@@ -80,7 +80,6 @@ Type.add([
     expression: /^presence:\/dev\/limited/,
     type: 'Presence',
     policy: { 
-      maxLength: 0, // FIXME: policy requires maxLength. It should not. 
       limit: 1
     }
   },
