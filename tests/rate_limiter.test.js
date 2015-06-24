@@ -24,6 +24,11 @@ describe('rateLimiter', function() {
     assert.equal(rateLimiter.count(clientId), 0);
   });
 
+  it('remove before adding', function(){
+    rateLimiter.remove(clientId, name);
+    assert.equal(rateLimiter.count(clientId), 0);
+  });
+
   it('isAboveLimit', function(){
     rateLimiter.add(clientId, name);
     assert(rateLimiter.isAboveLimit(clientId));

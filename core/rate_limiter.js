@@ -29,9 +29,11 @@ RateLimiter.prototype.add = function(id, name) {
 };
 
 RateLimiter.prototype.remove = function(id, name) {
-  delete this._resources.id[id][name];
-  delete this._resources.name[name][id];
-  this.emit('rate:remove', this._stateForId(id, name));
+  if (this._resources.id[id] && this._resources.name[name]) {
+    delete this._resources.id[id][name];
+    delete this._resources.name[name][id];
+    this.emit('rate:remove', this._stateForId(id, name));
+  }
 };
 
 RateLimiter.prototype.isAboveLimit = function(id) {
