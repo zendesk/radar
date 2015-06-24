@@ -1,3 +1,6 @@
+### 0.15.4
+* Fix RateLimiter#remove to avoid 'Cannot convert null to object'. 
+
 ### 0.15.3
 * Allow Server and RateLimiter to emit events related to the former. 
 
