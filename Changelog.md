@@ -1,3 +1,6 @@
+### 0.15.5
+* Fix Server counts SYNC like SUBSCRIBE when rate limiting. 
+
 ### 0.15.4
 * Fix RateLimiter#remove to avoid 'Cannot convert null to object'. 
 
