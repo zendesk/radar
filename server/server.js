@@ -260,11 +260,12 @@ Server.prototype._limited = function(socket, message, messageType) {
   var isLimited = false,
       rateLimiter = this._getRateLimiterForMessageType(messageType);
 
-  if (message.op !== 'subscribe') {
+  if (message.op !== 'subscribe' && message.op !== 'sync') {
     return false;
   }
-
+  
   if (rateLimiter && rateLimiter.isAboveLimit(socket.id)) {
+    logging.warn('#socket.message - rate limited', message, socket.id);
     isLimited = true;
   }
 
@@ -276,15 +277,13 @@ Server.prototype._updateLimits = function(socket, message, messageType) {
 
   if (rateLimiter) {
     switch(message.op) {
+      case 'sync':
       case 'subscribe': 
         rateLimiter.add(socket.id, message.to);
         break;
       case 'unsubscribe': 
         rateLimiter.remove(socket.id, message.to);
         break;
-      default: 
-        logging.debug('#rate_limiting - SKIP update limits', message, socket.id);
-        
     }
   }
 };
