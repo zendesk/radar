@@ -207,6 +207,52 @@ describe('given two clients and a presence resource', function() {
         });
       });
 
+      it('should send online notification only once for multiple set(online), unless updated clientData', function(done) {
+        var clientData = { data: 2 }
+        // Subscribe online with client 2
+        client2.presence('test').on(p.notify)
+          .subscribe(function() {
+            client.presence('test').set('online');
+            client.presence('test').set('online', clientData);
+            setTimeout(done, 50);
+          });
+
+        p.fail_on_more_than(3);
+        p.on(3, function() {
+          p.for_client(client).assert_message_sequence([
+              [ 'online' ],
+              [ 'client_online' ],
+              [ 'client_updated', clientData ]
+          ]);
+        });
+      });
+
+      it('should send online notification only once for multiple set(online), unless updated clientData, ' + 
+          'but only if it differs', function(done) {
+
+        var clientData = { data: 2 },
+            clientData2 = { data: 3 };
+
+        client2.presence('test').on(p.notify)
+          .subscribe(function() {
+            client.presence('test').set('online');
+            client.presence('test').set('online', clientData);
+            client.presence('test').set('online', clientData2);
+            client.presence('test').set('online', clientData2);
+            setTimeout(done, 50);
+          });
+
+        p.fail_on_more_than(4);
+        p.on(4, function() {
+          p.for_client(client).assert_message_sequence([
+              [ 'online' ],
+              [ 'client_online' ],
+              [ 'client_updated', clientData ],
+              [ 'client_updated', clientData2 ]
+          ]);
+        });
+      });
+
       it('should send presence messages correctly when toggling back and forth', function(done) {
         var expected = [];
         var count = 8;

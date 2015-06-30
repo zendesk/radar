@@ -1,4 +1,5 @@
-var logging = require('minilog')('radar:presence_store');
+var logging = require('minilog')('radar:presence_store'),
+    _ = require('underscore');
 
 function PresenceStore(scope) {
   this.scope = scope;
@@ -39,8 +40,8 @@ PresenceStore.prototype.add = function(socketId, userId, userType, message) {
     this.map[userId][socketId] = message;
     this.socketUserMap[socketId] = userId;
   } else {
-    var previewsMessage = this.map[userId][socketId];
-    if (message.clientData && message.clientData !== previewsMessage.clientData) {
+    var previous = this.map[userId][socketId];
+    if (message.clientData && !_.isEqual(message.clientData, previous.clientData)) {
       events.push('client_updated');
       this.map[userId][socketId] = message;
     }

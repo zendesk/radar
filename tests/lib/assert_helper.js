@@ -108,6 +108,23 @@ PresenceMessage.prototype.assert_client_online = function(message) {
   }, message);
 };
 
+PresenceMessage.prototype.assert_client_updated = function(message, clientData) {
+  assert(clientData, 'client_updated is only triggered on new clientData. To assert it, you need to pass the expected clientData.');
+
+  var client = this.client;
+  var value = {
+    userId: client.userId,
+    clientId: client.clientId,
+    userData: client.userData,
+    clientData: clientData
+  };
+
+  assert.deepEqual({
+    to: this.scope,
+    op: 'client_updated',
+    value: value
+  }, message);
+};
 // client_offline:
 // {
 //   to:"presence:/<account>/<scope>,
@@ -146,8 +163,13 @@ PresenceMessage.prototype.assert_message_sequence = function(list, from) {
   assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
-    var method = 'assert_'+list[i];
-    this[method].call(this, messages[i]);
+    if (typeof(list[i]) === 'object') {
+      var method = 'assert_' + list[i][0], args = list[i][1];
+    } else {
+      var method = 'assert_'+list[i], args;
+    }
+
+    this[method].call(this, messages[i], args);
   }
 };
 
