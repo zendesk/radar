@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "mocha": "*",	
-    "radar_client": "git+https://github.com/zendesk/radar_client.git#lflorio/presence_states",
+    "radar_client": "*",
     "simple_sentinel": "*"
   },
   "scripts": {
