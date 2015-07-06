@@ -78,7 +78,7 @@ module.exports = {
 
   restartRadar: function(radar, configuration, clients, callback) {
     var tracker = Tracker.create('server restart, given clients ready', function() {
-      if (callback) setTimeout(callback,0);
+      if (callback) setTimeout(callback, 5);
     });
 
     for(var i = 0; i < clients.length; i++) {

@@ -1,4 +1,5 @@
-var logging = require('minilog')('radar:presence_store');
+var logging = require('minilog')('radar:presence_store'),
+    _ = require('underscore');
 
 function PresenceStore(scope) {
   this.scope = scope;
@@ -11,8 +12,8 @@ function PresenceStore(scope) {
 require('util').inherits(PresenceStore, require('events').EventEmitter);
 
 // Cache the client data without adding
-PresenceStore.prototype.cacheAdd = function(socketId, data) {
-  this.cache[socketId] = data;
+PresenceStore.prototype.cacheAdd = function(socketId, message) {
+  this.cache[socketId] = message;
 };
 
 PresenceStore.prototype.cacheRemove = function(socketId) {
@@ -21,10 +22,11 @@ PresenceStore.prototype.cacheRemove = function(socketId) {
   return val;
 };
 
-PresenceStore.prototype.add = function(socketId, userId, userType, data) {
+PresenceStore.prototype.add = function(socketId, userId, userType, message) {
   var store = this,
       events = [];
-  logging.debug('#presence - store.add', userId, socketId, data, this.scope);
+
+  logging.debug('#presence - store.add', userId, socketId, message, this.scope);
   this.cacheRemove(socketId);
 
   if (!this.map[userId]) {
@@ -35,20 +37,28 @@ PresenceStore.prototype.add = function(socketId, userId, userType, data) {
 
   if (!this.map[userId][socketId]) {
     events.push('client_added');
-    this.map[userId][socketId] = data;
+    this.map[userId][socketId] = message;
     this.socketUserMap[socketId] = userId;
+  } else {
+    var previous = this.map[userId][socketId];
+    if (message.clientData && !_.isEqual(message.clientData, previous.clientData)) {
+      events.push('client_updated');
+      this.map[userId][socketId] = message;
+    }
   }
 
   events.forEach(function(ev) {
-    logging.debug('#presence - store.emit', ev, data, store.scope);
-    store.emit(ev, data);
+    logging.debug('#presence - store.emit', ev, message, store.scope);
+    store.emit(ev, message);
   });
 };
 
-PresenceStore.prototype.remove = function(socketId, userId, data) {
+PresenceStore.prototype.remove = function(socketId, userId, message) {
   var store = this,
       events = [];
-  logging.debug('#presence - store.remove', userId, socketId, data, this.scope);
+
+  logging.debug('#presence - store.remove', userId, socketId, message, this.scope);
+  
   this.cacheRemove(socketId);
 
   // When non-existent, return
@@ -68,12 +78,12 @@ PresenceStore.prototype.remove = function(socketId, userId, data) {
   }
 
   events.forEach(function(ev) {
-    logging.debug('#presence - store.emit', ev, data, store.scope);
-    store.emit(ev, data);
+    logging.debug('#presence - store.emit', ev, message, store.scope);
+    store.emit(ev, message);
   });
 };
 
-PresenceStore.prototype.removeClient = function(socketId, data) {
+PresenceStore.prototype.removeClient = function(socketId, message) {
   var userId = this.socketUserMap[socketId];
   this.cacheRemove(socketId);
 
@@ -84,21 +94,21 @@ PresenceStore.prototype.removeClient = function(socketId, data) {
     return;
   }
 
-  logging.debug('#presence - store.removeClient', userId, socketId, data, this.scope);
+  logging.debug('#presence - store.removeClient', userId, socketId, message, this.scope);
   delete this.map[userId][socketId];
   delete this.socketUserMap[socketId];
 
-  logging.debug('#presence - store.emit', 'client_removed', data, this.scope);
-  this.emit('client_removed', data);
+  logging.debug('#presence - store.emit', 'client_removed', message, this.scope);
+  this.emit('client_removed', message);
 };
 
-PresenceStore.prototype.removeUserIfEmpty = function(userId, data) {
+PresenceStore.prototype.removeUserIfEmpty = function(userId, message) {
   if (this.userExists(userId) && this.userEmpty(userId)) {
-    logging.debug('#presence - store.removeUserIfEmpty', userId, data, this.scope);
+    logging.debug('#presence - store.removeUserIfEmpty', userId, message, this.scope);
     delete this.map[userId];
     delete this.userTypes[userId];
-    logging.debug('#presence - store.emit', 'user_removed', data, this.scope);
-    this.emit('user_removed', data);
+    logging.debug('#presence - store.emit', 'user_removed', message, this.scope);
+    this.emit('user_removed', message);
   }
 };
 

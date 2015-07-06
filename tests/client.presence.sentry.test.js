@@ -58,7 +58,7 @@ describe('given a client and a server,', function() {
     p.teardown();
     client.presence('test').set('offline').removeAllListeners();
     client.dealloc('test');
-    Persistence.delWildCard('*',done);
+    Persistence.delWildCard('*', done);
   });
 
   describe('when listening to a presence,', function() {

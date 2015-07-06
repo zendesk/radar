@@ -1,6 +1,7 @@
 var PresenceStore = require('./presence_store.js'),
     Persistence = require('persistence'),
-    logging = require('minilog')('radar:presence_manager');
+    logging = require('minilog')('radar:presence_manager'),
+    _ = require('underscore');
 
 function PresenceManager(scope, policy, sentry) {
   this.scope  = scope;
@@ -36,7 +37,14 @@ PresenceManager.prototype.setup = function() {
 
   store.on('client_added', function(message) {
     manager.emit('client_online', message.clientId, message.userId,
-                                  message.userType, message.userData);
+                                  message.userType, message.userData,
+                                  message.clientData);
+  });
+
+  store.on('client_updated', function(message) {
+    manager.emit('client_updated', message.clientId, message.userId,
+                                  message.userType, message.userData,
+                                  message.clientData);
   });
 
   store.on('client_removed', function(message) {
@@ -118,8 +126,14 @@ PresenceManager.prototype.stampExpiration = function(message) {
   message.at = Date.now() + PresenceManager.messageExpiry;
 };
 
+// FIXME: Method signature is getting unmanageable.  
 PresenceManager.prototype.addClient = function(socketId, userId, userType,
-                                                      userData, callback) {
+                                                      userData, clientData, callback) {
+
+  if (typeof(clientData) === 'function') {
+    callback = clientData;
+  }
+
   var message = {
     userId: userId,
     userType: userType,
@@ -128,6 +142,8 @@ PresenceManager.prototype.addClient = function(socketId, userId, userType,
     online: true,
     sentry: this.sentry.name
   };
+  
+  if (clientData) { message.clientData = clientData; }
 
   this.stampExpiration(message);
 
@@ -359,9 +375,16 @@ PresenceManager.prototype.getClientsOnline = function() {
   var result = {};
 
   function processMessage(message) {
-    result[message.userId] = result[message.userId] ||
-                { clients: { } , userType: message.userType };
-    result[message.userId].clients[message.clientId] = message.userData || {};
+    result[message.userId] = result[message.userId] || { 
+      clients: { },
+      userType: message.userType
+    };
+    
+    var payload = _.extend({}, 
+                                    (message.userData || {}), 
+                                    (message.clientData || {}));
+
+    result[message.userId].clients[message.clientId] = payload;
   }
 
   store.forEachClient(function(uid, cid, message) {
