@@ -1,3 +1,7 @@
+### 0.15.7
+* Presence resource can set online and include client data (to be broadcasted
+  as part of the client_online and client_updated events). 
+
 ### 0.15.6
 * Fix Radar pushed using old npm version (no code changes).
 
