@@ -303,6 +303,35 @@ ________________________________________________________________________________
 [**unsubscribe** client message](#unsubscribe_message)
 
 ________________________________________________________________________________
-## Error Messages 
+## Server Error Messages 
 
-TO DO
+The **stream** resource returns errors, and so does the REST API. The rest of
+core radar does **not** return errors.
+
+### get - _stream_ server error message
+```
+op: get
+to: scope (aka name)
+error: {
+  type: sync-error
+  from: from
+  start: start
+  end: end
+  size: size
+}
+value: []
+```
+
+### subscribe - _stream_ server error message
+```
+op: push
+to: scope (aka name)
+error: {
+  type: sync-error
+  from: from
+  start: start
+  end: end
+  size: size
+}
+```
+
