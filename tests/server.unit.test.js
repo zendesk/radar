@@ -1,21 +1,15 @@
-var http = require('http'),
+var common = require('./common.js'),
     assert = require('assert'),
-    Persistence = require('persistence'),
-    RadarServer = new require('../index.js').server,
-    configuration = require('../configurator.js').load({persistence: true}),
     subscribeMessage = {
       op: 'subscribe',
       to: 'presence:/z1/test/ticket/1'
     },
-    notFound = function p404(req, res){ },
-    httpServer, radarServer, socket;
+    radarServer, socket;
 
 describe('given a server',function() {
 
   beforeEach(function() {
-    httpServer = http.createServer(notFound);
-    radarServer = new RadarServer();
-    radarServer.attach(httpServer, configuration);
+    radarServer = common.createRadarServer();
     socket = {};
   });
 
