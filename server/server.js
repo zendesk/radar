@@ -39,7 +39,7 @@ Server.prototype.destroyResource = function(name) {
   if (this._rateLimiters[messageType.name]) {
     this._rateLimiters[messageType.name].removeByName(name);
   }
-
+  
   delete this.resources[name];
   delete this.subs[name];
   logging.info('#redis - unsubscribe', name);
@@ -328,6 +328,7 @@ Server.prototype._getResource = function(message, messageType) {
 Server.prototype._storeResource = function(resource) {
   if (!this.resources[resource.name]) {
     this.resources[resource.name] = resource;
+    this.emit('resource:new', resource);
   }
 };
 
