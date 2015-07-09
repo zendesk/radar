@@ -11,7 +11,7 @@ implicitly by writing a suitably formatted json object to the **redis store**
 that backs radar.
 
 In addition, **radar server** also generates messages in response to client
-messages, and these include **data messaages**, **ack messages**, and **error
+messages, and these include **data messages**, **ack messages**, and **error
 messages**
 
 ## Approach
@@ -53,7 +53,7 @@ The client operations listed above have associated **client messages**.  The
 steps for sending a client message are these:
 
 * Each API **_write**s an explicitly composed **client message**
-* _write adds **ack** property and emits an **authenticateMessage** message
+* _write adds an **ack** property and emits an **authenticateMessage** message
 * the **authenticateMessage** handler sets optional **userData (1)** and **auth
   (4)** properties:
     - userData: userData
@@ -78,7 +78,15 @@ Get **data** from the server that is related to the provided **scope**.
 op: get
 to: scope
 [options: options]
+
+Examples:
+  {"op":"get","to":"presence:/jdoe_inc/test/1",
+  "userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"get","to":"status:/jdoe_inc/voice/availability/123456789",
+  "userData":{"name":"John Doe","id":123456789}}
 ```
+
 [**get** server messages](#get_server_messages)
 
 ________________________________________________________________________________
@@ -104,7 +112,16 @@ through pub/sub is published to subscribers.
 op: publish
 to: scope
 value: value
+
+Examples:
+  {"op":"publish","to":"message:/jdoe_inc/chat/manager/session/sKzwHUoALDbIb3poKGvYlenUzUzgCwwP6addsohhA9kSGV+NF/x9xLx3p4KASi3pOqcoi3RyN2oCAegsrDeFSA==",
+  "value":{"type":"createChat","resource":"chat","action":"create","account":"jdoe_inc","user_id":123456789}, "ack":2,"userData":{"name":"Anonymous user","id":0}}
+
+  {"op":"publish","to":"message:/jdoe_inc/chat/c512b5c8c78b2f1a44d1247744c79c97e2f5c91e/messages",
+  "value":{"type":"activity","user_id":123456789,"state":4},
+  "userData":{"name":"Anonymous user","id":0}}
 ```
+
 [**publish** server message](#publish_server_message)
 
 ________________________________________________________________________________
@@ -131,7 +148,16 @@ to: scope
 value: value
 key: config.userId
 type: config.userType
+
+Examples:
+  {"op":"set","to":"presence:/jdoe_inc/ticket/81649","value":"online",
+  "key":123456789,"type":4,"userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"set","to":"status:/jdoe_inc/ticket/332137",
+  "value":"{\"states\":{\"edited\":false,\"focused\":false}}","key":123456789,
+  "type":4,"ack":1569,"userData":{"name":"John Doe","id":123456789}}
 ```
+
 [**set** server messages](#set_server_messages)
 
 ________________________________________________________________________________
@@ -143,7 +169,18 @@ changes to the **scope**.
 op: subscribe
 to: scope
 [options: options]
+
+Examples:
+  {"op":"subscribe","to":"message:/jdoe_inc/chat/user/123456789",
+  "userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"subscribe","to":"presence:/jdoe_inc/test/1","ack":1,
+  "userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"subscribe","to":"status:/jdoe_inc/expiry/tickets/1051856/comments",
+  "userData":{"name":"John Doe","id":123456789}}
 ```
+
 [**subscribe** server messages](#subscribe_server_messages)
 
 ________________________________________________________________________________
@@ -155,7 +192,18 @@ described above.
 op: sync
 to: scope
 [options: options || { version: 2 }]
+
+Examples:
+  {"op":"sync","to":"message:/jdoe_inc/chat/853264cdd19101b81d570871941be55e746f75f0/messages",
+  "userData":{"name":"Anonymous user","id":0}}
+
+  {"op":"sync","to":"presence:/jdoe/ticket/7310","options":{"version":2},
+  "userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"sync","to":"status:/jdoe_inc/voice/availability/123456789",
+  "userData":{"name":"John Doe","id":123456789}}
 ```
+
 [**sync** server messages](#sync_server_messages)
 
 ________________________________________________________________________________
@@ -167,7 +215,18 @@ notifications of changes to the scope.
 ```
 op: unsubscribe
 to: scope
+
+Examples:
+  {"op":"unsubscribe","to":"message:/jdoe_inc/chat/c512b5c8c78b2f1a44d1247744c79c97e2f5c91e/messages",
+  "ack":4,"userData":{"name":"Anonymous user","id":0}}
+
+  {"op":"unsubscribe","to":"presence:/jdoe_inc/ticket/16772","ack":1608,
+  "userData":{"name":"John Doe","id":123456789}}
+
+  {"op":"unsubscribe","to":"status:/jdoe_inc/ticket/16772",
+  "ack":1625,"userData":{"name":"John Doe","id":123456789}}
 ```
+
 [**unsubscribe** server messages](#unsubscribe_server_messages)
 
 ________________________________________________________________________________
