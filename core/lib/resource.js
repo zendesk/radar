@@ -85,6 +85,8 @@ Resource.prototype.redisIn = function(data) {
       socket.send(data);
     }
   });
+
+  this.emit('message:outgoing', data);
 };
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
