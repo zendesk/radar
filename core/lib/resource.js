@@ -1,4 +1,5 @@
 var Persistence = require('persistence'),
+    MiniEventEmitter = require('miniee'),
     logging = require('minilog')('radar:resource');
 
 /*
@@ -44,6 +45,7 @@ function Resource(name, server, options, default_options) {
   this.options = recursiveMerge({}, options || {}, default_options || {});
 }
 
+MiniEventEmitter.mixin(Resource);
 Resource.prototype.type = 'default';
 
 // Add a subscriber (Engine.io socket)
@@ -111,6 +113,7 @@ Resource.prototype.handleMessage = function(socket, message) {
     case 'publish':
     case 'push':
       this[message.op](socket, message);
+      this.emit('message:incoming', message);
       break;
     default:
       logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id);

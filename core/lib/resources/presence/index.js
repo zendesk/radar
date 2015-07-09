@@ -232,6 +232,8 @@ Presence.prototype.broadcast = function(message, except) {
         'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.name);
     }
   });
+
+  this.emit('message:outgoing', message);
 };
 
 Presence.prototype.fullRead = function(callback) {
