@@ -1,7 +1,7 @@
 var assert = require('assert'),
     Status = require('../core/lib/resources/status.js'),
-    Persistence = require('persistence');
-require('./common.js');
+    Persistence = require('persistence'),
+    Common = require('./common.js');
 
 describe('given a status resource', function() {
   var status;
@@ -169,6 +169,47 @@ describe('given a status resource', function() {
         done();
       };
       status.set({}, { key: 123, value: 'online' });
+    });
+  });
+});
+
+describe('a status resource', function() {
+  describe('emitting messages', function() {
+    beforeEach(function() {
+      radarServer = Common.createRadarServer();
+    });
+
+    it('should emit incomming messages', function(done) {
+      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' };
+
+      radarServer.on('resource:new', function(resource) {
+        resource.on('message:incoming', function(message) {
+          assert.equal(message.to, subscribeMessage.to);
+          done()
+        });
+      });
+
+      setTimeout(function() {
+        radarServer._processMessage({}, subscribeMessage);
+      }, 100);
+    });
+
+    it('should emit outgoing messages', function(done) {
+      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' },
+          setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2} },
+          socketOne = { id: 1, send: function(m) { } },
+          socketTwo = { id: 2, send: function(m) { } };
+
+      radarServer.on('resource:new', function(resource) {
+        resource.on('message:outgoing', function(message) {
+          done();
+        });
+      });
+
+      setTimeout(function() {
+        radarServer._processMessage(socketOne, subscribeMessage);
+        radarServer._processMessage(socketTwo, setMessage);
+      }, 100);
     });
   });
 });

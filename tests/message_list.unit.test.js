@@ -1,11 +1,7 @@
 var assert = require('assert'),
+    Common = require('./common.js'),
     MessageList = require('../core/lib/resources/message_list.js'),
     Persistence = require('persistence');
-
-require('./common.js');
-
-
-
 
 describe('For a message list', function() {
   var message_list;
@@ -145,5 +141,46 @@ describe('For a message list', function() {
 
   it('default caching is false', function() {
     assert.ok(!message_list.options.policy.cache);
+  });
+});
+
+describe('a message list resource', function() {
+  describe('emitting messages', function() {
+    beforeEach(function() {
+      radarServer = Common.createRadarServer();
+    });
+
+    it('should emit incomming messages', function(done) {
+      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' };
+
+      radarServer.on('resource:new', function(resource) {
+        resource.on('message:incoming', function(message) {
+          assert.equal(message.to, subscribeMessage.to);
+          done()
+        });
+      });
+
+      setTimeout(function() {
+        radarServer._processMessage({}, subscribeMessage);
+      }, 100);
+    });
+
+    it('should emit outgoing messages', function(done) {
+      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' },
+          publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: {"type":"activity","user_id":123456789,"state":4} },
+          socketOne = { id: 1, send: function(m) { } },
+          socketTwo = { id: 2, send: function(m) { } };
+
+      radarServer.on('resource:new', function(resource) {
+        resource.on('message:outgoing', function(message) {
+          done();
+        });
+      });
+
+      setTimeout(function() {
+        radarServer._processMessage(socketOne, subscribeMessage);
+        radarServer._processMessage(socketTwo, publishMessage);
+      }, 100);
+    });
   });
 });

@@ -114,5 +114,16 @@ module.exports = {
       }).once('ready', done).alloc('test');
       return client;
   },
-  configuration: configuration
+  configuration: configuration,
+
+  // Create an in-process radar server, not a child process. 
+  createRadarServer: function() {
+  
+    var notFound = function p404(req, res){ },
+        httpServer = http.createServer(notFound);
+
+    radarServer = new RadarServer();
+    radarServer.attach(httpServer, configuration);
+    return radarServer;
+  }
 };
