@@ -44,7 +44,7 @@ subscribe             [X]   X     [X]   X                   [X]: called via sync
 
 sync                  X     X     X     X
 
-unsubscribe           X     X
+unsubscribe           X     X     X
 ```
 
 ## Client Messages
@@ -75,7 +75,7 @@ ________________________________________________________________________________
 ### get
 Get **data** from the server that is related to the provided **scope**.
 ```
-op: get
+op: 'get'
 to: scope
 [options: options]
 
@@ -97,7 +97,7 @@ can map the *name* to the *id*.  We do this because certain messages contain the
 associated *id*, but not the *name*, and on the server we want to track activity
 by *name*.
 ```
-op: nameSync
+op: 'nameSync'
 to: scope
 [options: options]
 ```
@@ -109,7 +109,7 @@ ________________________________________________________________________________
 Publish a **value** to the provided **scope**.  The message is persisted, and
 through pub/sub is published to subscribers.
 ```
-op: publish
+op: 'publish'
 to: scope
 value: value
 
@@ -130,7 +130,7 @@ ________________________________________________________________________________
 Push a **resource, action** and **value** to the provided **scope**.
 (Implemented on streams, and not yet used by any consumer.)
 ```
-op: push
+op: 'push'
 to: scope
 resource: resource
 action: action
@@ -143,7 +143,7 @@ ________________________________________________________________________________
 ### set
 Sets a **value** on the provided **scope**.
 ```
-op: set
+op: 'set'
 to: scope
 value: value
 key: config.userId
@@ -166,7 +166,7 @@ ________________________________________________________________________________
 Subscribe to the provided **scope**.  That is, notify the subscriber of any
 changes to the **scope**.
 ```
-op: subscribe
+op: 'subscribe'
 to: scope
 [options: options]
 
@@ -189,7 +189,7 @@ ________________________________________________________________________________
 Performs a **get** as above, and in addition, performs a **subscribe**,
 described above.
 ```
-op: sync
+op: 'sync'
 to: scope
 [options: options || { version: 2 }]
 
@@ -213,7 +213,7 @@ Unsubscibe from the provided **scope**.  That is, the subscriber will no longer
 be a subscriber to the provided **scope**, and so will no longer receive
 notifications of changes to the scope.
 ```
-op: unsubscribe
+op: 'unsubscribe'
 to: scope
 
 Examples:
@@ -238,7 +238,7 @@ message.  This message is listed in the **Server Messages** below simply as
 ### ack server message
 <a id="ack_server_message"></a>
 ```
-op: ack
+op: 'ack'
 value: message.ack
 ```
 ## Server Messages 
@@ -249,21 +249,21 @@ messageList, presence, status, and stream.**
 <a id="get_server_messages"></a>
 ### get - _presence_ server message
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: online_clients (userId -> client hash)
 ```
 
 ### get - _status_ server message
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: replies (all values for hash 'name')
 ```
 
 ### get - _stream_ server message
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: values || []
 ```
@@ -314,7 +314,7 @@ ________________________________________________________________________________
 ### sync - _messageList_ server message
 
 ```
-op: sync
+op: 'sync'
 to: scope (aka name)
 value: replies
 time: now
@@ -327,7 +327,7 @@ time: now
 **ACK**
 
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: online_clients (userId -> client hash)
 ```
@@ -337,14 +337,14 @@ value: online_clients (userId -> client hash)
 **ACK**
 
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: replies (all values for hash 'name')
 ```
 
 ### sync - _stream_ server message
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 value: values || []
 ```
@@ -369,7 +369,7 @@ core radar does **not** return errors.
 
 ### get - _stream_ server error message
 ```
-op: get
+op: 'get'
 to: scope (aka name)
 error: {
   type: sync-error
@@ -383,7 +383,7 @@ value: []
 
 ### subscribe - _stream_ server error message
 ```
-op: push
+op: 'push'
 to: scope (aka name)
 error: {
   type: sync-error
@@ -393,4 +393,14 @@ error: {
   size: size
 }
 ```
+
+________________________________________________________________________________
+## Additional Comments About Message Handling
+
+1. Auth properties are removed from messages by the TokenAuth **execute**
+   method, so that we don't see auth information in our logs.
+
+2. Though we accept an **options** parameter for certain operations (_get,
+   nameSync, subscribe, sync_), it is used only by **presence sync** and
+   **control nameSync**.
 
