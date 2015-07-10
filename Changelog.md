@@ -1,3 +1,7 @@
+### Master
+* Emit events on new resource allocation, and on esch incoming/outgoing message 
+  processed by resources. 
+
 ### 0.15.7
 * Presence resource can set online and include client data (to be broadcasted
   as part of the client_online and client_updated events). 
