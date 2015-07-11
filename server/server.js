@@ -167,6 +167,12 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 Server.prototype._processMessage = function(socket, message) {
   var messageType = this._getMessageType(message.to);
 
+  if (!messageType) {
+    logging.warn('#socket.message - unknown type', message, socket.id);
+    this._sendErrorMessage(socket, 'unknown_type', message);
+    return;
+  }
+
   if (!this._authorizeMessage(socket, message, messageType)) {
     logging.warn('#socket.message - auth_invalid', message, socket.id);
     this._sendErrorMessage(socket, 'auth', message);
