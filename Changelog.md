@@ -1,4 +1,7 @@
-### Master
+### 0.15.9
+* Responde with an error when a message with an unknown type is received.
+
+### 0.15.8 
 * Emit events on new resource allocation, and on esch incoming/outgoing message 
   processed by resources. 
 
