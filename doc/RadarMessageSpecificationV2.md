@@ -141,7 +141,7 @@ value: value
 ________________________________________________________________________________
 <a id="set_message"></a>
 ### set
-Sets a **value** on the provided **scope**.
+Set a **value** on the provided **scope**.
 ```
 op: 'set'
 to: scope
@@ -186,8 +186,8 @@ Examples:
 ________________________________________________________________________________
 <a id="sync_message"></a>
 ### sync
-Performs a **get** as above, and in addition, performs a **subscribe**,
-described above.
+Perform a **get** as above, and in addition, perform a **subscribe**, described
+above.
 ```
 op: 'sync'
 to: scope
