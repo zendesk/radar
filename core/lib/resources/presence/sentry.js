@@ -1,10 +1,14 @@
-var Minilog = require('minilog'),
+var _ = require('underscore'),
+    Minilog = require('minilog'),
     logging = Minilog('radar:sentry'),
-    _ = require('underscore'),
     Persistence = require('persistence'),
     redisSentriesKey = 'sentry:/radar';
 
-//Minilog.pipe(process.stdout);
+var defaultOptions = {
+  DEFAULT_EXPIRY_OFFSET: 4000,
+  REFRESH_INTERVAL: 3500,
+  CHECK_INTERVAL: 10000
+};
 
 var parseJSON = function(message) {
   try { 
@@ -18,12 +22,6 @@ var messageIsExpired = function(message) {
 
 var messageExpiration = function(message) {
   return (message && message.expiration && (message.expiration - Date.now()));
-};
-
-var defaultOptions = {
-  DEFAULT_EXPIRY_OFFSET: 4000,
-  REFRESH_INTERVAL: 3500,
-  CHECK_INTERVAL: 10000
 };
 
 var Sentry = function(name, options) {
@@ -85,7 +83,7 @@ Sentry.prototype.stop = function(callback) {
   if (callback) { callback(); }
 };
 
-Sentry.prototype.sentriesNames = function() {
+Sentry.prototype.sentryNames = function() {
   return Object.keys(this.sentries);
 };
 
@@ -164,15 +162,8 @@ Sentry.prototype._loadAndCleanUpSentries = function(callback) {
     replies = replies || {};
     var repliesKeys = Object.keys(replies);
 
-    // Deletion of a gone sentry key might just happened, so 
-    // we compare existing sentry names to reply names
-    // and clear whatever we have that no longer exists. 
-    var sentriesGone = _.difference(self.sentriesNames(), repliesKeys);
+    self._purgeGoneSentries(replies, repliesKeys);
 
-    sentriesGone.forEach(function(name) {
-      self._purgeSentry(name);
-    });
-    
     repliesKeys.forEach(function(name) {
       self.sentries[name] = replies[name];
       if (self.isSentryDown(name)) {
@@ -193,15 +184,30 @@ Sentry.prototype._purgeSentry = function(name) {
   this.emit('down', name, lastMessage);
 };
 
+// Deletion of a gone sentry key might just happened, so 
+// we compare existing sentry names to reply names
+// and clear whatever we have that no longer exists. 
+Sentry.prototype._purgeGoneSentries = function(replies, repliesKeys) {
+  var self = this,
+      sentriesGone = _.difference(this.sentryNames(), repliesKeys);
+
+  sentriesGone.forEach(function(name) {
+    self._purgeSentry(name);
+  });
+};
+
+// Listening for new pub sub messages from redis. 
+// As of now, we only care about new sentries going online. 
+// Everything else gets inferred based on time. 
 Sentry.prototype._startListening = function() {
   var self = this;
 
   if (!this._listener) {
-    this._listener = function(channel, m) {
+    this._listener = function(channel, message) {
       if (channel != redisSentriesKey) {
         return;
       }
-      self._saveMessage(parseJSON(m));
+      self._saveMessage(parseJSON(message));
     };
 
     Persistence.pubsub().on('message', this._listener);
