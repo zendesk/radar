@@ -96,7 +96,6 @@ Service.start = function(configuration, callback) {
 
   radar = new Radar.server();
   radar.once('ready', function() {
-    logger.debug('radar ready');
     httpServer.listen(configuration.port, function() {
       logger.debug('httpServer listening on', configuration.port);
       serverStarted = true;

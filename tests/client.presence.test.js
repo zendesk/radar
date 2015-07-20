@@ -208,7 +208,8 @@ describe('given two clients and a presence resource', function() {
       });
 
       it('should send online notification only once for multiple set(online), unless updated clientData', function(done) {
-        var clientData = { data: 2 }
+        var clientData = { data: 2 };
+
         // Subscribe online with client 2
         client2.presence('test').on(p.notify)
           .subscribe(function() {

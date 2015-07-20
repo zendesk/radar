@@ -159,14 +159,17 @@ PresenceMessage.prototype.assert_client_implicit_offline =  function(message) {
 };
 
 PresenceMessage.prototype.assert_message_sequence = function(list, from) {
-  var i, messages = this.notifications.slice(from);
+  var i, method, args, 
+      messages = this.notifications.slice(from);
+
   assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
     if (typeof(list[i]) === 'object') {
-      var method = 'assert_' + list[i][0], args = list[i][1];
+      method = 'assert_' + list[i][0];
+      args = list[i][1];
     } else {
-      var method = 'assert_'+list[i], args;
+      method = 'assert_'+list[i];
     }
 
     this[method].call(this, messages[i], args);
