@@ -91,7 +91,6 @@ PresenceManager.prototype.sentryDownForClient = function(socketId) {
     online: false,
     explicit: false
   };
-  this.stampExpiration(message);
 
   // Process directly
   this.processRedisEntry(message);
@@ -120,12 +119,6 @@ PresenceManager.prototype.destroy = function() {
 
   delete this.store;
 };
-
-// For backwards compatibility, add a '.at' to message
-PresenceManager.prototype.stampExpiration = function(message) {
-  message.at = Date.now() + PresenceManager.messageExpiry;
-};
-
 // FIXME: Method signature is getting unmanageable.  
 PresenceManager.prototype.addClient = function(socketId, userId, userType,
                                                       userData, clientData, callback) {
@@ -142,10 +135,8 @@ PresenceManager.prototype.addClient = function(socketId, userId, userType,
     online: true,
     sentry: this.sentry.name
   };
-  
-  if (clientData) { message.clientData = clientData; }
 
-  this.stampExpiration(message);
+  if (clientData) { message.clientData = clientData; }
 
   // We might need the details before we actually do a store.add
   this.store.cacheAdd(socketId, message);
@@ -168,8 +159,7 @@ PresenceManager.prototype.removeClient = function(socketId, userId, userType, ca
     online: false,
     explicit: true
   };
-  this.stampExpiration(message);
-
+  
   Persistence.deleteHash(this.scope, userId + '.' + socketId);
   Persistence.publish(this.scope, message, callback);
 };
@@ -208,7 +198,6 @@ PresenceManager.prototype._implicitDisconnect = function(socketId, userId,
     online: false,
     explicit: false
   };
-  this.stampExpiration(message);
 
   Persistence.deleteHash(this.scope, userId + '.' + socketId);
   Persistence.publish(this.scope, message, callback);
