@@ -70,9 +70,10 @@ Server.prototype._setup = function(httpServer, configuration) {
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
 
-  Core.Resources.Presence.sentry.start();
-  Core.Resources.Presence.sentry.setMaxListeners(0);
-  Core.Resources.Presence.sentry.setHostPort(hostname, configuration.port);
+  Core.Resources.Presence.sentry.start({
+    host: hostname,
+    port: configuration.port
+  });
 
   if (configuration.engineio) {
     engine = configuration.engineio.module;

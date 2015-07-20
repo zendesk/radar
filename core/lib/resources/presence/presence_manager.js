@@ -1,6 +1,7 @@
 var PresenceStore = require('./presence_store.js'),
     Persistence = require('persistence'),
-    logging = require('minilog')('radar:presence_manager'),
+    Minilog = require('minilog'),
+    logging = Minilog('radar:presence_manager'),
     _ = require('underscore');
 
 function PresenceManager(scope, policy, sentry) {
@@ -53,7 +54,8 @@ PresenceManager.prototype.setup = function() {
   });
 
   // Save so you removeListener on destroy
-  this.sentryListener = function (sentry) {
+  this.sentryListener = function (sentry) {   
+    
     var socketIds = store.socketsForSentry(sentry);
 
     var chain = function (socketIds) {
@@ -232,16 +234,16 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
       message.sentry = userId + '.' + socketId;
 
       // Publish fake entry, autopub will renew it
-      sentry.publishKeepAlive({ name: message.sentry, save: false });
+      sentry._keepAlive({ name: message.sentry, save: false });
     }
 
-    if (sentry.isValid(message.sentry)) {
-      logging.debug('#presence - processRedisEntry: sentry.isValid true',
+    if (!sentry.isSentryDown(message.sentry)) {
+      logging.debug('#presence - processRedisEntry: sentry.isSentryDown false',
                                               message.sentry, this.scope);
       manager.clearExpiry(userId);
       store.add(socketId, userId, userType, message);
     } else {
-      logging.debug('#presence - processRedisEntry: sentry.isValid false',
+      logging.debug('#presence - processRedisEntry: sentry.isSentryDown true',
                                               message.sentry, this.scope);
 
       // Orphan redis entry: silently remove from redis then remove from store
