@@ -1,159 +1,258 @@
-var logging = require('minilog')('radar:presence:sentry'),
-    Persistence = require('persistence');
+var Minilog = require('minilog'),
+    logging = Minilog('radar:sentry'),
+    _ = require('underscore'),
+    Persistence = require('persistence'),
+    redisSentriesKey = 'sentry:/radar';
 
-function parse(message) {
-  try {
-    return JSON.parse(message);
+//Minilog.pipe(process.stdout);
+
+var parseJSON = function(message) {
+  try { 
+    return JSON.parse(message); 
   } catch (e) { }
-}
+};
 
-function Sentry(name) {
-  this.name = name;
+var messageIsExpired = function(message) {
+  return (!message || !message.expiration || (message.expiration <= Date.now()));
+};
+
+var messageExpiration = function(message) {
+  return (message && message.expiration && (message.expiration - Date.now()));
+};
+
+var defaultOptions = {
+  DEFAULT_EXPIRY_OFFSET: 4000,
+  REFRESH_INTERVAL: 3500,
+  CHECK_INTERVAL: 10000
+};
+
+var Sentry = function(name, options) {
   this.sentries = {};
-}
+  this._setName(name);
 
-Sentry.expiry = 20000;
-Sentry.channel = 'sentry:/radar';
+  this._defaultExpiryOffset = defaultOptions.DEFAULT_EXPIRY_OFFSET;
+  this._refreshInterval = defaultOptions.REFRESH_INTERVAL;
+  this._checkInterval = defaultOptions.CHECK_INTERVAL;
+
+  this._applyOptions(options);
+};
 
 require('util').inherits(Sentry, require('events').EventEmitter);
 
-Sentry.prototype._listen = function() {
-  var self = this;
-  if (!this.listener) {
-    this.listener = function(channel, m) {
-      if (channel != Sentry.channel) {
-        return;
-      }
-      self._save(parse(m));
-    };
-    Persistence.pubsub().on('message', this.listener);
+Sentry.prototype.start = function(options, callback) {
+  var self = this,
+      keepAliveOptions = {},
+      upMessage;
+  
+  options = options || {};
+
+  if (typeof(options) === 'function') { 
+    callback = options; 
+  } else {
+    this._applyOptions(options); 
   }
-  if (!this.subscribed) {
-    this.subscribed = true;
-    Persistence.pubsub().subscribe(Sentry.channel);
+
+  if (this._refreshTimer) { return; }
+
+  logging.info('#presence - #sentry - starting', this.name);
+
+  if (options.expiration) {
+    keepAliveOptions.expiration = options.expiration;
+  }
+
+  upMessage = self._keepAlive(keepAliveOptions);
+
+  this.setMaxListeners(0);
+  this._loadAndCleanUpSentries(function() {
+    self.emit('up', this.name, upMessage);
+    Persistence.publish(redisSentriesKey, upMessage);
+    self._startListening();
+    if (callback) { callback(); }
+  });
+
+  this._refreshTimer = setTimeout(this._refresh.bind(this), Math.floor(this._refreshInterval/2));
+  this._checkSentriesTimer = setTimeout(this._checkSentries.bind(this), Math.floor(this._checkInterval/2));
+};
+
+Sentry.prototype.stop = function(callback) {
+  logging.info('#presence- #sentry stopping', this.name);
+  
+  this._stopTimer('_checkSentriesTimer');
+  this._stopTimer('_refreshTimer');
+  this.sentries = {};
+  this._stopListening();
+
+  if (callback) { callback(); }
+};
+
+Sentry.prototype.sentriesNames = function() {
+  return Object.keys(this.sentries);
+};
+
+Sentry.prototype.isSentryDown = function(name) {
+  var lastMessage = this.sentries[name];
+  var isDown = messageIsExpired(lastMessage);
+
+  if (isDown) {
+    var expiration = messageExpiration(lastMessage); 
+    var text = (expiration) ? expiration + '/' + Sentry.expiry : 'not-present';
+    logging.debug('#presence - #sentry isDown', name, isDown, text);
+  }
+
+  return isDown;
+};
+
+Sentry.prototype._setName = function(name) {
+  if (!name) {
+    var shasum = require('crypto').createHash('sha1');
+    shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
+    name = shasum.digest('hex').slice(0,15);
+  }
+
+  this.name = name;
+  return this.name;
+};
+
+Sentry.prototype._applyOptions = function(options) {
+  if (options) {
+    this.host = options.host;
+    this.port = options.port;
+   
+    this._defaultExpiryOffset = options.defaultExpiryOffset || defaultOptions.DEFAULT_EXPIRY_OFFSET;
+    this._refreshInterval = options.refreshInterval || defaultOptions.REFRESH_INTERVAL;
+    this._checkInterval = options.checkInterval || defaultOptions.CHECK_INTERVAL;
   }
 };
 
+Sentry.prototype._keepAlive = function(options) {
+  options = options || {};
+  var message = this._newKeepAliveMessage(options.name, options.expiration),
+      name = message.name;
 
-Sentry.prototype._save = function(message) {
+  this.sentries[name] = message;
+
+  if (options.save !== false) {
+    Persistence.persistHash(redisSentriesKey, name, message);
+  }
+
+  return message;
+};
+
+Sentry.prototype._newKeepAliveMessage = function(name, expiration) {
+  return {
+    name: (name || this.name),
+    expiration: (expiration || this._defaultExpiryOffsetFromNow()),
+    alive: true,
+    host: this.host,
+    port: this.port
+  };
+};
+
+Sentry.prototype._defaultExpiryOffsetFromNow = function() {
+  return Date.now() + this._defaultExpiryOffset;
+};
+
+// It loads the sentries from redis, and performs two tasks:
+//
+// * purges sentries that are no longer available
+// * expire sentries based on stale messages. 
+//
+Sentry.prototype._loadAndCleanUpSentries = function(callback) {
+  var self = this;
+
+  Persistence.readHashAll(redisSentriesKey, function(replies) {
+    replies = replies || {};
+    var repliesKeys = Object.keys(replies);
+
+    // Deletion of a gone sentry key might just happened, so 
+    // we compare existing sentry names to reply names
+    // and clear whatever we have that no longer exists. 
+    var sentriesGone = _.difference(self.sentriesNames(), repliesKeys);
+
+    sentriesGone.forEach(function(name) {
+      self._purgeSentry(name);
+    });
+    
+    repliesKeys.forEach(function(name) {
+      self.sentries[name] = replies[name];
+      if (self.isSentryDown(name)) {
+        self._purgeSentry(name);
+      }
+    });
+
+    if (callback) { callback(); }
+  });
+};
+
+Sentry.prototype._purgeSentry = function(name) {
+  Persistence.deleteHash(redisSentriesKey, name);
+
+  var lastMessage = this.sentries[name];
+  logging.info('#presence - #sentry down:', name, lastMessage.host, lastMessage.port);
+  delete this.sentries[name];
+  this.emit('down', name, lastMessage);
+};
+
+Sentry.prototype._startListening = function() {
+  var self = this;
+
+  if (!this._listener) {
+    this._listener = function(channel, m) {
+      if (channel != redisSentriesKey) {
+        return;
+      }
+      self._saveMessage(parseJSON(m));
+    };
+
+    Persistence.pubsub().on('message', this._listener);
+  }
+
+  if (!this._subscribed) {
+    this._subscribed = true;
+    Persistence.pubsub().subscribe(redisSentriesKey);
+  }
+};
+
+Sentry.prototype._stopListening = function() {
+  if (this._subscribed) {
+    Persistence.pubsub().unsubscribe(redisSentriesKey);
+    delete this._subscribed;
+  }
+
+  if (this._listener) {
+    Persistence.pubsub().removeListener('message', this._listener);
+    delete this._listener;
+  }
+};
+
+Sentry.prototype._saveMessage = function(message) {
   if (message && message.name) {
-    logging.debug('#presence - sentry.save', message.name,
-                  (message.expiration - Date.now()) + '/' + Sentry.expiry);
+    logging.debug('#presence - sentry.save', message.name, messageExpiration(message));
     this.sentries[message.name] = message;
   }
 };
 
-Sentry.prototype._sentryDown = function(name) {
-  if (!this.isValid(name)) {
+Sentry.prototype._refresh = function() {
+  var interval = Math.floor(this._refreshInterval/2);
 
-    // Cleanup
-    Persistence.deleteHash(Sentry.channel, name);
+  logging.info('#presence - #sentry keep alive:', this.name);
+  this._keepAlive();
+  this._refreshTimer = setTimeout(this._refresh.bind(this), interval); 
+};
 
-    var details = this.sentries[name];
-    logging.info('#presence - #sentry down:', name,
-                    details.host, details.port);
-    delete this.sentries[name];
-    this.emit('down', name, details);
+Sentry.prototype._checkSentries = function() {
+  var interval = Math.floor(this._checkInterval/2);
+
+  logging.info('#presence - #sentry checking sentries:', this.name);
+  this._loadAndCleanUpSentries();
+  this._checkSentriesTimer = setTimeout(this._checkSentries.bind(this), interval);
+};
+
+Sentry.prototype._stopTimer = function(methodName) {
+  if (this[methodName]) {
+    clearTimeout(this[methodName]);
+    delete this[methodName];
   }
-};
-
-Sentry.prototype._run = function() {
-  this.publishKeepAlive();
-  Object.keys(this.sentries).forEach(this._sentryDown.bind(this));
-  this.timer = setTimeout(this._run.bind(this), Math.floor(Sentry.expiry/2));
-};
-
-// Read initial state
-Sentry.prototype.loadAll = function(callback) {
-  var sentries = this.sentries;
-  var self = this;
-  Persistence.readHashAll(Sentry.channel, function(replies) {
-    replies = replies || {};
-    Object.keys(replies).forEach(function(name) {
-      sentries[name] = replies[name];
-
-      // Cleanup
-      if (!self.isValid(name)) {
-        Persistence.deleteHash(Sentry.channel, name);
-        delete sentries[name];
-      }
-    });
-
-    if (callback) callback();
-  });
-};
-
-// API
-Sentry.prototype.publishKeepAlive = function(options) {
-  options = options || {};
-
-  // Optionally, publish on behalf of someone else
-  var name = options.name || this.name;
-
-  // Optionally, set custom expiry
-  var expiration = options.expiration || Date.now() + Sentry.expiry;
-  var host = this.host;
-  var port = this.port;
-
-  var message = {
-    name: name,
-    alive: true,
-    host: host,
-    port: port,
-    expiration: expiration
-  };
-
-  this.sentries[name] = message;
-
-  // Specific check
-  if (options.save === false) return;
-
-  Persistence.persistHash(Sentry.channel, this.name, message);
-  Persistence.publish(Sentry.channel, message);
-};
-
-Sentry.prototype.start = function(callback) {
-  var sentries = this.sentries;
-  var self = this;
-  if (this.timer) {
-    return;
-  }
-  logging.info('#presence - #sentry - starting', this.name);
-  this._listen();
-  this.publishKeepAlive();
-  this.loadAll(callback);
-  this.timer = setTimeout(this._run.bind(this), Math.floor(Sentry.expiry/2));
-};
-
-Sentry.prototype.stop = function() {
-  logging.info('#presence - #sentry stopping', this.name);
-  if (this.timer) {
-    clearTimeout(this.timer);
-    delete this.timer;
-  }
-  Persistence.pubsub().unsubscribe(Sentry.channel);
-  delete this.subscribed;
-  if (this.listener) {
-    Persistence.pubsub().removeListener('message', this.listener);
-    delete this.listener;
-  }
-  this.sentries = {};
-};
-
-Sentry.prototype.isValid = function(name) {
-  var message = this.sentries[name];
-  var valid = (message && message.expiration && (message.expiration >= Date.now()));
-  var expiration = (message && message.expiration && (message.expiration - Date.now()));
-
-  if (!valid)
-    logging.debug('#presence - #sentry isValid', name, valid,
-                  (expiration) ? expiration + '/' + Sentry.expiry : 'not-present');
-  return valid;
-};
-
-Sentry.prototype.setHostPort = function(host, port) {
-  this.host = host;
-  this.port = port;
 };
 
 module.exports = Sentry;
