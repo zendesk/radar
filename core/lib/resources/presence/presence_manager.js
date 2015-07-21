@@ -228,15 +228,6 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
   callback = callback || function() {};
 
   if (this.isOnline(message)) {
-    if (!message.sentry) {
-      logging.info('#presence - #autopub - received online message without sentry',
-                                                              message, this.scope);
-      message.sentry = userId + '.' + socketId;
-
-      // Publish fake entry, autopub will renew it
-      sentry._keepAlive({ name: message.sentry, save: false });
-    }
-
     if (!sentry.isSentryDown(message.sentry)) {
       logging.debug('#presence - processRedisEntry: sentry.isSentryDown false',
                                               message.sentry, this.scope);
