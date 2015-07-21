@@ -87,7 +87,7 @@ Sentry.prototype.sentryNames = function() {
   return Object.keys(this.sentries);
 };
 
-Sentry.prototype.isSentryDown = function(name) {
+Sentry.prototype.isDown = function(name) {
   var lastMessage = this.sentries[name];
   var isDown = messageIsExpired(lastMessage);
 
@@ -166,7 +166,7 @@ Sentry.prototype._loadAndCleanUpSentries = function(callback) {
 
     repliesKeys.forEach(function(name) {
       self.sentries[name] = replies[name];
-      if (self.isSentryDown(name)) {
+      if (self.isDown(name)) {
         self._purgeSentry(name);
       }
     });

@@ -178,7 +178,7 @@ exports['Radar api tests'] = {
       PresenceManager.setBackend(FakePersistence);
       var fakeSentry = {
         name: 'server1',
-        isSentryDown: function() {
+        isDown: function() {
          return false;
         },
         on: function() {}

@@ -48,16 +48,16 @@ describe('a Server Entry (Sentry)', function() {
     sentry.start(done);
   });
 
-  describe('isSentryDown', function() {
+  describe('isDown', function() {
     it('initially, it should be down', function() {
       sentry = newSentry();
-      assert.equal(sentry.isSentryDown(sentry.name), true);
+      assert.equal(sentry.isDown(sentry.name), true);
     });
 
     it('after start, it should be up', function() {
       sentry = newSentry();
       sentry.start(function() {
-        assert.equal(sentry.isSentryDown(sentry.name), false);
+        assert.equal(sentry.isDown(sentry.name), false);
       });
     });
 
