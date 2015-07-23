@@ -5,9 +5,9 @@ var _ = require('underscore'),
     redisSentriesKey = 'sentry:/radar';
 
 var defaultOptions = {
-  DEFAULT_EXPIRY_OFFSET: 4000,
-  REFRESH_INTERVAL: 3500,
-  CHECK_INTERVAL: 10000
+  DEFAULT_EXPIRY_OFFSET: 60000,
+  REFRESH_INTERVAL: 10000,
+  CHECK_INTERVAL: 30000
 };
 
 var parseJSON = function(message) {

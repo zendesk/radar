@@ -536,3 +536,8 @@ StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_ge
 StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
 module.exports.PresenceMessage = PresenceMessage;
 module.exports.StreamMessage = StreamMessage;
+module.exports.SentryDefaults = {
+  defaultExpiryOffset: 4000,
+  refreshInterval: 3500,
+  checkInterval: 10000
+};

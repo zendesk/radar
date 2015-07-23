@@ -6,13 +6,14 @@ var common = require('./common.js'),
     PresenceManager = require('../core/lib/resources/presence/presence_manager.js'),
     Client = require('radar_client').constructor,
     EE = require('events').EventEmitter,
-    PresenceMessage = require('./lib/assert_helper.js').PresenceMessage,
+    assertHelper = require('./lib/assert_helper.js'),
+    PresenceMessage = assertHelper.PresenceMessage,
     Sentry = require('../core/lib/resources/presence/sentry.js'),
     radar, client, client2;
 
 describe('given a client and a server,', function() {
   var p, 
-      sentry = new Sentry('test-sentry'),
+      sentry = new Sentry('test-sentry', assertHelper.SentryDefaults),
       presenceManager = new PresenceManager('presence:/dev/test', {}, sentry),
       publish_client_online = function(client) {
         presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData);

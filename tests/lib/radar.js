@@ -9,6 +9,7 @@ var http = require('http'),
     Minilog = require('minilog'),
     logger = require('minilog')('lib_radar'),
     formatter = require('./formatter.js'),
+    assertHelper = require('./assert_helper.js'),
     radar, httpServer, serverStarted = false;
 
 if (process.env.verbose) {
@@ -26,7 +27,6 @@ function p404(req, res) {
   res.statusCode = 404;
   res.end('404 Not Found');
 }
-
 
 Type.add([
   {// For client.auth.test
@@ -91,7 +91,10 @@ Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);
   httpServer = http.createServer(p404);
   PresenceManager.userTimeout = 1000;
-  Sentry.expiry = 4000;
+  
+  // Add sentry defaults for testing. 
+  configuration.sentry = assertHelper.SentryDefaults;
+
   PresenceManager.autoPubTimeout = 4000;
 
   radar = new Radar.server();

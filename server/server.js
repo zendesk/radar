@@ -1,4 +1,5 @@
-var MiniEventEmitter = require('miniee'),
+var _ = require('underscore'),
+    MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
@@ -62,18 +63,12 @@ Server.prototype.terminate = function(done) {
 var VERSION_CLIENT_STOREDATA = '0.13.1';
 
 Server.prototype._setup = function(httpServer, configuration) {
-  var engine = DefaultEngineIO,
-      engineConf;
+  var engine = DefaultEngineIO, engineConf;
 
   configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
-
-  Core.Resources.Presence.sentry.start({
-    host: hostname,
-    port: configuration.port
-  });
 
   if (configuration.engineio) {
     engine = configuration.engineio.module;
@@ -83,11 +78,26 @@ Server.prototype._setup = function(httpServer, configuration) {
                 configuration.engineio.conf.path : 'default';
   }
 
+  this._setupSentry(configuration);
+
   this.socketServer = engine.attach(httpServer, engineConf);
   this.socketServer.on('connection', this._onSocketConnection.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
+};
+
+Server.prototype._setupSentry = function(configuration) {
+  var sentryOptions = {
+        host: hostname,
+        port: configuration.port
+      };
+
+  if (configuration.sentry) { 
+    _.extend(sentryOptions, configuration.sentry); 
+  }
+
+  Core.Resources.Presence.sentry.start(sentryOptions);
 };
 
 Server.prototype._onSocketConnection = function(socket) {
