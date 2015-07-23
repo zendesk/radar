@@ -1,6 +1,34 @@
-var assert = require('assert'),
+var _ = require('underscore'),
+    assert = require('assert'),
     EE = require('events').EventEmitter,
-    _ = require('underscore');
+    Sentry = require('../../core/lib/resources/presence/sentry.js');
+    PresenceManager = require('../../core/lib/resources/presence/presence_manager.js');
+
+var presenceManagerForSentry = function(name, options, callback) {
+  var tempSentry = newTestSentry(name),
+      pm = new PresenceManager('presence:/dev/test', {}, tempSentry);
+
+  options = options || {};
+  
+  if (typeof(options) !== 'object') {
+    callback = options;
+    options = {};
+  }
+
+  if (!options.dead) {
+    tempSentry.start(options, function() {
+      callback(pm);
+      tempSentry.stop();
+    });
+  } else {
+    tempSentry._keepAlive(options); 
+    callback(pm);
+  }
+};
+
+var newTestSentry = function(name, options) {
+  return new Sentry(name, options);
+};
 
 // Presence helper
 function PresenceMessage(account, name) {
@@ -534,10 +562,15 @@ StreamMessage.prototype.assert_sync_error_get_response = function(response, stat
 // Sync is implemented as subscribe + get, hence the return op is "get"
 StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;
 StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
-module.exports.PresenceMessage = PresenceMessage;
-module.exports.StreamMessage = StreamMessage;
-module.exports.SentryDefaults = {
-  defaultExpiryOffset: 4000,
-  refreshInterval: 3500,
-  checkInterval: 10000
+
+module.exports = {
+  PresenceMessage: PresenceMessage,
+  StreamMessage: StreamMessage,
+  newTestSentry: newTestSentry,
+  presenceManagerForSentry: presenceManagerForSentry,
+  SentryDefaults: {
+    defaultExpiryOffset: 4000,
+    refreshInterval: 3500,
+    checkInterval: 10000
+  }
 };

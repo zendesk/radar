@@ -65,10 +65,11 @@ var VERSION_CLIENT_STOREDATA = '0.13.1';
 Server.prototype._setup = function(httpServer, configuration) {
   var engine = DefaultEngineIO, engineConf;
 
-  configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
+
+  configuration = configuration || {};
 
   if (configuration.engineio) {
     engine = configuration.engineio.module;

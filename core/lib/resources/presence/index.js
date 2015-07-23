@@ -1,5 +1,4 @@
 var Resource = require('../../resource.js'),
-    shasum = require('crypto').createHash('sha1'),
     PresenceManager = require('./presence_manager.js'),
     Sentry = require('./sentry.js'),
     EventEmitter = require('events').EventEmitter,
@@ -15,17 +14,15 @@ var default_options = {
   }
 };
 
-shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
-var sentryName = shasum.digest('hex').slice(0,15);
-Presence.sentry = new Sentry(sentryName);
+Presence.Sentry = Sentry;
+Presence.sentry = new Sentry();
 
 function Presence(name, server, options) {
   Resource.call(this, name, server, options, default_options);
   this.setup();
 }
 
-Presence.resource_count = 0;
-
+Presence.resourceCount = 0;
 Presence.prototype = new Resource();
 Presence.prototype.type = 'presence';
 
@@ -33,6 +30,7 @@ Presence.prototype.setup = function() {
   var self = this;
 
   this.manager = new PresenceManager(this.name, this.options.policy, Presence.sentry);
+
   this.manager.on('user_online', function(userId, userType, userData) {
     logging.info('#presence - user_online', userId, userType, self.name);
     var value = {};
@@ -98,11 +96,14 @@ Presence.prototype.setup = function() {
   });
 
   // Keep track of listener count
-  Presence.resource_count++;
-  var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
-  if (sentryListenersCount != Presence.resource_count) {
-    logging.warn('sentry listener leak detected', sentryListenersCount -
-                                                  Presence.resource_count);
+  Presence.resourceCount++;
+
+  var leakCount, 
+      sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
+
+  if (sentryListenersCount != Presence.resourceCount) {
+    leakCount = sentryListenersCount - Presence.resourceCount;
+    logging.warn('sentry listener leak detected', leakCount); 
   }
 };
 
@@ -221,8 +222,10 @@ Presence.prototype.get = function(socket, message) {
 };
 
 Presence.prototype.broadcast = function(message, except) {
-  logging.debug('#presence - update subscribed clients', message, except, this.name);
   var self = this;
+
+  logging.debug('#presence - update subscribed clients', message, except, this.name);
+
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
     if (socket && socket.id != except && self.subscribers[socket.id].listening) {
@@ -242,13 +245,11 @@ Presence.prototype.fullRead = function(callback) {
 
 Presence.prototype.destroy = function() {
   this.manager.destroy();
-  Presence.resource_count --;
+  Presence.resourceCount--;
 };
 
 Presence.setBackend = function(backend) {
   PresenceManager.setBackend(backend);
 };
-
-Presence.Sentry = Sentry;
 
 module.exports = Presence;

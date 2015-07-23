@@ -1,8 +1,8 @@
-var PresenceStore = require('./presence_store.js'),
+var _ = require('underscore'),
+    PresenceStore = require('./presence_store.js'),
     Persistence = require('persistence'),
     Minilog = require('minilog'),
-    logging = Minilog('radar:presence_manager'),
-    _ = require('underscore');
+    logging = Minilog('radar:presence_manager');
 
 function PresenceManager(scope, policy, sentry) {
   this.scope  = scope;
@@ -13,14 +13,8 @@ function PresenceManager(scope, policy, sentry) {
   this.setup();
   this.destroying = false;
 }
+
 require('util').inherits(PresenceManager, require('events').EventEmitter);
-
-// Filter for message.at for autopublish messages
-PresenceManager.autoPubTimeout = 25000;
-
-// Messages have expiration (legacy) of 1 hour for limited compatibility with old
-// servers
-PresenceManager.messageExpiry = 60*60000;
 
 PresenceManager.prototype.setup = function() {
   var store   = this.store;
@@ -207,13 +201,11 @@ PresenceManager.prototype._implicitDisconnect = function(socketId, userId,
 
 PresenceManager.prototype.isOnline = function(message) {
   // Return with online, or with sentry, or with unexpired legacy msg
-  return (message.online && (message.sentry ||
-       (message.at && message.at >= (Date.now() - PresenceManager.autoPubTimeout))));
+  return (message.online && message.sentry);
 };
 
 PresenceManager.prototype.isExpired = function(message) {
-  return (message.online && !message.sentry &&
-      message.at && message.at < (Date.now() - PresenceManager.autoPubTimeout));
+  return (message.online && !message.sentry);
 };
 
 PresenceManager.prototype.processRedisEntry = function(message, callback) {
@@ -343,28 +335,29 @@ PresenceManager.prototype.fullRead = function(callback) {
 
 // Sync v1
 PresenceManager.prototype.getOnline = function() {
-  var result = {}, store = this.store;
-  function setUid(userId) {
+  var result = {}, 
+      store = this.store;
+
+  this.store.users().forEach(function(userId) {
     result[userId] = store.userTypeOf(userId);
-  }
-  this.store.users().forEach(setUid);
+  });
+
   return result;
 };
 
 // Sync v2
 PresenceManager.prototype.getClientsOnline = function() {
-  var store = this.store;
-  var result = {};
+  var result = {}, 
+      store = this.store;
 
   function processMessage(message) {
     result[message.userId] = result[message.userId] || { 
-      clients: { },
+      clients: {},
       userType: message.userType
     };
     
-    var payload = _.extend({}, 
-                                    (message.userData || {}), 
-                                    (message.clientData || {}));
+    var payload = _.extend({}, (message.userData || {}), 
+                               (message.clientData || {}));
 
     result[message.userId].clients[message.clientId] = payload;
   }
@@ -372,13 +365,13 @@ PresenceManager.prototype.getClientsOnline = function() {
   store.forEachClient(function(uid, cid, message) {
     processMessage(message);
   });
+
   return result;
 };
 
 PresenceManager.prototype.hasUser = function(userId) {
   return this.store.userExists(userId);
 };
-
 
 PresenceManager.setBackend = function(backend) {
   Persistence = backend;

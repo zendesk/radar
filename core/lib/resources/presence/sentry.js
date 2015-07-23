@@ -88,27 +88,31 @@ Sentry.prototype.sentryNames = function() {
 };
 
 Sentry.prototype.isDown = function(name) {
-  var lastMessage = this.sentries[name];
-  var isDown = messageIsExpired(lastMessage);
+  var lastMessage = this.sentries[name],
+      isSentryDown = messageIsExpired(lastMessage);
 
-  if (isDown) {
+  if (isSentryDown) {
     var expiration = messageExpiration(lastMessage); 
     var text = (expiration) ? expiration + '/' + Sentry.expiry : 'not-present';
-    logging.debug('#presence - #sentry isDown', name, isDown, text);
+    logging.debug('#presence - #sentry isDown', name, isSentryDown, text);
   }
 
-  return isDown;
+  return isSentryDown;
 };
 
 Sentry.prototype._setName = function(name) {
-  if (!name) {
-    var shasum = require('crypto').createHash('sha1');
-    shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
-    name = shasum.digest('hex').slice(0,15);
-  }
-
-  this.name = name;
+  this.name = name || this._generateName();
   return this.name;
+};
+
+Sentry.prototype._generateName = function() {
+  var shasum = require('crypto').createHash('sha1'),
+      newName;
+
+  shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
+  newName = shasum.digest('hex').slice(0,15);
+  
+  return newName;
 };
 
 Sentry.prototype._applyOptions = function(options) {
@@ -176,9 +180,11 @@ Sentry.prototype._loadAndCleanUpSentries = function(callback) {
 };
 
 Sentry.prototype._purgeSentry = function(name) {
+  var lastMessage;
+  
   Persistence.deleteHash(redisSentriesKey, name);
 
-  var lastMessage = this.sentries[name];
+  lastMessage = this.sentries[name];
   logging.info('#presence - #sentry down:', name, lastMessage.host, lastMessage.port);
   delete this.sentries[name];
   this.emit('down', name, lastMessage);
@@ -204,7 +210,7 @@ Sentry.prototype._startListening = function() {
 
   if (!this._listener) {
     this._listener = function(channel, message) {
-      if (channel != redisSentriesKey) {
+      if (channel !== redisSentriesKey) {
         return;
       }
       self._saveMessage(parseJSON(message));

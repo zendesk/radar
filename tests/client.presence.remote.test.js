@@ -6,33 +6,12 @@ var common = require('./common.js'),
     PresenceManager = require('../core/lib/resources/presence/presence_manager.js'),
     Client = require('radar_client').constructor,
     EE = require('events').EventEmitter,
-    PresenceMessage = require('./lib/assert_helper.js').PresenceMessage,
-    Sentry = require('../core/lib/resources/presence/sentry.js');
+    AssertHelper = require('./lib/assert_helper.js'),
+    PresenceMessage = AssertHelper.PresenceMessage,
+    presenceManagerForSentry = AssertHelper.presenceManagerForSentry;
 
 var radar, client, client2,
     p, testSentry, presenceManager, track;
-
-var presenceManagerForSentry = function(name, options, callback) {
-  var tempSentry = new Sentry(name),
-      pm = new PresenceManager('presence:/dev/test', {}, tempSentry);
-
-  options = options || {};
-  
-  if (typeof(options) !== 'object') {
-    callback = options;
-    options = {};
-  }
-
-  if (!options.dead) {
-    tempSentry.start(options, function() {
-      callback(pm);
-      tempSentry.stop();
-    });
-  } else {
-    tempSentry._keepAlive(options); 
-    callback(pm);
-  }
-};
 
 describe('given a client and a server,', function() {
   before(function(done) {
@@ -52,7 +31,7 @@ describe('given a client and a server,', function() {
 
   beforeEach(function(done) {
     notifications = [];
-    testSentry = new Sentry('test-sentry');
+    testSentry = AssertHelper.newTestSentry('test-sentry');
     presenceManager = new PresenceManager('presence:/dev/test',{}, testSentry);
     p = new PresenceMessage('dev', 'test');
     p.client = { clientId: 'abc', userId: 100, userType: 2, userData: { name: 'tester' } };

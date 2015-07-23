@@ -7,17 +7,20 @@ var http = require('http'),
     Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
-    logger = require('minilog')('lib_radar'),
+    logger = Minilog('lib_radar'),
     formatter = require('./formatter.js'),
     assertHelper = require('./assert_helper.js'),
-    radar, httpServer, serverStarted = false;
+    serverStarted = false,
+    radar, httpServer;
 
 if (process.env.verbose) {
   var minilogPipe = Minilog;
+
   // Configure log output
   if (process.env.radar_log) {
     minilogPipe = minilogPipe.pipe(Minilog.suggest.deny(/.*/, process.env.radar_log));
   }
+
   minilogPipe.pipe(formatter)
              .pipe(Minilog.backends.nodeConsole.formatColor)
              .pipe(process.stdout);
@@ -90,12 +93,9 @@ var Service = {};
 Service.start = function(configuration, callback) {
   logger.debug('creating radar', configuration);
   httpServer = http.createServer(p404);
-  PresenceManager.userTimeout = 1000;
   
   // Add sentry defaults for testing. 
   configuration.sentry = assertHelper.SentryDefaults;
-
-  PresenceManager.autoPubTimeout = 4000;
 
   radar = new Radar.server();
   radar.once('ready', function() {
@@ -108,11 +108,13 @@ Service.start = function(configuration, callback) {
       });
     });
   });
+
   radar.attach(httpServer, configuration);
 };
 
 Service.stop = function(arg, callback){
   logger.info("stop");
+
   httpServer.on('close', function() {
     logger.info("httpServer closed");
     if (serverStarted) {
@@ -122,6 +124,7 @@ Service.stop = function(arg, callback){
       callback();
     }
   });
+
   Persistence.delWildCard('*', function() {
     radar.terminate(function() {
       logger.info("radar terminated");

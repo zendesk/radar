@@ -15,24 +15,10 @@ describe('given a client and a server,', function() {
   var p, 
       sentry = new Sentry('test-sentry', assertHelper.SentryDefaults),
       presenceManager = new PresenceManager('presence:/dev/test', {}, sentry),
-      publish_client_online = function(client) {
+      publishClientOnline = function(client) {
         presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData);
       };
   
-  var publish_autopub = function(client) {
-    delete sentry.name;
-    var original = presenceManager.stampExpiration;
-    presenceManager.stampExpiration = function(m) {
-      m.at = Date.now();
-    };
-    publish_client_online(client);
-    // Restore
-    sentry.name = 'test-sentry';
-
-    // Restore from prototype
-    delete presenceManager.stampExpiration;
-  };
-
   before(function(done) {
     common.startPersistence(function() {
       radar = common.spawnRadar();
@@ -96,7 +82,7 @@ describe('given a client and a server,', function() {
           done();
         };
 
-        publish_client_online(p.client);
+        publishClientOnline(p.client);
         setTimeout(function() {
           sentry.stop();
           p.on(4, validate);
@@ -111,7 +97,7 @@ describe('given a client and a server,', function() {
           done();
         };
 
-        publish_client_online(p.client);
+        publishClientOnline(p.client);
         setTimeout(function() {
           // Renew sentry
           sentry._keepAlive();
