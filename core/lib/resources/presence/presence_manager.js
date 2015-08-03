@@ -204,10 +204,6 @@ PresenceManager.prototype.isOnline = function(message) {
   return (message.online && message.sentry);
 };
 
-PresenceManager.prototype.isExpired = function(message) {
-  return (message.online && !message.sentry);
-};
-
 PresenceManager.prototype.processRedisEntry = function(message, callback) {
   var store = this.store,
       manager = this,
@@ -236,15 +232,6 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
     }
     callback();
   } else {
-    if (this.isExpired(message)) {
-      logging.info('#autopub - received online message - expired', message,
-                                                                this.scope);
-
-      // Orphan autopub redis entry: silently remove from redis
-      Persistence.deleteHash(this.scope, userId + '.' + socketId);
-      message.explicit = false;
-    }
-
     this.handleOffline(socketId, userId, userType, message.explicit);
     callback();
   }

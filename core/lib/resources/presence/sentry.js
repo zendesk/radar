@@ -93,7 +93,7 @@ Sentry.prototype.isDown = function(name) {
 
   if (isSentryDown) {
     var expiration = messageExpiration(lastMessage); 
-    var text = (expiration) ? expiration + '/' + Sentry.expiry : 'not-present';
+    var text = expiration ? expiration + '/' + this._defaultExpiryOffset : 'not-present';
     logging.debug('#presence - #sentry isDown', name, isSentryDown, text);
   }
 
