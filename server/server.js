@@ -89,6 +89,13 @@ Server.prototype._setup = function(httpServer, configuration) {
 };
 
 Server.prototype._setupSentry = function(configuration) {
+  if (this.sentry) {
+    logging.warn('trying to initialize an already initialized sentry: ' + this.sentry.name);
+    return;
+  }
+
+  this.sentry = Core.Resources.Presence.sentry;
+
   var sentryOptions = {
         host: hostname,
         port: configuration.port
@@ -98,7 +105,7 @@ Server.prototype._setupSentry = function(configuration) {
     _.extend(sentryOptions, configuration.sentry); 
   }
 
-  Core.Resources.Presence.sentry.start(sentryOptions);
+  this.sentry.start(sentryOptions);
 };
 
 Server.prototype._onSocketConnection = function(socket) {
