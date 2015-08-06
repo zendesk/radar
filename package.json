@@ -35,7 +35,7 @@
     "minilog": "*",
     "callback_tracker": "*",
     "underscore": "*",
-    "persistence": "*",
+    "persistence": ">= 1.0.3",
     "semver": "*",
     "pauseable": "*",
     "nomnom": "*"
