@@ -1,4 +1,5 @@
 var _ = require('underscore'),
+    Util = require('../util.js'), 
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
@@ -15,6 +16,7 @@ function Server() {
   this.resources = {};
   this.subscriber = null;
   this.subs = {};
+  this.sentry = Core.Resources.Presence.sentry;
   this._rateLimiters = {};
 }
 
@@ -53,7 +55,7 @@ Server.prototype.terminate = function(done) {
     self.destroyResource(name);
   });
 
-  Core.Resources.Presence.sentry.stop();
+  this.sentry.stop();
   this.socketServer.close();
   Core.Persistence.disconnect(done);
 };
@@ -89,13 +91,6 @@ Server.prototype._setup = function(httpServer, configuration) {
 };
 
 Server.prototype._setupSentry = function(configuration) {
-  if (this.sentry) {
-    logging.warn('trying to initialize an already initialized sentry: ' + this.sentry.name);
-    return;
-  }
-
-  this.sentry = Core.Resources.Presence.sentry;
-
   var sentryOptions = {
         host: hostname,
         port: configuration.port
@@ -239,9 +234,20 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
     this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
     this._updateLimits(socket, message, resource.options);
+    this._stampMessage(socket, message);
     resource.handleMessage(socket, message);
     this.emit(message.op, socket, message);
   }
+};
+
+Server.prototype._stampMessage = function(socket, message) {
+  message.stamp = {
+    id: Util.uuid(),
+    clientId: socket.id, // this should be the client.id eventually.
+    sentryId: this.sentry.name
+  };
+
+  return message;
 };
 
 // Process the existing persisted messages associated with a single client
