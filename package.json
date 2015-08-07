@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "*",
+    "radar_client": "git://github.com/zendesk/radar_client.git#pobrien/refactor_scope",
     "simple_sentinel": "*"
   },
   "scripts": {
