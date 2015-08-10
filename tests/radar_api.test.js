@@ -172,14 +172,18 @@ exports['Radar api tests'] = {
       FakePersistence.readHashAll = function(scope, callback) {
         callback(messages[scope]);
       };
+
+      FakePersistence.deleteHash = function(scope, callback) {};
+
       PresenceManager.setBackend(FakePersistence);
       var fakeSentry = {
         name: 'server1',
-        isValid: function() {
-         return true;
+        isDown: function() {
+         return false;
         },
         on: function() {}
       };
+
       Presence.sentry = fakeSentry;
       done();
     },
