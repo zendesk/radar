@@ -1,24 +1,24 @@
 var assert = require('assert'),
     Persistence = require('persistence'),
     Presence = require('../index.js').core.Presence,
-    Common = require('./common.js');
-
-var Server = {
-  broadcast: function() { },
-  server: {
-    clients: { }
-  }
-};
-var readHashAll = Persistence.readHashAll;
+    Common = require('./common.js'),
+    readHashAll = Persistence.readHashAll,
+    Server = {
+      broadcast: function() { },
+      server: {
+        clients: { }
+      }
+    };
 
 exports['given a presence monitor'] = {
 
   beforeEach: function(done) {
     var self = this;
+    Persistence.readHashAll = readHashAll;
     Common.startPersistence(function() {
       Presence.sentry.start();
       self.presence = new Presence('aaa', Server, {});
-      Persistence.readHashAll = readHashAll;
+      
       done();
     });
   },
@@ -226,7 +226,7 @@ exports['given a presence monitor'] = {
     presence.manager.on('user_offline', function(userId, userType) {
       removed[userId] = userType;
     });
-
+    
     this.presence.fullRead(function(online) {
       assert.deepEqual({ }, removed);
       assert.deepEqual({ 200: 2, 201: 4 }, added);

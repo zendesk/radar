@@ -215,24 +215,14 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
   callback = callback || function() {};
 
   if (this.isOnline(message)) {
-    if (!message.sentry) {
-      logging.info('#presence - #autopub - received online message without sentry',
-                                                              message, this.scope);
-      message.sentry = userId + '.' + socketId;
+    var isDown = sentry.isDown(message.sentry);
 
-      // Publish fake entry, autopub will renew it
-      sentry.publishKeepAlive({ name: message.sentry, save: false });
-    }
-
-    if (sentry.isValid(message.sentry)) {
-      logging.debug('#presence - processRedisEntry: sentry.isValid true',
+    logging.debug('#presence - processRedisEntry: sentry.isDown', isDown, 
                                               message.sentry, this.scope);
+    if (!isDown) {
       manager.clearExpiry(userId);
       store.add(socketId, userId, userType, message);
     } else {
-      logging.debug('#presence - processRedisEntry: sentry.isValid false',
-                                              message.sentry, this.scope);
-
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + socketId);

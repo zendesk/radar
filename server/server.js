@@ -1,4 +1,5 @@
-var MiniEventEmitter = require('miniee'),
+var _ = require('underscore'),
+    MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
@@ -14,6 +15,7 @@ function Server() {
   this.resources = {};
   this.subscriber = null;
   this.subs = {};
+  this.sentry = Core.Resources.Presence.sentry;
   this._rateLimiters = {};
 }
 
@@ -52,7 +54,7 @@ Server.prototype.terminate = function(done) {
     self.destroyResource(name);
   });
 
-  Core.Resources.Presence.sentry.stop();
+  this.sentry.stop();
   this.socketServer.close();
   Core.Persistence.disconnect(done);
 };
@@ -62,17 +64,13 @@ Server.prototype.terminate = function(done) {
 var VERSION_CLIENT_STOREDATA = '0.13.1';
 
 Server.prototype._setup = function(httpServer, configuration) {
-  var engine = DefaultEngineIO,
-      engineConf;
+  var engine = DefaultEngineIO, engineConf;
 
-  configuration = configuration || {};
   this.subscriber = Core.Persistence.pubsub();
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
 
-  Core.Resources.Presence.sentry.start();
-  Core.Resources.Presence.sentry.setMaxListeners(0);
-  Core.Resources.Presence.sentry.setHostPort(hostname, configuration.port);
+  configuration = configuration || {};
 
   if (configuration.engineio) {
     engine = configuration.engineio.module;
@@ -82,11 +80,26 @@ Server.prototype._setup = function(httpServer, configuration) {
                 configuration.engineio.conf.path : 'default';
   }
 
+  this._setupSentry(configuration);
+
   this.socketServer = engine.attach(httpServer, engineConf);
   this.socketServer.on('connection', this._onSocketConnection.bind(this));
 
   logging.debug('#server - start ' + new Date().toString());
   this.emit('ready');
+};
+
+Server.prototype._setupSentry = function(configuration) {
+  var sentryOptions = {
+        host: hostname,
+        port: configuration.port
+      };
+
+  if (configuration.sentry) { 
+    _.extend(sentryOptions, configuration.sentry); 
+  }
+
+  this.sentry.start(sentryOptions);
 };
 
 Server.prototype._onSocketConnection = function(socket) {
