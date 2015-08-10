@@ -1,5 +1,4 @@
 var Resource = require('../../resource.js'),
-    shasum = require('crypto').createHash('sha1'),
     PresenceManager = require('./presence_manager.js'),
     Sentry = require('./sentry.js'),
     EventEmitter = require('events').EventEmitter,
@@ -15,9 +14,8 @@ var default_options = {
   }
 };
 
-shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
-var sentryName = shasum.digest('hex').slice(0,15);
-Presence.sentry = new Sentry(sentryName);
+Presence.Sentry = Sentry;
+Presence.sentry = new Sentry();
 
 function Presence(name, server, options) {
   Resource.call(this, name, server, options, default_options);
@@ -33,6 +31,7 @@ Presence.prototype.setup = function() {
   var self = this;
 
   this.manager = new PresenceManager(this.name, this.options.policy, Presence.sentry);
+
   this.manager.on('user_online', function(userId, userType, userData) {
     logging.info('#presence - user_online', userId, userType, self.name);
     var value = {};
@@ -248,7 +247,5 @@ Presence.prototype.destroy = function() {
 Presence.setBackend = function(backend) {
   PresenceManager.setBackend(backend);
 };
-
-Presence.Sentry = Sentry;
 
 module.exports = Presence;
