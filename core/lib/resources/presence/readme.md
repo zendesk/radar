@@ -84,15 +84,6 @@ A little map: .unsubscribe() (either from socket close or client message) -> man
 
 on user expiry timeout -> store.removeUserIfEmpty() (if user exists and no clients) -> user_removed -> user_offline message.
 
-Backward compatibility
-=====================
-
-There are two things done to bring limited compatibility with earlier versions of radar server. This is intended for testing new version servers amongst a cluster of old servers for a limited period, as well as do rolling updates.
-
-1. Message expiration: Old radar server depends on values of message.at being concurrent. If message.at is too old, the entries are cleaned up or clients removed. To keep them concurrent, the server auto-publishes them every 15 seconds with current time as message.at. The new server sets message.at to one hour in the future so that messages are not expired and there is no need for autopublishes. The drawback here is that server death will not be visible to the old servers until one hour.
-
-2. Filtering message.at and keeping fake sentries: This is a way for the new servers to work with the old servers' autopublish system and message expiration using message.at. If we receive an online message without a sentry stamp, we look for message.at. if the message.at is concurrent (within 25 seconds from now), we add a fake sentry to our sentry-store. This sentry's id is client-id.user-id which is makes it unique for the client/user combination. Each autopublish message received renews the validity of this sentry within our store. Note that these fake sentry values are not published to redis, and this still works correctly because autopubs go to all interested servers. If we stop receiving autopubs, we stop renewing the sentry, and eventually the sentry will be detected as 'down' after a predictable amount of time. This will cause an implicit disconnect for the client.
-
 Known issues
 ============
 

@@ -110,38 +110,6 @@ describe('given a client and a server,', function() {
         setTimeout(done, 10);
       });
 
-      describe('from legacy servers, ', function() {
-        it('should emit online if message is not expired', function(done) {
-
-          // Remove sentry and add autopub level expiry
-          delete sentry.name;
-
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now();
-          };
-          var validate = function() {
-            p.assert_message_sequence([ 'online', 'client_online' ]);
-            done();
-          };
-          presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-
-          p.fail_on_more_than(2);
-          p.on(2, function() {
-            setTimeout(validate, 10);
-          });
-        });
-        it('should ignore expired messages', function(done) {
-
-          // Remove sentry and add autopub level expiry
-          delete sentry.name;
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now() - 5000;
-          };
-          presenceManager.addClient('abc', 100, 2, { name: 'tester' });
-          p.fail_on_any_message();
-          setTimeout(done, 10);
-        });
-      });
     });
     describe('for incoming offline messages,', function() {
       beforeEach(function(done) {
@@ -342,62 +310,6 @@ describe('given a client and a server,', function() {
           });
         });
       });
-      describe('with legacy messages, ', function() {
-        it('should include clients with unexpired entries', function(done) {
-          var callback = false;
-          var validate = function() {
-            p.for_online_clients(clients.abc, clients.def, clients.klm)
-              .assert_onlines_received();
-            assert.ok(callback);
-            done();
-          };
-
-          delete sentry.name;
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now();
-          };
-
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
-              p.for_online_clients(clients.abc, clients.def, clients.klm)
-                .assert_sync_v2_response(message);
-              callback = true;
-            });
-
-            p.fail_on_more_than(6);
-            p.on(6, function() {
-              setTimeout(validate, 10);
-            });
-          });
-        });
-
-        it('should ignore clients with expired entries', function(done) {
-          var callback = false;
-          var validate = function() {
-            p.for_online_clients(clients.abc, clients.def).assert_onlines_received();
-            assert.ok(callback);
-            done();
-          };
-
-          delete sentry.name;
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now() - 30000;
-          };
-
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(p.notify).sync({ version: 2 }, function(message) {
-              p.for_online_clients(clients.abc, clients.def)
-                .assert_sync_v2_response(message);
-              callback = true;
-            });
-
-            p.fail_on_more_than(4);
-            p.on(4, function() {
-              setTimeout(validate, 10);
-            });
-          });
-        });
-      });
     });
 
     describe('when syncing (v1), (deprecated since callbacks are broken)', function() {
@@ -487,41 +399,6 @@ describe('given a client and a server,', function() {
         p.fail_on_any_message();
       });
 
-      describe('with legacy messages, ', function() {
-        it('should include clients with unexpired entries', function(done) {
-          p.fail_on_any_message();
-
-          delete sentry.name;
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now();
-          };
-
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(p.notify).get(function(message) {
-              p.for_online_clients(clients.abc, clients.def, clients.klm)
-                .assert_get_response(message);
-              setTimeout(done, 10);
-            });
-          });
-        });
-
-        it('should ignore clients with expired entries', function(done) {
-          p.fail_on_any_message();
-
-          delete sentry.name;
-          presenceManager.stampExpiration = function(message) {
-            message.at = Date.now() - 5000;
-          };
-
-          presenceManager.addClient('klm', 400, 2, { name: 'tester4' }, function() {
-            client.presence('test').on(p.notify).get(function(message) {
-              p.for_online_clients(clients.abc, clients.def)
-                .assert_get_response(message);
-              setTimeout(done, 10);
-            });
-          });
-        });
-      });
     });
   });
 });

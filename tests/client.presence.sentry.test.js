@@ -18,16 +18,9 @@ describe('given a client and a server,', function() {
   };
   var publish_autopub = function(client) {
     delete sentry.name;
-    var original = presenceManager.stampExpiration;
-    presenceManager.stampExpiration = function(m) {
-      m.at = Date.now();
-    };
     publish_client_online(client);
     // Restore
     sentry.name = 'test-sentry';
-
-    // Restore from prototype
-    delete presenceManager.stampExpiration;
   };
 
   before(function(done) {
@@ -105,51 +98,6 @@ describe('given a client and a server,', function() {
         p.fail_on_more_than(2);
         p.once(2, function() {
           setTimeout(validate, 5000);
-        });
-      });
-
-      describe('from legacy servers, ', function() {
-        it('should emit offlines if autopub does not arrive', function(done) {
-          this.timeout(8000);
-          var validate = function() {
-            var ts = p.times;
-            p.assert_message_sequence(['online', 'client_online',
-                                      'client_implicit_offline', 'offline']);
-
-            // sentry expiry = 4000
-            assert.ok((ts[2] - ts[1]) >= 3000, 'sentry expiry was '+(ts[2] - ts[1]));
-            assert.ok((ts[2] - ts[1]) < 6000, 'sentry expiry was '+(ts[2] - ts[1]));
-            // user expiry = 1000
-            assert.ok((ts[3] - ts[2]) >= 900, 'user expiry was '+(ts[3] - ts[2]));
-            assert.ok((ts[3] - ts[2]) < 1900, 'user expiry was '+(ts[3] - ts[2]));
-            done();
-          };
-
-          // Simulate autopub
-          publish_autopub(p.client);
-
-          p.once(4, validate);
-        });
-
-        it('should still be online if sentry is alive', function(done) {
-          this.timeout(6000);
-          var validate = function() {
-            p.assert_message_sequence(['online', 'client_online']);
-            done();
-          };
-
-          // Simulate autopub
-          publish_autopub(p.client);
-
-          setTimeout(function() {
-            // Send an autopub message
-            publish_autopub(p.client);
-          }, 2000);
-
-          p.fail_on_more_than(2);
-          p.once(2, function() {
-            setTimeout(validate, 5000);
-          });
         });
       });
     });
