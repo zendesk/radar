@@ -36,11 +36,10 @@ describe('given a client and a server,', function() {
   beforeEach(function(done) {
     p = new PresenceMessage('dev', 'test');
     p.client = { userId: 100, clientId: 'abc', userData: { name: 'tester' }, userType: 2 };
-
     
     var track = Tracker.create('beforeEach', done);
     // Set ourselves alive
-    sentry.start(function(){
+    sentry.start(assertHelper.SentryDefaults, function(){
       client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'));
     });
   });

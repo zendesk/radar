@@ -24,7 +24,7 @@ describe('given a client and a server,', function() {
   after(function(done) {
     radar.sendCommand('stop', {}, function() {
       radar.kill();
-      common.endPersistence(done);
+      common.endPersistence();
       setTimeout(done, 1000);
     });
   });
@@ -392,7 +392,7 @@ describe('given a client and a server,', function() {
       });
 
 
-      it('should ignore dead server clients (sentry expired and gone)', function(done) {
+      it('should ignore dead server clients (sentry gone)', function(done) {
         presenceManagerForSentry('unknown', {dead: true}, function(pm) {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function() {
             client.presence('test').on(p.notify).get(function(message) {

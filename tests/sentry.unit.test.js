@@ -5,15 +5,15 @@ var assert = require('assert'),
     configuration = require('../configurator.js').load({persistence: true}),
     _ = require('underscore'),
     currentSentry = 0,
-    sentry, sentryOne, sentryTwo, sentryThree, sentries = [];
+    sentry, sentryOne, sentryTwo, sentryThree, sentries = [],
+    defaults = { 
+      expiryOffset: 200,
+      refreshInterval: 100,
+      checkInterval: 200
+    };
 
 function newSentry(options) {
-  var name = 'sentry-' + currentSentry++,
-      defaults = { 
-        refreshInterval: 100,
-        checkInterval: 200,
-        defaultExpiryOffset: 200
-      };
+  var name = 'sentry-' + currentSentry++;
 
   return new Sentry(name, _.extend(defaults, (options || {}))); 
 }
@@ -45,7 +45,7 @@ describe('a Server Entry (Sentry)', function() {
 
   it('start with callback', function(done) {
     sentry = newSentry();
-    sentry.start(done);
+    sentry.start(defaults, done);
   });
 
   describe('isDown', function() {
@@ -56,7 +56,7 @@ describe('a Server Entry (Sentry)', function() {
 
     it('after start, it should be up', function() {
       sentry = newSentry();
-      sentry.start(function() {
+      sentry.start(defaults, function() {
         assert.equal(sentry.isDown(sentry.name), false);
       });
     });
@@ -67,7 +67,7 @@ describe('a Server Entry (Sentry)', function() {
     it('should generate a valid sentry message', function() {
       sentry = newSentry();
 
-      sentry.start(function() {
+      sentry.start(defaults, function() {
         assert.equal(sentry.sentries.length, 1);
         assert.equal(sentry.name, sentry.sentries[0].name);
       });
@@ -80,8 +80,8 @@ describe('a Server Entry (Sentry)', function() {
       sentryTwo = newSentry();
       sentries = [ sentryOne, sentryTwo ];
 
-      sentryOne.start(function() {
-        sentryTwo.start(done);
+      sentryOne.start(defaults, function() {
+        sentryTwo.start(defaults, done);
       });
     });
 
@@ -128,9 +128,9 @@ describe('a Server Entry (Sentry)', function() {
       };
 
       // start everything...
-      sentryOne.start(function() {
-        sentryTwo.start(function() {
-          sentryThree.start(function() {
+      sentryOne.start(defaults, function() {
+        sentryTwo.start(defaults, function() {
+          sentryThree.start(defaults, function() {
             // assert ideal state, every one know each other
             assertSentriesKnowEachOther(sentries, stopAndAssert);
           });

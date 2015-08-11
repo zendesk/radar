@@ -1,8 +1,13 @@
 var _ = require('underscore'),
     assert = require('assert'),
     EE = require('events').EventEmitter,
-    Sentry = require('../../core/lib/resources/presence/sentry.js');
-    PresenceManager = require('../../core/lib/resources/presence/presence_manager.js');
+    Sentry = require('../../core/lib/resources/presence/sentry.js'),
+    PresenceManager = require('../../core/lib/resources/presence/presence_manager.js'),
+    SentryDefaults = {
+      expiryOffset: 4000,
+      refreshInterval: 3500,
+      checkInterval: 5000
+    };
 
 var presenceManagerForSentry = function(name, options, callback) {
   var tempSentry = newTestSentry(name),
@@ -568,9 +573,5 @@ module.exports = {
   StreamMessage: StreamMessage,
   newTestSentry: newTestSentry,
   presenceManagerForSentry: presenceManagerForSentry,
-  SentryDefaults: {
-    defaultExpiryOffset: 4000,
-    refreshInterval: 3500,
-    checkInterval: 10000
-  }
+  SentryDefaults: SentryDefaults
 };

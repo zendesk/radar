@@ -5,9 +5,9 @@ var _ = require('underscore'),
     redisSentriesKey = 'sentry:/radar';
 
 var defaultOptions = {
-  DEFAULT_EXPIRY_OFFSET: 60000,
-  REFRESH_INTERVAL: 10000,
-  CHECK_INTERVAL: 30000
+  EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message. 
+  REFRESH_INTERVAL: 10000,  // 10 seconds to refresh own sentry
+  CHECK_INTERVAL: 30000     // 30 seconds to check for new sentries
 };
 
 var parseJSON = function(message) {
@@ -24,15 +24,13 @@ var messageExpiration = function(message) {
   return (message && message.expiration && (message.expiration - Date.now()));
 };
 
-var Sentry = function(name, options) {
+var Sentry = function(name) {
   this.sentries = {};
   this._setName(name);
 
-  this._defaultExpiryOffset = defaultOptions.DEFAULT_EXPIRY_OFFSET;
+  this._expiryOffset = defaultOptions.EXPIRY_OFFSET;
   this._refreshInterval = defaultOptions.REFRESH_INTERVAL;
   this._checkInterval = defaultOptions.CHECK_INTERVAL;
-
-  this._applyOptions(options);
 };
 
 require('util').inherits(Sentry, require('events').EventEmitter);
@@ -68,8 +66,8 @@ Sentry.prototype.start = function(options, callback) {
     if (callback) { callback(); }
   });
 
-  this._refreshTimer = setTimeout(this._refresh.bind(this), Math.floor(this._refreshInterval/2));
-  this._checkSentriesTimer = setTimeout(this._checkSentries.bind(this), Math.floor(this._checkInterval/2));
+  this._refreshTimer = setTimeout(this._refresh.bind(this), Math.floor(this._refreshInterval));
+  this._checkSentriesTimer = setTimeout(this._checkSentries.bind(this), Math.floor(this._checkInterval));
 };
 
 Sentry.prototype.stop = function(callback) {
@@ -92,12 +90,19 @@ Sentry.prototype.isDown = function(name) {
       isSentryDown = messageIsExpired(lastMessage);
 
   if (isSentryDown) {
-    var expiration = messageExpiration(lastMessage); 
-    var text = expiration ? expiration + '/' + this._defaultExpiryOffset : 'not-present';
+    var text = this.messageExpirationText(lastMessage);
+
     logging.debug('#presence - #sentry isDown', name, isSentryDown, text);
   }
 
   return isSentryDown;
+};
+
+Sentry.prototype.messageExpirationText = function(message) {
+  var expiration = messageExpiration(message),
+      text = expiration ? expiration + '/' + this._expiryOffset : 'not-present';
+
+  return text;
 };
 
 Sentry.prototype._setName = function(name) {
@@ -110,7 +115,7 @@ Sentry.prototype._generateName = function() {
       newName;
 
   shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now());
-  newName = shasum.digest('hex').slice(0,15);
+  newName = shasum.digest('hex').slice(0, 15);
   
   return newName;
 };
@@ -120,7 +125,7 @@ Sentry.prototype._applyOptions = function(options) {
     this.host = options.host;
     this.port = options.port;
    
-    this._defaultExpiryOffset = options.defaultExpiryOffset || defaultOptions.DEFAULT_EXPIRY_OFFSET;
+    this._expiryOffset = options.expiryOffset || defaultOptions.EXPIRY_OFFSET;
     this._refreshInterval = options.refreshInterval || defaultOptions.REFRESH_INTERVAL;
     this._checkInterval = options.checkInterval || defaultOptions.CHECK_INTERVAL;
   }
@@ -143,15 +148,15 @@ Sentry.prototype._keepAlive = function(options) {
 Sentry.prototype._newKeepAliveMessage = function(name, expiration) {
   return {
     name: (name || this.name),
-    expiration: (expiration || this._defaultExpiryOffsetFromNow()),
+    expiration: (expiration || this._expiryOffsetFromNow()),
     alive: true,
     host: this.host,
     port: this.port
   };
 };
 
-Sentry.prototype._defaultExpiryOffsetFromNow = function() {
-  return Date.now() + this._defaultExpiryOffset;
+Sentry.prototype._expiryOffsetFromNow = function() {
+  return Date.now() + this._expiryOffset;
 };
 
 // It loads the sentries from redis, and performs two tasks:
@@ -216,22 +221,14 @@ Sentry.prototype._startListening = function() {
       self._saveMessage(parseJSON(message));
     };
 
-    Persistence.pubsub().on('message', this._listener);
-  }
-
-  if (!this._subscribed) {
-    this._subscribed = true;
     Persistence.pubsub().subscribe(redisSentriesKey);
+    Persistence.pubsub().on('message', this._listener);
   }
 };
 
 Sentry.prototype._stopListening = function() {
-  if (this._subscribed) {
-    Persistence.pubsub().unsubscribe(redisSentriesKey);
-    delete this._subscribed;
-  }
-
   if (this._listener) {
+    Persistence.pubsub().unsubscribe(redisSentriesKey);
     Persistence.pubsub().removeListener('message', this._listener);
     delete this._listener;
   }
@@ -245,7 +242,7 @@ Sentry.prototype._saveMessage = function(message) {
 };
 
 Sentry.prototype._refresh = function() {
-  var interval = Math.floor(this._refreshInterval/2);
+  var interval = Math.floor(this._refreshInterval);
 
   logging.info('#presence - #sentry keep alive:', this.name);
   this._keepAlive();
@@ -253,7 +250,7 @@ Sentry.prototype._refresh = function() {
 };
 
 Sentry.prototype._checkSentries = function() {
-  var interval = Math.floor(this._checkInterval/2);
+  var interval = Math.floor(this._checkInterval);
 
   logging.info('#presence - #sentry checking sentries:', this.name);
   this._loadAndCleanUpSentries();
