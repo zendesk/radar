@@ -1,5 +1,6 @@
 Current Master
 * require persistence >= 1.0.3
+* remove auto pub
 
 ### 0.15.9
 * Responde with an error when a message with an unknown type is received.
