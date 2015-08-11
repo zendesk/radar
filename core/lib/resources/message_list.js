@@ -22,7 +22,9 @@ MessageList.prototype.type = 'message';
 // Publish to Redis
 MessageList.prototype.publish = function(socket, message) {
   var self = this;
+
   logger.debug('#message_list - publish', this.name, message, socket && socket.id);
+
   this._publish(this.name, this.options.policy, message, function() {
     self.ack(socket, message.ack);
   });
@@ -40,7 +42,9 @@ MessageList.prototype._publish = function(name, policy, message, callback) {
 
 MessageList.prototype.sync = function(socket, message) {
   var name = this.name;
+
   logger.debug('#message_list - sync', this.name, message, socket && socket.id);
+
   this._sync(name, this.options.policy, function(replies) {
     socket.send({
       op: 'sync',
@@ -49,6 +53,7 @@ MessageList.prototype.sync = function(socket, message) {
       time: Date.now()
     });
   });
+
   this.subscribe(socket, message);
 };
 
@@ -56,6 +61,7 @@ MessageList.prototype._sync = function(name, policy, callback) {
   if (policy && policy.maxPersistence) {
     Persistence.expire(name, policy.maxPersistence);
   }
+
   Persistence.readOrderedWithScores(name, policy, callback);
 };
 
@@ -65,12 +71,16 @@ MessageList.prototype.unsubscribe = function(socket, message) {
   // it is possible for a channel that is subscribed elsewhere to have a TTL set
   // on it again. The assumption is that the TTL is so long that any normal
   // workflow will terminate before it is triggered.
-  if (this.options && this.options.policy && this.options.policy.cache &&
-                                      this.options.policy.maxPersistence) {
+  if (this.options && this.options.policy && 
+      this.options.policy.cache &&
+      this.options.policy.maxPersistence) {
+
     Persistence.expire(this.name, this.options.policy.maxPersistence);
   }
 };
 
-MessageList.setBackend = function(backend) { Persistence = backend; };
+MessageList.setBackend = function(backend) { 
+  Persistence = backend;
+};
 
 module.exports = MessageList;
