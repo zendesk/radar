@@ -51,6 +51,7 @@ Resource.prototype.type = 'default';
 // Add a subscriber (Engine.io socket)
 Resource.prototype.subscribe = function(socket, message) {
   this.subscribers[socket.id] = true;
+
   logging.debug('#'+this.type, '- subscribe', this.name, socket.id,
                               this.subscribers, message && message.ack);
 
@@ -122,8 +123,7 @@ Resource.prototype.handleMessage = function(socket, message) {
   }
 };
 
-Resource.prototype.destroy = function() {
-};
+Resource.prototype.destroy = function() { };
 
 Resource.setBackend = function(backend) {
   Persistence = backend;

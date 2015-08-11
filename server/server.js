@@ -26,6 +26,7 @@ MiniEventEmitter.mixin(Server);
 // Attach to a http server
 Server.prototype.attach = function(httpServer, configuration) {
   Client.setDataTTL(configuration.clientDataTTL);
+  
   var finishSetup = this._setup.bind(this, httpServer, configuration);
   this._setupPersistence(configuration, finishSetup);
 };
@@ -50,6 +51,7 @@ Server.prototype.destroyResource = function(name) {
 
 Server.prototype.terminate = function(done) {
   var self = this;
+
   Object.keys(this.resources).forEach(function(name) {
     self.destroyResource(name);
   });
@@ -64,7 +66,8 @@ Server.prototype.terminate = function(done) {
 var VERSION_CLIENT_STOREDATA = '0.13.1';
 
 Server.prototype._setup = function(httpServer, configuration) {
-  var engine = DefaultEngineIO, engineConf;
+  var engine = DefaultEngineIO,
+      engineConf;
 
   this.subscriber = Core.Persistence.pubsub();
 
@@ -151,7 +154,7 @@ Server.prototype._handlePubSubMessage = function(name, data) {
     this.resources[name].redisIn(data);
   } else {
     // Don't log sentry channel pub messages
-    if (name == Core.Presence.Sentry.channel) {
+    if (name === Core.Presence.Sentry.channel) {
       return;
     }
 
@@ -242,7 +245,9 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
 Server.prototype._replayMessagesFromClient = function (socket, client) {
   var subscriptions = client.subscriptions,
       presences = client.presences,
-      message, messageType, key;
+      message,
+      messageType,
+      key;
 
   // Pause events on the inbound socket
   Pauseable.pause(socket);
@@ -355,6 +360,7 @@ Server.prototype._storeResource = function(resource) {
 Server.prototype._persistenceSubscribe = function (name, id) {
   if (!this.subs[name]) {
     logging.debug('#redis - subscribe', name, id);
+
     this.subscriber.subscribe(name, function(err) {
       if (err) {
         logging.error('#redis - subscribe failed', name, id, err);
