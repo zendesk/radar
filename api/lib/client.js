@@ -2,7 +2,6 @@ var https = require('https'),
     http = require('http'),
     qs = require('querystring'),
     urlmodule = require('url'),
-
     logging = require('minilog')('client');
 
 function Scope(defaults) {
@@ -12,6 +11,7 @@ function Scope(defaults) {
 
 Scope.prototype.get = function(path) {
   var c = new Client();
+
   // Note: assigning this.defaults to c.options will still cause issues!
   // The problem is that since we modify c.options when forming requests
   // we would end up modifying the defaults values as well.
@@ -24,15 +24,19 @@ Scope.prototype.get = function(path) {
 
 Scope.prototype.post = function(path) {
   var c = new Client();
+
   c.options = JSON.parse(JSON.stringify(this.defaults));
   c.set('method', 'POST')
    .set('path', path);
+
   return c;
 };
 
-
 function Client() {
-  this.options = { headers: {}, secure: false };
+  this.options = { 
+    headers: {}, 
+    secure: false
+  };
 }
 
 Client.prototype.set = function(key, value) {
@@ -41,7 +45,7 @@ Client.prototype.set = function(key, value) {
 };
 
 Client.prototype.header = function(key, value) {
-  this.options.headers || (this.options.headers = {});
+  this.options.headers = this.options.headers || {};
   this.options.headers[key] = value;
   return this;
 };
@@ -53,7 +57,7 @@ Client.prototype.data = function(data) {
     this.options.path += '?'+qs.stringify(data);
   } else {
     // JSON encoding
-    this.options.headers || (this.options.headers = {});
+    this.options.headers = this.options.headers || {};
     this.options.headers['Content-Type'] = 'application/json';
     this.options.data = JSON.stringify(data);
     this.options.headers['Content-Length'] = this.options.data.length;
@@ -70,47 +74,56 @@ Client.prototype._end = function(callback) {
   var self = this,
       options = this.options,
       secure = this.options.secure,
-      res_data = '',
+      resData = '',
       protocol = (secure ? https : http);
 
   if (this.beforeRequest) {
     this.beforeRequest(this);
   }
 
-  logging.info('New API Request. Sending a '+(secure ? 'https ' : 'http')+'request. Options: ', options);
+  logging.info('New API Request. Sending a ' + 
+      (secure ? 'https ' : 'http') + 
+      'request. Options: ', options);
 
   var proxy = protocol.request(options, function(response) {
-    response.on('data', function(chunk) { res_data += chunk; });
+    response.on('data', function(chunk) { resData += chunk; });
     response.on('end', function() {
       var err,
           isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location;
 
       logging.debug('Response for the request "'+options.method+' '+options.host + options.path+'" has been ended.');
 
-      if (isRedirect && self.options.redirects == 0) {
+      if (isRedirect && self.options.redirects === 0) {
         logging.debug('Redirect to: ', response.headers.location);
         return self._redirect(response);
       }
 
-      if (response.headers['content-type'] && response.headers['content-type'].toLowerCase().indexOf('application/json') > -1 ) {
+      if (response.headers['content-type'] &&
+          response.headers['content-type'].toLowerCase().indexOf('application/json') > -1 ) {
+
         try {
-          res_data = JSON.parse(res_data);
+          resData = JSON.parse(resData);
         } catch(jsonParseError) {
-          return self._error(jsonParseError, res_data, callback);
+          return self._error(jsonParseError, resData, callback);
         }
       }
 
       // Detect errors
       if (response.statusCode >= 400) {
-        return self._error(new Error('Unexpected HTTP status code ' +response.statusCode), res_data, callback);
-      } else if (res_data == '') {
-        return self._error(new Error('Response was empty.'), res_data, callback);
+        return self._error(new Error('Unexpected HTTP status code ' + response.statusCode), resData, callback);
+      } else if (resData === '') {
+        return self._error(new Error('Response was empty.'), resData, callback);
       }
 
-      logging.info('The request "'+options.method+' '+options.host + options.path+'" has been responded successfully.');
-      logging.debug('Response body: ', res_data);
+      logging.info('The request "' +
+          options.method + ' ' + options.host + options.path + 
+          '" has been responded successfully.');
 
-      callback && callback(undefined, res_data);
+      logging.debug('Response body: ', resData);
+
+      if (callback) {
+        callback(undefined, resData);
+      }
     });
   }).on('error', function(err) { self._error(err, callback); });
 
@@ -121,13 +134,18 @@ Client.prototype._end = function(callback) {
   proxy.end();
 };
 
-Client.prototype._error = function(error, res_data, callback) {
-  logging.error('#api_error An Error occured', error, 'Received response: <res>'+res_data+'</res>');
-  callback && callback(error, res_data);
+Client.prototype._error = function(error, resData, callback) {
+  logging.error('#api_error - An Error occured', error, 
+    'Received response: <res>' + resData +'</res>');
+
+  if (callback) {
+    callback(error, resData);
+  }
 };
 
 Client.prototype._redirect = function(response) {
   var parts;
+
   if (!/^https?:/.test(response.headers.location)) {
     response.headers.location = urlmodule.resolve(options.url, response.headers.location);
   }

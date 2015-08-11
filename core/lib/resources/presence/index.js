@@ -22,8 +22,7 @@ function Presence(name, server, options) {
   this.setup();
 }
 
-Presence.resource_count = 0;
-
+Presence.resourceCount = 0;
 Presence.prototype = new Resource();
 Presence.prototype.type = 'presence';
 
@@ -97,11 +96,14 @@ Presence.prototype.setup = function() {
   });
 
   // Keep track of listener count
-  Presence.resource_count++;
-  var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
-  if (sentryListenersCount != Presence.resource_count) {
-    logging.warn('sentry listener leak detected', sentryListenersCount -
-                                                  Presence.resource_count);
+  Presence.resourceCount++;
+
+  var leakCount, 
+      sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down');
+
+  if (sentryListenersCount != Presence.resourceCount) {
+    leakCount = sentryListenersCount - Presence.resourceCount;
+    logging.warn('sentry listener leak detected', leakCount); 
   }
 };
 
@@ -220,8 +222,10 @@ Presence.prototype.get = function(socket, message) {
 };
 
 Presence.prototype.broadcast = function(message, except) {
-  logging.debug('#presence - update subscribed clients', message, except, this.name);
   var self = this;
+
+  logging.debug('#presence - update subscribed clients', message, except, this.name);
+
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
     if (socket && socket.id != except && self.subscribers[socket.id].listening) {
@@ -241,7 +245,7 @@ Presence.prototype.fullRead = function(callback) {
 
 Presence.prototype.destroy = function() {
   this.manager.destroy();
-  Presence.resource_count --;
+  Presence.resourceCount--;
 };
 
 Presence.setBackend = function(backend) {

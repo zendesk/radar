@@ -1,7 +1,8 @@
-var PresenceStore = require('./presence_store.js'),
+var _ = require('underscore'),
+    PresenceStore = require('./presence_store.js'),
     Persistence = require('persistence'),
-    logging = require('minilog')('radar:presence_manager'),
-    _ = require('underscore');
+    Minilog = require('minilog'),
+    logging = Minilog('radar:presence_manager');
 
 function PresenceManager(scope, policy, sentry) {
   this.scope  = scope;
@@ -47,7 +48,8 @@ PresenceManager.prototype.setup = function() {
   });
 
   // Save so you removeListener on destroy
-  this.sentryListener = function (sentry) {
+  this.sentryListener = function (sentry) {   
+    
     var socketIds = store.socketsForSentry(sentry);
 
     var chain = function (socketIds) {
@@ -129,9 +131,8 @@ PresenceManager.prototype.addClient = function(socketId, userId, userType,
     online: true,
     sentry: this.sentry.name
   };
-  
-  if (clientData) { message.clientData = clientData; }
 
+  if (clientData) { message.clientData = clientData; }
 
   // We might need the details before we actually do a store.add
   this.store.cacheAdd(socketId, message);
@@ -314,28 +315,29 @@ PresenceManager.prototype.fullRead = function(callback) {
 
 // Sync v1
 PresenceManager.prototype.getOnline = function() {
-  var result = {}, store = this.store;
-  function setUid(userId) {
+  var result = {}, 
+      store = this.store;
+
+  this.store.users().forEach(function(userId) {
     result[userId] = store.userTypeOf(userId);
-  }
-  this.store.users().forEach(setUid);
+  });
+
   return result;
 };
 
 // Sync v2
 PresenceManager.prototype.getClientsOnline = function() {
-  var store = this.store;
-  var result = {};
+  var result = {}, 
+      store = this.store;
 
   function processMessage(message) {
     result[message.userId] = result[message.userId] || { 
-      clients: { },
+      clients: {},
       userType: message.userType
     };
     
-    var payload = _.extend({}, 
-                                    (message.userData || {}), 
-                                    (message.clientData || {}));
+    var payload = _.extend({}, (message.userData || {}), 
+                               (message.clientData || {}));
 
     result[message.userId].clients[message.clientId] = payload;
   }
@@ -343,13 +345,13 @@ PresenceManager.prototype.getClientsOnline = function() {
   store.forEachClient(function(uid, cid, message) {
     processMessage(message);
   });
+
   return result;
 };
 
 PresenceManager.prototype.hasUser = function(userId) {
   return this.store.userExists(userId);
 };
-
 
 PresenceManager.setBackend = function(backend) {
   Persistence = backend;
