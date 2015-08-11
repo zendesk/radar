@@ -92,7 +92,6 @@ Service.start = function(configuration, callback) {
   httpServer = http.createServer(p404);
   PresenceManager.userTimeout = 1000;
   Sentry.expiry = 4000;
-  PresenceManager.autoPubTimeout = 4000;
 
   radar = new Radar.server();
   radar.once('ready', function() {

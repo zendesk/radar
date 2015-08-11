@@ -58,7 +58,6 @@ describe('given a presence resource',function() {
         assert.equal(2, m.userType);
         assert.equal(true, m.online);
         assert.equal(undefined, m.clientData);
-        assert.ok(m.at > Date.now()+59*60000);
         presence.redisIn(m);
         published = true;
       };
@@ -78,7 +77,6 @@ describe('given a presence resource',function() {
         assert.equal(1, m.userId);
         assert.equal(2, m.userType);
         assert.equal(false, m.online);
-        assert.ok(m.at > Date.now()+59*60000);
         published = true;
         presence.redisIn(m);
       };
@@ -96,7 +94,6 @@ describe('given a presence resource',function() {
         assert.equal(2, m.userType);
         assert.equal(true, m.online);
         assert.equal(clientData, m.clientData);
-        assert.ok(m.at > Date.now()+59*60000);
         published = true;
         presence.redisIn(m);
       };
@@ -130,7 +127,6 @@ describe('given a presence resource',function() {
         assert.equal(1, userId);
         assert.equal(2, userType);
         assert.equal(true, online);
-        assert.ok(m.at > Date.now()+59*60000);
         calls++;
         presence.redisIn(m);
       };
@@ -297,8 +293,6 @@ describe('given a presence resource',function() {
 
         assert.equal(remote.length, 1);
         // A client_offline should be sent for CID 1
-        assert.ok(remote[0].at > Date.now()+59*60000);
-        delete remote[0].at;
         assert.deepEqual(remote[0], { userId: 1,
           userType: 2,
           clientId: client.id,
@@ -310,8 +304,6 @@ describe('given a presence resource',function() {
 
         // There should be a client_offline notification for CID 2
         assert.equal(remote.length, 2);
-        assert.ok(remote[1].at > Date.now()+59*60000);
-        delete remote[1].at;
         assert.deepEqual(remote[1], { userId: 1,
           userType: 2,
           clientId: client2.id,
@@ -351,7 +343,6 @@ describe('given a presence resource',function() {
         assert.equal(remote[0].online, false);
         assert.equal(remote[0].userId, 1);
         assert.equal(remote[0].clientId, client.id);
-        assert.ok(remote[0].at > Date.now()+59*60000);
 
         presence.unsubscribe(client2);
 
@@ -360,7 +351,6 @@ describe('given a presence resource',function() {
         assert.equal(remote[1].userId, 1);
         assert.equal(remote[1].clientId, client2.id);
         assert.equal(remote[1].online, false);
-        assert.ok(remote[1].at > Date.now()+59*60000);
 
         // Check local broadcast
         assert.equal(local.length, 2);
@@ -396,7 +386,6 @@ describe('given a presence resource',function() {
         assert.equal(remote[0].online, false);
         assert.equal(remote[0].userId, 1);
         assert.equal(remote[0].clientId, client.id);
-        assert.ok(remote[0].at > Date.now()+59*60000);
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' } );
 
@@ -474,7 +463,7 @@ describe('a presence resource', function() {
       radarServer.on('resource:new', function(resource) {
         resource.on('message:incoming', function(message) {
           assert.equal(message.to, subscribeMessage.to);
-          done()
+          done();
         });
       });
 
@@ -493,7 +482,7 @@ describe('a presence resource', function() {
       radarServer.on('resource:new', function(resource) {
         resource.on('message:outgoing', function(message) {
           count++;
-          if (count === 2) { done() };
+          if (count === 2) { done(); }
         });
       });
 

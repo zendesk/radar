@@ -12,14 +12,8 @@ function PresenceManager(scope, policy, sentry) {
   this.setup();
   this.destroying = false;
 }
+
 require('util').inherits(PresenceManager, require('events').EventEmitter);
-
-// Filter for message.at for autopublish messages
-PresenceManager.autoPubTimeout = 25000;
-
-// Messages have expiration (legacy) of 1 hour for limited compatibility with old
-// servers
-PresenceManager.messageExpiry = 60*60000;
 
 PresenceManager.prototype.setup = function() {
   var store   = this.store;
@@ -91,7 +85,6 @@ PresenceManager.prototype.sentryDownForClient = function(socketId) {
     online: false,
     explicit: false
   };
-  this.stampExpiration(message);
 
   // Process directly
   this.processRedisEntry(message);
@@ -120,12 +113,6 @@ PresenceManager.prototype.destroy = function() {
 
   delete this.store;
 };
-
-// For backwards compatibility, add a '.at' to message
-PresenceManager.prototype.stampExpiration = function(message) {
-  message.at = Date.now() + PresenceManager.messageExpiry;
-};
-
 // FIXME: Method signature is getting unmanageable.  
 PresenceManager.prototype.addClient = function(socketId, userId, userType,
                                                       userData, clientData, callback) {
@@ -145,7 +132,6 @@ PresenceManager.prototype.addClient = function(socketId, userId, userType,
   
   if (clientData) { message.clientData = clientData; }
 
-  this.stampExpiration(message);
 
   // We might need the details before we actually do a store.add
   this.store.cacheAdd(socketId, message);
@@ -168,8 +154,7 @@ PresenceManager.prototype.removeClient = function(socketId, userId, userType, ca
     online: false,
     explicit: true
   };
-  this.stampExpiration(message);
-
+  
   Persistence.deleteHash(this.scope, userId + '.' + socketId);
   Persistence.publish(this.scope, message, callback);
 };
@@ -208,21 +193,9 @@ PresenceManager.prototype._implicitDisconnect = function(socketId, userId,
     online: false,
     explicit: false
   };
-  this.stampExpiration(message);
 
   Persistence.deleteHash(this.scope, userId + '.' + socketId);
   Persistence.publish(this.scope, message, callback);
-};
-
-PresenceManager.prototype.isOnline = function(message) {
-  // Return with online, or with sentry, or with unexpired legacy msg
-  return (message.online && (message.sentry ||
-       (message.at && message.at >= (Date.now() - PresenceManager.autoPubTimeout))));
-};
-
-PresenceManager.prototype.isExpired = function(message) {
-  return (message.online && !message.sentry &&
-      message.at && message.at < (Date.now() - PresenceManager.autoPubTimeout));
 };
 
 PresenceManager.prototype.processRedisEntry = function(message, callback) {
@@ -236,16 +209,7 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
   logging.debug('#presence - processRedisEntry:', message, this.scope);
   callback = callback || function() {};
 
-  if (this.isOnline(message)) {
-    if (!message.sentry) {
-      logging.info('#presence - #autopub - received online message without sentry',
-                                                              message, this.scope);
-      message.sentry = userId + '.' + socketId;
-
-      // Publish fake entry, autopub will renew it
-      sentry.publishKeepAlive({ name: message.sentry, save: false });
-    }
-
+  if (message.online) {
     if (sentry.isValid(message.sentry)) {
       logging.debug('#presence - processRedisEntry: sentry.isValid true',
                                               message.sentry, this.scope);
@@ -262,15 +226,6 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
     }
     callback();
   } else {
-    if (this.isExpired(message)) {
-      logging.info('#autopub - received online message - expired', message,
-                                                                this.scope);
-
-      // Orphan autopub redis entry: silently remove from redis
-      Persistence.deleteHash(this.scope, userId + '.' + socketId);
-      message.explicit = false;
-    }
-
     this.handleOffline(socketId, userId, userType, message.explicit);
     callback();
   }
