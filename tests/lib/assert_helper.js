@@ -1,6 +1,34 @@
-var assert = require('assert'),
+var _ = require('underscore'),
+    assert = require('assert'),
     EE = require('events').EventEmitter,
-    _ = require('underscore');
+    Sentry = require('../../core/lib/resources/presence/sentry.js');
+    PresenceManager = require('../../core/lib/resources/presence/presence_manager.js');
+
+var presenceManagerForSentry = function(name, options, callback) {
+  var tempSentry = newTestSentry(name),
+      pm = new PresenceManager('presence:/dev/test', {}, tempSentry);
+
+  options = options || {};
+  
+  if (typeof(options) !== 'object') {
+    callback = options;
+    options = {};
+  }
+
+  if (!options.dead) {
+    tempSentry.start(options, function() {
+      callback(pm);
+      tempSentry.stop();
+    });
+  } else {
+    tempSentry._keepAlive(options); 
+    callback(pm);
+  }
+};
+
+var newTestSentry = function(name, options) {
+  return new Sentry(name, options);
+};
 
 // Presence helper
 function PresenceMessage(account, name) {
@@ -159,14 +187,17 @@ PresenceMessage.prototype.assert_client_implicit_offline =  function(message) {
 };
 
 PresenceMessage.prototype.assert_message_sequence = function(list, from) {
-  var i, messages = this.notifications.slice(from);
+  var i, method, args, 
+      messages = this.notifications.slice(from);
+
   assert.equal(messages.length, list.length, 'mismatch '+list+' in messages received : '+JSON.stringify(messages));
 
   for(i = 0; i < messages.length; i++) {
     if (typeof(list[i]) === 'object') {
-      var method = 'assert_' + list[i][0], args = list[i][1];
+      method = 'assert_' + list[i][0];
+      args = list[i][1];
     } else {
-      var method = 'assert_'+list[i], args;
+      method = 'assert_'+list[i];
     }
 
     this[method].call(this, messages[i], args);
@@ -531,5 +562,15 @@ StreamMessage.prototype.assert_sync_error_get_response = function(response, stat
 // Sync is implemented as subscribe + get, hence the return op is "get"
 StreamMessage.prototype.assert_sync_response = StreamMessage.prototype.assert_get_response;
 StreamMessage.prototype.fail_on_more_than = PresenceMessage.prototype.fail_on_more_than;
-module.exports.PresenceMessage = PresenceMessage;
-module.exports.StreamMessage = StreamMessage;
+
+module.exports = {
+  PresenceMessage: PresenceMessage,
+  StreamMessage: StreamMessage,
+  newTestSentry: newTestSentry,
+  presenceManagerForSentry: presenceManagerForSentry,
+  SentryDefaults: {
+    defaultExpiryOffset: 4000,
+    refreshInterval: 3500,
+    checkInterval: 10000
+  }
+};
