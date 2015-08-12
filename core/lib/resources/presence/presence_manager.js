@@ -210,15 +210,14 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
   callback = callback || function() {};
 
   if (message.online) {
-    if (sentry.isValid(message.sentry)) {
-      logging.debug('#presence - processRedisEntry: sentry.isValid true',
-                                              message.sentry, this.scope);
+    var isDown = sentry.isDown(message.sentry);
+
+    if (!isDown) {
       manager.clearExpiry(userId);
       store.add(socketId, userId, userType, message);
     } else {
-      logging.debug('#presence - processRedisEntry: sentry.isValid false',
-                                              message.sentry, this.scope);
-
+      logging.debug('#presence - processRedisEntry: sentry.isDown', isDown, 
+                                                message.sentry, this.scope);
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + socketId);
@@ -250,7 +249,6 @@ PresenceManager.prototype.handleOffline = function(socketId, userId, userType, e
     this.store.remove(socketId, userId, message);
   }
 };
-
 
 PresenceManager.prototype.isUserExpiring = function(userId) {
   return !!(this.expiryTimers[userId]);
