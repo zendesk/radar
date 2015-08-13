@@ -30,15 +30,16 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
+    "callback_tracker": "*",
     "engine.io": "1.4.2",
     "miniee": "*",
     "minilog": "*",
-    "callback_tracker": "*",
-    "underscore": "*",
+    "nomnom": "*",
+    "pauseable": "*",
     "persistence": ">= 1.0.3",
     "semver": "*",
-    "pauseable": "*",
-    "nomnom": "*"
+    "underscore": "*",
+    "uuid": "^2.0.1"
   },
   "devDependencies": {
     "mocha": "*",
