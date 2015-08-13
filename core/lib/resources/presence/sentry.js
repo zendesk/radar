@@ -60,7 +60,7 @@ Sentry.prototype.start = function(options, callback) {
 
   this.setMaxListeners(0);
   this._loadAndCleanUpSentries(function() {
-    self.emit('up', this.name, upMessage);
+    self.emit('up', self.name, upMessage);
     Persistence.publish(redisSentriesKey, upMessage);
     self._startListening();
     if (callback) { callback(); }
