@@ -1,6 +1,7 @@
 var _ = require('underscore'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
+    uuid = require('uuid'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
@@ -236,6 +237,7 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
     this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
     this._updateLimits(socket, message, resource.options);
+    this._stampMessage(socket, message);
     resource.handleMessage(socket, message);
     this.emit(message.op, socket, message);
   }
@@ -392,6 +394,16 @@ Server.prototype._initClient = function (socket, message) {
   if (client) {
     client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
   }
+};
+
+Server.prototype._stampMessage = function(socket, message) {
+  message.stamp = {
+    id: uuid.v4(),
+    clientId: socket.id,
+    sentryId: this.sentry.name
+  };
+
+  return message;
 };
 
 function _parseJSON(data) {
