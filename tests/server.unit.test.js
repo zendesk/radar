@@ -4,16 +4,19 @@ var common = require('./common.js'),
       op: 'subscribe',
       to: 'presence:/z1/test/ticket/1'
     },
-    radarServer, socket;
+    radarServer,
+    socket;
 
 describe('given a server',function() {
 
   beforeEach(function() {
     radarServer = common.createRadarServer();
-    socket = {};
+    socket = {
+      id: 1
+    };
   });
 
-  it('should emit resource:new when allocating a new reosurce', function(done) {
+  it('should emit resource:new when allocating a new resource', function(done) {
     radarServer.on('resource:new', function(resource) {
       assert.equal(resource.name, subscribeMessage.to);
       done();
@@ -43,7 +46,9 @@ describe('given a server',function() {
   });
 
   it('should return an error when an invalid message type is sent', function(done) {
-    var invalidMessage = { to: 'invalid:/thing' };
+    var invalidMessage = { 
+      to: 'invalid:/thing'
+    };
 
     socket.send = function(message) {
       assert.equal(message.value, 'unknown_type');
@@ -51,5 +56,26 @@ describe('given a server',function() {
     };
 
     radarServer._processMessage(socket, invalidMessage);
+  });
+
+  it('should stamp incoming messages', function(done) {
+    var called = false, 
+        message = { 
+          to: 'presence:/dev/test/ticket/1',
+          op: 'subscribe'
+        };
+
+    radarServer.on('resource:new', function(resource) {
+      resource.on('message:incoming', function(incomingMessage) {
+        assert(incomingMessage.stamp.id !== undefined);
+        assert.equal(incomingMessage.stamp.clientId, socket.id);
+        assert.equal(incomingMessage.stamp.sentryId, radarServer.sentry.name);
+        done();
+      });
+    });
+
+    setTimeout(function() {
+      radarServer._processMessage(socket, message);
+    }, 100);
   });
 });
