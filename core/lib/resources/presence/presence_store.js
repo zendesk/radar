@@ -1,5 +1,5 @@
-var logging = require('minilog')('radar:presence_store'),
-    _ = require('underscore');
+var _ = require('underscore'),
+    logging = require('minilog')('radar:presence_store');
 
 function PresenceStore(scope) {
   this.scope = scope;

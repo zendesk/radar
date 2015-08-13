@@ -1,6 +1,6 @@
-var log = require('minilog')('radar:client'),
-    Core = require('../core'),
-    _ = require('underscore');
+var _ = require('underscore'),
+    log = require('minilog')('radar:client'),
+    Core = require('../core');
 
 function Client (name, id, accountName, version) {
   this.createdAt = Date.now();
