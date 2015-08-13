@@ -41,6 +41,13 @@ See http://radar.zendesk.com/index.html for detailed documentation.
 ```
 - node server.js
 
+## Running tests
+
+By default, when running `npm test`, tests are ran only against sentinel. 
+
+If you want to run against redis directly, you should execute: `npm run test-redis` or `npm run test-full` to 
+run against redis and sentinel (longer). 
+
 ## How to contribute
 
 - Fork http://github.com/zendesk/radar, clone, make changes (including a Changelog update), commit, push, PR
