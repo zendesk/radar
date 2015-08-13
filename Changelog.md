@@ -1,7 +1,8 @@
-Current Master
+### 0.16.0
 * require persistence >= 1.0.3
 * remove auto pub
 * reimplement Sentry so it doesn't rely on pubsub for updates and down events. 
+* stamp messages with id, sentryId and clientId.
 
 ### 0.15.9
 * Responde with an error when a message with an unknown type is received.
