@@ -110,8 +110,8 @@ describe('a Server Entry (Sentry)', function() {
 
   describe('complex scenario, with more than two sentries, when one dies', function() {
     it('all remaining sentries should do proper cleanup', function(done) {
-      sentryOne = newSentry({   checkInterval: 10});
-      sentryTwo = newSentry({   checkInterval: 20}); // It's important that sentryTwo is slower. 
+      sentryOne = newSentry({ checkInterval: 10});
+      sentryTwo = newSentry({ checkInterval: 20}); // It's important that sentryTwo is slower. 
       sentryThree = newSentry();
       sentries = [ sentryOne, sentryTwo, sentryThree ];
 
@@ -137,5 +137,34 @@ describe('a Server Entry (Sentry)', function() {
         });
       });
     });  
+  });
+
+  describe('when emiting events', function() {
+    it('should emit up when going up', function(done) {
+      sentryOne = newSentry({ checkInterval: 10});
+      sentryOne.on('up', function(name, message) {
+        assert.equal(name, sentryOne.name);
+        done();
+      });
+
+      sentryOne.start();
+    }); 
+
+    it('should emit down when noticing another sentry is no longer available', function(done) {
+      sentryOne = newSentry();
+      sentryTwo = newSentry();
+
+      sentryOne.on('down', function(name, message) {
+        assert.equal(name, sentryTwo.name);
+        done();
+      });
+
+      sentryOne.start(defaults, function() {
+        sentryTwo.start(defaults, function() {
+          sentryTwo.stop();
+        });
+      });
+
+    }); 
   });
 });
