@@ -42,12 +42,14 @@ describe('When radar server restarts', function() {
   it('reestablishes presence', function(done) {
     this.timeout(4000);
     var verifySubscriptions = function() {
-      client2.presence('restore').get(function(message) {
-        assert.equal('get', message.op);
-        assert.equal('presence:/test/restore', message.to);
-        assert.deepEqual({ 123 : 0 }, message.value);
-        done();
-      });
+      setTimeout(function() {
+        client2.presence('restore').get(function(message) {
+          assert.equal('get', message.op);
+          assert.equal('presence:/test/restore', message.to);
+          assert.deepEqual({ 123 : 0 }, message.value);
+          done();
+        });
+      }, 1000); // let's wait a little
     };
 
     client.presence('restore').set('online', function() {
