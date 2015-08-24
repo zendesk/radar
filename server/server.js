@@ -74,6 +74,14 @@ Server.prototype._setup = function(httpServer, configuration) {
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this));
 
+  var oldPublish = Core.Persistence.publish;
+
+  // Log all outgoing to redis server
+  Core.Persistence.publish = function(channel, data, callback) {
+    logging.info('#redis.message.outgoing', channel, data);
+    oldPublish(channel, data, callback);
+  };
+
   configuration = configuration || {};
 
   if (configuration.engineio) {
@@ -111,9 +119,11 @@ Server.prototype._onSocketConnection = function(socket) {
       oldSend = socket.send;
 
   // Always send data as json
-  socket.send = function(data) {
-    logging.info('#socket - sending data', socket.id, data);
-    oldSend.call(socket, JSON.stringify(data));
+  socket.send = function(message) {
+    var data = JSON.stringify(message);
+
+    logging.info('#socket.message.outgoing', socket.id, data);
+    oldSend.call(socket, data);
   };
 
   // Event: socket connected
@@ -152,6 +162,7 @@ Server.prototype._handlePubSubMessage = function(name, data) {
       return;
     }
 
+    logging.info('#redis.message.incoming', name, data);
     this.resources[name].redisIn(data);
   } else {
     // Don't log sentry channel pub messages
@@ -177,7 +188,8 @@ Server.prototype._handleSocketMessage = function(socket, data) {
     logging.warn('#socket.message - rejected', socket.id, data);
     return;
   }
-  
+ 
+  logging.info('#socket.message.incoming', socket.id, JSON.stringify(message));
   this._processMessage(socket, message);
 };
 
