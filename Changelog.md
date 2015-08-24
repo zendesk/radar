@@ -1,3 +1,6 @@
+### Current master
+* Added better logging of incoming and outgoing messages. 
+
 ### 0.16.0
 * require persistence >= 1.0.3
 * remove auto pub
