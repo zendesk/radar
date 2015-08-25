@@ -66,6 +66,9 @@ describe('given a server',function() {
         };
 
     radarServer.on('resource:new', function(resource) {
+      
+      resource.subscribe(socket.id, { ack: 1 });
+
       resource.on('message:incoming', function(incomingMessage) {
         assert(incomingMessage.stamp.id !== undefined);
         assert.equal(incomingMessage.stamp.clientId, socket.id);

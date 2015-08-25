@@ -1,6 +1,7 @@
 var Persistence = require('persistence'),
     MiniEventEmitter = require('miniee'),
-    logging = require('minilog')('radar:resource');
+    logging = require('minilog')('radar:resource'),
+    Stamper = require('../stamper.js');
 
 /*
 
@@ -77,12 +78,17 @@ Resource.prototype.unsubscribe = function(socket, message) {
 // Send to Engine.io sockets
 Resource.prototype.redisIn = function(data) {
   var self = this;
+  
+  Stamper.stamp(data);
+
   logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:',
                                           Object.keys(this.subscribers).length );
 
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
+    
     if (socket && socket.send) {
+      data.stamp.clientId = socket.id;
       socket.send(data);
     }
   });

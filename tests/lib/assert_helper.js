@@ -9,6 +9,10 @@ var _ = require('underscore'),
       checkInterval: 5000
     };
 
+var clone = function(object) {
+  return JSON.parse(JSON.stringify(object));
+};
+
 var presenceManagerForSentry = function(name, options, callback) {
   var tempSentry = newTestSentry(name),
       pm = new PresenceManager('presence:/dev/test', {}, tempSentry);
@@ -82,6 +86,12 @@ PresenceMessage.prototype.for_client = function(client) {
   return this;
 };
 
+PresenceMessage.prototype.assert_stamp = function(stamp) {
+  assert(stamp);
+  assert(stamp.id);
+  assert(stamp.sentryId);
+};
+
 // user online:
 // { to: "presence:/<account/<scope>",
 //   op: "online",
@@ -89,8 +99,14 @@ PresenceMessage.prototype.for_client = function(client) {
 //   userData:  <user_data>
 // }
 
-PresenceMessage.prototype.assert_online = function(message) {
-  var value = {}, client = this.client;
+PresenceMessage.prototype.assert_online = function(originalMessage) {
+  var value = {}, 
+      client = this.client,
+      message = clone(originalMessage);
+
+  this.assert_stamp(message.stamp);
+  delete message.stamp;
+  
   value[client.userId] = client.userType;
 
   assert.deepEqual({
@@ -106,8 +122,14 @@ PresenceMessage.prototype.assert_online = function(message) {
 //   op: "offline",
 //   value: { <user_id>:<user_type> }
 // }
-PresenceMessage.prototype.assert_offline = function(message) {
-  var value = {}, client = this.client;
+PresenceMessage.prototype.assert_offline = function(originalMessage) {
+  var value = {},
+      client = this.client,
+      message = clone(originalMessage);
+
+  this.assert_stamp(message.stamp);
+  delete message.stamp;
+
   value[client.userId] = client.userType;
 
   assert.deepEqual({
@@ -126,13 +148,17 @@ PresenceMessage.prototype.assert_offline = function(message) {
 //     userData: <user_data>
 //   }
 // }
-PresenceMessage.prototype.assert_client_online = function(message) {
-  var client = this.client;
-  var value = {
-    userId: client.userId,
-    clientId: client.clientId,
-    userData: client.userData
-  };
+PresenceMessage.prototype.assert_client_online = function(originalMessage) {
+  var client = this.client,
+      message = clone(originalMessage),
+      value = {
+        userId: client.userId,
+        clientId: client.clientId,
+        userData: client.userData
+      };
+
+  this.assert_stamp(message.stamp);
+  delete message.stamp;
 
   assert.deepEqual({
     to: this.scope,
@@ -141,16 +167,20 @@ PresenceMessage.prototype.assert_client_online = function(message) {
   }, message);
 };
 
-PresenceMessage.prototype.assert_client_updated = function(message, clientData) {
+PresenceMessage.prototype.assert_client_updated = function(originalMessage, clientData) {
   assert(clientData, 'client_updated is only triggered on new clientData. To assert it, you need to pass the expected clientData.');
 
-  var client = this.client;
-  var value = {
-    userId: client.userId,
-    clientId: client.clientId,
-    userData: client.userData,
-    clientData: clientData
-  };
+  var client = this.client,
+      message = clone(originalMessage),
+      value = {
+        userId: client.userId,
+        clientId: client.clientId,
+        userData: client.userData,
+        clientData: clientData
+      };
+
+  this.assert_stamp(message.stamp);
+  delete message.stamp;
 
   assert.deepEqual({
     to: this.scope,
@@ -168,12 +198,16 @@ PresenceMessage.prototype.assert_client_updated = function(message, clientData) 
 //     clientId: <client_id>,
 //   }
 // }
-PresenceMessage.prototype.assert_client_offline = function(message, explicit) {
-  var client = this.client;
-  var value = {
-    userId: client.userId,
-    clientId: client.clientId
-  };
+PresenceMessage.prototype.assert_client_offline = function(originalMessage, explicit) {
+  var client = this.client,
+      message = clone(originalMessage),
+      value = {
+        userId: client.userId,
+        clientId: client.clientId
+      };
+
+  this.assert_stamp(message.stamp);
+  delete message.stamp;
 
   assert.deepEqual({
     to: this.scope,
