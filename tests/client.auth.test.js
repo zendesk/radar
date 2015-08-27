@@ -30,7 +30,8 @@ describe('auth test', function() {
 
   describe('if type is disabled', function() {
     it('subscribe fails and emits err', function(done) {
-      client.on('err', function(message) {
+      client.on('err', function(response) {
+        var message = response.getMessage();
         assert.ok(message.origin);
         assert.equal(message.origin.op, 'subscribe');
         assert.equal(message.origin.to, 'message:/client_auth/disabled');
@@ -45,7 +46,8 @@ describe('auth test', function() {
 
     it('publish fails, emits err and is not persisted', function(done) {
       // Cache policy true for this type
-      client.on('err', function(message) {
+      client.on('err', function(response) {
+        var message = response.getMessage();
         assert.ok(message.origin);
         assert.equal(message.origin.op, 'publish');
         assert.equal(message.origin.to, 'message:/client_auth/disabled');

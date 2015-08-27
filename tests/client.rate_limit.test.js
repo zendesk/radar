@@ -33,7 +33,8 @@ describe('The Server', function() {
     it('should not allow subscription after a certain limit', function(done) {
       var success = false;
 
-      client.on('err', function(message) {
+      client.on('err', function(response) {
+        var message = response.getMessage();
         assert.equal(message.op, 'err');
         assert.equal(message.value, 'rate limited');
         success = true;

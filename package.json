@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "mocha": "*",
-    "radar_client": "*",
+    "radar_client": "git://github.com/zendesk/radar_client.git#pobrien/feature_message_protocol_v2_branch1",
     "simple_sentinel": "*"
   },
   "scripts": {
