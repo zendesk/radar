@@ -363,6 +363,8 @@ PresenceMessage.prototype.assert_ack_for = function(type, message) {
   var expected = { to: this.scope };
   var ackNumber = message.ack;
   delete message.ack;
+  var options = message.options;
+  delete message.options;
 
   switch(type) {
     case 'set_online':
@@ -384,6 +386,7 @@ PresenceMessage.prototype.assert_ack_for = function(type, message) {
 
   // Restore
   message.ack = ackNumber;
+  message.options = options;
 };
 
 PresenceMessage.prototype.assert_ack_for_set_online = function(message) {
@@ -445,6 +448,8 @@ StreamMessage.prototype.assert_ack_for = function(type, message, resource, actio
   var expected = { to: this.scope };
   var ackNumber = message.ack;
   delete message.ack;
+  var options = message.options;
+  delete message.options;
 
   switch(type) {
     case 'subscribe':
@@ -467,6 +472,7 @@ StreamMessage.prototype.assert_ack_for = function(type, message, resource, actio
 
   // Restore
   message.ack = ackNumber;
+  message.options = options;
 };
 
 StreamMessage.prototype.assert_ack_for_subscribe = PresenceMessage.prototype.assert_ack_for_subscribe;
