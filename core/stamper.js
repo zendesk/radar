@@ -18,7 +18,8 @@ module.exports = {
       message.stamp = {
         id: uuid.v4(),
         clientId: clientId,
-        sentryId: sentryName
+        sentryId: sentryName,
+        timestamp: new Date().toJSON()
       };
     }
     

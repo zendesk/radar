@@ -90,6 +90,7 @@ PresenceMessage.prototype.assert_stamp = function(stamp) {
   assert(stamp);
   assert(stamp.id);
   assert(stamp.sentryId);
+  assert(stamp.timestamp);
 };
 
 // user online:
