@@ -53,6 +53,9 @@ Client.create = function (message) {
 
   Client.clients[association.name] = client;
 
+  log.info('create: association name: ' + association.name +
+            '; association id: ' + association.id);
+
   return client;
 };
 
@@ -62,7 +65,8 @@ Client.create = function (message) {
 Client.prototype.storeData = function (message) {
   var subscriptions = this.subscriptions,
       presences = this.presences,
-      changed = false;
+      changed = false,
+      lookupMessage;
 
   // Persist the message data, according to type
   switch(message.op) {
@@ -75,24 +79,30 @@ Client.prototype.storeData = function (message) {
 
     case 'sync':
     case 'subscribe':
-      if (subscriptions[message.to] &&
-            !_.isEqual(subscriptions[message.to], message)) {
+      lookupMessage = subscriptions[message.to];
+      if (!lookupMessage ||
+            (lookupMessage.op != 'sync' && !_.isEqual(lookupMessage, message))) {
         subscriptions[message.to] = message;
         changed = true;
       }
       break;
 
     case 'set':
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/' &&
-            presences[message.to] &&
-            !_.isEqual(presences[message.to], message)) {
-        presences[message.to] = message;
-        changed = true;
+      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
+        lookupMessage = presences[message.to];
+        if (!lookupMessage || (!_.isEqual(lookupMessage, message))) {
+          presences[message.to] = message;
+          changed = true;
+        }
       }
       break;
   }
 
   if (changed) {
+    log.info('storeData: client_id: ' + this.id +
+              '; subscription count: ' + Object.keys(subscriptions).length +
+              '; presence count: ' + Object.keys(presences).length);
+
     this._persist();
   }
 
