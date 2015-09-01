@@ -402,10 +402,7 @@ Server.prototype._sendErrorMessage = function(socket, value, origin) {
 
 // Initialize the current client
 Server.prototype._initClient = function (socket, message) {
-  var client = Client.create(message);
-  if (client) {
-    client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
-  }
+  Client.create(message);
 };
 
 Server.prototype._stampMessage = function(socket, message) {
