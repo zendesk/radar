@@ -149,7 +149,6 @@ Sentry.prototype._newKeepAliveMessage = function(name, expiration) {
   return {
     name: (name || this.name),
     expiration: (expiration || this._expiryOffsetFromNow()),
-    alive: true,
     host: this.host,
     port: this.port
   };
