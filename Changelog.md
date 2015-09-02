@@ -1,4 +1,8 @@
 ### Current master
+
+### 0.16.1
+* Stop including 'alive' attribute on sentry keep-alive messages
+* Remove loadData from server-side client init
 * Added better logging of incoming and outgoing messages. 
 
 ### 0.16.0
