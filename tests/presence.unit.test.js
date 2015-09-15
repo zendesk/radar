@@ -293,6 +293,10 @@ describe('given a presence resource',function() {
 
         assert.equal(remote.length, 1);
         // A client_offline should be sent for CID 1
+
+        // Remove stamp, it makes no sense to test those
+        delete remote[0].stamp;
+
         assert.deepEqual(remote[0], { userId: 1,
           userType: 2,
           clientId: client.id,
@@ -302,8 +306,12 @@ describe('given a presence resource',function() {
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' } );
 
+        // Remove stamp, it makes no sense to test those
+        delete remote[1].stamp;
+
         // There should be a client_offline notification for CID 2
         assert.equal(remote.length, 2);
+
         assert.deepEqual(remote[1], { userId: 1,
           userType: 2,
           clientId: client2.id,
@@ -311,6 +319,8 @@ describe('given a presence resource',function() {
           explicit: true
         });
 
+        // Remove stamp, it makes no sense to test those
+        delete local[0].stamp;
         // Check local broadcast
         assert.equal(local.length, 3);
         // There should be a client_offline notification for CID 1
@@ -319,6 +329,9 @@ describe('given a presence resource',function() {
           explicit: true,
           value: { userId: 1, clientId: client.id }
         });
+
+        // Remove stamp, it makes no sense to test those
+        delete local[1].stamp;
         // There should be a client_offline notification for CID 2
         assert.deepEqual(local[1],{ to: 'aaa',
           op: 'client_offline',
@@ -326,6 +339,8 @@ describe('given a presence resource',function() {
           value: { userId: 1, clientId: client2.id }
         });
         // There should be a broadcast for a offline notification for UID 1
+        // Remove stamp, it makes no sense to test those
+        delete local[2].stamp;
         assert.deepEqual(local[2],  { to: 'aaa', op: 'offline', value: { 1: 2 } });
         assert.deepEqual(local[2].value, { 1: 2 });
 

@@ -2,6 +2,7 @@ var Resource = require('../../resource.js'),
     PresenceManager = require('./presence_manager.js'),
     Sentry = require('./sentry.js'),
     EventEmitter = require('events').EventEmitter,
+    Stamper = require('../../../stamper.js'),
     logging = require('minilog')('radar:presence');
 
 var default_options = {
@@ -224,11 +225,16 @@ Presence.prototype.get = function(socket, message) {
 Presence.prototype.broadcast = function(message, except) {
   var self = this;
 
+  Stamper.stamp(message);
+
+  this.emit('message:outgoing', message);
+
   logging.debug('#presence - update subscribed clients', message, except, this.name);
 
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
     if (socket && socket.id != except && self.subscribers[socket.id].listening) {
+      message.stamp.clientId = socket.id;
       socket.send(message);
     } else {
       logging.warn('#socket - not sending: ', (socket && socket.id), message,  except,
@@ -236,7 +242,6 @@ Presence.prototype.broadcast = function(message, except) {
     }
   });
 
-  this.emit('message:outgoing', message);
 };
 
 Presence.prototype.fullRead = function(callback) {

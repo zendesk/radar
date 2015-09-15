@@ -1,7 +1,6 @@
 var _ = require('underscore'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
-    uuid = require('uuid'),
     Type = Core.Type,
     logging = require('minilog')('radar:server'),
     hostname = require('os').hostname(),
@@ -9,7 +8,8 @@ var _ = require('underscore'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
     Pauseable = require('pauseable'),
-    RateLimiter = require('../core/rate_limiter.js');
+    RateLimiter = require('../core/rate_limiter.js'),
+    Stamper = require('../core/stamper.js');
 
 function Server() {
   this.socketServer = null;
@@ -110,6 +110,8 @@ Server.prototype._setupSentry = function(configuration) {
   if (configuration.sentry) { 
     _.extend(sentryOptions, configuration.sentry); 
   }
+
+  Stamper.setup(this.sentry.name);
 
   this.sentry.start(sentryOptions);
 };
@@ -406,13 +408,7 @@ Server.prototype._initClient = function (socket, message) {
 };
 
 Server.prototype._stampMessage = function(socket, message) {
-  message.stamp = {
-    id: uuid.v4(),
-    clientId: socket.id,
-    sentryId: this.sentry.name
-  };
-
-  return message;
+  return Stamper.stamp(message, socket.id);
 };
 
 function _parseJSON(data) {
