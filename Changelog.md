@@ -1,4 +1,6 @@
 ### Current master
+
+### 0.16.2
 * Stamp incoming and outgoing messages
 
 ### 0.16.1
