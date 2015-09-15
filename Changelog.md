@@ -1,4 +1,5 @@
 ### Current master
+* Stamp incoming and outgoing messages
 
 ### 0.16.1
 * Stop including 'alive' attribute on sentry keep-alive messages
