@@ -1,5 +1,8 @@
 ### Current master
 
+### 0.16.3
+* Disable client state save
+
 ### 0.16.2
 * Stamp incoming and outgoing messages
 
