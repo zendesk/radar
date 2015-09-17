@@ -247,7 +247,8 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[name] ? 'is subscribed' : 'not subscribed')
     );
 
-    this._persistClientData(socket, message);
+    // TODO: Reimplement in a less agressive way. 
+    // this._persistClientData(socket, message);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.name, socket.id);
     this._updateLimits(socket, message, resource.options);
