@@ -8,8 +8,8 @@ var default_options = {
   }
 };
 
-function Status(name, server, options) {
-  Resource.call(this, name, server, options, default_options);
+function Status(to, server, options) {
+  Resource.call(this, to, server, options, default_options);
 }
 
 Status.prototype = new Resource();
@@ -17,29 +17,29 @@ Status.prototype.type = 'status';
 
 // Get status
 Status.prototype.get = function(socket) {
-  var name = this.name;
+  var to = this.to;
 
-  logger.debug('#status - get', this.name, (socket && socket.id));
+  logger.debug('#status - get', this.to, (socket && socket.id));
 
-  this._get(name, function(replies) {
+  this._get(to, function(replies) {
     socket.send({
       op: 'get',
-      to: name,
+      to: to,
       value: replies || {}
     });
   });
 };
 
-Status.prototype._get = function(name, callback) {
-  Persistence.readHashAll(name, callback);
+Status.prototype._get = function(to, callback) {
+  Persistence.readHashAll(to, callback);
 };
 
 Status.prototype.set = function(socket, message) {
   var self = this;
 
-  logger.debug('#status - set', this.name, message, (socket && socket.id));
+  logger.debug('#status - set', this.to, message, (socket && socket.id));
 
-  Status.prototype._set(this.name, message, this.options.policy, function() {
+  Status.prototype._set(this.to, message, this.options.policy, function() {
     self.ack(socket, message.ack);
   });
 };
@@ -58,7 +58,7 @@ Status.prototype._set = function(scope, message, policy, callback) {
 };
 
 Status.prototype.sync = function(socket) {
-  logger.debug('#status - sync', this.name, (socket && socket.id));
+  logger.debug('#status - sync', this.to, (socket && socket.id));
 
   this.subscribe(socket, false);
   this.get(socket);

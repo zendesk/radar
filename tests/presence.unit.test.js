@@ -34,7 +34,7 @@ describe('given a presence resource',function() {
       client2.id = 1002;
       client2.send = function() {};
       Server.channels = { };
-      Server.channels[presence.name] = presence;
+      Server.channels[presence.to] = presence;
       done();
     });
   });
@@ -104,7 +104,7 @@ describe('given a presence resource',function() {
 
     it('expires within maxPersistence if set' , function(done) {
       Persistence.expire = function(scope, expiry) {
-        assert.equal(presence.name, scope);
+        assert.equal(presence.to, scope);
         assert.equal(expiry, 12 * 60 * 60);
         done();
       };
@@ -436,7 +436,7 @@ describe('given a presence resource',function() {
     it('userData should be stored on an incoming message', function() {
       var persistHash = Persistence.persistHash, called = false;
 
-      Persistence.persistHash = function(name, key, value) {
+      Persistence.persistHash = function(to, key, value) {
         called = true;
         assert.deepEqual(value.userData, { test: 1 });
       };

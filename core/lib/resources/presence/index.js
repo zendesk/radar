@@ -18,8 +18,8 @@ var default_options = {
 Presence.Sentry = Sentry;
 Presence.sentry = new Sentry();
 
-function Presence(name, server, options) {
-  Resource.call(this, name, server, options, default_options);
+function Presence(to, server, options) {
+  Resource.call(this, to, server, options, default_options);
   this.setup();
 }
 
@@ -30,14 +30,14 @@ Presence.prototype.type = 'presence';
 Presence.prototype.setup = function() {
   var self = this;
 
-  this.manager = new PresenceManager(this.name, this.options.policy, Presence.sentry);
+  this.manager = new PresenceManager(this.to, this.options.policy, Presence.sentry);
 
   this.manager.on('user_online', function(userId, userType, userData) {
-    logging.info('#presence - user_online', userId, userType, self.name);
+    logging.info('#presence - user_online', userId, userType, self.to);
     var value = {};
     value[userId] = userType;
     self.broadcast({
-      to: self.name,
+      to: self.to,
       op: 'online',
       value: value,
       userData: userData
@@ -45,20 +45,20 @@ Presence.prototype.setup = function() {
   });
 
   this.manager.on('user_offline', function(userId, userType) {
-    logging.info('#presence - user_offline', userId, userType, self.name);
+    logging.info('#presence - user_offline', userId, userType, self.to);
     var value = {};
     value[userId] = userType;
     self.broadcast({
-      to: self.name,
+      to: self.to,
       op: 'offline',
       value: value
     });
   });
 
   this.manager.on('client_online', function(socketId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_online', socketId, userId, self.name, userData, clientData);
+    logging.info('#presence - client_online', socketId, userId, self.to, userData, clientData);
     self.broadcast({
-      to: self.name,
+      to: self.to,
       op: 'client_online',
       value: {
         userId: userId,
@@ -70,9 +70,9 @@ Presence.prototype.setup = function() {
   });
 
   this.manager.on('client_updated', function(socketId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_updated', socketId, userId, self.name, userData, clientData);
+    logging.info('#presence - client_updated', socketId, userId, self.to, userData, clientData);
     self.broadcast({
-      to: self.name,
+      to: self.to,
       op: 'client_updated',
       value: {
         userId: userId,
@@ -84,9 +84,9 @@ Presence.prototype.setup = function() {
   });
 
   this.manager.on('client_offline', function(socketId, userId, explicit) {
-    logging.info('#presence - client_offline', socketId, userId, explicit, self.name);
+    logging.info('#presence - client_offline', socketId, userId, explicit, self.to);
     self.broadcast({
-      to: self.name,
+      to: self.to,
       op: 'client_offline',
       explicit: !!explicit,
       value: {
@@ -109,7 +109,7 @@ Presence.prototype.setup = function() {
 };
 
 Presence.prototype.redisIn = function(message) {
-  logging.info('#presence - incoming from #redis', this.name, message, 'subs:',
+  logging.info('#presence - incoming from #redis', this.to, message, 'subs:',
                                           Object.keys(this.subscribers).length );
   this.manager.processRedisEntry(message);
 };
@@ -166,7 +166,7 @@ Presence.prototype.subscribe = function(socket, message) {
 };
 
 Presence.prototype.unsubscribe = function(socket, message) {
-  logging.info('#presence - implicit disconnect', socket.id, this.name);
+  logging.info('#presence - implicit disconnect', socket.id, this.to);
   this.manager.disconnectClient(socket.id);
 
   Resource.prototype.unsubscribe.call(this, socket, message);
@@ -182,17 +182,17 @@ Presence.prototype.sync = function(socket, message) {
 
       socket.send({
         op: 'get',
-        to: self.name,
+        to: self.to,
         value: value
       });
     } else {
-      logging.warn('presence v1 received, sending online', self.name, socket.id);
+      logging.warn('presence v1 received, sending online', self.to, socket.id);
 
       // Will deprecate when syncs no longer need to use "online" to look like
       // regular messages
       socket.send({
         op: 'online',
-        to: self.name,
+        to: self.to,
         value: online
       });
     }
@@ -216,7 +216,7 @@ Presence.prototype.get = function(socket, message) {
 
     socket.send({
       op: 'get',
-      to: self.name,
+      to: self.to,
       value: value
     });
   });
@@ -229,7 +229,7 @@ Presence.prototype.broadcast = function(message, except) {
 
   this.emit('message:outgoing', message);
 
-  logging.debug('#presence - update subscribed clients', message, except, this.name);
+  logging.debug('#presence - update subscribed clients', message, except, this.to);
 
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
@@ -238,7 +238,7 @@ Presence.prototype.broadcast = function(message, except) {
       socket.send(message);
     } else {
       logging.warn('#socket - not sending: ', (socket && socket.id), message,  except,
-        'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.name);
+        'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.to);
     }
   });
 

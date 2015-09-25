@@ -29,9 +29,9 @@ var Types = [
   }
 ];
 
-// Get the type by resource name.
-function getByExpression(name) {
-  if (name) {
+// Get the type by resource "to" (aka, full scope)
+function getByExpression(to) {
+  if (to) {
     for (var i = 0, l = Types.length, definition, expression; i < l; ++i) {
       definition = Types[i];
       expression = definition.expression || definition.expr;
@@ -41,13 +41,13 @@ function getByExpression(name) {
         continue;
       }
 
-      if (expression.test && expression.test(name) || expression === name) {
-        logger.debug('#type - found', name);
+      if (expression.test && expression.test(to) || expression === to) {
+        logger.debug('#type - found', to);
         return definition;
       }
     }
   }
-  logger.error('#type - Unable to find a valid type definition for:', name);
+  logger.error('#type - Unable to find a valid type definition for:', to);
 }
 
 module.exports = {

@@ -33,28 +33,28 @@ Server.prototype.attach = function(httpServer, configuration) {
 };
 
 // Destroy empty resource
-Server.prototype.destroyResource = function(name) {
-  var messageType = this._getMessageType(name);
+Server.prototype.destroyResource = function(to) {
+  var messageType = this._getMessageType(to);
 
-  if (this.resources[name]) {
-    this.resources[name].destroy();
+  if (this.resources[to]) {
+    this.resources[to].destroy();
   }
 
   if (this._rateLimiters[messageType.name]) {
-    this._rateLimiters[messageType.name].removeByName(name);
+    this._rateLimiters[messageType.name].removeByTo(to);
   }
   
-  delete this.resources[name];
-  delete this.subs[name];
-  logging.info('#redis - unsubscribe', name);
-  this.subscriber.unsubscribe(name);
+  delete this.resources[to];
+  delete this.subs[to];
+  logging.info('#redis - unsubscribe', to);
+  this.subscriber.unsubscribe(to);
 };
 
 Server.prototype.terminate = function(done) {
   var self = this;
 
-  Object.keys(this.resources).forEach(function(name) {
-    self.destroyResource(name);
+  Object.keys(this.resources).forEach(function(to) {
+    self.destroyResource(to);
   });
 
   this.sentry.stop();
@@ -139,12 +139,12 @@ Server.prototype._onSocketConnection = function(socket) {
     // Event: socket disconnected
     logging.info('#socket - disconnect', socket.id);
 
-    Object.keys(self.resources).forEach(function(name) {
-      var resource = self.resources[name],
+    Object.keys(self.resources).forEach(function(to) {
+      var resource = self.resources[to],
           rateLimiter = self._getRateLimiterForMessageType(resource.options);
 
       if (rateLimiter) {
-        rateLimiter.remove(socket.id, name);
+        rateLimiter.remove(socket.id, to);
       }
 
       if (resource.subscribers[socket.id]) {
@@ -155,24 +155,24 @@ Server.prototype._onSocketConnection = function(socket) {
 };
 
 // Process a message from persistence (i.e. subscriber)
-Server.prototype._handlePubSubMessage = function(name, data) {
-  if (this.resources[name]) {
+Server.prototype._handlePubSubMessage = function(to, data) {
+  if (this.resources[to]) {
     try {
       data = JSON.parse(data);
     } catch(parseError) {
-      logging.error('#redis - Corrupted key value [' + name + ']. ' + parseError.message + ': '+ parseError.stack);
+      logging.error('#redis - Corrupted key value [' + to+ ']. ' + parseError.message + ': '+ parseError.stack);
       return;
     }
 
-    logging.info('#redis.message.incoming', name, data);
-    this.resources[name].redisIn(data);
+    logging.info('#redis.message.incoming', to, data);
+    this.resources[to].redisIn(data);
   } else {
     // Don't log sentry channel pub messages
-    if (name === Core.Presence.Sentry.channel) {
+    if (to === Core.Presence.Sentry.channel) {
       return;
     }
 
-    logging.warn('#redis - message not handled', name, data);
+    logging.warn('#redis - message not handled', to, data);
   }
 };
 
@@ -238,19 +238,19 @@ Server.prototype._persistClientData = function(socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function(socket, message, messageType) {
-  var name = message.to,
+  var to = message.to,
       resource = this._getResource(message, messageType);
 
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
-      (this.resources[name] ? 'exists' : 'not instantiated'),
-      (this.subs[name] ? 'is subscribed' : 'not subscribed')
+      (this.resources[to] ? 'exists' : 'not instantiated'),
+      (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
     // TODO: Reimplement in a less agressive way. 
     // this._persistClientData(socket, message);
     this._storeResource(resource);
-    this._persistenceSubscribe(resource.name, socket.id);
+    this._persistenceSubscribe(resource.to, socket.id);
     this._updateLimits(socket, message, resource.options);
     this._stampMessage(socket, message);
     resource.handleMessage(socket, message);
@@ -350,42 +350,42 @@ Server.prototype._getMessageType = function(messageScope) {
   return Type.getByExpression(messageScope);
 };
 
-// Get or create resource by name
+// Get or create resource by "to" (aka, full scope)
 Server.prototype._getResource = function(message, messageType) {
-  var name = message.to,
+  var to = message.to,
       type = messageType.type,
-      resource = this.resources[name];
+      resource = this.resources[to];
 
   if (!resource) {
     if (type && Core.Resources[type]) {
-      resource = new Core.Resources[type](name, this, messageType);
+      resource = new Core.Resources[type](to, this, messageType);
     } else {
-      logging.error('#resource - unknown_type', name, messageType);
+      logging.error('#resource - unknown_type', to, messageType);
     }
   }
   return resource;
 };
 
 Server.prototype._storeResource = function(resource) {
-  if (!this.resources[resource.name]) {
-    this.resources[resource.name] = resource;
+  if (!this.resources[resource.to]) {
+    this.resources[resource.to] = resource;
     this.emit('resource:new', resource);
   }
 };
 
 // Subscribe to the persistence pubsub channel for a single resource
-Server.prototype._persistenceSubscribe = function (name, id) {
-  if (!this.subs[name]) {
-    logging.debug('#redis - subscribe', name, id);
+Server.prototype._persistenceSubscribe = function (to, id) {
+  if (!this.subs[to]) {
+    logging.debug('#redis - subscribe', to, id);
 
-    this.subscriber.subscribe(name, function(err) {
+    this.subscriber.subscribe(to, function(err) {
       if (err) {
-        logging.error('#redis - subscribe failed', name, id, err);
+        logging.error('#redis - subscribe failed', to, id, err);
       } else {
-        logging.debug('#redis - subscribe successful', name, id);
+        logging.debug('#redis - subscribe successful', to, id);
       }
     });
-    this.subs[name] = true;
+    this.subs[to] = true;
   }
 };
 

@@ -41,9 +41,9 @@ exports['Radar api tests'] = {
 
   // GET /radar/status?accountName=test&scope=ticket/1
   'can get a status scope': function(done) {
-    var name = 'status:/test/ticket/1',
-        opts = Type.getByExpression(name),
-        status = new Status(name, {}, opts);
+    var to = 'status:/test/ticket/1',
+        opts = Type.getByExpression(to),
+        status = new Status(to, {}, opts);
 
     status.set({}, {
       key: 'foo',
@@ -93,9 +93,9 @@ exports['Radar api tests'] = {
 
     Type.register('message', message_type);
 
-    var name = 'message:/setStatus/chat/1',
-        opts = Type.getByExpression(name),
-        msgList = new MessageList(name, {}, opts);
+    var to = 'message:/setStatus/chat/1',
+        opts = Type.getByExpression(to),
+        msgList = new MessageList(to, {}, opts);
 
     msgList.publish({},{
       key: 'foo',
