@@ -1,5 +1,8 @@
 ### Current master
 
+### 0.16.4
+* Replace resource "name" with "to" for naming consistency
+
 ### 0.16.3
 * Disable client state save
 
