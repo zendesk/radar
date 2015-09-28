@@ -27,9 +27,9 @@ function parseData(response, data, ResourceType) {
     return jsonResponse(response, {});
   }
 
-  var resourceName = ResourceType.prototype.type + ':/' + parameters.accountName + '/' + parameters.scope,
-      options = Type.getByExpression(resourceName),
-      resource = new ResourceType(resourceName, {}, options);
+  var resourceTo = ResourceType.prototype.type + ':/' + parameters.accountName + '/' + parameters.scope,
+      options = Type.getByExpression(resourceTo),
+      resource = new ResourceType(resourceTo, {}, options);
 
   resource.accountName = parameters.accountName;
   resource.scope = parameters.scope;
@@ -51,10 +51,10 @@ function setStatus(req, res, re, data) {
       return jsonResponse(res, {});
     }
 
-    status._set(status.name,
+    status._set(status.to,
       {
         op: 'set',
-        to: status.name,
+        to: status.to,
         key: status.key,
         value: status.value,
       }, status.options.policy || {}, function() {
@@ -83,7 +83,7 @@ function setMessage(req, res, re, data) {
       return jsonResponse(res, {});
     }
 
-    message._publish(message.name, message.options.policy || {},
+    message._publish(message.to, message.options.policy || {},
       {
         op: 'publish',
         to: 'message:/' + message.accountName + '/' + message.scope,
@@ -99,7 +99,7 @@ function getMessage(req, res) {
       message = parseData(res, parts.query, MessageList);
 
   if (message) {
-    message._sync(message.name, message.options.policy || {}, function(replies) {
+    message._sync(message.to, message.options.policy || {}, function(replies) {
       jsonResponse(res, replies);
     });
   }

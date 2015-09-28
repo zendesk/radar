@@ -5,34 +5,34 @@ var RateLimiter = function(limit) {
  this._limit = limit;
  this._resources = {
    id: {},
-   name: {}
+   to: {}
  };
 };
 
 MiniEventEmitter.mixin(RateLimiter);
 
-RateLimiter.prototype.add = function(id, name) {
-  if (!this._isNewResource(id, name)) {
+RateLimiter.prototype.add = function(id, to) {
+  if (!this._isNewResource(id, to)) {
     return false;
   }
 
   if (this.isAboveLimit(id)) {
-    this.emit('rate:limit', this._stateForId(id, name));
-    logging.warn('rate limiting client: ' + id + ' name: ' + name);
+    this.emit('rate:limit', this._stateForId(id, to));
+    logging.warn('rate limiting client: ' + id + ' to: ' + to);
     return false;
   }
 
-  this._add(id, name);
-  this.emit('rate:add', this._stateForId(id, name));
+  this._add(id, to);
+  this.emit('rate:add', this._stateForId(id, to));
 
   return true;
 };
 
-RateLimiter.prototype.remove = function(id, name) {
-  if (this._resources.id[id] && this._resources.name[name]) {
-    delete this._resources.id[id][name];
-    delete this._resources.name[name][id];
-    this.emit('rate:remove', this._stateForId(id, name));
+RateLimiter.prototype.remove = function(id, to) {
+  if (this._resources.id[id] && this._resources.to[to]) {
+    delete this._resources.id[id][to];
+    delete this._resources.to[to][id];
+    this.emit('rate:remove', this._stateForId(id, to));
   }
 };
 
@@ -57,12 +57,12 @@ RateLimiter.prototype.count = function(id) {
 
 RateLimiter.prototype.removeById = function(id) {
   this.emit('rate:remove_by_id', this._stateForId(id));
-  this._removeByType('id', 'name', id);
+  this._removeByType('id', 'to', id);
 };
 
-RateLimiter.prototype.removeByName = function(name) {
-  this.emit('rate:remove_by_name', this._stateForId(undefined, name));
-  this._removeByType('name', 'id', name);
+RateLimiter.prototype.removeByTo = function(to) {
+  this.emit('rate:remove_by_to', this._stateForId(undefined, to));
+  this._removeByType('to', 'id', to);
 };
 
 RateLimiter.prototype._removeByType = function(type1, type2, key) {
@@ -74,9 +74,9 @@ RateLimiter.prototype.inspect = function() {
   return this._resources;
 };
 
-RateLimiter.prototype._add = function(id, name) {
-  this._addByType('id', id, name);
-  this._addByType('name', name, id);
+RateLimiter.prototype._add = function(id, to) {
+  this._addByType('id', id, to);
+  this._addByType('to', to, id);
   return true;
 };
 
@@ -99,10 +99,10 @@ RateLimiter.prototype._initResourcesByType = function (type, key) {
   return resource;
 };
 
-RateLimiter.prototype._isNewResource = function(id, name) {
+RateLimiter.prototype._isNewResource = function(id, to) {
   var resources = this._getResourcesByType('id', id);
 
-  return !(resources && Object.keys(resources).indexOf(name) !== -1);
+  return !(resources && Object.keys(resources).indexOf(to) !== -1);
 };
 
 RateLimiter.prototype._deepRemove = function(type, key, results, lookup) {
@@ -116,10 +116,10 @@ RateLimiter.prototype._deepRemove = function(type, key, results, lookup) {
     });
   }
 };
-RateLimiter.prototype._stateForId = function(id, name) {
+RateLimiter.prototype._stateForId = function(id, to) {
   return { 
     id: id, 
-    name: name,
+    to: to,
     limit: this._limit,
     count: this.count(id)
   };

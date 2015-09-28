@@ -12,8 +12,8 @@ var default_options = {
 // This includes even the final unsubscribe, in case a client decides to rejoin
 // after being the last user.
 
-function MessageList(name, server, options) {
-  Resource.call(this, name, server, options, default_options);
+function MessageList(to, server, options) {
+  Resource.call(this, to, server, options, default_options);
 }
 
 MessageList.prototype = new Resource();
@@ -23,32 +23,32 @@ MessageList.prototype.type = 'message';
 MessageList.prototype.publish = function(socket, message) {
   var self = this;
 
-  logger.debug('#message_list - publish', this.name, message, socket && socket.id);
+  logger.debug('#message_list - publish', this.to, message, socket && socket.id);
 
-  this._publish(this.name, this.options.policy, message, function() {
+  this._publish(this.to, this.options.policy, message, function() {
     self.ack(socket, message.ack);
   });
 };
 
-MessageList.prototype._publish = function(name, policy, message, callback) {
+MessageList.prototype._publish = function(to, policy, message, callback) {
   if (policy && policy.cache) {
-    Persistence.persistOrdered(name, message);
+    Persistence.persistOrdered(to, message);
     if (policy.maxPersistence) {
-      Persistence.expire(name, policy.maxPersistence);
+      Persistence.expire(to, policy.maxPersistence);
     }
   }
-  Persistence.publish(name, message, callback);
+  Persistence.publish(to, message, callback);
 };
 
 MessageList.prototype.sync = function(socket, message) {
-  var name = this.name;
+  var to = this.to;
 
-  logger.debug('#message_list - sync', this.name, message, socket && socket.id);
+  logger.debug('#message_list - sync', this.to, message, socket && socket.id);
 
-  this._sync(name, this.options.policy, function(replies) {
+  this._sync(to, this.options.policy, function(replies) {
     socket.send({
       op: 'sync',
-      to: name,
+      to: to,
       value: replies,
       time: Date.now()
     });
@@ -57,12 +57,12 @@ MessageList.prototype.sync = function(socket, message) {
   this.subscribe(socket, message);
 };
 
-MessageList.prototype._sync = function(name, policy, callback) {
+MessageList.prototype._sync = function(to, policy, callback) {
   if (policy && policy.maxPersistence) {
-    Persistence.expire(name, policy.maxPersistence);
+    Persistence.expire(to, policy.maxPersistence);
   }
 
-  Persistence.readOrderedWithScores(name, policy, callback);
+  Persistence.readOrderedWithScores(to, policy, callback);
 };
 
 MessageList.prototype.unsubscribe = function(socket, message) {
@@ -75,7 +75,7 @@ MessageList.prototype.unsubscribe = function(socket, message) {
       this.options.policy.cache &&
       this.options.policy.maxPersistence) {
 
-    Persistence.expire(this.name, this.options.policy.maxPersistence);
+    Persistence.expire(this.to, this.options.policy.maxPersistence);
   }
 };
 

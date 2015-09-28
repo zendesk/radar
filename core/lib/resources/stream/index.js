@@ -10,9 +10,9 @@ var default_options = {
   }
 };
 
-function Stream(name, server, options) {
-  Resource.call(this, name, server, options, default_options);
-  this.list = new Persistence.List(name, this.options.policy.maxPersistence, this.options.policy.maxLength);
+function Stream(to, server, options) {
+  Resource.call(this, to, server, options, default_options);
+  this.list = new Persistence.List(to, this.options.policy.maxPersistence, this.options.policy.maxLength);
   this.subscriberState = new SubscriberState();
 }
 
@@ -21,7 +21,7 @@ Stream.prototype.type = 'stream';
 
 Stream.prototype._getSyncError = function(from) {
   return {
-    to: this.name,
+    to: this.to,
     error: {
       type: 'sync-error',
       from: from,
@@ -50,7 +50,7 @@ Stream.prototype._subscribe = function(socket, message) {
     } else {
       values.forEach(function(message) {
         message.op = 'push';
-        message.to = self.name;
+        message.to = self.to;
         socket.send(message);
         sub.sent = message.id;
       });
@@ -67,7 +67,7 @@ Stream.prototype.subscribe = function(socket, message) {
 Stream.prototype.get = function(socket, message) {
   var stream = this,
       from = message && message.options && message.options.from;
-  logging.debug('#stream - get', this.name,'from: '+from, (socket && socket.id));
+  logging.debug('#stream - get', this.to,'from: '+from, (socket && socket.id));
 
   this._get(from, function(error, values) {
     if (error) {
@@ -78,7 +78,7 @@ Stream.prototype.get = function(socket, message) {
     } else {
       socket.send({
         op: 'get',
-        to: stream.name,
+        to: stream.to,
         value: values || []
       });
     }
@@ -99,10 +99,10 @@ Stream.prototype.push = function(socket, message) {
   var self = this;
   var policy = this.options.policy || {};
 
-  logging.debug('#stream - push', this.name, message, (socket && socket.id));
+  logging.debug('#stream - push', this.to, message, (socket && socket.id));
 
   var m = {
-    to: this.name,
+    to: this.to,
     op: 'push',
     resource: message.resource,
     action: message.action,
@@ -118,20 +118,20 @@ Stream.prototype.push = function(socket, message) {
       return;
     }
 
-    logging.debug('#stream - push complete with id', self.name, stamped, (socket && socket.id));
+    logging.debug('#stream - push complete with id', self.to, stamped, (socket && socket.id));
     self.ack(socket, message.ack);
   });
 };
 
 Stream.prototype.sync = function(socket, message) {
-  logging.debug('#stream - sync', this.name, (socket && socket.id));
+  logging.debug('#stream - sync', this.to, (socket && socket.id));
   this.get(socket, message);
   this.subscribe(socket, false);
 };
 
 Stream.prototype.redisIn = function(data) {
   var self = this;
-  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:', Object.keys(this.subscribers).length );
+  logging.info('#'+this.type, '- incoming from #redis', this.to, data, 'subs:', Object.keys(this.subscribers).length );
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
     if (socket && socket.send) {

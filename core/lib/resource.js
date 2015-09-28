@@ -39,8 +39,8 @@ function recursiveMerge(target) {
   return target;
 }
 
-function Resource(name, server, options, default_options) {
-  this.name = name;
+function Resource(to, server, options, default_options) {
+  this.to = to;
   this.subscribers = {};
   this.server = server; // RadarServer instance
   this.options = recursiveMerge({}, options || {}, default_options || {});
@@ -53,7 +53,7 @@ Resource.prototype.type = 'default';
 Resource.prototype.subscribe = function(socket, message) {
   this.subscribers[socket.id] = true;
 
-  logging.debug('#'+this.type, '- subscribe', this.name, socket.id,
+  logging.debug('#'+this.type, '- subscribe', this.to, socket.id,
                               this.subscribers, message && message.ack);
 
   this.ack(socket, message && message.ack);
@@ -63,13 +63,13 @@ Resource.prototype.subscribe = function(socket, message) {
 Resource.prototype.unsubscribe = function(socket, message) {
   delete this.subscribers[socket.id];
 
-  logging.info('#'+this.type, '- unsubscribe', this.name, socket.id,
+  logging.info('#'+this.type, '- unsubscribe', this.to, socket.id,
                     'subscribers left:', Object.keys(this.subscribers).length);
 
   if (!Object.keys(this.subscribers).length) {
-    logging.info('#'+this.type, '- destroying resource', this.name,
+    logging.info('#'+this.type, '- destroying resource', this.to,
                                           this.subscribers, socket.id);
-    this.server.destroyResource(this.name);
+    this.server.destroyResource(this.to);
   }
 
   this.ack(socket, message && message.ack);
@@ -81,7 +81,7 @@ Resource.prototype.redisIn = function(data) {
   
   Stamper.stamp(data);
 
-  logging.info('#'+this.type, '- incoming from #redis', this.name, data, 'subs:',
+  logging.info('#'+this.type, '- incoming from #redis', this.to, data, 'subs:',
                                           Object.keys(this.subscribers).length );
 
   Object.keys(this.subscribers).forEach(function(socketId) {
@@ -103,7 +103,7 @@ Resource.prototype.socketGet = function (id) {
 
 Resource.prototype.ack = function(socket, sendAck) {
   if (socket && socket.send && sendAck) {
-    logging.debug('#socket - send_ack', socket.id, this.name, sendAck);
+    logging.debug('#socket - send_ack', socket.id, this.to, sendAck);
 
     socket.send({
       op: 'ack',
