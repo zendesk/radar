@@ -62,71 +62,97 @@ Client.create = function (message) {
 // Instance methods
 
 // Persist subscriptions and presences when not already persisted in memory
-Client.prototype.storeData = function (message) {
-  var subscriptions = this.subscriptions,
-      presences = this.presences,
-      changed = false,
-      lookupMessage;
+Client.prototype.storeData = function (messageIn) {
+  var subCount = Object.keys(this.subscriptions).length,
+      presCount = Object.keys(this.presences).length,
+      logNow = false;
 
   // Persist the message data, according to type
-  switch(message.op) {
+  switch(messageIn.op) {
     case 'unsubscribe':
-      if (subscriptions[message.to]) {
-        delete subscriptions[message.to];
-        changed = true;
-      }
-      break;
-
     case 'sync':
     case 'subscribe':
-      lookupMessage = subscriptions[message.to];
-      if (!lookupMessage ||
-            (lookupMessage.op != 'sync' && !_.isEqual(lookupMessage, message))) {
-        subscriptions[message.to] = message;
-        changed = true;
-      }
+      logNow = this._storeDataSubscriptions(messageIn, subCount);
       break;
 
     case 'set':
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        lookupMessage = presences[message.to];
-        if (!lookupMessage || (!_.isEqual(lookupMessage, message))) {
-          presences[message.to] = message;
-          changed = true;
-        }
-      }
+      logNow = this._storeDataPresences(messageIn);
       break;
   }
 
-  if (changed) {
-    log.info('storeData: client_id: ' + this.id +
-              '; subscription count: ' + Object.keys(subscriptions).length +
-              '; presence count: ' + Object.keys(presences).length);
-
-    this._persist();
+  if (logNow) {
+    log.info('#storeData: client_id: ' + this.id +
+              '; subscription count: ' + subCount +
+              '; presence count: ' + presCount);
   }
 
   return true;
 };
 
+Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
+  var message = _cloneForStorage(messageIn),
+      to = message.to,
+      subscriptionHashname = this.key + '_subs',
+      logNow = false,
+      lookupMessage;
+
+  // Persist the message data, according to type
+  switch(message.op) {
+    case 'unsubscribe':
+      if (this.subscriptions[to]) {
+        delete this.subscriptions[to];
+        Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
+        Core.Persistence.deleteHash(subscriptionHashname, to);
+        logNow = 0 === subCount % 2;
+      }
+      break;
+
+    case 'sync':
+    case 'subscribe':
+      lookupMessage = this.subscriptions[to];
+      if (!lookupMessage ||
+            (lookupMessage.op != 'sync' && !_.isEqual(lookupMessage, message))) {
+        this.subscriptions[to] = message;
+        Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
+        Core.Persistence.persistHash(subscriptionHashname, to, message);
+        logNow = 0 === subCount % 2;
+      }
+      break;
+  }
+
+  return logNow;
+};
+
+Client.prototype._storeDataPresences = function (messageIn, presCount) {
+  var message = _cloneForStorage(messageIn),
+      to = message.to,
+      presenceHashname = this.key + '_pres',
+      logNow = false,
+      lookupMessage;
+
+  // Persist the message data, according to type
+  switch(message.op) {
+    case 'set':
+      if (to.substr(0, 'presence:/'.length) == 'presence:/') {
+        lookupMessage = this.presences[to];
+        if (!lookupMessage || (!_.isEqual(lookupMessage, message))) {
+          this.presences[to] = message;
+          Core.Persistence.expire(presenceHashname, Client.getDataTTL());
+          Core.Persistence.persistHash(presenceHashname, to, message);
+          logNow = 0 === presCount % 10;
+        }
+      }
+      break;
+  }
+
+  return logNow;
+};
+
 Client.prototype.loadData = function (callback) {
   var self = this;
 
-  // When we touch a client, refresh the TTL
-  Core.Persistence.expire(self.key, Client.getDataTTL());
-
-  // Update persisted subscriptions/presences
-  Core.Persistence.readKey(self.key, function (clientOld) {
-    if (clientOld) {
-      self.subscriptions = clientOld.subscriptions;
-      self.presences = clientOld.presences;
-
-      if (callback) {
-        callback();
-      }
-    }
-
-    Client.clients[self.name] = self;
+  self._loadDataSubscriptions(function () {
+    self._loadDataPresences(callback);
   });
 };
 
@@ -143,9 +169,43 @@ Client.prototype._keyGet = function (accountName) {
   return key;
 };
 
-Client.prototype._persist = function () {
-  this.lastModified = Date.now();
-  Core.Persistence.persistKey(this.key, this, Client.getDataTTL());
+Client.prototype._loadDataSubscriptions = function (callback) {
+  var subscriptionHashname = this.key + '_subs',
+      self = this;
+
+  // Get persisted subscriptions
+  Core.Persistence.readHashAll(subscriptionHashname, function (replies) {
+    self.subscriptions = replies || {};
+
+    if (callback) {
+      callback();
+    }
+  });
 };
+
+Client.prototype._loadDataPresences = function (callback) {
+  var presenceHashname = this.key + '_pres',
+      self = this;
+
+  // Get persisted presences
+  Core.Persistence.readHashAll(presenceHashname, function (replies) {
+    self.presences = replies || {};
+
+    if (callback) {
+      callback();
+    }
+  });
+};
+
+// Private functions
+// TODO: move to util module
+function _cloneForStorage (messageIn) {
+  var message = {};
+
+  message.to = messageIn.to;
+  message.op = messageIn.op;
+
+  return message;
+}
 
 module.exports = Client;
