@@ -15,6 +15,7 @@ function Client (name, id, accountName, version) {
 
 // 86400:  number of seconds in 1 day
 var DEFAULT_DATA_TTL = 86400;
+var LOG_WINDOW_SIZE = 10;
 
 // Class properties
 Client.clients = {};                  // keyed by name
@@ -103,7 +104,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
         delete this.subscriptions[to];
         Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
         Core.Persistence.deleteHash(subscriptionHashname, to);
-        logNow = 0 === subCount % 10;
+        logNow = 0 === subCount % LOG_WINDOW_SIZE;
       }
       break;
 
@@ -115,7 +116,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
         this.subscriptions[to] = message;
         Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
         Core.Persistence.persistHash(subscriptionHashname, to, message);
-        logNow = 0 === subCount % 10;
+        logNow = 0 === subCount % LOG_WINDOW_SIZE;
       }
       break;
   }
@@ -139,7 +140,7 @@ Client.prototype._storeDataPresences = function (messageIn, presCount) {
           this.presences[to] = message;
           Core.Persistence.expire(presenceHashname, Client.getDataTTL());
           Core.Persistence.persistHash(presenceHashname, to, message);
-          logNow = 0 === presCount % 10;
+          logNow = 0 === presCount % LOG_WINDOW_SIZE;
         }
       }
       break;
