@@ -16,8 +16,8 @@ function Client (name, id, accountName, version) {
 // 86400:  number of seconds in 1 day
 var DEFAULT_DATA_TTL = 86400,
     LOG_WINDOW_SIZE = 10,
-    SUBSCRIPTION_SUFFIX = '/subscriptions',
-    PRESENCE_SUFFIX = '/presences';
+    SUBSCRIPTIONS_SUFFIX = '/subscriptions',
+    PRESENCES_SUFFIX = '/presences';
 
 // Class properties
 Client.clients = {};                  // keyed by name
@@ -99,29 +99,29 @@ Client.prototype.storeData = function (messageIn) {
 Client.prototype._storeDataSubscriptions = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      subscriptionHashname = this.key + SUBSCRIPTION_SUFFIX,
-      isSubscribed;
+      subscriptionsKey = this.key + SUBSCRIPTIONS_SUFFIX,
+      existingSubscription;
 
   // Persist the message data, according to type
   switch(message.op) {
     case 'unsubscribe':
       if (this.subscriptions[to]) {
         delete this.subscriptions[to];
-        Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
-        Core.Persistence.deleteHash(subscriptionHashname, to);
+        Core.Persistence.expire(subscriptionsKey, Client.getDataTTL());
+        Core.Persistence.deleteHash(subscriptionsKey, to);
         return true;
       }
       break;
 
     case 'sync':
     case 'subscribe':
-      isSubscribed = this.subscriptions[to];
-      if (!isSubscribed ||
-            (isSubscribed.op != 'sync' && !_.isEqual(isSubscribed, message))) {
+      existingSubscription = this.subscriptions[to];
+      if (!existingSubscription ||
+            (existingSubscription.op != 'sync' && !_.isEqual(existingSubscription, message))) {
 
         this.subscriptions[to] = message;
-        Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
-        Core.Persistence.persistHash(subscriptionHashname, to, message);
+        Core.Persistence.expire(subscriptionsKey, Client.getDataTTL());
+        Core.Persistence.persistHash(subscriptionsKey, to, message);
         return true;
       }
   }
@@ -132,23 +132,23 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
 Client.prototype._storeDataPresences = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      presenceHashname = this.key + PRESENCE_SUFFIX,
-      isOnline;
+      presencesKey = this.key + PRESENCES_SUFFIX,
+      existingPresence;
 
   // Persist the message data, according to type
   switch(message.op) {
     case 'set':
       if (to.substr(0, 'presence:/'.length) == 'presence:/') {
-        isOnline = this.presences[to];
+        existingPresence = this.presences[to];
 
-        if (messageIn.value === 'offline' && isOnline) {
+        if (messageIn.value === 'offline' && existingPresence) {
           delete this.presences[to];
-          Core.Persistence.deleteHash(presenceHashname, to);
+          Core.Persistence.deleteHash(presencesKey, to);
           return true;
-        } else if (!isOnline || (!_.isEqual(isOnline, message))) {
+        } else if (!existingPresence || (!_.isEqual(existingPresence, message))) {
           this.presences[to] = message;
-          Core.Persistence.expire(presenceHashname, Client.getDataTTL());
-          Core.Persistence.persistHash(presenceHashname, to, message);
+          Core.Persistence.expire(presencesKey, Client.getDataTTL());
+          Core.Persistence.persistHash(presencesKey, to, message);
           return true;
         }
       }
@@ -197,20 +197,20 @@ Client.prototype._keyGet = function (accountName) {
 
 Client.prototype._readDataSubscriptions = function (callback) {
   var self = this,
-      subscriptionHashname = this.key + SUBSCRIPTION_SUFFIX;
+      subscriptionsKey = this.key + SUBSCRIPTIONS_SUFFIX;
 
   // Get persisted subscriptions
-  Core.Persistence.readHashAll(subscriptionHashname, function (replies) {
+  Core.Persistence.readHashAll(subscriptionsKey, function (replies) {
     callback(replies || {});
   });
 };
 
 Client.prototype._readDataPresences = function (callback) {
   var self = this,
-      presenceHashname = this.key + PRESENCE_SUFFIX;
+      presencesKey = this.key + PRESENCES_SUFFIX;
 
   // Get persisted presences
-  Core.Persistence.readHashAll(presenceHashname, function (replies) {
+  Core.Persistence.readHashAll(presencesKey, function (replies) {
     callback(replies || {});
   });
 };
