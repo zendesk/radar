@@ -67,18 +67,36 @@ describe('Client', function() {
     });
 
     describe('presences', function() {
-      it('should store set operations', function(done) {
+      it('should store set online operations', function(done) {
         var to = 'presence:/test/account/ticket/1',
-            message = { to: to, op: 'set' };
+            message = { to: to, op: 'set', value: 'online' };
         
-        presences[to] = message;
-
         client.storeData(message);
+
+        delete message.value;
+        presences[to] = message;
 
         client.readData(function(state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: presences
+          });
+          done();
+        });
+      });
+
+      it('should remove presence when set offline', function(done) {
+        var to = 'presence:/test/account/ticket/1',
+            online = { to: to, op: 'set', value: 'online' },
+            offline = { to: to, op: 'set', value: 'offline' };
+        
+        client.storeData(online);
+        client.storeData(offline);
+
+        client.readData(function(state) {
+          assert.deepEqual(state, {
+            subscriptions: {},
+            presences: {}
           });
           done();
         });

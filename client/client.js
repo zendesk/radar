@@ -95,7 +95,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
       to = message.to,
       subscriptionHashname = this.key + '_subs',
       logNow = false,
-      lookupMessage;
+      isSubscribed;
 
   // Persist the message data, according to type
   switch(message.op) {
@@ -110,9 +110,9 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
 
     case 'sync':
     case 'subscribe':
-      lookupMessage = this.subscriptions[to];
-      if (!lookupMessage ||
-            (lookupMessage.op != 'sync' && !_.isEqual(lookupMessage, message))) {
+      isSubscribed = this.subscriptions[to];
+      if (!isSubscribed ||
+            (isSubscribed.op != 'sync' && !_.isEqual(isSubscribed, message))) {
         this.subscriptions[to] = message;
         Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
         Core.Persistence.persistHash(subscriptionHashname, to, message);
@@ -129,14 +129,19 @@ Client.prototype._storeDataPresences = function (messageIn, presCount) {
       to = message.to,
       presenceHashname = this.key + '_pres',
       logNow = false,
-      lookupMessage;
+      isOnline;
 
   // Persist the message data, according to type
   switch(message.op) {
     case 'set':
       if (to.substr(0, 'presence:/'.length) == 'presence:/') {
-        lookupMessage = this.presences[to];
-        if (!lookupMessage || (!_.isEqual(lookupMessage, message))) {
+        isOnline = this.presences[to];
+
+        if (messageIn.value === 'offline' && isOnline) {
+          delete this.presences[to];
+          Core.Persistence.deleteHash(presenceHashname, to);
+          logNow = 0 === presCount % LOG_WINDOW_SIZE;
+        } else if (!isOnline || (!_.isEqual(isOnline, message))) {
           this.presences[to] = message;
           Core.Persistence.expire(presenceHashname, Client.getDataTTL());
           Core.Persistence.persistHash(presenceHashname, to, message);
