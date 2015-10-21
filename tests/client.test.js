@@ -7,7 +7,7 @@ var common = require('./common.js'),
 describe('Client', function() {
   beforeEach(function(done) {
     common.startPersistence(done); // clean up
-    client = new Client('joe', 1, 'test', 1);
+    client = new Client('joe', Math.random(), 'test', 1);
     subscriptions = {};
     presences = {};
   });

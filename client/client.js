@@ -14,8 +14,10 @@ function Client (name, id, accountName, version) {
 }
 
 // 86400:  number of seconds in 1 day
-var DEFAULT_DATA_TTL = 86400;
-var LOG_WINDOW_SIZE = 10;
+var DEFAULT_DATA_TTL = 86400,
+    LOG_WINDOW_SIZE = 10,
+    SUBSCRIPTION_SUFFIX = '/subscriptions',
+    PRESENCE_SUFFIX = '/presences';
 
 // Class properties
 Client.clients = {};                  // keyed by name
@@ -97,7 +99,7 @@ Client.prototype.storeData = function (messageIn) {
 Client.prototype._storeDataSubscriptions = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      subscriptionHashname = this.key + '_subs',
+      subscriptionHashname = this.key + SUBSCRIPTION_SUFFIX,
       isSubscribed;
 
   // Persist the message data, according to type
@@ -130,7 +132,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
 Client.prototype._storeDataPresences = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      presenceHashname = this.key + '_pres',
+      presenceHashname = this.key + PRESENCE_SUFFIX,
       isOnline;
 
   // Persist the message data, according to type
@@ -195,7 +197,7 @@ Client.prototype._keyGet = function (accountName) {
 
 Client.prototype._readDataSubscriptions = function (callback) {
   var self = this,
-      subscriptionHashname = this.key + '_subs';
+      subscriptionHashname = this.key + SUBSCRIPTION_SUFFIX;
 
   // Get persisted subscriptions
   Core.Persistence.readHashAll(subscriptionHashname, function (replies) {
@@ -205,7 +207,7 @@ Client.prototype._readDataSubscriptions = function (callback) {
 
 Client.prototype._readDataPresences = function (callback) {
   var self = this,
-      presenceHashname = this.key + '_pres';
+      presenceHashname = this.key + PRESENCE_SUFFIX;
 
   // Get persisted presences
   Core.Persistence.readHashAll(presenceHashname, function (replies) {
