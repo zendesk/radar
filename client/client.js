@@ -116,9 +116,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
     case 'sync':
     case 'subscribe':
       existingSubscription = this.subscriptions[to];
-      if (!existingSubscription ||
-            (existingSubscription.op != 'sync' && !_.isEqual(existingSubscription, message))) {
-
+      if (!existingSubscription || (existingSubscription.op !== 'sync' && message.op === 'sync')) {
         this.subscriptions[to] = message;
         Core.Persistence.expire(subscriptionsKey, Client.getDataTTL());
         Core.Persistence.persistHash(subscriptionsKey, to, message);
@@ -141,11 +139,12 @@ Client.prototype._storeDataPresences = function (messageIn) {
       if (to.substr(0, 'presence:/'.length) == 'presence:/') {
         existingPresence = this.presences[to];
 
-        if (messageIn.value === 'offline' && existingPresence) {
+        // Should go offline
+        if (existingPresence && messageIn.value === 'offline') {
           delete this.presences[to];
           Core.Persistence.deleteHash(presencesKey, to);
           return true;
-        } else if (!existingPresence || (!_.isEqual(existingPresence, message))) {
+        } else if (!existingPresence && message.value !== 'offline') {
           this.presences[to] = message;
           Core.Persistence.expire(presencesKey, Client.getDataTTL());
           Core.Persistence.persistHash(presencesKey, to, message);
