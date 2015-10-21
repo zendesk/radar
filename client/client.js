@@ -152,8 +152,23 @@ Client.prototype._storeDataPresences = function (messageIn, presCount) {
 Client.prototype.loadData = function (callback) {
   var self = this;
 
-  self._loadDataSubscriptions(function () {
-    self._loadDataPresences(callback);
+  self.readData(function (result) {
+    self.presences = result.presences;
+    self.subscriptions = result.subscriptions;
+  });
+};
+
+Client.prototype.readData = function (callback) {
+  var self = this,
+      result = {};
+
+  self._readDataSubscriptions(function (subscriptions) {
+    self._readDataPresences(function(presences){
+      callback({
+        presences: presences,
+        subscriptions: subscriptions
+      });
+    });
   });
 };
 
@@ -170,31 +185,24 @@ Client.prototype._keyGet = function (accountName) {
   return key;
 };
 
-Client.prototype._loadDataSubscriptions = function (callback) {
-  var subscriptionHashname = this.key + '_subs',
-      self = this;
+
+Client.prototype._readDataSubscriptions = function (callback) {
+  var self = this,
+      subscriptionHashname = this.key + '_subs';
 
   // Get persisted subscriptions
   Core.Persistence.readHashAll(subscriptionHashname, function (replies) {
-    self.subscriptions = replies || {};
-
-    if (callback) {
-      callback();
-    }
+    callback(replies || {});
   });
 };
 
-Client.prototype._loadDataPresences = function (callback) {
-  var presenceHashname = this.key + '_pres',
-      self = this;
+Client.prototype._readDataPresences = function (callback) {
+  var self = this,
+      presenceHashname = this.key + '_pres';
 
   // Get persisted presences
   Core.Persistence.readHashAll(presenceHashname, function (replies) {
-    self.presences = replies || {};
-
-    if (callback) {
-      callback();
-    }
+    callback(replies || {});
   });
 };
 
