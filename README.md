@@ -13,4 +13,4 @@ Code snippets not contained in the repo are clearly listed in the tutorial prope
 
 ## Copyright and License
 
-Copyright 2014, Zendesk Inc. Licensed under the Apache License Version 2.0, http://www.apache.org/licenses/LICENSE-2.0
+Copyright 2015, Zendesk Inc. Licensed under the Apache License Version 2.0, http://www.apache.org/licenses/LICENSE-2.0
