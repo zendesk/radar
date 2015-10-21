@@ -139,24 +139,20 @@ Client.prototype._storeDataPresences = function (messageIn) {
       existingPresence;
 
   // Persist the message data, according to type
-  switch(message.op) {
-    case 'set':
-      if (to.substr(0, 'presence:/'.length) == 'presence:/') {
-        existingPresence = this.presences[to];
+  if (message.op === 'set' && to.substr(0, 'presence:/'.length) == 'presence:/') {
+    existingPresence = this.presences[to];
 
-        // Should go offline
-        if (existingPresence && messageIn.value === 'offline') {
-          delete this.presences[to];
-          Core.Persistence.deleteHash(presencesKey, to);
-          return true;
-        } else if (!existingPresence && message.value !== 'offline') {
-          this.presences[to] = message;
-          Core.Persistence.expire(presencesKey, Client.getDataTTL());
-          Core.Persistence.persistHash(presencesKey, to, message);
-          return true;
-        }
-      }
-      break;
+    // Should go offline
+    if (existingPresence && messageIn.value === 'offline') {
+      delete this.presences[to];
+      Core.Persistence.deleteHash(presencesKey, to);
+      return true;
+    } else if (!existingPresence && message.value !== 'offline') {
+      this.presences[to] = message;
+      Core.Persistence.expire(presencesKey, Client.getDataTTL());
+      Core.Persistence.persistHash(presencesKey, to, message);
+      return true;
+    }
   }
 
   return false;
