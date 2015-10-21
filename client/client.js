@@ -66,9 +66,7 @@ Client.create = function (message) {
 
 // Persist subscriptions and presences when not already persisted in memory
 Client.prototype.storeData = function (messageIn) {
-  var subCount = Object.keys(this.subscriptions).length,
-      presCount = Object.keys(this.presences).length,
-      processedOp = false;
+  var processedOp = false;
 
   // Persist the message data, according to type
   switch(messageIn.op) {
@@ -86,14 +84,21 @@ Client.prototype.storeData = function (messageIn) {
   // FIXME: For now log everything Later, enable sample logging. 
   // if (processedOp && subCount % LOG_WINDOW_SIZE === 0) {
   if (processedOp) {
-    log.info('#storeData', { 
-      client_id: this.id,
-      subscription_count: subCount,
-      presence_count: presCount
-    });
+    this._logState();
   }
 
   return true;
+};
+
+Client.prototype._logState = function() {
+  var subCount = Object.keys(this.subscriptions).length,
+      presCount = Object.keys(this.presences).length;
+
+  log.info('#storeData', { 
+    client_id: this.id,
+    subscription_count: subCount,
+    presence_count: presCount
+  });
 };
 
 Client.prototype._storeDataSubscriptions = function (messageIn) {
