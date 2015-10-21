@@ -66,35 +66,38 @@ Client.create = function (message) {
 Client.prototype.storeData = function (messageIn) {
   var subCount = Object.keys(this.subscriptions).length,
       presCount = Object.keys(this.presences).length,
-      logNow = false;
+      processedOp = false;
 
   // Persist the message data, according to type
   switch(messageIn.op) {
     case 'unsubscribe':
     case 'sync':
     case 'subscribe':
-      logNow = this._storeDataSubscriptions(messageIn, subCount);
+      processedOp = this._storeDataSubscriptions(messageIn);
       break;
 
     case 'set':
-      logNow = this._storeDataPresences(messageIn);
+      processedOp = this._storeDataPresences(messageIn);
       break;
   }
 
-  if (logNow) {
-    log.info('#storeData: client_id: ' + this.id +
-              '; subscription count: ' + subCount +
-              '; presence count: ' + presCount);
+  // FIXME: For now log everything Later, enable sample logging. 
+  // if (processedOp && subCount % LOG_WINDOW_SIZE === 0) {
+  if (processedOp) {
+    log.info('#storeData', { 
+      client_id: this.id,
+      subscription_count: subCount,
+      presence_count: presCount
+    });
   }
 
   return true;
 };
 
-Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
+Client.prototype._storeDataSubscriptions = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
       subscriptionHashname = this.key + '_subs',
-      logNow = false,
       isSubscribed;
 
   // Persist the message data, according to type
@@ -104,7 +107,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
         delete this.subscriptions[to];
         Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
         Core.Persistence.deleteHash(subscriptionHashname, to);
-        logNow = 0 === subCount % LOG_WINDOW_SIZE;
+        return true;
       }
       break;
 
@@ -113,22 +116,21 @@ Client.prototype._storeDataSubscriptions = function (messageIn, subCount) {
       isSubscribed = this.subscriptions[to];
       if (!isSubscribed ||
             (isSubscribed.op != 'sync' && !_.isEqual(isSubscribed, message))) {
+
         this.subscriptions[to] = message;
         Core.Persistence.expire(subscriptionHashname, Client.getDataTTL());
         Core.Persistence.persistHash(subscriptionHashname, to, message);
-        logNow = 0 === subCount % LOG_WINDOW_SIZE;
+        return true;
       }
-      break;
   }
 
-  return logNow;
+  return false;
 };
 
-Client.prototype._storeDataPresences = function (messageIn, presCount) {
+Client.prototype._storeDataPresences = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
       presenceHashname = this.key + '_pres',
-      logNow = false,
       isOnline;
 
   // Persist the message data, according to type
@@ -140,18 +142,18 @@ Client.prototype._storeDataPresences = function (messageIn, presCount) {
         if (messageIn.value === 'offline' && isOnline) {
           delete this.presences[to];
           Core.Persistence.deleteHash(presenceHashname, to);
-          logNow = 0 === presCount % LOG_WINDOW_SIZE;
+          return true;
         } else if (!isOnline || (!_.isEqual(isOnline, message))) {
           this.presences[to] = message;
           Core.Persistence.expire(presenceHashname, Client.getDataTTL());
           Core.Persistence.persistHash(presenceHashname, to, message);
-          logNow = 0 === presCount % LOG_WINDOW_SIZE;
+          return true;
         }
       }
       break;
   }
 
-  return logNow;
+  return false;
 };
 
 Client.prototype.loadData = function (callback) {
