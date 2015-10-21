@@ -64,6 +64,44 @@ describe('Client', function() {
           done();
         });
       });
+
+      it('sync after subscribe, keeps the sync', function(done) {
+        var to = 'presence:/test/account/ticket/1',
+            subscribe = { to: to, op: 'subscribe' },
+            sync = { to: to, op: 'sync' };
+        
+        client.storeData(subscribe);
+        client.storeData(sync);
+
+        subscriptions[to] = sync;
+
+        client.readData(function(state) {
+          assert.deepEqual(state, {
+            subscriptions: subscriptions,
+            presences: {}
+          });
+          done();
+        });
+      });
+
+      it('subscribe after sync, keeps the sync', function(done) {
+        var to = 'presence:/test/account/ticket/1',
+            subscribe = { to: to, op: 'subscribe' },
+            sync = { to: to, op: 'sync' };
+        
+        client.storeData(sync);
+        client.storeData(subscribe);
+
+        subscriptions[to] = sync;
+
+        client.readData(function(state) {
+          assert.deepEqual(state, {
+            subscriptions: subscriptions,
+            presences: {}
+          });
+          done();
+        });
+      });
     });
 
     describe('presences', function() {
