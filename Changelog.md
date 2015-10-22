@@ -1,4 +1,5 @@
 ### Current master
+Changes to fix storeData bug in client.js
 
 ### 0.16.4
 * Replace resource "name" with "to" for naming consistency
