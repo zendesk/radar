@@ -247,8 +247,7 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    // TODO: Reimplement in a less agressive way. 
-    // this._persistClientData(socket, message);
+    this._persistClientData(socket, message);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.to, socket.id);
     this._updateLimits(socket, message, resource.options);
@@ -262,9 +261,7 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
 Server.prototype._replayMessagesFromClient = function (socket, client) {
   var subscriptions = client.subscriptions,
       presences = client.presences,
-      message,
-      messageType,
-      key;
+      message, messageType, key;
 
   // Pause events on the inbound socket
   Pauseable.pause(socket);
@@ -405,19 +402,26 @@ Server.prototype._sendErrorMessage = function(socket, value, origin) {
 
 // Initialize the current client
 Server.prototype._initClient = function (socket, message) {
-  Client.create(message);
+  var client = Client.create(message);
+
+  // TODO - example of loadData use - disabled for now
+  //client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
 };
 
-Server.prototype._stampMessage = function(socket, message) {
+Server.prototype._stampMessage = function (socket, message) {
   return Stamper.stamp(message, socket.id);
 };
 
-function _parseJSON(data) {
+// Private functions
+// TODO: move to util module
+function _parseJSON (data) {
+  var message = false;
+
   try {
-    var message = JSON.parse(data);
-    return message;
+    message = JSON.parse(data);
   } catch(e) { }
-  return false;
+
+  return message;
 }
 
 module.exports = Server;

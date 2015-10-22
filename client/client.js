@@ -14,7 +14,10 @@ function Client (name, id, accountName, version) {
 }
 
 // 86400:  number of seconds in 1 day
-var DEFAULT_DATA_TTL = 86400;
+var DEFAULT_DATA_TTL = 86400,
+    LOG_WINDOW_SIZE = 10,
+    SUBSCRIPTIONS_SUFFIX = '/subscriptions',
+    PRESENCES_SUFFIX = '/presences';
 
 // Class properties
 Client.clients = {};                  // keyed by name
@@ -62,71 +65,119 @@ Client.create = function (message) {
 // Instance methods
 
 // Persist subscriptions and presences when not already persisted in memory
-Client.prototype.storeData = function (message) {
-  var subscriptions = this.subscriptions,
-      presences = this.presences,
-      changed = false,
-      lookupMessage;
+Client.prototype.storeData = function (messageIn) {
+  var processedOp = false;
 
   // Persist the message data, according to type
-  switch(message.op) {
+  switch(messageIn.op) {
     case 'unsubscribe':
-      if (subscriptions[message.to]) {
-        delete subscriptions[message.to];
-        changed = true;
-      }
-      break;
-
     case 'sync':
     case 'subscribe':
-      lookupMessage = subscriptions[message.to];
-      if (!lookupMessage ||
-            (lookupMessage.op != 'sync' && !_.isEqual(lookupMessage, message))) {
-        subscriptions[message.to] = message;
-        changed = true;
-      }
+      processedOp = this._storeDataSubscriptions(messageIn);
       break;
 
     case 'set':
-      if (message.to.substr(0, 'presence:/'.length) == 'presence:/') {
-        lookupMessage = presences[message.to];
-        if (!lookupMessage || (!_.isEqual(lookupMessage, message))) {
-          presences[message.to] = message;
-          changed = true;
-        }
-      }
+      processedOp = this._storeDataPresences(messageIn);
       break;
   }
 
-  if (changed) {
-    log.info('storeData: client_id: ' + this.id +
-              '; subscription count: ' + Object.keys(subscriptions).length +
-              '; presence count: ' + Object.keys(presences).length);
-
-    this._persist();
+  // FIXME: For now log everything Later, enable sample logging. 
+  // if (processedOp && subCount % LOG_WINDOW_SIZE === 0) {
+  if (processedOp) {
+    this._logState();
   }
 
   return true;
 };
 
+Client.prototype._logState = function() {
+  var subCount = Object.keys(this.subscriptions).length,
+      presCount = Object.keys(this.presences).length;
+
+  log.info('#storeData', { 
+    client_id: this.id,
+    subscription_count: subCount,
+    presence_count: presCount
+  });
+};
+
+Client.prototype._storeDataSubscriptions = function (messageIn) {
+  var message = _cloneForStorage(messageIn),
+      to = message.to,
+      subscriptionsKey = this.key + SUBSCRIPTIONS_SUFFIX,
+      existingSubscription;
+
+  // Persist the message data, according to type
+  switch(message.op) {
+    case 'unsubscribe':
+      if (this.subscriptions[to]) {
+        delete this.subscriptions[to];
+        Core.Persistence.expire(subscriptionsKey, Client.getDataTTL());
+        Core.Persistence.deleteHash(subscriptionsKey, to);
+        return true;
+      }
+      break;
+
+    case 'sync':
+    case 'subscribe':
+      existingSubscription = this.subscriptions[to];
+      if (!existingSubscription || (existingSubscription.op !== 'sync' && message.op === 'sync')) {
+        this.subscriptions[to] = message;
+        Core.Persistence.expire(subscriptionsKey, Client.getDataTTL());
+        Core.Persistence.persistHash(subscriptionsKey, to, message);
+        return true;
+      }
+  }
+
+  return false;
+};
+
+Client.prototype._storeDataPresences = function (messageIn) {
+  var message = _cloneForStorage(messageIn),
+      to = message.to,
+      presencesKey = this.key + PRESENCES_SUFFIX,
+      existingPresence;
+
+  // Persist the message data, according to type
+  if (message.op === 'set' && to.substr(0, 'presence:/'.length) == 'presence:/') {
+    existingPresence = this.presences[to];
+
+    // Should go offline
+    if (existingPresence && messageIn.value === 'offline') {
+      delete this.presences[to];
+      Core.Persistence.deleteHash(presencesKey, to);
+      return true;
+    } else if (!existingPresence && message.value !== 'offline') {
+      this.presences[to] = message;
+      Core.Persistence.expire(presencesKey, Client.getDataTTL());
+      Core.Persistence.persistHash(presencesKey, to, message);
+      return true;
+    }
+  }
+
+  return false;
+};
+
 Client.prototype.loadData = function (callback) {
   var self = this;
 
-  // When we touch a client, refresh the TTL
-  Core.Persistence.expire(self.key, Client.getDataTTL());
+  self.readData(function (result) {
+    self.presences = result.presences;
+    self.subscriptions = result.subscriptions;
+  });
+};
 
-  // Update persisted subscriptions/presences
-  Core.Persistence.readKey(self.key, function (clientOld) {
-    if (clientOld) {
-      self.subscriptions = clientOld.subscriptions;
-      self.presences = clientOld.presences;
+Client.prototype.readData = function (callback) {
+  var self = this,
+      result = {};
 
-      if (callback) {
-        callback();
-      }
-    }
-
-    Client.clients[self.name] = self;
+  self._readDataSubscriptions(function (subscriptions) {
+    self._readDataPresences(function(presences){
+      callback({
+        presences: presences,
+        subscriptions: subscriptions
+      });
+    });
   });
 };
 
@@ -143,9 +194,36 @@ Client.prototype._keyGet = function (accountName) {
   return key;
 };
 
-Client.prototype._persist = function () {
-  this.lastModified = Date.now();
-  Core.Persistence.persistKey(this.key, this, Client.getDataTTL());
+
+Client.prototype._readDataSubscriptions = function (callback) {
+  var self = this,
+      subscriptionsKey = this.key + SUBSCRIPTIONS_SUFFIX;
+
+  // Get persisted subscriptions
+  Core.Persistence.readHashAll(subscriptionsKey, function (replies) {
+    callback(replies || {});
+  });
 };
+
+Client.prototype._readDataPresences = function (callback) {
+  var self = this,
+      presencesKey = this.key + PRESENCES_SUFFIX;
+
+  // Get persisted presences
+  Core.Persistence.readHashAll(presencesKey, function (replies) {
+    callback(replies || {});
+  });
+};
+
+// Private functions
+// TODO: move to util module
+function _cloneForStorage (messageIn) {
+  var message = {};
+
+  message.to = messageIn.to;
+  message.op = messageIn.op;
+
+  return message;
+}
 
 module.exports = Client;
