@@ -30,36 +30,43 @@ Client.get = function (id) {
 };
 
 // Set up client name/id association, and return new client instance
-Client.create = function (message) {
-  var association = message.options.association;
-  Client.names[association.id] = association.name;
-  var client = new Client(association.name, association.id,
-                            message.accountName, message.options.clientVersion);
+Client.create = function (request) {
+  var options = request.getOptions(),
+      message;
 
-  Client.clients[association.name] = client;
+  if (options) {
+    association = options.association;
+    message = request.getMessage();
+    Client.names[association.id] = association.name;
+    var client = new Client(association.name, association.id,
+                            message.accountName, options.clientVersion);
 
-  log.info('create: association name: ' + association.name +
-            '; association id: ' + association.id);
+    Client.clients[association.name] = client;
 
-  return client;
+    log.info('create: association name: ' + association.name +
+              '; association id: ' + association.id);
+
+    return client;
+  }
 };
 
 // Instance methods
 
 // Persist subscriptions and presences when not already persisted in memory
-Client.prototype.storeData = function (messageIn) {
-  var processedOp = false;
+Client.prototype.storeData = function (request) {
+  var processedOp = false,
+      message = request.getMessage();
 
   // Persist the message data, according to type
-  switch(messageIn.op) {
+  switch(message.op) {
     case 'unsubscribe':
     case 'sync':
     case 'subscribe':
-      processedOp = this._storeDataSubscriptions(messageIn);
+      processedOp = this._storeDataSubscriptions(message);
       break;
 
     case 'set':
-      processedOp = this._storeDataPresences(messageIn);
+      processedOp = this._storeDataPresences(message);
       break;
   }
 

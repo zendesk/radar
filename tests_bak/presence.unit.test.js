@@ -2,8 +2,7 @@ var assert = require('assert'),
     MiniEE = require('miniee'),
     Persistence = require('persistence'),
     Common = require('./common.js'),
-    Presence = require('../core/lib/resources/presence'),
-    Request = require('radar_message').Request;
+    Presence = require('../core/lib/resources/presence');
 
 describe('given a presence resource',function() {
   var presence, client, client2,
@@ -469,13 +468,12 @@ describe('given a presence resource',function() {
 
 describe('a presence resource', function() {
   describe('emitting messages', function() {
-    beforeEach(function(done) {
-      radarServer = Common.createRadarServer(done);
+    beforeEach(function() {
+      radarServer = Common.createRadarServer();
     });
 
     it('should emit incomming messages', function(done) {
-      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' },
-          subscribeRequest = new Request(subscribeMessage);
+      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' };
 
       radarServer.on('resource:new', function(resource) {
         resource.on('message:incoming', function(message) {
@@ -485,16 +483,14 @@ describe('a presence resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processRequest({}, subscribeRequest);
+        radarServer._processMessage({}, subscribeMessage);
       }, 100);
     });
 
     it('should emit outgoing messages', function(done) {
       var count = 0,
           setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' },
-          setRequest = new Request(setMessage),
           subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' },
-          subscribeRequest = new Request(subscribeMessage),
           socketOne = { id: 1, send: function(m) { } },
           socketTwo = { id: 2, send: function(m) { } };
 
@@ -506,8 +502,8 @@ describe('a presence resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processRequest(socketOne, subscribeRequest);
-        radarServer._processRequest(socketTwo, setRequest);
+        radarServer._processMessage(socketOne, subscribeMessage);
+        radarServer._processMessage(socketTwo, setMessage);
       }, 100);
     });
   });

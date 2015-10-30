@@ -9,6 +9,8 @@ var _ = require('underscore'),
     Client = require('../client/client.js'),
     Pauseable = require('pauseable'),
     RateLimiter = require('../core/rate_limiter.js'),
+    Request = require('radar_message').Request,
+    Response = require('radar_message').Response,
     Stamper = require('../core/stamper.js');
 
 function Server() {
@@ -154,78 +156,89 @@ Server.prototype._onSocketConnection = function(socket) {
 
 // Process a message from persistence (i.e. subscriber)
 Server.prototype._handlePubSubMessage = function(to, data) {
+  var message;
+
   if (this.resources[to]) {
     try {
-      data = JSON.parse(data);
+      message = JSON.parse(data);
     } catch(parseError) {
       logging.error('#redis - Corrupted key value [' + to+ ']. ' + parseError.message + ': '+ parseError.stack);
       return;
     }
 
-    logging.info('#redis.message.incoming', to, data);
-    this.resources[to].redisIn(data);
+    logging.info('#redis.message.incoming', to, message);
+    this.resources[to].redisIn(message);
   } else {
     // Don't log sentry channel pub messages
     if (to === Core.Presence.Sentry.channel) {
       return;
     }
 
-    logging.warn('#redis - message not handled', to, data);
+    logging.warn('#redis - message not handled', to, message);
   }
 };
 
 // Process a socket message
 Server.prototype._handleSocketMessage = function(socket, data) {
-  var message = _parseJSON(data);
+  var request = new Request(Request.parse(data));
 
-  if (!socket) {
-    logging.info('_handleSocketMessage: socket is null');
-    return;
-  }
-
-  // Format check
-  if (!message || !message.op || !message.to) {
+  if (!request.isValid()) {
     logging.warn('#socket.message - rejected', socket.id, data);
     return;
   }
  
-  logging.info('#socket.message.incoming', socket.id, JSON.stringify(message));
-  this._processMessage(socket, message);
+  logging.info('#socket.message.incoming', socket.id, data);
+  this._processRequest(socket, request);
 };
 
-Server.prototype._processMessage = function(socket, message) {
-  var messageType = this._getMessageType(message.to);
+Server.prototype._processRequest = function(socket, request) {
+  var message = request.getMessage(),
+      to = request.getAttr('to'),
+      ack = request.getAttr('ack'),
+      messageType = this._getMessageType(to);
 
   if (!messageType) {
-    logging.warn('#socket.message - unknown type', message, socket.id);
-    this._sendErrorMessage(socket, 'unknown_type', message);
+    logging.warn('#socket.request - unknown type', message, socket.id);
+    this._sendError(socket, 'unknown_type', message);
     return;
   }
 
-  if (!this._authorizeMessage(socket, message, messageType)) {
-    logging.warn('#socket.message - auth_invalid', message, socket.id);
-    this._sendErrorMessage(socket, 'auth', message);
+  if (!this._authorizeMessage(socket, request, messageType)) {
+    logging.warn('#socket.request - auth_invalid', message, socket.id);
+    this._sendError(socket, 'auth', message);
     return;
   }
 
-  if (this._limited(socket, message, messageType, message.to)) {
-    logging.warn('#socket.message - rate_limited', message, socket.id);
-    this._sendErrorMessage(socket, 'rate limited', message);
+  if (this._limited(socket, request, messageType, to)) {
+    logging.warn('#socket.request - rate_limited', message, socket.id);
+    this._sendError(socket, 'rate limited', message);
     return;
   }
 
-  if (message.op === 'nameSync') {
-    logging.info('#socket.message - nameSync', message, socket.id);
-    this._initClient(socket, message);
-    socket.send({ op: 'ack', value: message && message.ack });
+  if (request.isOp('nameSync')) {
+    logging.info('#socket.request - nameSync', message, socket.id);
+    this._initClient(socket, request);
+    response = new Response({ op: 'ack', to: to, value: ack });
+    if (response.isFor(request) && response.isAckFor(request)) {
+      socket.send(response.getMessage());
+    }
     return;
   }
 
-  this._handleResourceMessage(socket, message, messageType);
+  this._handleResourceMessage(socket, request, messageType);
 };
 
 // Initialize a client, and persist messages where required
-Server.prototype._persistClientData = function(socket, message) {
+Server.prototype._persistClientData = function(socket, request) {
+  var client = Client.get(socket.id);
+
+  if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
+    logging.info('#socket.message - _persistClientData', request.getMessage(), socket.id);
+    client.storeData(request);
+  }
+};
+
+Server.prototype._persistClientData_old = function(socket, message) {
   var client = Client.get(socket.id);
 
   if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
@@ -234,13 +247,15 @@ Server.prototype._persistClientData = function(socket, message) {
   }
 };
 
-// Get a resource, subscribe where required, and handle associated message
-Server.prototype._handleResourceMessage = function(socket, message, messageType) {
-  var to = message.to,
-      resource = this._getResource(message, messageType);
+// Get a resource, subscribe where required, and handle associated request message
+Server.prototype._handleResourceMessage = function(socket, request, messageType) {
+  var to = request.getAttr('to'),
+      op = request.getAttr('op'),
+      message = request.getMessage(),
+      resource = this._getResource(request, messageType);
 
   if (resource) {
-    logging.info('#socket.message - received', socket.id, message,
+    logging.info('#socket.request - received', socket.id, message,
       (this.resources[to] ? 'exists' : 'not instantiated'),
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
@@ -248,52 +263,55 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
     this._persistClientData(socket, message);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.to, socket.id);
-    this._updateLimits(socket, message, resource.options);
-    this._stampMessage(socket, message);
-    resource.handleMessage(socket, message);
-    this.emit(message.op, socket, message);
+    this._updateLimits(socket, request, resource.options);
+    this._stampRequest(socket, request);
+    resource.handleMessage(socket, request);
+    this.emit(op, socket, message);
   }
 };
 
 // Authorize a socket message
-Server.prototype._authorizeMessage = function(socket, message, messageType) {
+Server.prototype._authorizeMessage = function(socket, request, messageType) {
   var isAuthorized = true,
       provider = messageType && messageType.authProvider;
   
   if (provider && provider.authorize) {
-    isAuthorized = provider.authorize(messageType, message, socket);
+    isAuthorized = provider.authorize(messageType, request.getMessage(), socket);
   }
 
   return isAuthorized; 
 };
 
-Server.prototype._limited = function(socket, message, messageType) {
+Server.prototype._limited = function(socket, request, messageType) {
   var isLimited = false,
-      rateLimiter = this._getRateLimiterForMessageType(messageType);
+      rateLimiter = this._getRateLimiterForMessageType(messageType),
+      op = request.getAttr('op');
 
-  if (message.op !== 'subscribe' && message.op !== 'sync') {
+  if (op !== 'subscribe' && op !== 'sync') {
     return false;
   }
   
   if (rateLimiter && rateLimiter.isAboveLimit(socket.id)) {
-    logging.warn('#socket.message - rate limited', message, socket.id);
+    logging.warn('#socket.request - rate limited', request.getMessage(), socket.id);
     isLimited = true;
   }
 
   return isLimited;
 };
 
-Server.prototype._updateLimits = function(socket, message, messageType) {
-  var rateLimiter = this._getRateLimiterForMessageType(messageType);
+Server.prototype._updateLimits = function(socket, request, messageType) {
+  var rateLimiter = this._getRateLimiterForMessageType(messageType),
+      op = request.getAttr('op'),
+      to = request.getAttr('to');
 
   if (rateLimiter) {
-    switch(message.op) {
+    switch(op) {
       case 'sync':
       case 'subscribe': 
-        rateLimiter.add(socket.id, message.to);
+        rateLimiter.add(socket.id, to);
         break;
       case 'unsubscribe': 
-        rateLimiter.remove(socket.id, message.to);
+        rateLimiter.remove(socket.id, to);
         break;
     }
   }
@@ -321,8 +339,8 @@ Server.prototype._getMessageType = function(messageScope) {
 };
 
 // Get or create resource by "to" (aka, full scope)
-Server.prototype._getResource = function(message, messageType) {
-  var to = message.to,
+Server.prototype._getResource = function(request, messageType) {
+  var to = request.getAttr('to'),
       type = messageType.type,
       resource = this.resources[to];
 
@@ -365,33 +383,20 @@ Server.prototype._setupPersistence = function(configuration, done) {
   Core.Persistence.connect(done);
 };
 
-Server.prototype._sendErrorMessage = function(socket, value, origin) {
-  socket.send({
-    op: 'err',
-    value: value,
-    origin: origin
-  });
+Server.prototype._sendError = function(socket, value, origin) {
+  var response = new Response({op: 'err', value: value, origin: origin});
+  if (response.isValid()) {
+    socket.send(response.getMessage());
+  }
 };
 
 // Initialize the current client
-Server.prototype._initClient = function (socket, message) {
-  var client = Client.create(message);
+Server.prototype._initClient = function (socket, request) {
+  Client.create(request);
 };
 
-Server.prototype._stampMessage = function (socket, message) {
-  return Stamper.stamp(message, socket.id);
+Server.prototype._stampRequest = function(socket, request) {
+  return Stamper.stamp(request.getMessage(), socket.id);
 };
-
-// Private functions
-// TODO: move to util module
-function _parseJSON (data) {
-  var message = false;
-
-  try {
-    message = JSON.parse(data);
-  } catch(e) { }
-
-  return message;
-}
 
 module.exports = Server;

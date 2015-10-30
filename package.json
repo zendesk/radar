@@ -39,7 +39,8 @@
     "persistence": ">= 1.0.3",
     "semver": "*",
     "underscore": "*",
-    "uuid": "^2.0.1"
+    "uuid": "^2.0.1",
+    "radar_message": "^1.0.1"
   },
   "devDependencies": {
     "mocha": "*",

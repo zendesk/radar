@@ -1,8 +1,7 @@
 var assert = require('assert'),
     Status = require('../core/lib/resources/status.js'),
     Persistence = require('persistence'),
-    Common = require('./common.js'),
-    Request = require('radar_message').Request;
+    Common = require('./common.js');
 
 describe('given a status resource', function() {
   var status;
@@ -176,13 +175,12 @@ describe('given a status resource', function() {
 
 describe('a status resource', function() {
   describe('emitting messages', function() {
-    beforeEach(function(done) {
-      radarServer = Common.createRadarServer(done);
+    beforeEach(function() {
+      radarServer = Common.createRadarServer();
     });
 
     it('should emit incomming messages', function(done) {
-      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' },
-          subscribeRequest = new Request(subscribeMessage);
+      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' };
 
       radarServer.on('resource:new', function(resource) {
         resource.on('message:incoming', function(message) {
@@ -192,15 +190,13 @@ describe('a status resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processRequest({}, subscribeRequest);
+        radarServer._processMessage({}, subscribeMessage);
       }, 100);
     });
 
     it('should emit outgoing messages', function(done) {
       var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' },
-          subscribeRequest = new Request(subscribeMessage),
           setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2} },
-          setRequest = new Request(setMessage),
           socketOne = { id: 1, send: function(m) { } },
           socketTwo = { id: 2, send: function(m) { } };
 
@@ -211,8 +207,8 @@ describe('a status resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processRequest(socketOne, subscribeRequest);
-        radarServer._processRequest(socketTwo, setRequest);
+        radarServer._processMessage(socketOne, subscribeMessage);
+        radarServer._processMessage(socketTwo, setMessage);
       }, 100);
     });
   });
