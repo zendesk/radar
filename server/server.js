@@ -238,15 +238,6 @@ Server.prototype._persistClientData = function(socket, request) {
   }
 };
 
-Server.prototype._persistClientData_old = function(socket, message) {
-  var client = Client.get(socket.id);
-
-  if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
-    logging.info('#socket.message - _persistClientData', message, socket.id);
-    client.storeData(message);
-  }
-};
-
 // Get a resource, subscribe where required, and handle associated request message
 Server.prototype._handleResourceMessage = function(socket, request, messageType) {
   var to = request.getAttr('to'),
@@ -260,7 +251,7 @@ Server.prototype._handleResourceMessage = function(socket, request, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    this._persistClientData(socket, message);
+    this._persistClientData(socket, request);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.to, socket.id);
     this._updateLimits(socket, request, resource.options);

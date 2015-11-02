@@ -132,23 +132,6 @@ Resource.prototype.handleMessage = function(socket, request) {
   }
 };
 
-Resource.prototype.handleMessage_old = function(socket, message) {
-  switch(message.op) {
-    case 'subscribe':
-    case 'unsubscribe':
-    case 'get':
-    case 'sync':
-    case 'set':
-    case 'publish':
-    case 'push':
-      this[message.op](socket, message);
-      this.emit('message:incoming', message);
-      break;
-    default:
-      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id);
-  }
-};
-
 Resource.prototype.destroy = function() { };
 
 Resource.setBackend = function(backend) {
