@@ -26,8 +26,6 @@ MiniEventEmitter.mixin(Server);
 
 // Attach to a http server
 Server.prototype.attach = function(httpServer, configuration) {
-  Client.setDataTTL(configuration.clientDataTTL);
-  
   var finishSetup = this._setup.bind(this, httpServer, configuration);
   this._setupPersistence(configuration, finishSetup);
 };
@@ -257,31 +255,6 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
   }
 };
 
-// Process the existing persisted messages associated with a single client
-Server.prototype._replayMessagesFromClient = function (socket, client) {
-  var subscriptions = client.subscriptions,
-      presences = client.presences,
-      message, messageType, key;
-
-  // Pause events on the inbound socket
-  Pauseable.pause(socket);
-
-  for (key in subscriptions) {
-    message = subscriptions[key];
-    messageType = this._getMessageType(message.to);
-    this._handleResourceMessage(socket, message, messageType); 
-  }
-
-  for (key in presences) {
-    message = presences[key];
-    messageType = this._getMessageType(message.to);
-    this._handleResourceMessage(socket, message, messageType);
-  }
-
-  // Resume events on the inbound socket
-  Pauseable.resume(socket);
-};
-
 // Authorize a socket message
 Server.prototype._authorizeMessage = function(socket, message, messageType) {
   var isAuthorized = true,
@@ -403,9 +376,6 @@ Server.prototype._sendErrorMessage = function(socket, value, origin) {
 // Initialize the current client
 Server.prototype._initClient = function (socket, message) {
   var client = Client.create(message);
-
-  // TODO - example of loadData use - disabled for now
-  //client.loadData(this._replayMessagesFromClient.bind(this, socket, client));
 };
 
 Server.prototype._stampMessage = function (socket, message) {
