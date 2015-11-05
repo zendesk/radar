@@ -132,7 +132,7 @@ Server.prototype._onSocketConnection = function(socket) {
   logging.info('#socket - connect', socket.id);
 
   socket.on('message', function(data) {
-    self._handleSocketMessage(socket, data);
+    self._handleSocketRequest(socket, data);
   });
 
   socket.on('close', function() {
@@ -178,16 +178,16 @@ Server.prototype._handlePubSubMessage = function(to, data) {
   }
 };
 
-// Process a socket message
-Server.prototype._handleSocketMessage = function(socket, data) {
+// Process a socket request
+Server.prototype._handleSocketRequest = function(socket, data) {
   var request = new Request(Request.parseMessageFromData(data));
 
   if (!request.isValid()) {
-    logging.warn('#socket.message - rejected', socket.id, data);
+    logging.warn('#socket.request - rejected', socket.id, data);
     return;
   }
  
-  logging.info('#socket.message.incoming', socket.id, data);
+  logging.info('#socket.request.incoming', socket.id, data);
   this._processRequest(socket, request);
 };
 
@@ -233,12 +233,12 @@ Server.prototype._persistClientData = function(socket, request) {
   var client = Client.get(socket.id);
 
   if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
-    logging.info('#socket.message - _persistClientData', request.getMessage(), socket.id);
+    logging.info('#socket.request - _persistClientData', request.getMessage(), socket.id);
     client.storeData(request);
   }
 };
 
-// Get a resource, subscribe where required, and handle associated request message
+// Get a resource, subscribe where required, and handle associated request
 Server.prototype._handleResourceMessage = function(socket, request, messageType) {
   var to = request.getAttr('to'),
       op = request.getAttr('op'),

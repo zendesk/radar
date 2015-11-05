@@ -55,18 +55,19 @@ Client.create = function (request) {
 // Persist subscriptions and presences when not already persisted in memory
 Client.prototype.storeData = function (request) {
   var processedOp = false,
-      message = request.getMessage();
+      op = request.getAttr('op');
 
   // Persist the message data, according to type
-  switch(message.op) {
+  // Persist the request data, according to op
+  switch(op) {
     case 'unsubscribe':
     case 'sync':
     case 'subscribe':
-      processedOp = this._storeDataSubscriptions(message);
+      processedOp = this._storeDataSubscriptions(request);
       break;
 
     case 'set':
-      processedOp = this._storeDataPresences(message);
+      processedOp = this._storeDataPresences(request);
       break;
   }
 
@@ -99,13 +100,14 @@ Client.prototype._logState = function() {
   });
 };
 
-Client.prototype._storeDataSubscriptions = function (messageIn) {
-  var message = _cloneForStorage(messageIn),
-      to = message.to,
+Client.prototype._storeDataSubscriptions = function (request) {
+  var message = _cloneForStorage(request.getMessage()),
+      to = request.getAttr('to'),
+      op = request.getAttr('op'),
       existingSubscription;
 
   // Persist the message data, according to type
-  switch(message.op) {
+  switch(op) {
     case 'unsubscribe':
       if (this.subscriptions[to]) {
         delete this.subscriptions[to];
@@ -116,7 +118,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
     case 'sync':
     case 'subscribe':
       existingSubscription = this.subscriptions[to];
-      if (!existingSubscription || (existingSubscription.op !== 'sync' && message.op === 'sync')) {
+      if (!existingSubscription || (existingSubscription.op !== 'sync' && op === 'sync')) {
         this.subscriptions[to] = message;
         return true;
       }
@@ -125,8 +127,8 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
   return false;
 };
 
-Client.prototype._storeDataPresences = function (messageIn) {
-  var message = _cloneForStorage(messageIn),
+Client.prototype._storeDataPresences = function (request) {
+  var message = _cloneForStorage(request.getMessage()),
       to = message.to,
       existingPresence;
 
@@ -135,7 +137,7 @@ Client.prototype._storeDataPresences = function (messageIn) {
     existingPresence = this.presences[to];
 
     // Should go offline
-    if (existingPresence && messageIn.value === 'offline') {
+    if (existingPresence && request.getMessage().value === 'offline') {
       delete this.presences[to];
       return true;
     } else if (!existingPresence && message.value !== 'offline') {
