@@ -145,6 +145,7 @@ Client.prototype._storeDataPresences = function (messageIn) {
     // Should go offline
     if (existingPresence && messageIn.value === 'offline') {
       delete this.presences[to];
+      Core.Persistence.expire(presencesKey, Client.getDataTTL());
       Core.Persistence.deleteHash(presencesKey, to);
       return true;
     } else if (!existingPresence && message.value !== 'offline') {
