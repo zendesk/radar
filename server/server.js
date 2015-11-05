@@ -180,7 +180,7 @@ Server.prototype._handlePubSubMessage = function(to, data) {
 
 // Process a socket message
 Server.prototype._handleSocketMessage = function(socket, data) {
-  var request = new Request(Request.parse(data));
+  var request = new Request(Request.parseMessageFromData(data));
 
   if (!request.isValid()) {
     logging.warn('#socket.message - rejected', socket.id, data);
