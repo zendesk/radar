@@ -40,7 +40,7 @@
     "semver": "*",
     "underscore": "*",
     "uuid": "^2.0.1",
-    "radar_message": "^1.0.1"
+    "radar_message": "git+ssh://git@github.com:zendesk/radar_message.git#pobrien/changes_for_radar_server"
   },
   "devDependencies": {
     "mocha": "*",
