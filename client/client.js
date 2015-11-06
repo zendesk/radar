@@ -11,12 +11,6 @@ function Client (name, id, accountName, version) {
   this.version = version;
 }
 
-// 86400:  number of seconds in 1 day
-var DEFAULT_DATA_TTL = 86400,
-    LOG_WINDOW_SIZE = 10,
-    SUBSCRIPTIONS_SUFFIX = '/subscriptions',
-    PRESENCES_SUFFIX = '/presences';
-
 // Class properties
 Client.clients = {};                  // keyed by name
 Client.names = {};                    // keyed by id
@@ -70,7 +64,6 @@ Client.prototype.storeData = function (messageIn) {
   }
 
   // FIXME: For now log everything Later, enable sample logging. 
-  // if (processedOp && subCount % LOG_WINDOW_SIZE === 0) {
   if (processedOp) {
     this._logState();
   }
@@ -102,7 +95,6 @@ Client.prototype._logState = function() {
 Client.prototype._storeDataSubscriptions = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      subscriptionsKey = this.key + SUBSCRIPTIONS_SUFFIX,
       existingSubscription;
 
   // Persist the message data, according to type
@@ -129,7 +121,6 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
 Client.prototype._storeDataPresences = function (messageIn) {
   var message = _cloneForStorage(messageIn),
       to = message.to,
-      presencesKey = this.key + PRESENCES_SUFFIX,
       existingPresence;
 
   // Persist the message data, according to type

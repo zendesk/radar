@@ -44,7 +44,4 @@ module.exports = {
 
   // Radar config: Port for radar to run on.
   port: 8000,
-
-  // TTL for data stored on the server, in seconds (86400 = 1 day)
-  clientDataTTL: 86400
 };

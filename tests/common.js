@@ -117,13 +117,18 @@ module.exports = {
   configuration: configuration,
 
   // Create an in-process radar server, not a child process. 
-  createRadarServer: function() {
+  createRadarServer: function(done) {
   
     var notFound = function p404(req, res){ },
         httpServer = http.createServer(notFound);
 
     radarServer = new RadarServer();
     radarServer.attach(httpServer, configuration);
+
+    if (done) {
+      setTimeout(done, 100);
+    }
+    
     return radarServer;
   }
 };
