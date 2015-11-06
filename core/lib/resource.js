@@ -76,24 +76,24 @@ Resource.prototype.unsubscribe = function(socket, message) {
 };
 
 // Send to Engine.io sockets
-Resource.prototype.redisIn = function(data) {
+Resource.prototype.redisIn = function(message) {
   var self = this;
   
-  Stamper.stamp(data);
+  Stamper.stamp(message);
 
-  logging.info('#'+this.type, '- incoming from #redis', this.to, data, 'subs:',
+  logging.info('#'+this.type, '- incoming from #redis', this.to, message, 'subs:',
                                           Object.keys(this.subscribers).length );
 
   Object.keys(this.subscribers).forEach(function(socketId) {
     var socket = self.socketGet(socketId);
     
     if (socket && socket.send) {
-      data.stamp.clientId = socket.id;
-      socket.send(data);
+      message.stamp.clientId = socket.id;
+      socket.send(message);
     }
   });
 
-  this.emit('message:outgoing', data);
+  this.emit('message:outgoing', message);
 };
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
@@ -112,8 +112,11 @@ Resource.prototype.ack = function(socket, sendAck) {
   }
 };
 
-Resource.prototype.handleMessage = function(socket, message) {
-  switch(message.op) {
+Resource.prototype.handleMessage = function(socket, request) {
+  var message = request.getMessage(),
+      op = request.getAttr('op');
+
+  switch(op) {
     case 'subscribe':
     case 'unsubscribe':
     case 'get':
@@ -121,11 +124,11 @@ Resource.prototype.handleMessage = function(socket, message) {
     case 'set':
     case 'publish':
     case 'push':
-      this[message.op](socket, message);
+      this[op](socket, message);
       this.emit('message:incoming', message);
       break;
     default:
-      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id);
+      logging.error('#resource - Unknown op, ignoring', message, socket && socket.id);
   }
 };
 

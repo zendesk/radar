@@ -39,7 +39,8 @@
     "persistence": ">= 1.0.3",
     "semver": "*",
     "underscore": "*",
-    "uuid": "^2.0.1"
+    "uuid": "^2.0.1",
+    "radar_message": "git+https://github.com/zendesk/radar_message.git#pobrien/changes_for_radar_server"
   },
   "devDependencies": {
     "mocha": "*",

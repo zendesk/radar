@@ -1,7 +1,8 @@
 var assert = require('assert'),
     Common = require('./common.js'),
     MessageList = require('../core/lib/resources/message_list.js'),
-    Persistence = require('persistence');
+    Persistence = require('persistence'),
+    Request = require('radar_message').Request;
 
 describe('For a message list', function() {
   var message_list;
@@ -151,7 +152,8 @@ describe('a message list resource', function() {
     });
 
     it('should emit incomming messages', function(done) {
-      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' };
+      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' },
+          subscribeRequest = new Request(subscribeMessage);
 
       radarServer.on('resource:new', function(resource) {
         resource.on('message:incoming', function(message) {
@@ -161,13 +163,15 @@ describe('a message list resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processMessage({}, subscribeMessage);
+        radarServer._processRequest({}, subscribeRequest);
       }, 100);
     });
 
     it('should emit outgoing messages', function(done) {
       var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' },
+          subscribeRequest = new Request(subscribeMessage),
           publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: {"type":"activity","user_id":123456789,"state":4} },
+          publishRequest = new Request(publishMessage),
           socketOne = { id: 1, send: function(m) { } },
           socketTwo = { id: 2, send: function(m) { } };
 
@@ -178,8 +182,8 @@ describe('a message list resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processMessage(socketOne, subscribeMessage);
-        radarServer._processMessage(socketTwo, publishMessage);
+        radarServer._processRequest(socketOne, subscribeRequest);
+        radarServer._processRequest(socketTwo, publishRequest);
       }, 100);
     });
   });

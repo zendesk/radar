@@ -2,7 +2,8 @@ var assert = require('assert'),
     MiniEE = require('miniee'),
     Persistence = require('persistence'),
     Common = require('./common.js'),
-    Presence = require('../core/lib/resources/presence');
+    Presence = require('../core/lib/resources/presence'),
+    Request = require('radar_message').Request;
 
 describe('given a presence resource',function() {
   var presence, client, client2,
@@ -473,7 +474,8 @@ describe('a presence resource', function() {
     });
 
     it('should emit incomming messages', function(done) {
-      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' };
+      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' },
+          subscribeRequest = new Request(subscribeMessage);
 
       radarServer.on('resource:new', function(resource) {
         resource.on('message:incoming', function(message) {
@@ -483,14 +485,16 @@ describe('a presence resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processMessage({}, subscribeMessage);
+        radarServer._processRequest({}, subscribeRequest);
       }, 100);
     });
 
     it('should emit outgoing messages', function(done) {
       var count = 0,
           setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' },
+          setRequest = new Request(setMessage),
           subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' },
+          subscribeRequest = new Request(subscribeMessage),
           socketOne = { id: 1, send: function(m) { } },
           socketTwo = { id: 2, send: function(m) { } };
 
@@ -502,8 +506,8 @@ describe('a presence resource', function() {
       });
 
       setTimeout(function() {
-        radarServer._processMessage(socketOne, subscribeMessage);
-        radarServer._processMessage(socketTwo, setMessage);
+        radarServer._processRequest(socketOne, subscribeRequest);
+        radarServer._processRequest(socketTwo, setRequest);
       }, 100);
     });
   });
