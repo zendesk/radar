@@ -16,6 +16,10 @@ describe('given a server',function() {
     };
   });
 
+  afterEach(function(done) {
+    radarServer.terminate(done);
+  });
+
   it('should emit resource:new when allocating a new resource', function(done) {
     radarServer.on('resource:new', function(resource) {
       assert.equal(resource.to, subscribeMessage.to);

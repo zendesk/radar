@@ -126,7 +126,7 @@ module.exports = {
     radarServer.attach(httpServer, configuration);
 
     if (done) {
-      setTimeout(done, 100);
+      setTimeout(done, 200);
     }
     
     return radarServer;

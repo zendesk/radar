@@ -179,6 +179,10 @@ describe('a status resource', function() {
       radarServer = Common.createRadarServer(done);
     });
 
+    afterEach(function(done) {
+      radarServer.terminate(done);
+    });
+
     it('should emit incomming messages', function(done) {
       var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' };
 

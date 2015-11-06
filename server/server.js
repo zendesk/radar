@@ -18,6 +18,7 @@ function Server() {
   this.subs = {};
   this.sentry = Core.Resources.Presence.sentry;
   this._rateLimiters = {};
+  this._filters = [];
 }
 
 MiniEventEmitter.mixin(Server);
@@ -35,17 +36,22 @@ Server.prototype.destroyResource = function(to) {
   var messageType = this._getMessageType(to);
 
   if (this.resources[to]) {
+    resource = this.resources[to];
+    this.emit('resource:destroy', resource);
     this.resources[to].destroy();
   }
 
   if (this._rateLimiters[messageType.name]) {
     this._rateLimiters[messageType.name].removeByTo(to);
   }
-  
+
   delete this.resources[to];
   delete this.subs[to];
-  logging.info('#redis - unsubscribe', to);
-  this.subscriber.unsubscribe(to);
+  
+  if (this.subscriber) {
+    logging.info('#redis - unsubscribe', to);
+    this.subscriber.unsubscribe(to);
+  }
 };
 
 Server.prototype.terminate = function(done) {
@@ -56,8 +62,53 @@ Server.prototype.terminate = function(done) {
   });
 
   this.sentry.stop();
-  this.socketServer.close();
+
+  if (this.socketServer) {
+    this.socketServer.close();  
+  }
+  
   Core.Persistence.disconnect(done);
+};
+
+Server.prototype.filter = function filter (_filter) {
+  this._filters.push(_filter);
+};
+
+Server.prototype._runFilters = function() {
+  var context = arguments[0],
+      args = [].slice.call(arguments, 1),
+      length = this._filters.length,
+      index = 0,
+      result = true;
+
+  while (index < length) {
+    var filter = this._filters[index];
+    
+    if (filter && filter[context]) {
+      result = filter[context].apply(filter, args);
+    }
+
+    if (!result) {
+      logging.warn('#socket.message - filter halted execution', args);
+      break;
+    }
+
+    index++;
+  }
+
+  return result;
+};
+
+Server.prototype._runPreFilters = function() {
+  var args = [].concat.apply(['pre'], arguments);
+  
+  return this._runFilters.apply(this, args);
+};
+
+Server.prototype._runPostFilters = function() {
+  var args = [].concat.apply(['post'], arguments);
+  
+  return this._runFilters.apply(this, args);
 };
 
 // Private API
@@ -214,6 +265,10 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
+  if (!this._runPreFilters(socket, message, messageType)) {
+    return;
+  }
+
   if (message.op === 'nameSync') {
     logging.info('#socket.message - nameSync', message, socket.id);
     this._initClient(socket, message);
@@ -245,6 +300,7 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
+    this._runPostFilters(socket, message, messageType);
     this._persistClientData(socket, message);
     this._storeResource(resource);
     this._persistenceSubscribe(resource.to, socket.id);
