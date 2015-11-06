@@ -9,8 +9,8 @@ var common = require('./common.js'),
 
 describe('given a server',function() {
 
-  beforeEach(function() {
-    radarServer = common.createRadarServer();
+  beforeEach(function(done) {
+    radarServer = common.createRadarServer(done);
     socket = {
       id: 1
     };

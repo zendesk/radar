@@ -146,8 +146,8 @@ describe('For a message list', function() {
 
 describe('a message list resource', function() {
   describe('emitting messages', function() {
-    beforeEach(function() {
-      radarServer = Common.createRadarServer();
+    beforeEach(function(done) {
+      radarServer = Common.createRadarServer(done);
     });
 
     it('should emit incomming messages', function(done) {

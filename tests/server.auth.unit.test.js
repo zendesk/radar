@@ -28,9 +28,8 @@ var common = require('./common.js'),
 describe('given a server', function() {
   describe('without authentication', function() {
     beforeEach(function(done) {
-      radarServer = common.createRadarServer();
+      radarServer = common.createRadarServer(done);
       socket = { id: 1 };
-      setTimeout(done, 100); // allow for setup
     });
 
     it('it should allow access', function(done) {
@@ -46,9 +45,8 @@ describe('given a server', function() {
   describe('with authentication', function() {
     beforeEach(function(done) {
       RadarTypes.replace([authorizedType]);
-      radarServer = common.createRadarServer();
+      radarServer = common.createRadarServer(done);
       socket = { id: 1 };
-      setTimeout(done, 100); // allow for setup
     });
 
     it('it should prevent unauthorized access', function(done) {
