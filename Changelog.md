@@ -1,6 +1,11 @@
 ### Current master
-Disable client state save on Redis. 
-Changes to fix storeData bug in client.js
+
+### 0.16.6
+* Disable client state save on Redis. 
+* Changes to fix storeData bug in client.js
+
+### 0.16.5
+* Fix client store data by not storing the full messages on redis.
 
 ### 0.16.4
 * Replace resource "name" with "to" for naming consistency
