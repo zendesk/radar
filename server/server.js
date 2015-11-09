@@ -8,6 +8,7 @@ var _ = require('underscore'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
     Pauseable = require('pauseable'),
+    Middleware = require('../core/middleware.js'),
     RateLimiter = require('../core/rate_limiter.js'),
     Stamper = require('../core/stamper.js');
 
@@ -21,6 +22,7 @@ function Server() {
 }
 
 MiniEventEmitter.mixin(Server);
+Middleware.mixin(Server);
 
 // Public API
 
@@ -32,20 +34,25 @@ Server.prototype.attach = function(httpServer, configuration) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function(to) {
-  var messageType = this._getMessageType(to);
+  var messageType = this._getMessageType(to),
+      resource = this.resources[to];
 
-  if (this.resources[to]) {
-    this.resources[to].destroy();
+  if (resource) {
+    this.emit('resource:destroy', resource);
+    resource.destroy();
   }
 
   if (this._rateLimiters[messageType.name]) {
     this._rateLimiters[messageType.name].removeByTo(to);
   }
-  
+
   delete this.resources[to];
   delete this.subs[to];
-  logging.info('#redis - unsubscribe', to);
-  this.subscriber.unsubscribe(to);
+  
+  if (this.subscriber) {
+    logging.info('#redis - unsubscribe', to);
+    this.subscriber.unsubscribe(to);
+  }
 };
 
 Server.prototype.terminate = function(done) {
@@ -56,7 +63,11 @@ Server.prototype.terminate = function(done) {
   });
 
   this.sentry.stop();
-  this.socketServer.close();
+
+  if (this.socketServer) {
+    this.socketServer.close();  
+  }
+  
   Core.Persistence.disconnect(done);
 };
 
@@ -194,7 +205,8 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 };
 
 Server.prototype._processMessage = function(socket, message) {
-  var messageType = this._getMessageType(message.to);
+  var self = this,
+      messageType = this._getMessageType(message.to);
 
   if (!messageType) {
     logging.warn('#socket.message - unknown type', message, socket.id);
@@ -214,14 +226,21 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  if (message.op === 'nameSync') {
-    logging.info('#socket.message - nameSync', message, socket.id);
-    this._initClient(socket, message);
-    socket.send({ op: 'ack', value: message && message.ack });
-    return;
-  }
+  this.runMiddleware('onMessage', socket, message, messageType, function lastly (err) {
+    if (err) {
+      logging.warn('#socket.message - pre filter halted execution', message);
+      return;
+    }
+    
+    if (message.op === 'nameSync') {
+      logging.info('#socket.message - nameSync', message, socket.id);
+      self._initClient(socket, message);
+      socket.send({ op: 'ack', value: message && message.ack });
+    } else {
+      self._handleResourceMessage(socket, message, messageType);
+    }
+  });
 
-  this._handleResourceMessage(socket, message, messageType);
 };
 
 // Initialize a client, and persist messages where required
@@ -236,7 +255,8 @@ Server.prototype._persistClientData = function(socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function(socket, message, messageType) {
-  var to = message.to,
+  var self = this,
+      to = message.to,
       resource = this._getResource(message, messageType);
 
   if (resource) {
@@ -245,13 +265,20 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    this._persistClientData(socket, message);
-    this._storeResource(resource);
-    this._persistenceSubscribe(resource.to, socket.id);
-    this._updateLimits(socket, message, resource.options);
-    this._stampMessage(socket, message);
-    resource.handleMessage(socket, message);
-    this.emit(message.op, socket, message);
+
+    this.runMiddleware('onResource', socket, resource, message, messageType, function (err) {
+      if (err) {
+        logging.warn('#socket.message - post filter halted execution', message);
+      } else {
+        self._persistClientData(socket, message);
+        self._storeResource(resource);
+        self._persistenceSubscribe(resource.to, socket.id);
+        self._updateLimits(socket, message, resource.options);
+        self._stampMessage(socket, message);
+        resource.handleMessage(socket, message);
+        self.emit(message.op, socket, message);
+      }
+    });
   }
 };
 

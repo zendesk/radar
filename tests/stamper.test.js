@@ -1,4 +1,3 @@
-
 var assert = require('assert'),
     Stamper = require('../core/stamper.js'),
     sentryName = 'theSentryName',
