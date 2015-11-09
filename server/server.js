@@ -229,7 +229,10 @@ Server.prototype._processMessage = function(socket, message) {
   this.runMiddleware('pre', socket, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message);
-    } else if (message.op === 'nameSync') {
+      return;
+    }
+    
+    if (message.op === 'nameSync') {
       logging.info('#socket.message - nameSync', message, socket.id);
       self._initClient(socket, message);
       socket.send({ op: 'ack', value: message && message.ack });
