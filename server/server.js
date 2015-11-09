@@ -1,5 +1,4 @@
 var _ = require('underscore'),
-    async = require('async'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
@@ -9,6 +8,7 @@ var _ = require('underscore'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
     Pauseable = require('pauseable'),
+    Middleware = require('../core/middleware.js'),
     RateLimiter = require('../core/rate_limiter.js'),
     Stamper = require('../core/stamper.js');
 
@@ -19,10 +19,10 @@ function Server() {
   this.subs = {};
   this.sentry = Core.Resources.Presence.sentry;
   this._rateLimiters = {};
-  this._middleware = [];
 }
 
 MiniEventEmitter.mixin(Server);
+Middleware.mixin(Server);
 
 // Public API
 
@@ -69,26 +69,6 @@ Server.prototype.terminate = function(done) {
   }
   
   Core.Persistence.disconnect(done);
-};
-
-Server.prototype.use = function (middleware) {
-  this._middleware.push(middleware);
-};
-
-Server.prototype._runMiddleware = function() {
-  var context = arguments[0],
-      args = [].slice.call(arguments, 1, -1),
-      callback = [].slice.call(arguments, -1)[0];
-
-  var process = function (middleware, next) {
-    if (middleware[context]) {
-      middleware[context].apply(middleware, args.concat(next));
-    } else {
-      next();
-    }
-  };
-
-  async.each(this._middleware, process, callback);
 };
 
 // Private API
@@ -246,7 +226,7 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  this._runMiddleware('pre', socket, message, messageType, function lastly (err) {
+  this.runMiddleware('pre', socket, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message);
     } else if (message.op === 'nameSync') {
@@ -282,7 +262,7 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    this._runMiddleware('post', socket, message, messageType, function (err) {
+    this.runMiddleware('post', socket, message, messageType, function (err) {
       if (err) {
         logging.warn('#socket.message - post filter halted execution', message);
       } else {
