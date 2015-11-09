@@ -34,12 +34,12 @@ Server.prototype.attach = function(httpServer, configuration) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function(to) {
-  var messageType = this._getMessageType(to);
+  var messageType = this._getMessageType(to),
+      resource = this.resources[to];
 
-  if (this.resources[to]) {
-    resource = this.resources[to];
+  if (resource) {
     this.emit('resource:destroy', resource);
-    this.resources[to].destroy();
+    resource.destroy();
   }
 
   if (this._rateLimiters[messageType.name]) {
