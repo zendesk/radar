@@ -1,20 +1,17 @@
-# radar
+# Radar
 
-## High level API and backend for writing web apps that use push messaging
+## The real-time service layer for your web application
 
-### Features
-
-- more than just pub/sub: a resource-based API for presence, messaging and push notifications via a Javascript client library
-- REST API for working with web apps that don't use Node
-- written in Javascript/Node.js, and uses engine.io (the new, lower-level complement to socket.io)
-- backend which can utilize to multiple front-facing servers to serve requests.
+### Unique Features
+- High-availability and horizontally scalable Node.js server for real-world production environments
+- Built on engine.io for robust browser support
+- Resource-based modelling primitives for presence, messaging and push notifications
 
 ## What is Radar and how is it different from (Socket.io|Sockjs|Faye|Meteor)?
 
-Radar is built on top of [Engine.io](https://github.com/learnboost/engine.io), the next generation backend for Socket.io. It uses Redis for backend storage, though the assumption is that this is only for storing currently active data.
+Radar provides real-time primitives for building production-ready applications.
 
-Radar basically solves a number of real-world problems that need to solved, and it reduces the need for specialized backend services by providing good primitive operations.
-
+Radar is built on top of [Engine.io](https://github.com/learnboost/engine.io), the next generation backend for Socket.io. It uses Redis (with Sentinel cluster support) for efficient and reliable pub/sub message distribution.
 
 - Radar has higher level APIs that cover basic use cases such as presence, persisted message channels. Many push notification frameworks only expose message passing and do not explicitly handle having multiple backend servers, leaving the implementation for their users. Radar provides higher level constructs, so that you are for example:
   - subscribing to notifications about a user going online/offline
@@ -41,27 +38,29 @@ Create a `package.json` file by running `npm init` for your new project; then ru
 
 Now, let's require the Radar server library and attach it to a HTTP server:
 
-    var fs = require('fs'),
-        url = require('url'),
-        http = require('http'),
-        Radar = require('radar').server;
+```js
+var http = require('http'),
+    Radar = require('radar'),
+    config = Radar.configurator.load({persistence: true});
 
-    var server = http.createServer(function(req, res) {
-      console.log('404', req.url);
-      res.statusCode = 404;
-      res.end();
-    });
+// create an HttpServer instance
+var server = http.createServer(function(req, res) {
+  console.log('404', req.url);
+  res.statusCode = 404;
+  res.end();
+});
 
-    // attach Radar server to the http server
-    Radar.attach(server, {
-      redis_host: 'localhost',
-      redis_port: 6379
-    });
+// attach Radar server to the HttpServer
+var radar = new Radar.server();
 
-    server.listen(8000);
-    console.log('Server listening on localhost:8000');
+radar.attach(server, config);
+console.log(config)
+server.listen(config.port, function () {
+  console.log('Server listening on localhost:' + config.port);  
+});
+```
 
-Note that you need to have Redis running for Radar to work. Save this as "server.js" and run it with "node server.js".
+Note that you need to have Redis running for Radar to work. Save this as `server.js` and run it with `node server.js`.
 
 ### 2. Setting up the client
 
@@ -102,6 +101,7 @@ Let's set up the server to serve the files, and a minimal HTML page that initial
 
 Rather than building anything more complicated like a UI, let's just take advantage of the developer console that all good modern browsers have to create a chat. Create the following `public/index.html`:
 
+```html
     <!doctype html>
     <html>
       <head>
@@ -123,9 +123,11 @@ Rather than building anything more complicated like a UI, let's just take advant
         <p>Open the developer console...</p>
       </body>
     </html>
+```
 
 Also add support for serving the two files we created earlier, changing the server's HTTP request handler to:
 
+```js
     var server = http.createServer(function(req, res) {
       var pathname = url.parse(req.url).pathname;
 
@@ -141,8 +143,9 @@ Also add support for serving the two files we created earlier, changing the serv
         res.end();
       }
     });
+```
 
-Open up http://localhost:8000/ in your browser and open the developer console.
+Open up [http://localhost:8000/](http://localhost:8000/) in your browser and open the developer console.
 
 ### 4. What's in the Radar client configuration?
 
@@ -150,9 +153,9 @@ If you looked at the code in index.html, we're doing two function calls: one, to
 
 Those are:
 
-- userId: any number that uniquely identifies a user
-- userType: any number that represents a user type
-- accountName: any string
+- `userId`: any number that uniquely identifies a user
+- `userType`: any number that represents a user type
+- `accountName`: any string
 
 Every user needs to have a account, a user id and a user type. The reason is basically that Radar was initially built for Zendesk's use and every Zendesk user has that information (and more). But most other applications will have the same constructs, so there was no point in getting rid of these fields when we open sourced Radar.
 
@@ -190,9 +193,11 @@ We'll use a presence scope to track people going online and offline, and a messa
 
 Let's set that up by subscribing to a message scope:
 
+```js
     RadarClient.message('chat/1').on(function(message) {
       console.log('Chat:', message.value);
     }).sync();
+```
 
 If you run that you'll see something like this:
 
@@ -203,17 +208,21 @@ So, there are two parts: the `.on()` handler, which is triggered when messages a
 
 Now, let's send a message:
 
+```js
     RadarClient.message('chat/1').publish('Hello world');
+```
 
 You should see the message echoed back to you, since your current session is subscribed to the "chat/1" message resource.
 
 OK, open a second tab and keep it open. Run this code to initialize it:
 
+```js
     RadarClient.alloc('example', function() {
       RadarClient.message('chat/1').on(function(message) {
         console.log('Chat:', message.value);
       }).sync();
     });
+```
 
 Now, try sending another message via `.publish` - you should see the message arrive to both tabs.
 
@@ -227,6 +236,7 @@ Part of a chat or any message channel is the ability for people to see message h
 
 Radar has the ability to cache data for some time. This is configured through the type system, which is a bit clunky to configure. Here is an example:
 
+```js
     var Type = require('radar').core.Type;
 
     Type.register('chatMessage', {
@@ -234,6 +244,7 @@ Radar has the ability to cache data for some time. This is configured through th
         type: 'message',
         policy: { cache: true, maxCount: 300 }
     });
+```
 
 Here, we're specifying a new type of channel - it is applied to chanlles that match the regular expression. The `policy` key defines that the data should be cached - which is what we want so that messages are kept around; `maxCount` says that we will keep up to 300 messages (see the server docs for the other options).
 
@@ -249,6 +260,7 @@ Radar has a presence resource type built specifically to track who is online - t
 
 First, let's run this piece of code in both tabs:
 
+```js
     RadarClient.alloc('example', function() {
       RadarClient.presence('chat/1').on(function(message) {
         if(!message.op || !message.value) { return; }
@@ -260,10 +272,13 @@ First, let's run this piece of code in both tabs:
         }
       }).sync();
     });
+```
 
 Run this code on each of the tabs:
 
+```js
     RadarClient.presence('chat/1').set('online');
+```
 
 You should see a log message that looks somthing like this:
 
@@ -283,33 +298,35 @@ And then, after about 30 seconds, you should see this:
 
 Note that you could also have called:
 
+```js
     RadarClient.presence('chat/1').set('offline');
+```
 
 and this would have triggered a "offline" message immediately - the 30 second delay only applies if you close the tab without telling Radar that you're going offline (a ungraceful exit).
 
 Radar supports two granularities of events:
+- `online`/`offline` messages are triggered when a user comes online or when all of their client sessions have gone offline or have timed out.
+- `client_online`/`client_offline` messages are triggered when a client session comes online or goes offline.
 
-- client_online/client_offline messages are triggered when a client session goes offline. They are less reliable, but quicker to trigger.
-- online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you start having multiple Radar servers: then you don't want to consider a user to be offline until there are no client sessions that are active for that user on any of the Radar servers. There is also a grace period of up to 30 seconds - this allows users to experience short-term network issues, or to reload a Radar-enabled page without being immediately considered to be offline.
+Typically, one user might have multiple clients if they open multiple browser windows or tabs. When triggering user `offline` messages, there is a grace period of up to 30 seconds. This allows users to experience short-term network issues, or to reload a Radar-enabled page without being immediately considered to be offline.
 
-Usually, you want to use the "online" and "offline" events unless you want to specifically track client sessions and do the work mentioned above on the client side.
+Usually, you want to use the `online` and `offline` events unless you want to specifically track client sessions and do the work mentioned above on the client side.
 
 ### 9. Status resources and the REST API
 
 ...
 
-
 # Radar client
 
-Read the [client docs](client.html) for the details.
+Read the [client docs](client.html) for details.
 
 # Radar server
 
-Read the [server docs](server.html) for the details.
+Read the [server docs](server.html) for details.
 
 # REST API
 
-Read the [REST API docs](rest.html) for the details.
+Read the [REST API docs](rest.html) for details.
 
 ## Copyright and License
 
