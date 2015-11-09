@@ -47,7 +47,7 @@ describe('given a server with filters', function() {
       };
 
       radarServer.use({
-        pre: function(client, message, options, next) {
+        onMessage: function(client, message, options, next) {
           called = true;
           assert.equal(client.id, socket.id);
           assert.equal(options.type, 'Control');
@@ -69,7 +69,7 @@ describe('given a server with filters', function() {
       };
 
       radarServer.use({
-        pre: function(client, message, options, next) {
+        onMessage: function(client, message, options, next) {
           called = true;
           assert.equal(options.type, 'Control');
           socket.send({ op: 'err' });
@@ -83,26 +83,26 @@ describe('given a server with filters', function() {
 
   describe('with multiple filters', function() {
     it('should respect order', function(done) {
-      var previous;
+      var onMessagevious;
 
       socket.send = function(value) {
         if (value === 1) {
-          previous = value;
+          onMessagevious = value;
         } else if (value === 2) {
-          assert.equal(previous, 1);
+          assert.equal(onMessagevious, 1);
           done();
         }
       };
 
       var firstFilter = {
-        pre: function(client, message, options, next) {
+        onMessage: function(client, message, options, next) {
           client.send(1);
           next();
         }
       };
 
       var secondFilter = {
-        pre: function(client, message, options, next) {
+        onMessage: function(client, message, options, next) {
           client.send(2);
           next();
         }

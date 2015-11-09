@@ -226,7 +226,7 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  this.runMiddleware('pre', socket, message, messageType, function lastly (err) {
+  this.runMiddleware('onMessage', socket, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message);
       return;
@@ -265,7 +265,8 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    this.runMiddleware('post', socket, message, messageType, function (err) {
+
+    this.runMiddleware('onResource', socket, resource, message, messageType, function (err) {
       if (err) {
         logging.warn('#socket.message - post filter halted execution', message);
       } else {
