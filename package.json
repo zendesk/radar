@@ -1,0 +1,25 @@
+{
+  "name": "radar-www",
+  "version": "1.0.0",
+  "description": "This repo is the usual *gh-pages* repository that contains the documentation for Radar.",
+  "main": "index.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "markdown-styles": "^3.1.4"
+  },
+  "scripts": {
+    "test": "echo ok",
+    "make-html": "generate-md --layout ./layout --output ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zendesk/radar.git"
+  },
+  "author": "Zendesk, Inc",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zendesk/radar/issues"
+  },
+  "homepage": "http://radar.zendesk.com"
+}

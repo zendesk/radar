@@ -10,6 +10,10 @@ As part of the documentation repo there is an *examples* directory that contains
 
 Code snippets not contained in the repo are clearly listed in the tutorial proper.
 
+## Building html pages
+```
+npm run make-html
+```
 
 ## Copyright and License
 
