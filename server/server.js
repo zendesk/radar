@@ -1,4 +1,5 @@
 var _ = require('underscore'),
+    async = require('async'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
@@ -18,7 +19,7 @@ function Server() {
   this.subs = {};
   this.sentry = Core.Resources.Presence.sentry;
   this._rateLimiters = {};
-  this._filters = [];
+  this._middleware = [];
 }
 
 MiniEventEmitter.mixin(Server);
@@ -70,45 +71,24 @@ Server.prototype.terminate = function(done) {
   Core.Persistence.disconnect(done);
 };
 
-Server.prototype.filter = function filter (_filter) {
-  this._filters.push(_filter);
+Server.prototype.use = function (middleware) {
+  this._middleware.push(middleware);
 };
 
-Server.prototype._runFilters = function() {
+Server.prototype._runMiddleware = function() {
   var context = arguments[0],
-      args = [].slice.call(arguments, 1),
-      length = this._filters.length,
-      index = 0,
-      result = true;
+      args = [].slice.call(arguments, 1, -1),
+      callback = [].slice.call(arguments, -1)[0];
 
-  while (index < length) {
-    var filter = this._filters[index];
-    
-    if (filter && filter[context]) {
-      result = filter[context].apply(filter, args);
+  var process = function (middleware, next) {
+    if (middleware[context]) {
+      middleware[context].apply(middleware, args.concat(next));
+    } else {
+      next();
     }
+  };
 
-    if (!result) {
-      logging.warn('#socket.message - filter halted execution', args);
-      break;
-    }
-
-    index++;
-  }
-
-  return result;
-};
-
-Server.prototype._runPreFilters = function() {
-  var args = [].concat.apply(['pre'], arguments);
-  
-  return this._runFilters.apply(this, args);
-};
-
-Server.prototype._runPostFilters = function() {
-  var args = [].concat.apply(['post'], arguments);
-  
-  return this._runFilters.apply(this, args);
+  async.each(this._middleware, process, callback);
 };
 
 // Private API
@@ -245,7 +225,8 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 };
 
 Server.prototype._processMessage = function(socket, message) {
-  var messageType = this._getMessageType(message.to);
+  var self = this,
+      messageType = this._getMessageType(message.to);
 
   if (!messageType) {
     logging.warn('#socket.message - unknown type', message, socket.id);
@@ -265,18 +246,18 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  if (!this._runPreFilters(socket, message, messageType)) {
-    return;
-  }
+  this._runMiddleware('pre', socket, message, messageType, function lastly (err) {
+    if (err) {
+      logging.warn('#socket.message - pre filter halted execution', message);
+    } else if (message.op === 'nameSync') {
+      logging.info('#socket.message - nameSync', message, socket.id);
+      self._initClient(socket, message);
+      socket.send({ op: 'ack', value: message && message.ack });
+    } else {
+      self._handleResourceMessage(socket, message, messageType);
+    }
+  });
 
-  if (message.op === 'nameSync') {
-    logging.info('#socket.message - nameSync', message, socket.id);
-    this._initClient(socket, message);
-    socket.send({ op: 'ack', value: message && message.ack });
-    return;
-  }
-
-  this._handleResourceMessage(socket, message, messageType);
 };
 
 // Initialize a client, and persist messages where required
@@ -291,7 +272,8 @@ Server.prototype._persistClientData = function(socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function(socket, message, messageType) {
-  var to = message.to,
+  var self = this,
+      to = message.to,
       resource = this._getResource(message, messageType);
 
   if (resource) {
@@ -300,14 +282,19 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-    this._runPostFilters(socket, message, messageType);
-    this._persistClientData(socket, message);
-    this._storeResource(resource);
-    this._persistenceSubscribe(resource.to, socket.id);
-    this._updateLimits(socket, message, resource.options);
-    this._stampMessage(socket, message);
-    resource.handleMessage(socket, message);
-    this.emit(message.op, socket, message);
+    this._runMiddleware('post', socket, message, messageType, function (err) {
+      if (err) {
+        logging.warn('#socket.message - post filter halted execution', message);
+      } else {
+        self._persistClientData(socket, message);
+        self._storeResource(resource);
+        self._persistenceSubscribe(resource.to, socket.id);
+        self._updateLimits(socket, message, resource.options);
+        self._stampMessage(socket, message);
+        resource.handleMessage(socket, message);
+        self.emit(message.op, socket, message);
+      }
+    });
   }
 };
 

@@ -46,13 +46,13 @@ describe('given a server with filters', function() {
         done();
       };
 
-      radarServer.filter({
-        pre: function(client, message, options) {
+      radarServer.use({
+        pre: function(client, message, options, next) {
           called = true;
           assert.equal(client.id, socket.id);
           assert.equal(options.type, 'Control');
           assert.deepEqual(message, controlMessage);
-          return true;
+          next();
         }
       });
       
@@ -68,12 +68,12 @@ describe('given a server with filters', function() {
         done();
       };
 
-      radarServer.filter({
-        pre: function(client, message, options) {
+      radarServer.use({
+        pre: function(client, message, options, next) {
           called = true;
           assert.equal(options.type, 'Control');
           socket.send({ op: 'err' });
-          return false;
+          next('err');
         }
       });
       
@@ -95,21 +95,21 @@ describe('given a server with filters', function() {
       };
 
       var firstFilter = {
-        pre: function(client, message, options) {
+        pre: function(client, message, options, next) {
           client.send(1);
-          return true;
+          next();
         }
       };
 
       var secondFilter = {
-        pre: function(client, message, options) {
+        pre: function(client, message, options, next) {
           client.send(2);
-          return true;
+          next();
         }
       };
       
-      radarServer.filter(firstFilter);
-      radarServer.filter(secondFilter);
+      radarServer.use(firstFilter);
+      radarServer.use(secondFilter);
 
       radarServer._processMessage(socket, controlMessage);  
     });
