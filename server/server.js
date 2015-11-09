@@ -7,8 +7,8 @@ var _ = require('underscore'),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
-    Middleware = require('../core/middleware.js'),
-    RateLimiter = require('../core/rate_limiter.js'),
+    Middleware = require('./middleware.js'),
+    QuotaManager = require('./middleware/quota_manager.js'),
     Stamper = require('../core/stamper.js');
 
 function Server() {
@@ -17,7 +17,6 @@ function Server() {
   this.subscriber = null;
   this.subs = {};
   this.sentry = Core.Resources.Presence.sentry;
-  this._rateLimiters = {};
 }
 
 MiniEventEmitter.mixin(Server);
@@ -33,24 +32,23 @@ Server.prototype.attach = function(httpServer, configuration) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function(to) {
-  var messageType = this._getMessageType(to),
+  var self = this,
+      messageType = this._getMessageType(to),
       resource = this.resources[to];
 
   if (resource) {
-    this.emit('resource:destroy', resource);
-    resource.destroy();
-  }
+    this.runMiddleware('onDestroyResource', resource, messageType, function lastly (err) {
+      // TODO: Handle error.
 
-  if (this._rateLimiters[messageType.name]) {
-    this._rateLimiters[messageType.name].removeByTo(to);
-  }
-
-  delete this.resources[to];
-  delete this.subs[to];
-  
-  if (this.subscriber) {
-    logging.info('#redis - unsubscribe', to);
-    this.subscriber.unsubscribe(to);
+      resource.destroy();
+      delete self.resources[to];
+      delete self.subs[to];
+      
+      if (self.subscriber) {
+        logging.info('#redis - unsubscribe', to);
+        self.subscriber.unsubscribe(to);
+      }
+    });
   }
 };
 
@@ -148,16 +146,13 @@ Server.prototype._onSocketConnection = function(socket) {
     logging.info('#socket - disconnect', socket.id);
 
     Object.keys(self.resources).forEach(function(to) {
-      var resource = self.resources[to],
-          rateLimiter = self._getRateLimiterForMessageType(resource.options);
+      var resource = self.resources[to];
 
-      if (rateLimiter) {
-        rateLimiter.remove(socket.id, to);
-      }
-
-      if (resource.subscribers[socket.id]) {
-        resource.unsubscribe(socket, false);
-      }
+      self.runMiddleware('onDestroyClient', socket, resource, resource.options, function lastly (err) {
+        if (resource.subscribers[socket.id]) {
+          resource.unsubscribe(socket, false);
+        }
+      });
     });
   });
 };
@@ -219,12 +214,6 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  if (this._limited(socket, message, messageType, message.to)) {
-    logging.warn('#socket.message - rate_limited', message, socket.id);
-    this._sendErrorMessage(socket, 'rate limited', message);
-    return;
-  }
-
   this.runMiddleware('onMessage', socket, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message);
@@ -272,7 +261,6 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
         self._persistClientData(socket, message);
         self._storeResource(resource);
         self._persistenceSubscribe(resource.to, socket.id);
-        self._updateLimits(socket, message, resource.options);
         self._stampMessage(socket, message);
         resource.handleMessage(socket, message);
         self.emit(message.op, socket, message);
@@ -291,82 +279,6 @@ Server.prototype._authorizeMessage = function(socket, message, messageType) {
   }
 
   return isAuthorized; 
-};
-
-Server.prototype._limited = function(socket, message, messageType) {
-  var isLimited = false,
-      rateLimiter = this._getRateLimiterForMessageType(messageType),
-      softLimit;
-
-  if (message.op !== 'subscribe' && message.op !== 'sync') {
-    return false;
-  }
-
-  if (rateLimiter) {
-    if (rateLimiter.isAboveLimit(socket.id)) {
-      logging.warn('#socket.message - rate limited', message, socket.id);
-      isLimited = true;
-    }
-
-
-    // Log Soft Limit, if available. 
-    if (messageType && messageType.policy && messageType.policy.softLimit) {
-      softLimit = messageType.policy.softLimit;
-      if (rateLimiter.count(socket.id) === softLimit) {
-        this._logClientLimits(Client.get(socket.id), softLimit, rateLimiter.count(socket.id));
-      }
-    }
-  }
-
-  return isLimited;
-};
-
-Server.prototype._logClientLimits = function(client, expected, actual) {
-  if (!client) {
-    logging.error('Attempted to log client limits but no client was provided');
-    return;
-  }
-
-  logging.warn('#socket.message - rate soft limit reached', client.id, {
-    name: client.name, 
-    actual: actual,
-    expected: expected,
-    subscriptions: client.subscriptions,
-    presences: client.presences
-  });
-};
-
-Server.prototype._updateLimits = function(socket, message, messageType) {
-  var rateLimiter = this._getRateLimiterForMessageType(messageType);
-
-  if (rateLimiter) {
-    switch(message.op) {
-      case 'sync':
-      case 'subscribe': 
-        rateLimiter.add(socket.id, message.to);
-        break;
-      case 'unsubscribe': 
-        rateLimiter.remove(socket.id, message.to);
-        break;
-    }
-  }
-};
-
-Server.prototype._getRateLimiterForMessageType = function(messageType) {
-  var rateLimiter;
-
-  if (messageType && messageType.policy && messageType.policy.limit) {
-    rateLimiter = this._rateLimiters[messageType.name];
-
-    if (!rateLimiter) {
-      // TODO: subscribe, as rate limiter operation, should be configurable. 
-      rateLimiter = new RateLimiter(messageType.policy.limit);
-      this.emit('rate_limiter:add', messageType.name, rateLimiter);
-      this._rateLimiters[messageType.name] = rateLimiter;
-    }
-  }
-  
-  return rateLimiter;
 };
 
 Server.prototype._getMessageType = function(messageScope) {

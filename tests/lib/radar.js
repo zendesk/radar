@@ -4,6 +4,7 @@ var http = require('http'),
     PresenceManager = require('../../core/lib/resources/presence/presence_manager.js'),
     Presence = require('../../core/lib/resources/presence/index.js'),
     Sentry = require('../../core/lib/resources/presence/sentry.js'),
+    QuotaManager = require('../../server/middleware/quota_manager.js'),
     Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
@@ -98,6 +99,9 @@ Service.start = function(configuration, callback) {
   configuration.sentry = assertHelper.SentryDefaults;
 
   radar = new Radar.server();
+  
+  radar.use(new QuotaManager());
+
   radar.once('ready', function() {
     httpServer.listen(configuration.port, function() {
       logger.debug('httpServer listening on', configuration.port);

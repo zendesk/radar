@@ -1,7 +1,7 @@
 var logging = require('minilog')('radar:rate_limiter'),
     MiniEventEmitter = require('miniee');
 
-var RateLimiter = function(limit) {
+var QuotaLimiter = function(limit) {
  this._limit = limit;
  this._resources = {
    id: {},
@@ -9,9 +9,9 @@ var RateLimiter = function(limit) {
  };
 };
 
-MiniEventEmitter.mixin(RateLimiter);
+MiniEventEmitter.mixin(QuotaLimiter);
 
-RateLimiter.prototype.add = function(id, to) {
+QuotaLimiter.prototype.add = function(id, to) {
   if (!this._isNewResource(id, to)) {
     return false;
   }
@@ -28,7 +28,7 @@ RateLimiter.prototype.add = function(id, to) {
   return true;
 };
 
-RateLimiter.prototype.remove = function(id, to) {
+QuotaLimiter.prototype.remove = function(id, to) {
   if (this._resources.id[id] && this._resources.to[to]) {
     delete this._resources.id[id][to];
     delete this._resources.to[to][id];
@@ -36,12 +36,12 @@ RateLimiter.prototype.remove = function(id, to) {
   }
 };
 
-RateLimiter.prototype.isAboveLimit = function(id, limit) {
+QuotaLimiter.prototype.isAboveLimit = function(id, limit) {
   limit = limit || this._limit;
   return this.count(id) >= limit;
 };
 
-RateLimiter.prototype.countAll = function() {
+QuotaLimiter.prototype.countAll = function() {
   var counts = {}, self = this;
 
   Object.keys(this._resources.id).forEach(function(id) {
@@ -51,37 +51,37 @@ RateLimiter.prototype.countAll = function() {
   return counts;
 };
 
-RateLimiter.prototype.count = function(id) {
+QuotaLimiter.prototype.count = function(id) {
   var resources = this._getResourcesByType('id', id);
   return (resources ? Object.keys(resources).length : 0);
 };
 
-RateLimiter.prototype.removeById = function(id) {
+QuotaLimiter.prototype.removeById = function(id) {
   this.emit('rate:remove_by_id', this._stateForId(id));
   this._removeByType('id', 'to', id);
 };
 
-RateLimiter.prototype.removeByTo = function(to) {
+QuotaLimiter.prototype.removeByTo = function(to) {
   this.emit('rate:remove_by_to', this._stateForId(undefined, to));
   this._removeByType('to', 'id', to);
 };
 
-RateLimiter.prototype._removeByType = function(type1, type2, key) {
+QuotaLimiter.prototype._removeByType = function(type1, type2, key) {
   this._deepRemove(type2, key, this._resources[type1][key], this._getResourcesByType);
   delete this._resources[type1][key];
 };
 
-RateLimiter.prototype.inspect = function() {
+QuotaLimiter.prototype.inspect = function() {
   return this._resources;
 };
 
-RateLimiter.prototype._add = function(id, to) {
+QuotaLimiter.prototype._add = function(id, to) {
   this._addByType('id', id, to);
   this._addByType('to', to, id);
   return true;
 };
 
-RateLimiter.prototype._addByType = function(type, key1, key2) {
+QuotaLimiter.prototype._addByType = function(type, key1, key2) {
   var resources = this._getResourcesByType(type, key1);
 
   if (!resources) {
@@ -91,22 +91,22 @@ RateLimiter.prototype._addByType = function(type, key1, key2) {
   resources[key2] = 1;
 };
 
-RateLimiter.prototype._getResourcesByType = function (type, key) {
+QuotaLimiter.prototype._getResourcesByType = function (type, key) {
   return this._resources[type][key];
 };
 
-RateLimiter.prototype._initResourcesByType = function (type, key) {
+QuotaLimiter.prototype._initResourcesByType = function (type, key) {
   var resource = this._resources[type][key] = {};
   return resource;
 };
 
-RateLimiter.prototype._isNewResource = function(id, to) {
+QuotaLimiter.prototype._isNewResource = function(id, to) {
   var resources = this._getResourcesByType('id', id);
 
   return !(resources && Object.keys(resources).indexOf(to) !== -1);
 };
 
-RateLimiter.prototype._deepRemove = function(type, key, results, lookup) {
+QuotaLimiter.prototype._deepRemove = function(type, key, results, lookup) {
   var self = this;
 
   if (results && Object.keys(results).length > 0) {
@@ -117,7 +117,7 @@ RateLimiter.prototype._deepRemove = function(type, key, results, lookup) {
     });
   }
 };
-RateLimiter.prototype._stateForId = function(id, to) {
+QuotaLimiter.prototype._stateForId = function(id, to) {
   return { 
     id: id, 
     to: to,
@@ -126,4 +126,4 @@ RateLimiter.prototype._stateForId = function(id, to) {
   };
 };
 
-module.exports = RateLimiter;
+module.exports = QuotaLimiter;
