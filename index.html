@@ -3,6 +3,7 @@
   <head>
     <title>radar - High level API and backend for writing web apps that use push messaging</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../assets/css/gh.css"/>
     <link rel="stylesheet" href="assets/css/style.css">
     <link type="text/css" rel="stylesheet" href="assets/css/prettify.css"/>
 
@@ -14,21 +15,35 @@
 
   <div id="toc">
     <div id="toc-inner">
-      <h4>Table Of Contents</h4>
+      <h4>Table of Contents</h4>
 
-      <h5><a href="index.html">Overview &amp; tutorial</a></h5>
+      <a href="index.html">
+        <h5>Overview &amp; tutorial</h5>
+      </a>
 
-      <h5><a href="client.html">Radar client</a></h5>
+      <a href="client.html">
+        <h5>Radar client</h5>
+      </a>
 
-      <h5><a href="server.html">Radar server</a></h5>
+      <a href="server.html">
+        <h5>Radar server</h5>
+      </a>
 
-      <h5><a href="rest.html">REST API</a></h5>
+      <a href="rest.html">
+        <h5>REST API</h5>
+      </a>
 
-      <h5><a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">Example source code on Github</a></h5>
+      <a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">
+        <h5>Example source code on Github</h5>
+      </a>
 
-      <h5><a href="https://github.com/zendesk/radar" target="_blank">Full source code on Github</a></h5>
+      <a href="https://github.com/zendesk/radar" target="_blank">
+        <h5>Full source code on Github</h5>
+      </a>
 
-      <h5><a href="http://www.zendesk.com/company/careers?jvi=okh8Yfwr,Job" target="_blank">Zendesk is hiring Radar developers</a></h5>
+      <a href="http://www.zendesk.com/company/careers?jvi=oHiWWfwB,Job" target="_blank">
+        <h5>Zendesk is hiring Radar developers</h5>
+      </a>
 
     </div>
   </div>
@@ -40,483 +55,224 @@
 
     <div class="clear"></div>
     <div id="main">
-      <div id="content" class="post">
+      <div id="content" class="post"><h1 id="radar"><a class="header-link" href="#radar"></a>Radar</h1>
+<h2 id="the-real-time-service-layer-for-your-web-application"><a class="header-link" href="#the-real-time-service-layer-for-your-web-application"></a>The real-time service layer for your web application</h2>
+<h3 id="unique-features"><a class="header-link" href="#unique-features"></a>Unique Features</h3>
+<ul class="list">
+<li>High-availability and horizontally scalable Node.js server for real-world production environments</li>
+<li>Built on engine.io for robust browser support</li>
+<li>Resource-based modelling primitives for presence, messaging and push notifications</li>
+</ul>
+<h2 id="what-is-radar-and-how-is-it-different-from-socket-io-sockjs-faye-meteor-"><a class="header-link" href="#what-is-radar-and-how-is-it-different-from-socket-io-sockjs-faye-meteor-"></a>What is Radar and how is it different from (Socket.io|Sockjs|Faye|Meteor)?</h2>
+<p>Radar provides real-time primitives for building production-ready applications.</p>
+<p>Radar is built on top of <a href="https://github.com/learnboost/engine.io">Engine.io</a>, the next-generation backend for Socket.io. It uses Redis (with Sentinel cluster support) for efficient and reliable pub/sub message distribution.</p>
+<ul class="list">
+<li><p>Radar has high-level APIs that cover basic use cases such as presence and persisted message channels. Many push notification frameworks only expose message passing and do not explicitly handle having multiple backend servers, leaving the implementation for their users. Radar provides high-level constructs, so that you are for example:</p>
+<ul class="list">
+<li>subscribing to notifications about a user going online/offline</li>
+<li>subscribing to notifications about changes to a shared variable in a database</li>
+<li>sending messages to a channel</li>
+</ul>
+<p>... rather than just passing messages. More complex systems can be built by combining the Radar API resources.</p>
+</li>
+<li>REST API for interacting with Radar resources from non-Node web frameworks.</li>
+<li>Configurable authentication for resources. You can restrict access based on a token.</li>
+<li>Robust recovery. Radar takes care of re-establishing subscriptions in the event of a server error. Other frameworks can recover a connection, but not the application-level subscriptions and state.</li>
+<li>Multi-server support via shared Redis instance. Add capacity by adding new server instances behind a load balancer.</li>
+<li>Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to send recent messages to new users joining a chat - this can be configured via a policy.</li>
+<li>Library, not a framework. Doesn&#39;t require code changes or structural changes beyond responding to the events from the backend.</li>
+</ul>
+<h2 id="tutorial-let-s-write-a-radar-application"><a class="header-link" href="#tutorial-let-s-write-a-radar-application"></a>Tutorial: let&#39;s write a Radar application</h2>
+<p>This tutorial will walk you through the process of implementing a chat server using Radar. You can also find another example application bundled in the radar (server) repository under <code>./sample</code>, which uses Radar to present a UI.</p>
+<p>The example source code used below (except that which you enter in the javascript console of your browser) is available in the <a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">Example source code on Github</a>.</p>
+<h3 id="1-setting-up-the-server"><a class="header-link" href="#1-setting-up-the-server"></a>1. Setting up the server</h3>
+<p>Let&#39;s start by getting the Radar server up and running.</p>
+<p>Create a <code>package.json</code> file by running <code>npm init</code> for your new project; then run <code>npm install --save radar</code>. This installs the Radar server library and also adds the dependency to the <code>package.json</code> file.</p>
+<p>Now, let&#39;s require the Radar server library and attach it to a HTTP server:</p>
+<pre class="hljs"><code><span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>),
+    Radar = <span class="hljs-built_in">require</span>(<span class="hljs-string">'radar'</span>),
+    config = Radar.configurator.load({persistence: <span class="hljs-literal">true</span>});
 
-
-      <h1>radar</h1>
-
-      <h2>High level API and backend for writing web apps that use push messaging</h2>
-
-      <h3>Features</h3>
-
-      <ul class="list">
-        <p><li>More than just pub/sub: a resource-based API for presence, messaging and push notifications via a Javascript client library</li></p>
-        <p><li>Written in Javascript/Node.js, and uses engine.io (the new, low-level complement to socket.io)</li></p>
-        <p><li>Backend to multiple front-facing servers</li></p>
-        <p><li>REST API for working with web apps that don't use Node (presently, rework in progress)</li></p>
-      </ul>
-
-      <h2>What is Radar and how is it different from (Socket.io|Sockjs|Faye|Meteor)?</h2>
-
-      <p>
-        Radar is built on top of <a href="https://github.com/learnboost/engine.io">engine.io</a>, the next-generation backend for socket.io.
-        It uses Redis for backend storage, though the assumption is that this is only for storing currently active data.
-      </p>
-
-      <p>
-        Radar solves a number of real-world problems, and it reduces the need for specialized backend services by providing good primitive operations.
-      </p>
-
-      <ul class="list">
-        <li>
-          <p>
-            Radar has high-level APIs that cover basic use-cases such as presence, and persisted message channels. Many push notification frameworks
-            only expose message passing and do not explicitly handle having multiple backend servers, leaving the implementation for their users.
-            Radar provides high-level constructs, so that you are for example:
-          </p>
-          <ul class="list">
-            <li>subscribing to notifications about a user going online/offline</li>
-            <li>subscribing to notifications about changes to a shared variable in a database</li>
-            <li>sending messages to a channel</li>
-          </ul>
-          <p>... rather than just passing messages. More complex systems can be built by combining the Radar API resources.</p>
-        </li>
-        <p><li>REST API for interacting with Radar resources from non-Node web frameworks.</li></p>
-        <p><li>Configurable authentication for resources. You can restrict access based on a token.</li></p>
-        <p><li>
-          Robust recovery. Radar takes care of re-establishing subscriptions in the event of a server error. Other frameworks
-          can recover a connection, but not the application-level subscriptions and state.
-        </li></p>
-        <p><li>Multi-server support via shared Redis instance. Add capacity by adding new server instances behind a load balancer.</li></p>
-        <p><li>
-          Persistence. Messages can be stored (for long-ish terms) in the backend. For example, you might want to send recent messages to new
-          users joining a chat - this can be configured via a policy.
-        </li></p>
-        <p><li>Library, not a framework. Doesn't require code changes or structural changes beyond responding to the events from the backend.</li></p>
-      </ul>
-      <h2>Tutorial: let's write a Radar application</h2>
-      <p>
-        This tutorial will walk you through the process of implementing a chat server using Radar. You can also find another example application
-        bundled in the radar (server) repository under <code>./sample</code>, which uses Radar to present a UI.
-      </p>
-
-      <p>
-        The example source code used below (except that which you enter in the javascript console of your browser) is available in the <a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">Example source code on Github</a>.
-      </p>
-
-      <p>
-      <h3>1. Setting up the server</h3>
-      <p>Let's start by getting the Radar server up and running.</p>
-      <p>
-        Create a <code>package.json</code> file by running <code>npm init</code> for your new project; then run <code>npm install --save radar</code>.
-        This installs the Radar server library and also adds the dependency to the <code>package.json</code> file.
-      </p>
-      <p>Now, let's require the Radar server library and attach it to a HTTP server:</p>
-
-<pre class="prettyprint"><code>var fs = require('fs'),
-    url = require('url'),
-    http = require('http'),
-    Radar = require('radar').server;
-
-var server = http.createServer(function(req, res) {
-  console.log('404', req.url);
-  res.statusCode = 404;
+<span class="hljs-comment">// create an HttpServer instance</span>
+<span class="hljs-keyword">var</span> server = http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, res</span>) </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'404'</span>, req.url);
+  res.statusCode = <span class="hljs-number">404</span>;
   res.end();
 });
 
-// attach Radar server to the http server
-var radar = new Radar();
+<span class="hljs-comment">// attach Radar server to the HttpServer</span>
+<span class="hljs-keyword">var</span> radar = <span class="hljs-keyword">new</span> Radar.server();
 
-radar.attach(server, {
-  redis_host: 'localhost',
-  redis_port: 6379
-});
+radar.attach(server, config);
+<span class="hljs-built_in">console</span>.log(config)
+server.listen(config.port, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Server listening on localhost:'</span> + config.port);  
+});</code></pre><p>Note that Redis must be running for Radar to work. Save this as <code>server.js</code> and run it with <code>node server.js</code>.</p>
+<h3 id="2-setting-up-the-client"><a class="header-link" href="#2-setting-up-the-client"></a>2. Setting up the client</h3>
+<p>First, add the radar client to our package.json:</p>
+<pre class="hljs"><code>npm <span class="hljs-operator"><span class="hljs-keyword">install</span> <span class="hljs-comment">--save radar_client</span></span></code></pre><p>The Radar client has two dependencies:</p>
+<ul class="list">
+<li><a href="https://github.com/LearnBoost/engine.io-client">engine.io-client</a>: since Radar uses engine.io internally, it needs the client file to be available</li>
+<li><a href="http://mixu.net/minilog/">minilog</a>: Radar logs events on the client side using Minilog; that&#39;s mostly just because I wanted a logger that works on both the client and the server and is small (~80 lines)</li>
+</ul>
+<p>There are many ways in which you could include these dependencies:</p>
+<ul class="list">
+<li>you can just copy the distribution files from ./dist/ for the dependencies and make sure they are included on the page before the Radar client (e.g. with regular script tags)</li>
+<li>you can create a single file that you can distribute</li>
+</ul>
+<p>The first one is probably easy to figure out, so let&#39;s do the second one. Here is a <code>Makefile</code> that does that:</p>
+<pre class="hljs"><code><span class="hljs-attribute">build</span>:
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">'Building public/radar_client.js'</span>
+  <span class="hljs-variable">@mkdir</span> -p public
+  <span class="hljs-variable">@cat</span> ./node_modules/radar_client/node_modules/minilog/dist/minilog.js &gt; public/radar_client.js
+  <span class="hljs-variable">@cat</span> ./node_modules/radar_client/node_modules/engine.io-client/dist/engine.io.js &gt;&gt; public/radar_client.js
+  <span class="hljs-variable">@cat</span> ./node_modules/radar_client/dist/radar_client.js &gt;&gt; public/radar_client.js
+  # uncomment if you want to use uglifyJS to further minify the file <span class="hljs-variable">@uglifyjs</span> --overwrite public/radar_client.js
+  <span class="hljs-variable">@echo</span> <span class="hljs-string">'Wrote public/radar_client.js'</span>
 
-server.listen(8000);
-console.log('Server listening on localhost:8000');
-</code></pre>
-      <p>Note that Redis must be running for Radar to work. Save this as "server.js" and run it with "node server.js".</p>
+.<span class="hljs-attribute">PHONY</span>: build</code></pre><p>Note that GNU make requires that you use tabs for indentation and it will not be helpful in telling you to that.</p>
+<p>To generate the build, run <code>make build</code>.</p>
+<h3 id="3-putting-the-two-together"><a class="header-link" href="#3-putting-the-two-together"></a>3. Putting the two together</h3>
+<p>Let&#39;s set up the server to serve the files, and a minimal HTML page that initializes the Radar client.</p>
+<p>Rather than building anything more complicated like a UI, let&#39;s just take advantage of the developer console that all good modern browsers have, and use that to create a chat. Create the following <code>public/index.html</code>:</p>
+<pre class="hljs"><code>    <span class="hljs-doctype">&lt;!doctype html&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">html</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-title">head</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-title">title</span>&gt;</span>Test<span class="hljs-tag">&lt;/<span class="hljs-title">title</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"/radar_client.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-title">script</span>&gt;</span><span class="javascript">
+    Minilog.enable();
+    RadarClient.configure({
+      host: <span class="hljs-built_in">window</span>.location.hostname,
+      port: <span class="hljs-number">8000</span>,
 
-      <h3>2. Setting up the client</h3>
+      userId: <span class="hljs-built_in">Math</span>.floor(<span class="hljs-built_in">Math</span>.random()*<span class="hljs-number">100</span>),
+      userType: <span class="hljs-number">0</span>,
+      accountName: <span class="hljs-string">'dev'</span>
+    });
+    </span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-title">head</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-title">body</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-title">p</span>&gt;</span>Open the developer console...<span class="hljs-tag">&lt;/<span class="hljs-title">p</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-title">body</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-title">html</span>&gt;</span></code></pre><p>Also add support for serving the two files we created earlier, changing the server&#39;s HTTP request handler to:</p>
+<pre class="hljs"><code>    <span class="hljs-keyword">var</span> server = http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, res</span>) </span>{
+      <span class="hljs-keyword">var</span> pathname = url.parse(req.url).pathname;
 
-      <p>First, add the radar client to our package.json:</p>
-
-      <pre class="prettyprint">npm install --save radar_client</pre>
-
-      <p>The Radar client has two dependencies:</p>
-
-      <ul class="list">
-        <li>
-          <a href="https://github.com/LearnBoost/engine.io-client">engine.io-client</a>: since Radar uses engine.io internally, it needs the client file to be available
-        </li>
-        <li>
-          <a href="http://mixu.net/minilog/">minilog</a>: Radar logs events on the client side using Minilog; that's mostly just because I wanted a logger that works
-          on both the client and the server and is small (~80 lines)
-        </li>
-      </ul>
-
-      <p>There are many ways in which you could include these dependencies:</p>
-
-      <ul class="list">
-        <li>
-          you can just copy the distribution files from ./dist/ for the dependencies and make sure they are included on the page before the Radar client
-          (e.g. with regular script tags)
-        </li>
-        <li>you can create a single file that you can distribute</li>
-      </ul>
-
-      <p>The first one is probably easy to figure out, so let's do the second one. Here is a <code>Makefile</code> that does that:</p>
-
-<pre class="prettyprint"><code>build:
-  @echo 'Building public/radar_client.js'
-  @mkdir -p public
-  @cat ./node_modules/radar_client/node_modules/minilog/dist/minilog.js &gt; public/radar_client.js
-  @cat ./node_modules/radar_client/node_modules/engine.io-client/engine.io.js &gt;&gt; public/radar_client.js
-  @cat ./node_modules/radar_client/dist/radar_client.js &gt;&gt; public/radar_client.js
-  # uncomment if you want to use uglifyJS to further minify the file
-  # @uglifyjs --overwrite public/radar_client.js
-  @echo 'Wrote public/radar_client.js'
-
-.PHONY: build
-</code></pre>
-
-      <p>Note that GNU make requires that you use tabs for indentation and it will not be helpful in telling you to that.</p>
-      <p>To generate the build, run <code>make build</code>.</p>
-
-      <h3>3. Putting the two together</h3>
-
-      <p>Let's set up the server to serve the files, and a minimal HTML page that initializes the Radar client.</p>
-      <p>
-        Rather than building anything more complicated like a UI, let's just take advantage of the developer console that all good modern browsers have,
-        and use that to create a chat. Create the following <code>public/index.html</code>:
-      </p>
-
-<pre class="prettyprint"><code>&lt;!doctype html&gt;
-&lt;html&gt;
-  &lt;head&gt;
-    &lt;title&gt;Test&lt;/title&gt;
-    &lt;script src="/radar_client.js"&gt;&lt;/script&gt;
-    &lt;script&gt;
-      Minilog.enable();
-      RadarClient.configure({
-        host: window.location.hostname,
-        port: 8000,
-
-        userId: Math.floor(Math.random()*100),
-        userType: 0,
-        accountName: 'dev'
-      });
-      RadarClient.on('message:in', function(message) {
-        console.log(JSON.stringify({incoming: message}));
-      })
-      RadarClient.on('message:out', function(message) {
-        console.log(JSON.stringify({outgoing: message}));
-      })
-    &lt;/script&gt;
-  &lt;/head&gt;
-  &lt;body&gt;
-    &lt;p&gt;Open the developer console...&lt;/p&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-</code></pre>
-
-      <p>Also add support for serving the two files we created earlier, changing the server's HTTP request handler to:</p>
-
-<pre class="prettyprint"><code>var server = http.createServer(function(req, res) {
-  var pathname = url.parse(req.url).pathname;
-
-  if (/^\/radar_client.js$/.test(pathname)) {
-    res.setHeader('content-type', 'text/javascript');
-    res.end(fs.readFileSync('./public/radar_client.js'));
-  } else if (pathname == '/') {
-    res.setHeader('content-type', 'text/html');
-    res.end(fs.readFileSync('./public/index.html'));
-  } else {
-    console.log('404', req.url);
-    res.statusCode = 404;
-    res.end();
-  }
-});
-</code></pre>
-      <p>Open up <a href="http://localhost:8000/">http://localhost:8000/</a> in your browser and open the developer console.</p>
-
-      <h3>4. What's in the Radar client configuration?</h3>
-
-      <p>
-        The code in <code>index.html</code> contains two function calls: 
-      </p>
-
-      <p>
-      <ul class="list">
-        <li><code>Minilog.enable()</code> which turns on all logging and includes Radar's internal logging</li>
-      </ul>
-      </p>
-
-      <p>
-      <ul class="list">
-        <li><code>RadarClient.configure()</code>, which configures the host and the port of the Radar server - and three other important pieces of information:</li>
-        <ul class="list">
-                  <li><code>userId</code>: any number or string that uniquely identifies a user</li>
-          <li><code>userType</code>: any number or string that represents a user type</li>
-          <li><code>accountName</code>: any string</li>
-        </ul>
-      </ul>
-      </p>
-
-      <p>
-        Every user needs an account, a user id and a user type. Radar was initially built for Zendesk's use and data for
-        every Zendesk user has these fields (and more). It is likely that most other applications will have the same or similar constructs, so there was no point in getting
-        rid of these fields once we open sourced Radar.
-      </p>
-
-      <p>
-        These fields represent business data, which you can manage any way you choose. There is no "user management" in Radar, and Radar
-        doesn't care about the values you use. From Radar's perspective, these are opaque application-level data.  Sometimes these values are used for key names - for example, all Radar
-        data in Redis contains the account name as a part of the key so you can identify data for a specific account. It's up to you to determine what makes
-        sense for your application.
-      </p>
-
-      <p>
-        Lastly, there are two event handlers that are triggered by <b>message:in</b> and <b>message:out</b> events, respectively.
-      </p>
-
-      <p>OK, with that, let's get started.</p>
-
-      <h3>5. Using alloc() to connect</h3>
-
-      <p>First, let's connect to the server by calling <code>alloc</code>. Copy-paste this into your developer console after loading the page from localhost:</p>
-
-      <pre class="prettyprint"><code>RadarClient.alloc('example', function() {  console.log('Radar is ready'); });</code></pre>
-
-      <p>
-        <code>alloc(scopename, [callback])</code> is used to connect to the server. The scope name ("example") is just a name for the functionality you are using.
-        The nice part is that when you have an app consisting of multiple independent features that use Radar, each can uniquely identify itself as either
-        needing a Radar connection or not needing a Radar connection (via <code>dealloc(scopename)</code>).
-      </p>
-      <p>
-        So the connection is initialized the first time you call <code>alloc()</code> - any subsequent calls to <code>alloc</code> will use the existing connection rather than
-        create a new one. Also, the connection is disconnected only when each name passed to <code>alloc</code> has made a corresponding
-        <code>dealloc</code> call.
-      </p>
-
-      <p>The callback is called when the connection is established (when the connection already exists, the callback is called immediately).  In our example, the callback is
-      an anonymous function that sends 'Radar is ready' to the console log.</p>
-
-      <p>In the developer console, the call to <code>alloc</code> generates a number log statements (logging is enabled by the call to <code>Minilog.enable()</code>) in index.html.</p>
-
-<pre class="prettyprint"><code>radar_state event-state-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
-radar_state before-connect, from: opened, to: connecting ["connect", "opened", "connecting"]
-Client {_ackCounter: 1, _channelSyncTimes: Object, _users: Object, _presences: Object, _subscriptions: Object…}
-radar_client socket open DeeyNr57kfKqA7oOAAAD
-radar_state event-state-established, from: connecting, to: connected ["established", "connecting", "connected"]
-radar_state event-state-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"]
-radar_state before-authenticate, from: connected, to: authenticating ["authenticate", "connected", "authenticating"]
-radar_state event-state-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"]
-radar_state before-activate, from: authenticating, to: activated ["activate", "authenticating", "activated"]
-Radar is ready
-radar_client ready:  example
-radar_state before-established, from: connecting, to: connected ["established", "connecting", "connected"]
-{"incoming":{"server":"6319-username.local","cid":"DeeyNr57kfKqA7oOAAAD"}}
-</code></pre>
-      <p>Here you can see that the Radar client transitions through the following states: <b>connecting, connected, authenticating, and activated</b>.</p>
-      <p>The callback runs, and you also get back a message with the hostname of the server you're on and the randomly generated client id for this Radar session.</p>
-
-      <h3>6. Creating a chat - message resource</h3>
-
-      <p>What is chat? It's a history of messages, and information about who is online.</p>
-      <p>We'll use a <b>message</b> scope to store a channel of messages, and a <b>presence</b> scope to track people going online and offline.</p>
-      <p>Let's set that up by subscribing to a message scope:</p>
-
-</code></pre>
-<pre class="prettyprint"><code>RadarClient.message('chat/1').on(function(message) {
-  console.log('Chat:', message.value);
-}).sync();
-</code></pre>
-
-      <p>If you run that you'll see something like this:</p>
-
-<pre class="prettyprint"><code>{"outgoing":{"op":"sync","to":"message:/dev/chat/1"}}
-Scope {prefix: "message:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
-{"incoming":{"op":"sync","to":"message:/dev/chat/1","value":[],"time":1416292363640}} 
-</code></pre>
-
-      <p>
-        So, there are two parts: the <code>on()</code> handler, which is triggered when messages are received, and the <code>sync()</code> call, which reads all old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.
-      </p>
-      <p>Now, let's send a message:</p>
-
-      <pre class="prettyprint"><code>RadarClient.message('chat/1').publish('Hello world 1');</code></pre>
-
-      <p>You should see the message echoed back to you, since your current session is subscribed to the "chat/1" message resource.</p>
-      <p>OK, open a second tab and keep it open. Run this code to initialize your second client session:</p>
-
-<pre class="prettyprint"><code>RadarClient.alloc('example', function() {
-  RadarClient.message('chat/1').on(function(message) {
-    console.log('Chat:', message.value);
-  }).sync();
-});
-</code></pre>
-
-      <p>Now, enter the following in the second tab, and you should see the message <b>Hello World 2</b> arrive in both tabs.</p>
-
-      <pre class="prettyprint"><code>RadarClient.message('chat/1').publish('Hello world 2');</code></pre>
-
-      <h3>7. Message history</h3>
-
-      <p>Here is the cool part: you can run multiple Radar servers that use the same Redis server, and they just work.</p>
-      <p>
-        When two or more clients are on different Radar servers, and those servers use the same backend Redis server, then messages will be routed correctly via Redis and, in conjuction with Radar, messages will be routed correctly to the listening clients.
-        The only caveat is that you need source-IP sticky load balancing if you put a load balancer in front of Radar. The need for sticky load balancing
-        is a limitation inherent in how client id-based transports work.
-      </p>
-      <p>
-        The ability to access message history is part of chat or any message channel application.
-      </p>
-      <p>Radar has the ability to cache a configurable number of messages.  In the following example, the server is configured to store up to 300 messages for each connection. Note that this is configured through the <b>Type</b> system:</p>
-
-<pre class="prettyprint"><code>var Type = require('radar').core.Type;
-
-Type.register('chatMessage', {
-    expr: new RegExp('^message:/.+/chat/.+$'),
-    type: 'MessageList',
-    policy: { cache: true, maxCount: 300 }
-});
-</code></pre>
-
-      <p>
-        Here we're registering a new type of channel for any channel whose name matches the regular expression defined by <code>expr</code>. The <code>policy</code> key defines
-        that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300
-        messages (see the server docs for the other options).
-      </p>
-      <p>Once you add the code above to <code>server.js</code>, and then restart the server, you'll see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history. Since the persistence policy is determined via a RegExp, you can set different policies for different use cases.</p>
-
-      <h3>8. Creating a chat - presence resource</h3>
-
-      <p>At this point two users have joined a chat channel, and we have configured the caching policy to keep old messages around.</p>
-
-      <p>Another useful feature of a chat application is one that allows a given user to know when other users come online, are online, and go offline.  We call this feature <b>presence</b>.  An application can use Radar presence, in particular, to route messages to other users who have indicated they are interested in such messages.</p>
-      <p>Radar has a presence resource type that is built specifically to track users who are online - that's the purpose of the <code>userId</code> information in the original client configuration in <code>index.html</code>.</p>
-      <p>In the example below, the <code>sync</code> method directs Radar to send the client up to <code>maxCount</code> messages, and in addition, <b>subscribes</b> the client to all future messages on this channel.  Note also that we are interested only in the <b>online</b> and <b>offline</b> messages and not, for example, in the <b>client_online</b> or <b>client_offline</b> messages.</p>
-      <p>Run this snippet of code in each of the tabs:</p>
-
-<pre class="prettyprint"><code>RadarClient.alloc('example', function() {
-  RadarClient.presence('chat/1').on(function(message) {
-    if (!message.op || !message.value) { return; }
-    for (var userId in message.value) {
-      if (!message.value.hasOwnProperty(userId)) { continue; }
-      if (message.op == 'online' || message.op == 'offline') {
-        console.log('User ' + userId+' is now '+message.op);
+      <span class="hljs-keyword">if</span> (<span class="hljs-regexp">/^\/radar_client.js$/</span>.test(pathname)) {
+        res.setHeader(<span class="hljs-string">'content-type'</span>, <span class="hljs-string">'text/javascript'</span>);
+        res.end(fs.readFileSync(<span class="hljs-string">'./public/radar_client.js'</span>));
+      } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (pathname == <span class="hljs-string">'/'</span>) {
+        res.setHeader(<span class="hljs-string">'content-type'</span>, <span class="hljs-string">'text/html'</span>);
+        res.end(fs.readFileSync(<span class="hljs-string">'./public/index.html'</span>));
+      } <span class="hljs-keyword">else</span> {
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'404'</span>, req.url);
+        res.statusCode = <span class="hljs-number">404</span>;
+        res.end();
       }
-    }
-  }).sync();
-});</code></pre>
+    });</code></pre><p>Open up <a href="http://localhost:8000/">http://localhost:8000/</a> in your browser and open the developer console.</p>
+<h3 id="4-what-s-in-the-radar-client-configuration-"><a class="header-link" href="#4-what-s-in-the-radar-client-configuration-"></a>4. What&#39;s in the Radar client configuration?</h3>
+<p>The code in <code>index.html</code> contains two function calls:
+-<code>Minilog.enable()</code>, which turns on all logging and includes Radar&#39;s internal logging
+-<code>RadarClient.configure()</code>, which configures the host and the port of the Radar server - and three other important pieces of infomation:</p>
+<ul class="list">
+<li><code>userId</code>: any number that uniquely identifies a user</li>
+<li><code>userType</code>: any number that represents a user type</li>
+<li><code>accountName</code>: any string</li>
+</ul>
+<p>Every user needs an account, a user id and a user type. Radar was initially built for Zendesk&#39;s use and data for every Zendesk user has these fields (and more). It is likely that most other applications will have the same or similar constructs, so there was no point in getting rid of these fields once we open sourced Radar.</p>
+<p>These fields represent business data, which you can manage any way you choose. There is no &quot;user management&quot; in Radar, and Radar doesn&#39;t care about the values you use. From Radar&#39;s perspective, these are opaque application-level data.  Sometimes these values are used for key names - for example, all Radar data in Redis contains the account name as a part of the key so you can identify data for a specific account. It&#39;s up to you to determine what makes sense for your application.</p>
+<p>OK, with that, let&#39;s get started.</p>
+<h3 id="5-using-alloc-to-connect"><a class="header-link" href="#5-using-alloc-to-connect"></a>5. Using alloc() to connect</h3>
+<p>First, let&#39;s connect to the server by calling <code>alloc</code>. Copy-paste this into your developer console after loading the page from localhost:</p>
+<pre class="hljs"><code>RadarClient.alloc(<span class="hljs-string">'example'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Radar is ready'</span>); });</code></pre><p><code>alloc(scopename, [callback])</code> is used to connect to the server. The scope name (&quot;example&quot;) is just a name for the functionality you are using. The nice part is that when you have an app consisting of multiple independent features that use Radar, each can each uniquely identify itself as either needing a Radar connection or not needing a Radar connection (via <code>.dealloc(scopename)</code>).</p>
+<p>So the connection is initialized the first time you call <code>.alloc()</code> - any subsequent calls to <code>alloc</code> will use the existing connection rather than create a new one. Also, the connection is disconnected only when each name passed to <code>alloc</code> has made a corresponding <code>dealloc</code> call.</p>
+<p>The callback is called when the connection is established (when the connection already exists, the callback is called immediately).  In our example, the callback is an anonymous function that sends &#39;Radar is ready&#39; to the console log.</p>
+<p>In the developer console, the call to <code>alloc</code> generates a number of log statements (logging is enabled by the call to <code>Minilog.enable()</code>) in <code>index.html</code>.</p>
+<pre class="hljs"><code>radar_state event-state-connect, <span class="hljs-string">from:</span> opened, <span class="hljs-string">to:</span> connecting [<span class="hljs-string">"connect"</span>, <span class="hljs-string">"opened"</span>, <span class="hljs-string">"connecting"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state before-connect, <span class="hljs-string">from:</span> opened, <span class="hljs-string">to:</span> connecting [<span class="hljs-string">"connect"</span>, <span class="hljs-string">"opened"</span>, <span class="hljs-string">"connecting"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+Client {<span class="hljs-string">_ackCounter:</span> <span class="hljs-number">1</span>, <span class="hljs-string">_channelSyncTimes:</span> Object, <span class="hljs-string">_users:</span> Object, <span class="hljs-string">_presences:</span> Object, <span class="hljs-string">_subscriptions:</span> Object…}
+radar_client socket open jTHdmJJUdvnYS6kKAAAA radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state event-state-established, <span class="hljs-string">from:</span> connecting, <span class="hljs-string">to:</span> connected [<span class="hljs-string">"established"</span>, <span class="hljs-string">"connecting"</span>, <span class="hljs-string">"connected"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state event-state-authenticate, <span class="hljs-string">from:</span> connected, <span class="hljs-string">to:</span> authenticating [<span class="hljs-string">"authenticate"</span>, <span class="hljs-string">"connected"</span>, <span class="hljs-string">"authenticating"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state before-authenticate, <span class="hljs-string">from:</span> connected, <span class="hljs-string">to:</span> authenticating [<span class="hljs-string">"authenticate"</span>, <span class="hljs-string">"connected"</span>, <span class="hljs-string">"authenticating"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state event-state-activate, <span class="hljs-string">from:</span> authenticating, <span class="hljs-string">to:</span> activated [<span class="hljs-string">"activate"</span>, <span class="hljs-string">"authenticating"</span>, <span class="hljs-string">"activated"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+radar_state before-activate, <span class="hljs-string">from:</span> authenticating, <span class="hljs-string">to:</span> activated [<span class="hljs-string">"activate"</span>, <span class="hljs-string">"authenticating"</span>, <span class="hljs-string">"activated"</span>] radar_client.<span class="hljs-string">js:</span><span class="hljs-number">36</span>
+Radar is ready
+radar_client info {<span class="hljs-string">"server"</span>:<span class="hljs-string">"mxdeb"</span>,<span class="hljs-string">"cid"</span>:<span class="hljs-string">"OxJPb4OKXV6ua4saAAAA"</span>,<span class="hljs-string">"direction"</span>:<span class="hljs-string">"in"</span>}</code></pre><p>Here you can see that the Radar client transitions through the following states: <strong>connecting</strong>, <strong>connected</strong>, <strong>authenticating</strong>, and <strong>activated</strong>.</p>
+<p>The callback runs, and you also receive back a message with the hostname of the server you&#39;re on and the randomly generated client id for this Radar session.</p>
+<h3 id="6-creating-a-chat-message-resource"><a class="header-link" href="#6-creating-a-chat-message-resource"></a>6. Creating a chat - message resource</h3>
+<p>What is chat? It&#39;s a history of messages, and information about who is online.</p>
+<p>We&#39;ll use a <strong>MessageList</strong> resource to store a channel of messages, and a <strong>Presence</strong> resource to track people going online and offline.</p>
+<p>Let&#39;s set that up by subscribing to a MessageList resource:</p>
+<pre class="hljs"><code>    RadarClient.message(<span class="hljs-string">'chat/1'</span>).on(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">message</span>) </span>{
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Chat:'</span>, message.value);
+    }).sync();</code></pre><p>If you run that you&#39;ll see something like this:</p>
+<pre class="hljs"><code><span class="hljs-tag">Scope</span> {<span class="hljs-attribute">prefix</span>: <span class="hljs-string">"message:/dev/chat/1"</span>, <span class="hljs-attribute">client</span>: Client, <span class="hljs-attribute">set</span>: function, <span class="hljs-attribute">get</span>: function, <span class="hljs-attribute">subscribe</span>: function…}</code></pre><p>So, there are two parts: the <code>.on()</code> handler, which is triggered when messages are received, and the <code>.sync()</code> call, which reads all the old messages from a message resource, and subscribes to any new messages on that channel. If there had been any messages on that channel, the message handler would have been triggered.</p>
+<p>Now, let&#39;s send a message:</p>
+<pre class="hljs"><code>    RadarClient.message(<span class="hljs-string">'chat/1'</span>).publish(<span class="hljs-string">'Hello world'</span>);</code></pre><p>You should see the message echoed back to you, since your current session is subscribed to the &quot;chat/1&quot; message resource.</p>
+<p>OK, open a second tab and keep it open. Run this code to initialize your second client session:</p>
+<pre class="hljs"><code>    RadarClient.alloc(<span class="hljs-string">'example'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+      RadarClient.message(<span class="hljs-string">'chat/1'</span>).on(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">message</span>) </span>{
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Chat:'</span>, message.value);
+      }).sync();
+    });</code></pre><p>Now, try sending another message via <code>.publish</code> - you should see the message arrive to both tabs.</p>
+<h3 id="7-message-history"><a class="header-link" href="#7-message-history"></a>7. Message history</h3>
+<p>Here is the cool part: you can run multiple Radar servers that use the same Redis server, and they just work.</p>
+<p>When two or more clients are on different Radar servers, and those servers use the same backend Redis server, then messages will be routed correctly via Redis and, in conjuction with Radar, messages will be routed correctly to the listening clients. The only caveat is that you need source-IP sticky load balancing if you put a load balancer in front of Radar. The need for sticky load balancing is a limitation inherent in how client id-based transports work.</p>
+<p>The ability to access message history is part of chat or any message channel application.</p>
+<p>Radar has the ability to cache a configurable number of messages.  In the following example, the server is configured to store up to 300 messages for each connection. Note that this is configured through the <strong>Type</strong> system:</p>
+<pre class="hljs"><code>    <span class="hljs-keyword">var</span> Type = <span class="hljs-built_in">require</span>(<span class="hljs-string">'radar'</span>).core.Type;
 
-      <p>Then, run this code in the first tab:</p>
-
-      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('online');</code></pre>
-
-      <p>You will see output like this in the first tab:</p>
-
-<pre class="prettyprint"><code>{"outgoing":{"op":"set","to":"presence:/dev/chat/1","value":"online","key":80,"type":0}}
-Scope {prefix: "presence:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
-{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"80":0}}}
-{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":80,"clientId":"Ms1o2g3MqK3wS4Z6AAAC"}}}
-User 80 is now online 
-</code></pre>
-
-      <p>and you will see output like this in the second tab:</p>
-
-<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"80":0}}}
-{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":80,"clientId":"Ms1o2g3MqK3wS4Z6AAAC"}}}
-User 80 is now online 
-</code></pre>
-
-      <p>Run this (i.e. the same) code in the second tab:</p>
-
-      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('online');</code></pre>
-
-      <p>You will see <b>additional</b> output like this in the first tab:</p>
-
-<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"55":0}}}
-{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
-User 55 is now online 
-</code></pre>
-
-      <p>and you will see <b>additional</b> output like this in the second tab:</p>
-
-<pre class="prettyprint"><code>{"outgoing":{"op":"set","to":"presence:/dev/chat/1","value":"online","key":55,"type":0}}
-Scope {prefix: "presence:/dev/chat/1", client: Client, set: function, get: function, subscribe: function…}
-{"incoming":{"to":"presence:/dev/chat/1","op":"online","value":{"55":0}}}
-{"incoming":{"to":"presence:/dev/chat/1","op":"client_online","value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
-User 55 is now online 
-</code></pre>
-
-      <p>
-        In the Radar client configuration in Step 3, we set the <code>userId</code> option to a random number between 0 and 100,
-        so you'll get a different user id for each client (tab).
-      </p>
-
-      <p>Now, close the second tab.  In the first tab you will see something like this:</p>
-
-<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"client_offline","explicit":false,"value":{"userId":55,"clientId":"8btE85e0agO5pevrAAAD"}}}
-</code></pre>
-
-      <p>This says that a <b>client_offline</b> message arrived for userId <b>55</b>, but the offline was <b>not explicit</b>, in which case the user remains online for a configurable timeout period (e.g. for 15 seconds.)
-      </p>
-
-      <p>Once the timeout period expires, additional debug text shows up in the first tab:</p>
-
-<pre class="prettyprint"><code>{"incoming":{"to":"presence:/dev/chat/1","op":"offline","value":{"55":0}}}
-User 55 is now offline 
-</code></pre>
-
-      <p>Now user 55 is truly offline.  Note that in the second tab you could have instead issued the command:</p>
-
-      <pre class="prettyprint"><code>RadarClient.presence('chat/1').set('offline');</code></pre>
-
-      <p>
-        and this would have triggered an "offline" message immediately - the 15 second delay only applies if you close the tab without telling Radar that
-        you're going offline (an ungraceful exit).
-      </p>
-
-      <p>
-      Though not demonstrable in this test scenario, a single user can have multiple client sessions, and only when the last client session has ended is the user considered a candidate for being "offline".  When the last client session for a user is implicitly made offline, there is a timeout - or grace period - during which the user can create a new client session that will keep the user "online".  If no new client session is created, then the user goes offline once the timeout expires. In contrast, an <b>explicit</b> offline ignores the timeout period, and puts the user in an offline state immediately.
-      </p>
-
-      <p>Radar supports two granularities of events:</p>
-
-      <ul class="list">
-        <li>client_online/client_offline messages are triggered when a client session goes offline. They are less reliable, but quicker to trigger.</li>
-        <br/>
-        <li>
-          online/offline messages are triggered conservatively. They represent users, rather than client sessions. The difference is important when you 
-          have multiple Radar servers: then you don't want to consider a user offline until there are no client sessions that are active for that user
-          on any of the Radar servers. There is also a grace period of 15 seconds (configurable) - this allows users to experience short-term network issues, or to
-          reload a Radar-enabled page without being immediately considered offline.
-        </li>
-      </ul>
-
-      <p>Usually, you want to use the "online" and "offline" events unless you want to specifically track client sessions and do the work mentioned above on the client side.</p>
-
-      <p>Lastly, in some of the debug output above, you can clearly see that <b>userId</b> and <b>clientId</b> are two different values.  A single userId can be associated with 1 to many clientIds, but a clientId is associated with 1 and only 1 userId.</p>
-
-      <h3>9. Status resources and the REST API</h3>
-
-      <p>TODO</p>
-
-      <h2>Radar client</h2>
-      <p>Read the <a href="client.html">client docs</a> for the details.</p>
-
-      <h2>Radar server</h2>
-      <p>Read the <a href="server.html">server docs</a> for the details.</p>
-
-      <h2>REST API</h2>
-      <p>Read the <a href="rest.html">REST API docs</a> for the details.</p>
-
-      <h2>Copyright and License</h2>
-      <p>Copyright 2012, Zendesk Inc.</p>
-      <p>Licensed under the Apache License Version 2.0, <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
-
+    Type.register(<span class="hljs-string">'chatMessage'</span>, {
+        expr: <span class="hljs-keyword">new</span> <span class="hljs-built_in">RegExp</span>(<span class="hljs-string">'^message:/.+/chat/(.+)$'</span>),
+        type: <span class="hljs-string">'MessageList'</span>,
+        policy: { cache: <span class="hljs-literal">true</span>, maxCount: <span class="hljs-number">300</span> }
+    });</code></pre><p>Here, we&#39;re registering a new type of channel for any channel whose name matches the regular expression defined by <code>expr</code>. The <code>policy</code> key defines that the data should be cached - which is what we want so that messages are kept around; <code>maxCount</code> says that we will keep up to 300 messages (see the server docs for the other options).</p>
+<p>Once you add the above code to <code>server.js</code> and then restart the server, you&#39;ll start to see that previously published messages are now synchronized back to your client. This makes it a lot easier to implement a chat with history. Since the persistence policy is determined via a RegExp, you can set different policies for different use cases.</p>
+<h3 id="8-creating-a-chat-presence-resource"><a class="header-link" href="#8-creating-a-chat-presence-resource"></a>8. Creating a chat - presence resource</h3>
+<p>At this point two users have joined a chat channel, and we have configured the caching policy to keep old messages around.</p>
+<p>Another useful feature of a chat application is one that allows a given user to know when other users come online, are online, and go offline.  We call this feature <strong>presence</strong>.  An application can use Radar presence, in particular, to route messages to other users who have indicated they are interested in such messages.</p>
+<p>Radar has a presence resource type that is built specifically to track users who are online - that&#39;s the purpose of the <code>userId</code> information in the original client configuration in <code>index.html</code>.</p>
+<p>In the example below, the <code>sync</code> method directs Radar to send the client up to <code>maxCount</code> messages, and in addition, <strong>subscribes</strong> the client to all future messages on this channel.  Note also that we are interested only in the <strong>online</strong> and <strong>offline</strong> messages and not, for example, in the <strong>client_online</strong> or <strong>client_offline</strong> messages.</p>
+<p>First, let&#39;s run this piece of code in each of the tabs:</p>
+<pre class="hljs"><code>    RadarClient.alloc(<span class="hljs-string">'example'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+      RadarClient.presence(<span class="hljs-string">'chat/1'</span>).on(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">message</span>) </span>{
+        <span class="hljs-keyword">if</span> (!message.op || !message.value) { <span class="hljs-keyword">return</span>; }
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> userId <span class="hljs-keyword">in</span> message.value) {
+          <span class="hljs-keyword">if</span> (!message.value.hasOwnProperty(userId)) { <span class="hljs-keyword">continue</span>; }
+          <span class="hljs-keyword">if</span> (message.op == <span class="hljs-string">'online'</span> || message.op == <span class="hljs-string">'offline'</span>) {
+            <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'User '</span> + userId+<span class="hljs-string">' is now '</span>+message.op);
+          }
+        }
+      }).sync();
+    });</code></pre><p>Then, run this code in each of the tabs:</p>
+<pre class="hljs"><code>    RadarClient.presence(<span class="hljs-string">'chat/1'</span>).set(<span class="hljs-string">'online'</span>);</code></pre><p>You should see a log message that looks something like this:</p>
+<pre class="hljs"><code>Scope {prefix: <span class="hljs-string">"presence:/dev/chat/1"</span>, client: Client, <span class="hljs-keyword">set</span>: <span class="hljs-keyword">function</span>, <span class="hljs-keyword">get</span>: <span class="hljs-keyword">function</span>, subscribe: <span class="hljs-keyword">function</span>…}
+User <span class="hljs-number">25</span> <span class="hljs-keyword">is</span> <span class="hljs-built_in">now</span> online</code></pre><p>In the Radar client configuration in Step 3, we set the <code>userId</code> option to a random number between 0 and 100, so you&#39;ll get adifferent user id for each client (tab).</p>
+<p>Now, close one of the tabs.  Initially, you will not see any additional debug output in the console window.  Then, after about 15 seconds, you will see output similar to this:</p>
+<pre class="hljs"><code>radar_client info {<span class="hljs-string">"to"</span>:<span class="hljs-string">"presence:/dev/chat/1"</span>,<span class="hljs-string">"op"</span>:<span class="hljs-string">"client_offline"</span>,<span class="hljs-string">"value"</span>:{<span class="hljs-string">"userId"</span>:<span class="hljs-number">19</span>,<span class="hljs-string">"clientId"</span>:<span class="hljs-string">"CmuZcU4wvUMTiDx9AAAK"</span>},<span class="hljs-string">"direction"</span>:<span class="hljs-string">"in"</span>}</code></pre><p>And then, after about 30 seconds, you should see this:</p>
+<pre class="hljs"><code>User 19 <span class="hljs-keyword">is</span> <span class="hljs-keyword">now</span> offline</code></pre><p>where <code>19</code> is the clientId of the client in the closed tab. Note that in the tab that is now closed, you could have instead issued the command:</p>
+<pre class="hljs"><code>    RadarClient.presence(<span class="hljs-string">'chat/1'</span>).set(<span class="hljs-string">'offline'</span>);</code></pre><p>and this would have triggered an &quot;offline&quot; message immediately - the 15 second delay only applies if you close the tab without telling Radar that you&#39;re going offline (an ungraceful exit).</p>
+<p>Though not demonstrable in this test scenario, a single user can have multiple client sessions, and only when the last client session has ended is the user considered a candidate for being &quot;offline&quot;.  When the last client session for a user is implicitly made offline, there is a timeout - or grace period - during which the user can create a new client session that will keep the user &quot;online&quot;.  If no new client session is created, then the user goes offline once the timeout expires. In contrast, an <em>explicit</em> offline ignores the timeout period, and puts the user in an offline state immediately.</p>
+<p>Radar supports two granularities of events:</p>
+<ul class="list">
+<li><code>online</code>/<code>offline</code> messages are triggered when a user comes online or when all of their client sessions have gone offline or have timed out.</li>
+<li><code>client_online</code>/<code>client_offline</code> messages are triggered when a client session comes online or goes offline.</li>
+</ul>
+<p>Typically, one user might have multiple clients if they open multiple browser windows or tabs. When triggering user <code>offline</code> messages, there is a grace period of 15 seconds (configurable). This allows users to experience short-term network issues, or to reload a Radar-enabled page without being immediately considered to be offline.</p>
+<p>Usually, you want to use the <code>online</code> and <code>offline</code> events unless you want to specifically track client sessions and do the work mentioned above on the client side.</p>
+<h3 id="9-status-resources-and-the-rest-api"><a class="header-link" href="#9-status-resources-and-the-rest-api"></a>9. Status resources and the REST API</h3>
+<p>...</p>
+<h1 id="radar-client"><a class="header-link" href="#radar-client"></a>Radar client</h1>
+<p>Read the <a href="client.html">client docs</a> for details.</p>
+<h1 id="radar-server"><a class="header-link" href="#radar-server"></a>Radar server</h1>
+<p>Read the <a href="server.html">server docs</a> for details.</p>
+<h1 id="rest-api"><a class="header-link" href="#rest-api"></a>REST API</h1>
+<p>Read the <a href="rest.html">REST API docs</a> for details.</p>
+<h2 id="copyright-and-license"><a class="header-link" href="#copyright-and-license"></a>Copyright and License</h2>
+<p>Radar is Copyright 2012, Zendesk Inc.</p>
+<p>Licensed under the Apache License Version 2.0, <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
 
 
       </div>

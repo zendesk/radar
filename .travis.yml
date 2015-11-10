@@ -1,0 +1,4 @@
+# we don't want to run travis on gh-pages
+branches:
+  only:
+    - master
