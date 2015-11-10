@@ -15,7 +15,7 @@
 
   <div id="toc">
     <div id="toc-inner">
-      <h4>Table of contents</h4>
+      <h4>Table of Contents</h4>
 
       <a href="index.html">
         <h5>Overview &amp; tutorial</h5>
@@ -31,6 +31,10 @@
 
       <a href="rest.html">
         <h5>REST API</h5>
+      </a>
+
+      <a href="https://github.com/zendesk/radar/tree/gh-pages/examples" target="_blank">
+        <h5>Example source code on Github</h5>
       </a>
 
       <a href="https://github.com/zendesk/radar" target="_blank">
@@ -51,10 +55,48 @@
 
     <div class="clear"></div>
     <div id="main">
-      <div id="content" class="post">
-
-
-      
+      <div id="content" class="post"><h1 id="radar"><a class="header-link" href="#radar"></a>radar</h1>
+<h1 id="rest-api"><a class="header-link" href="#rest-api"></a>REST API</h1>
+<ul class="list">
+<li>All the POST apis respond with:</li>
+</ul>
+<pre class="hljs"><code>{}
+<span class="hljs-number">200</span>: OK</code></pre><h3 id="status"><a class="header-link" href="#status"></a>Status</h3>
+<h4 id="-radar-status-post-"><a class="header-link" href="#-radar-status-post-"></a>/radar/status [POST]</h4>
+<pre class="hljs"><code>curl -k -<span class="hljs-keyword">H</span> <span class="hljs-string">"Content-Type: application/json"</span> -X <span class="hljs-keyword">POST</span> -<span class="hljs-keyword">d</span> '{<span class="hljs-string">"accountName"</span>:<span class="hljs-string">"test"</span>,<span class="hljs-string">"scope"</span>:<span class="hljs-string">"ticket/1"</span>,<span class="hljs-string">"key"</span>:<span class="hljs-string">"greeting"</span>,<span class="hljs-string">"value"</span>:<span class="hljs-string">"hello"</span>}' https:<span class="hljs-comment">//localhost/radar/status</span></code></pre><p>You probably want to set the key to the current user&#39;s ID if you want to have each user have it&#39;s own value in the same scope.</p>
+<p>You can store any arbitrary string as the value.</p>
+<h5 id="-radar-status-get-"><a class="header-link" href="#-radar-status-get-"></a>/radar/status [GET]</h5>
+<pre class="hljs"><code><span class="hljs-title">curl</span> -k <span class="hljs-string">"https://localhost/radar/status?accountName=test&amp;scope=ticket/1"</span></code></pre><h6 id="response-status"><a class="header-link" href="#response-status"></a>Response - Status</h6>
+<pre class="hljs"><code>{
+  <span class="hljs-number">1</span>: <span class="hljs-string">'foo'</span>,
+  <span class="hljs-number">2</span>: <span class="hljs-string">'bar'</span>,
+  <span class="hljs-number">123</span>: <span class="hljs-string">'foo'</span>
+}
+<span class="hljs-number">200</span>: OK</code></pre><p>The keys and values of the hash are determined by the content of the status. Often these are userID: value pairs.</p>
+<h3 id="presence"><a class="header-link" href="#presence"></a>Presence</h3>
+<p>Presence can only be set from the Radar client, not via the API.</p>
+<h4 id="-radar-presence-get-"><a class="header-link" href="#-radar-presence-get-"></a>/radar/presence [GET]</h4>
+<pre class="hljs"><code><span class="hljs-title">curl</span> -k <span class="hljs-string">"https://localhost/radar/presence?accountName=test&amp;scope=ticket/1"</span></code></pre><p>You can use scopes=one,two to get multiple scopes in one get:</p>
+<pre class="hljs"><code><span class="hljs-title">curl</span> -k <span class="hljs-string">"https://localhost/radar/presence?accountName=test&amp;scopes=ticket/1,ticket/2"</span></code></pre><h6 id="response-presence"><a class="header-link" href="#response-presence"></a>Response - Presence</h6>
+<pre class="hljs"><code>{
+  <span class="hljs-number">1</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-number">2</span>: <span class="hljs-number">2</span>,
+  <span class="hljs-number">123</span>: <span class="hljs-number">4</span>
+}
+<span class="hljs-number">200</span>: OK</code></pre><p>This the keys are the user IDs of present users, and the values are the user types of the users (0 = end user, 2 = agent, 4 = admin).</p>
+<p>When getting multiple scopes, the format is:</p>
+<pre class="hljs"><code>{
+  <span class="hljs-string">"scope1"</span>: { ... },
+  <span class="hljs-string">"scope2"</span>: { ... }
+}</code></pre><h3 id="messagelist"><a class="header-link" href="#messagelist"></a>MessageList</h3>
+<h4 id="-radar-message-post-"><a class="header-link" href="#-radar-message-post-"></a>/radar/message [POST]</h4>
+<pre class="hljs"><code>curl -k -<span class="hljs-keyword">H</span> <span class="hljs-string">"Content-Type: application/json"</span> -X <span class="hljs-keyword">POST</span> -<span class="hljs-keyword">d</span> '{<span class="hljs-string">"accountName"</span>:<span class="hljs-string">"test"</span>,<span class="hljs-string">"scope"</span>:<span class="hljs-string">"chat/123"</span>, <span class="hljs-string">"value"</span>:<span class="hljs-string">"hello"</span>}' https:<span class="hljs-comment">//localhost/radar/message</span></code></pre><h4 id="-radar-message-get-"><a class="header-link" href="#-radar-message-get-"></a>/radar/message [GET]</h4>
+<pre class="hljs"><code><span class="hljs-title">curl</span> -k <span class="hljs-string">"https://localhost/radar/message?accountName=test&amp;scope=dev/test"</span></code></pre><h6 id="response-messagelist"><a class="header-link" href="#response-messagelist"></a>Response - MessageList</h6>
+<pre class="hljs"><code>[
+  { to: <span class="hljs-string">'message:/dev/test'</span>, value: ... },
+  { to: <span class="hljs-string">'message:/dev/test'</span>, value: ... }
+]
+<span class="hljs-number">200</span>: OK</code></pre><p>The response includes all the messages have not yet expired (based on the message retention policy on the server side, e.g. time-limited for some resources).</p>
 
 
       </div>
