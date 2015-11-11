@@ -36,8 +36,9 @@ RateLimiter.prototype.remove = function(id, to) {
   }
 };
 
-RateLimiter.prototype.isAboveLimit = function(id) {
-  return this.count(id) >= this._limit;
+RateLimiter.prototype.isAboveLimit = function(id, limit) {
+  limit = limit || this._limit;
+  return this.count(id) >= limit;
 };
 
 RateLimiter.prototype.countAll = function() {
