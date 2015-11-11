@@ -19,56 +19,63 @@ require('util').inherits(PresenceManager, require('events').EventEmitter);
 PresenceManager.prototype.setup = function() {
   var store   = this.store;
   var scope   = this.scope;
-  var manager = this;
+  var self = this;
 
   store.on('user_added', function(message) {
-    manager.emit('user_online', message.userId, message.userType,
+    self.emit('user_online', message.userId, message.userType,
                                                   message.userData);
   });
 
   store.on('user_removed', function(message) {
-    manager.emit('user_offline', message.userId, message.userType);
+    self.emit('user_offline', message.userId, message.userType);
   });
 
   store.on('client_added', function(message) {
-    manager.emit('client_online', message.clientId, message.userId,
+    self.emit('client_online', message.clientId, message.userId,
                                   message.userType, message.userData,
                                   message.clientData);
   });
 
   store.on('client_updated', function(message) {
-    manager.emit('client_updated', message.clientId, message.userId,
+    self.emit('client_updated', message.clientId, message.userId,
                                   message.userType, message.userData,
                                   message.clientData);
   });
 
   store.on('client_removed', function(message) {
-    manager.emit('client_offline', message.clientId, message.userId,
+    self.emit('client_offline', message.clientId, message.userId,
                                                     message.explicit);
   });
 
   // Save so you removeListener on destroy
   this.sentryListener = function (sentry) {   
-    
     var socketIds = store.socketsForSentry(sentry);
+    
+    logging.info('#presence - #sentry down with ' + socketIds.length +
+      ' clients ', socketIds);
 
-    var chain = function (socketIds) {
+    if (!socketIds.length) { return; }
+
+    var destroyNextSocket = function () {
+      if (self.destroying) {
+        logging.info('#presence - manager.destroying true');  
+        return;
+      }
+
       var socketId = socketIds.pop();
-
-      if (!socketId || manager.destroying) {
-        logging.info('#presence - #sentry down chain exit: socketId:',
-                      socketId, ', manager.destroying:', manager.destroying);
+      if (!socketId) {
         return;
       }
 
       logging.info('#presence - #sentry down, removing socket:', sentry, scope, socketId);
-      manager.sentryDownForClient(socketId);
+      self.sentryDownForClient(socketId);
+
       setImmediate(function () {
-        chain(socketIds);
+        destroyNextSocket();
       });
     };
 
-    chain(socketIds);
+    destroyNextSocket();
   };
 
   // Listen to all sentries. This should not be costly,
@@ -93,13 +100,13 @@ PresenceManager.prototype.sentryDownForClient = function(socketId) {
 };
 
 PresenceManager.prototype.destroy = function() {
-  var manager = this;
+  var self = this;
 
   this.destroying = true;
 
   this.store.removeAllListeners();
   Object.keys(this.expiryTimers).forEach(function(userId) {
-    manager.clearExpiry(userId);
+    self.clearExpiry(userId);
   });
 
   if (this.sentryListener) {
@@ -201,7 +208,7 @@ PresenceManager.prototype._implicitDisconnect = function(socketId, userId,
 
 PresenceManager.prototype.processRedisEntry = function(message, callback) {
   var store = this.store,
-      manager = this,
+      self = this,
       sentry = this.sentry,
       userId = message.userId,
       socketId = message.clientId,
@@ -214,7 +221,7 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
     var isDown = sentry.isDown(message.sentry);
 
     if (!isDown) {
-      manager.clearExpiry(userId);
+      self.clearExpiry(userId);
       store.add(socketId, userId, userType, message);
     } else {
       logging.debug('#presence - processRedisEntry: sentry.isDown', isDown, 
@@ -222,7 +229,7 @@ PresenceManager.prototype.processRedisEntry = function(message, callback) {
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + socketId);
-      manager.handleOffline(socketId, userId, userType, false /*explicit*/);
+      self.handleOffline(socketId, userId, userType, false /*explicit*/);
     }
     callback();
   } else {
