@@ -313,7 +313,7 @@ Server.prototype._limited = function(socket, message, messageType) {
     // Log Soft Limit, if available. 
     if (messageType && messageType.policy && messageType.policy.softLimit) {
       softLimit = messageType.policy.softLimit;
-      if (rateLimiter.isAboveLimit(socket.id, softLimit)) {
+      if (rateLimiter.count(socket.id) === softLimit) {
         this._logClientLimits(Client.get(socket.id), softLimit, rateLimiter.count(socket.id));
       }
     }
@@ -323,7 +323,13 @@ Server.prototype._limited = function(socket, message, messageType) {
 };
 
 Server.prototype._logClientLimits = function(client, expected, actual) {
+  if (!client) {
+    logging.error('Attempted to log client limits but no client was provided');
+    return;
+  }
+
   logging.warn('#socket.message - rate soft limit reached', client.id, {
+    name: client.name, 
     actual: actual,
     expected: expected,
     subscriptions: client.subscriptions,
