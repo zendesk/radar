@@ -296,18 +296,45 @@ Server.prototype._authorizeMessage = function(socket, message, messageType) {
 
 Server.prototype._limited = function(socket, message, messageType) {
   var isLimited = false,
-      rateLimiter = this._getRateLimiterForMessageType(messageType);
+      rateLimiter = this._getRateLimiterForMessageType(messageType),
+      softLimit;
 
   if (message.op !== 'subscribe' && message.op !== 'sync') {
     return false;
   }
-  
-  if (rateLimiter && rateLimiter.isAboveLimit(socket.id)) {
-    logging.warn('#socket.message - rate limited', message, socket.id);
-    isLimited = true;
+
+  if (rateLimiter) {
+    if (rateLimiter.isAboveLimit(socket.id)) {
+      logging.warn('#socket.message - rate limited', message, socket.id);
+      isLimited = true;
+    }
+
+
+    // Log Soft Limit, if available. 
+    if (messageType && messageType.policy && messageType.policy.softLimit) {
+      softLimit = messageType.policy.softLimit;
+      if (rateLimiter.count(socket.id) === softLimit) {
+        this._logClientLimits(Client.get(socket.id), softLimit, rateLimiter.count(socket.id));
+      }
+    }
   }
 
   return isLimited;
+};
+
+Server.prototype._logClientLimits = function(client, expected, actual) {
+  if (!client) {
+    logging.error('Attempted to log client limits but no client was provided');
+    return;
+  }
+
+  logging.warn('#socket.message - rate soft limit reached', client.id, {
+    name: client.name, 
+    actual: actual,
+    expected: expected,
+    subscriptions: client.subscriptions,
+    presences: client.presences
+  });
 };
 
 Server.prototype._updateLimits = function(socket, message, messageType) {

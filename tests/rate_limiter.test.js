@@ -32,6 +32,7 @@ describe('rateLimiter', function() {
   it('isAboveLimit', function(){
     rateLimiter.add(clientId, to);
     assert(rateLimiter.isAboveLimit(clientId));
+    assert(!rateLimiter.isAboveLimit(clientId, 2));
   });
 
   it ('duplicates should not count', function() {
