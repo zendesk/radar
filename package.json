@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.16.6",
+  "version": "0.16.7",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
   "contributors": [
     {
@@ -30,7 +30,7 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
-    "async": "*", 
+    "async": "*",
     "callback_tracker": "*",
     "engine.io": "1.4.2",
     "miniee": "*",
