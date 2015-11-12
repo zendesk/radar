@@ -1,5 +1,8 @@
 ### Current master
 
+### 0.16.7
+* Add ability to log abuse on subscriptions without preventing it. 
+
 ### 0.16.6
 * Disable client state save on Redis. 
 * Changes to fix storeData bug in client.js
