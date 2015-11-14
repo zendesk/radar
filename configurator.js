@@ -140,8 +140,7 @@ Configurator.prototype._pickFirst = function(propName) {
 };
 
 Configurator.prototype._forPersistence = function(configuration) {
-  var url = require('url'), 
-      connection;
+  var connection;
 
   // Using sentinel
   if (configuration.sentinelMasterName) {
@@ -149,22 +148,17 @@ Configurator.prototype._forPersistence = function(configuration) {
       throw Error('sentinelMasterName present but no sentinelUrls was provided. ');
     }
     
-    connection = { id: configuration.sentinelMasterName, sentinels: []};
-
-    var urls = configuration.sentinelUrls.split(',');
-    urls.forEach(function(uri) {
-      var parsedUrl = url.parse(uri);
-      connection.sentinels.push({ 
-        host: parsedUrl.hostname,
-        port: parsedUrl.port
-      });
-    });
-  } else { // Using standalone redis. 
-    var parsedUrl = url.parse(configuration.redisUrl);
     connection = {
-      host: parsedUrl.hostname,
-      port: parsedUrl.port
+      id: configuration.sentinelMasterName,
     };
+
+    connection.sentinels = configuration.sentinelUrls
+      .split(',')
+      .map(parseUrl);
+
+
+  } else { // Using standalone redis. 
+    connection = parseUrl(configuration.redisUrl);
   }
 
   return { 
@@ -177,6 +171,21 @@ Configurator.prototype._forPersistence = function(configuration) {
 
 // Private methods
 // TODO: Move to Util module, or somewhere else. 
+
+function parseUrl (redisUrl) {
+  var parsedUrl = require('url').parse(redisUrl);
+  var config = {
+    host: parsedUrl.hostname,
+    port: parsedUrl.port
+  };
+
+  if (parsedUrl.auth) {
+    // the password part of user:pass format
+    config.redis_auth = parsedUrl.auth.substr(parsedUrl.auth.indexOf(':') + 1);
+  }
+  return config;
+}
+
 function merge(destination, source) {
   for (var name in source) {
     if (source.hasOwnProperty(name)) {
