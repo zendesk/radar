@@ -7,7 +7,6 @@ var _ = require('underscore'),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
-    Pauseable = require('pauseable'),
     Middleware = require('../core/middleware.js'),
     RateLimiter = require('../core/rate_limiter.js'),
     Stamper = require('../core/stamper.js');
