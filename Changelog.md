@@ -1,4 +1,6 @@
-### Current master
+### 0.16.8
+* Pin dependencies in package.json
+* Upgrade to persistence@1.0.5
 
 ### 0.16.7
 * Add ability to log abuse on subscriptions without preventing it. 

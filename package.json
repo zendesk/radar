@@ -30,22 +30,21 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
-    "async": "*",
-    "callback_tracker": "*",
+    "async": "^1.5.0",
+    "callback_tracker": "0.1.0",
     "engine.io": "1.4.2",
-    "miniee": "*",
-    "minilog": "*",
-    "nomnom": "*",
-    "pauseable": "*",
-    "persistence": ">= 1.0.3",
-    "semver": "*",
-    "underscore": "*",
+    "miniee": "0.0.5",
+    "minilog": "2.0.8",
+    "nomnom": "^1.8.1",
+    "persistence": ">= 1.0.5",
+    "semver": "^5.0.3",
+    "underscore": "^1.8.3",
     "uuid": "^2.0.1"
   },
   "devDependencies": {
-    "mocha": "*",
-    "radar_client": "*",
-    "simple_sentinel": "*"
+    "mocha": "^2.3.3",
+    "radar_client": "^0.14.6",
+    "simple_sentinel": "^0.1.8"
   },
   "scripts": {
     "prestart": "npm run check-modules",
