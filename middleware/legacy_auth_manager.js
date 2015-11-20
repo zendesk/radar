@@ -17,7 +17,7 @@ var LegacyAuthManager = function() { };
 
 LegacyAuthManager.prototype.onMessage = function(socket, message, messageType, next) {
   if (!this.isAuthorized(socket, message, messageType)) {
-    logging.warn('#socket.message - auth_invalid', message, socket.id);
+    logging.warn('#socket.message - unauthorized', message, socket.id);
 
     socket.send({
       op: 'err',
@@ -25,7 +25,7 @@ LegacyAuthManager.prototype.onMessage = function(socket, message, messageType, n
       origin: message
     });
     
-    next(new Error('auth error'));
+    next(new Error('Unauthorized'));
   } else {
     next();    
   }
