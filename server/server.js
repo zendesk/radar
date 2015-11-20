@@ -7,8 +7,8 @@ var _ = require('underscore'),
     DefaultEngineIO = require('engine.io'),
     Semver = require('semver'),
     Client = require('../client/client.js'),
-    Middleware = require('./middleware.js'),
-    QuotaManager = require('./middleware/quota_manager.js'),
+    Middleware = require('../middleware'),
+    QuotaManager = Middleware.QuotaManager,
     Stamper = require('../core/stamper.js');
 
 function Server() {
@@ -20,7 +20,7 @@ function Server() {
 }
 
 MiniEventEmitter.mixin(Server);
-Middleware.mixin(Server);
+Middleware.Runner.mixin(Server);
 
 // Public API
 

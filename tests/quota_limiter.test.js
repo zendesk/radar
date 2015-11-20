@@ -1,5 +1,5 @@
 var assert = require('assert'),
-    QuotaLimiter = require('../server/middleware/quota_limiter.js'),
+    QuotaLimiter = require('../middleware').QuotaLimiter,
     limit = 1,
     clientId = '1', 
     clientId2 = '2', 

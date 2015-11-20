@@ -22,7 +22,7 @@ var common = require('./common.js'),
       authProvider: authProvider,
       expression: /^control:/
     },
-    LegacyAuthManager = require('../server/middleware/legacy_auth_manager.js'),
+    LegacyAuthManager = require('../middleware').LegacyAuthManager,
     radarServer,
     socket;
 
