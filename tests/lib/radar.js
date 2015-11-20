@@ -5,6 +5,7 @@ var http = require('http'),
     Presence = require('../../core/lib/resources/presence/index.js'),
     Sentry = require('../../core/lib/resources/presence/sentry.js'),
     QuotaManager = require('../../server/middleware/quota_manager.js'),
+    LegacyAuthManager = require('../../server/middleware/legacy_auth_manager.js'),
     Persistence = require('persistence'),
     Type = require('../../core').Type,
     Minilog = require('minilog'),
@@ -101,6 +102,7 @@ Service.start = function(configuration, callback) {
   radar = new Radar.server();
   
   radar.use(new QuotaManager());
+  radar.use(new LegacyAuthManager());
 
   radar.once('ready', function() {
     httpServer.listen(configuration.port, function() {

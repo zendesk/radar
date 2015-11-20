@@ -22,6 +22,7 @@ var common = require('./common.js'),
       authProvider: authProvider,
       expression: /^control:/
     },
+    LegacyAuthManager = require('../server/middleware/legacy_auth_manager.js'),
     radarServer,
     socket;
 
@@ -29,6 +30,7 @@ describe('given a server', function() {
   describe('without authentication', function() {
     beforeEach(function(done) {
       radarServer = common.createRadarServer(done);
+      radarServer.use(new LegacyAuthManager());
       socket = { id: 1 };
     });
 
@@ -46,6 +48,7 @@ describe('given a server', function() {
     beforeEach(function(done) {
       RadarTypes.replace([authorizedType]);
       radarServer = common.createRadarServer(done);
+      radarServer.use(new LegacyAuthManager());
       socket = { id: 1 };
     });
 

@@ -208,12 +208,6 @@ Server.prototype._processMessage = function(socket, message) {
     return;
   }
 
-  if (!this._authorizeMessage(socket, message, messageType)) {
-    logging.warn('#socket.message - auth_invalid', message, socket.id);
-    this._sendErrorMessage(socket, 'auth', message);
-    return;
-  }
-
   this.runMiddleware('onMessage', socket, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message);
@@ -253,7 +247,6 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       (this.subs[to] ? 'is subscribed' : 'not subscribed')
     );
 
-
     this.runMiddleware('onResource', socket, resource, message, messageType, function (err) {
       if (err) {
         logging.warn('#socket.message - post filter halted execution', message);
@@ -267,18 +260,6 @@ Server.prototype._handleResourceMessage = function(socket, message, messageType)
       }
     });
   }
-};
-
-// Authorize a socket message
-Server.prototype._authorizeMessage = function(socket, message, messageType) {
-  var isAuthorized = true,
-      provider = messageType && messageType.authProvider;
-  
-  if (provider && provider.authorize) {
-    isAuthorized = provider.authorize(messageType, message, socket);
-  }
-
-  return isAuthorized; 
 };
 
 Server.prototype._getMessageType = function(messageScope) {
