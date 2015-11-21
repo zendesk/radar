@@ -1,3 +1,26 @@
+
+### 0.17.0
+* Introduce middleware runner.
+
+  Use ./middleware/quota_manager.js as a middleware example.
+
+* Extract rate/quota management into QuotaManager middleware (disabled by default)
+* Extract legacy authorization into LegacyAuthManager middleware (disabled by default)
+  
+  After upgrading to 0.17.0, current authorization and quota limiting code will be 
+  be disabled. To enable it, you will have to explicitely add the specific functionality,
+  like this:
+
+      var Radar = require('radar'),
+          LegacyAuthManager = Radar.middleware.LegacyAuthManager,
+          server;
+
+      server = new Radar();
+      server.use(new LegacyAuthManager()); // For legacy authentication. 
+      server.attach(...);
+
+
+
 ### 0.16.8
 * Pin dependencies in package.json
 * Upgrade to persistence@1.0.5
