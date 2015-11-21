@@ -1,5 +1,5 @@
 var assert = require('assert'),
-    Status = require('../core/lib/resources/status.js'),
+    Status = require('../core/lib/resources/status'),
     Persistence = require('persistence'),
     Common = require('./common.js');
 

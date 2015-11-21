@@ -1,4 +1,4 @@
-var Resource = require('../../resource.js'),
+var Resource = require('../resource.js'),
     PresenceManager = require('./presence_manager.js'),
     Sentry = require('./sentry.js'),
     EventEmitter = require('events').EventEmitter,
