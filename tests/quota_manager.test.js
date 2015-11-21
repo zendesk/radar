@@ -1,5 +1,5 @@
 var assert = require('assert'),
-    QuotaManager = require('../server/middleware/quota_manager.js'),
+    QuotaManager = require('../middleware').QuotaManager,
     quotaManager,
     client = {
       id: 1,

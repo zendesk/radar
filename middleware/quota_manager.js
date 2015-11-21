@@ -1,6 +1,6 @@
 var MiniEventEmitter = require('miniee'),
     QuotaLimiter = require('./quota_limiter.js'),
-    Client = require('../../client/client.js'),
+    Client = require('../client/client.js'),
     logging = require('minilog')('radar:quota_manager');
 
 var QuotaManager = function() { 
