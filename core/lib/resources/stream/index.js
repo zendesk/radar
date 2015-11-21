@@ -1,7 +1,7 @@
-var Resource = require('../resource.js'),
-  Persistence = require('persistence'),
-  logging = require('minilog')('radar:stream'),
-  SubscriberState = require('./subscriber_state.js')
+var Resource = require('../resource.js')
+var Persistence = require('persistence')
+var logging = require('minilog')('radar:stream')
+var SubscriberState = require('./subscriber_state.js')
 
 var default_options = {
   policy: {
@@ -33,9 +33,9 @@ Stream.prototype._getSyncError = function (from) {
 }
 
 Stream.prototype._subscribe = function (socket, message) {
-  var self = this,
-    from = message.options && message.options.from,
-    sub = this.subscriberState.get(socket.id)
+  var self = this
+  var from = message.options && message.options.from
+  var sub = this.subscriberState.get(socket.id)
 
   if (typeof from === 'undefined' || from < 0) {
     return
@@ -65,8 +65,8 @@ Stream.prototype.subscribe = function (socket, message) {
 }
 
 Stream.prototype.get = function (socket, message) {
-  var stream = this,
-    from = message && message.options && message.options.from
+  var stream = this
+  var from = message && message.options && message.options.from
   logging.debug('#stream - get', this.to, 'from: ' + from, (socket && socket.id))
 
   this._get(from, function (error, values) {
@@ -88,6 +88,7 @@ Stream.prototype.get = function (socket, message) {
 Stream.prototype._get = function (from, callback) {
   var self = this
   this.list.info(function (error, start, end, size) {
+    if (error) { return callback(error) }
     self.start = start
     self.end = end
     self.size = size
@@ -97,7 +98,6 @@ Stream.prototype._get = function (from, callback) {
 
 Stream.prototype.push = function (socket, message) {
   var self = this
-  var policy = this.options.policy || {}
 
   logging.debug('#stream - push', this.to, message, (socket && socket.id))
 
@@ -146,6 +146,6 @@ Stream.prototype.redisIn = function (data) {
   this.list.unblock()
 }
 
-Stream.setBackend = function (backend) { Persistence = backend; }
+Stream.setBackend = function (backend) { Persistence = backend }
 
 module.exports = Stream

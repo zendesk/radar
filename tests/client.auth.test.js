@@ -1,11 +1,7 @@
-var http = require('http'),
-  assert = require('assert'),
-  Radar = require('../server/server.js'),
-  Client = require('radar_client').constructor,
-  Type = require('../core').Type,
-  common = require('./common.js'),
-  Tracker = require('callback_tracker'),
-  Persistence = require('persistence')
+/* globals describe, it, before, after, afterEach */
+var assert = require('assert')
+var common = require('./common.js')
+var Persistence = require('persistence')
 
 describe('auth test', function () {
   var radar, client
@@ -62,7 +58,7 @@ describe('auth test', function () {
 
   describe('if type is not disabled', function () {
     it('should work', function (done) {
-      var originalMessage = { hello: 'world', timestamp: Date.now()}
+      var originalMessage = {hello: 'world', timestamp: Date.now()}
 
       client.message('enabled').on(function (message) {
         assert.deepEqual(message.value, originalMessage)

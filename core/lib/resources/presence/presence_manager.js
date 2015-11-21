@@ -1,8 +1,8 @@
-var _ = require('underscore'),
-  PresenceStore = require('./presence_store.js'),
-  Persistence = require('persistence'),
-  Minilog = require('minilog'),
-  logging = Minilog('radar:presence_manager')
+var _ = require('underscore')
+var PresenceStore = require('./presence_store.js')
+var Persistence = require('persistence')
+var Minilog = require('minilog')
+var logging = Minilog('radar:presence_manager')
 
 function PresenceManager (scope, policy, sentry) {
   this.scope = scope
@@ -54,7 +54,7 @@ PresenceManager.prototype.setup = function () {
     logging.info('#presence - #sentry down with ' + socketIds.length +
       ' clients ', socketIds)
 
-    if (!socketIds.length) { return; }
+    if (!socketIds.length) { return }
 
     var destroyNextSocket = function () {
       if (self.destroying) {
@@ -115,14 +115,14 @@ PresenceManager.prototype.destroy = function () {
     delete this.sentryListener
   }
 
-  // Client issues a full read and then dies and destroy is called.
+  // Client issues a full read and then dies and destroy is called
   if (this.handleRedisReply) {
     this.handleRedisReply = function () {}
   }
 
   delete this.store
 }
-// FIXME: Method signature is getting unmanageable.  
+// FIXME: Method signature is getting unmanageable
 PresenceManager.prototype.addClient = function (socketId, userId, userType,
   userData, clientData, callback) {
   if (typeof (clientData) === 'function') {
@@ -138,7 +138,7 @@ PresenceManager.prototype.addClient = function (socketId, userId, userType,
     sentry: this.sentry.name
   }
 
-  if (clientData) { message.clientData = clientData; }
+  if (clientData) { message.clientData = clientData }
 
   // We might need the details before we actually do a store.add
   this.store.cacheAdd(socketId, message)
@@ -206,12 +206,12 @@ PresenceManager.prototype._implicitDisconnect = function (socketId, userId,
 }
 
 PresenceManager.prototype.processRedisEntry = function (message, callback) {
-  var store = this.store,
-    self = this,
-    sentry = this.sentry,
-    userId = message.userId,
-    socketId = message.clientId,
-    userType = message.userType
+  var store = this.store
+  var self = this
+  var sentry = this.sentry
+  var userId = message.userId
+  var socketId = message.clientId
+  var userType = message.userType
 
   logging.debug('#presence - processRedisEntry:', message, this.scope)
   callback = callback || function () {}
@@ -228,7 +228,7 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + socketId)
-      self.handleOffline(socketId, userId, userType, false /*explicit*/)
+      self.handleOffline(socketId, userId, userType, false /* explicit */)
     }
     callback()
   } else {
@@ -295,14 +295,15 @@ PresenceManager.prototype.fullRead = function (callback) {
   this.handleRedisReply = function (replies) {
     logging.debug('#presence - fullRead replies', self.scope, replies)
     if (!replies) {
-      if (callback) callback(self.getOnline())
+      if (callback) { callback(self.getOnline()) }
       return
     }
 
-    var count = 0, keys = Object.keys(replies)
+    var count = 0
+    var keys = Object.keys(replies)
     var completed = function () {
       count++
-      if (count == keys.length) {
+      if (count === keys.length) {
         if (callback) callback(self.getOnline())
       }
     }
@@ -321,8 +322,8 @@ PresenceManager.prototype.fullRead = function (callback) {
 
 // Sync v1
 PresenceManager.prototype.getOnline = function () {
-  var result = {},
-    store = this.store
+  var result = {}
+  var store = this.store
 
   this.store.users().forEach(function (userId) {
     result[userId] = store.userTypeOf(userId)
@@ -333,16 +334,17 @@ PresenceManager.prototype.getOnline = function () {
 
 // Sync v2
 PresenceManager.prototype.getClientsOnline = function () {
-  var result = {},
-    store = this.store
+  var result = {}
+  var store = this.store
 
   function processMessage (message) {
     result[message.userId] = result[message.userId] || {
-        clients: {},
-        userType: message.userType
+      clients: {},
+      userType: message.userType
     }
 
-    var payload = _.extend({}, (message.userData || {}),
+    var payload = _.extend({},
+      (message.userData || {}),
       (message.clientData || {}))
 
     result[message.userId].clients[message.clientId] = payload

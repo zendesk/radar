@@ -1,5 +1,5 @@
-var url = require('url'),
-  logging = require('minilog')('radar:api-router')
+var url = require('url')
+var logging = require('minilog')('radar:api-router')
 
 function Router () {
   this.urlMap = []
@@ -9,13 +9,13 @@ function Router () {
 Router.prototype.route = function (req, res) {
   logging.info('Routing request "' + req.method + ' ' + req.url + '"')
 
-  var pathname = url.parse(req.url).pathname.replace(/^\/?node/, ''),
-    len = this.urlMap.length,
-    i = -1,
-    urlHandler
+  var pathname = url.parse(req.url).pathname.replace(/^\/?node/, '')
+  var len = this.urlMap.length
+  var i = -1
+  var urlHandler
 
-  while(++i <= len){
-    if (this.urlMap[i] && this.urlMap[i].method == req.method && this.urlMap[i].re.test(pathname)) {
+  while (++i <= len) {
+    if (this.urlMap[i] && this.urlMap[i].method === req.method && this.urlMap[i].re.test(pathname)) {
       urlHandler = this.urlMap[i]
       break
     }
@@ -25,7 +25,7 @@ Router.prototype.route = function (req, res) {
     return false
   }
 
-  if (req.method == 'POST') {
+  if (req.method === 'POST') {
     var data = ''
 
     req.on('data', function (chunk) {
@@ -34,14 +34,13 @@ Router.prototype.route = function (req, res) {
 
     req.on('end', function () {
       logging.debug('Post data sent to ' + req.url + ' ended.')
-      urlHandler.callback.apply(undefined, [req, res, urlHandler.re.exec(pathname), data ])
+      urlHandler.callback.apply(undefined, [req, res, urlHandler.re.exec(pathname), data])
     })
   } else {
-    urlHandler.callback.apply(undefined, [req, res, urlHandler.re.exec(pathname) ])
+    urlHandler.callback.apply(undefined, [req, res, urlHandler.re.exec(pathname)])
   }
 
   return true
-
 }
 
 Router.prototype.get = function (regexp, callback) {
@@ -53,9 +52,10 @@ Router.prototype.post = function (regexp, callback) {
 }
 
 Router.prototype.attach = function (httpServer) {
-  var self = this,
-    // Cache and clean up listeners
-    oldListeners = httpServer.listeners('request')
+  var self = this
+
+  // Cache and clean up listeners
+  var oldListeners = httpServer.listeners('request')
   httpServer.removeAllListeners('request')
 
   // Add request handler
@@ -67,7 +67,6 @@ Router.prototype.attach = function (httpServer) {
       }
     }
   })
-
 }
 
 module.exports = Router

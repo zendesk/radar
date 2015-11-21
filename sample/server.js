@@ -1,10 +1,9 @@
-var fs = require('fs'),
-  url = require('url'),
-  http = require('http'),
+var fs = require('fs')
+var http = require('http')
 
-  Minilog = require('minilog'),
-  Radar = require('../index.js').server
-Router = require('../api/lib/router.js')
+var Minilog = require('minilog')
+var Radar = require('../index.js').server
+var Router = require('../api/lib/router.js')
 
 var server = http.createServer(function (req, res) {
   console.log('404', req.url)

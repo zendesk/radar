@@ -4,18 +4,18 @@ var Types = [
   {
     name: 'general message',
     type: 'MessageList',
-    expression: /^message:/,
+    expression: /^message:/
   },
   {
     name: 'general status',
     type: 'Status',
-    expression: /^status:/,
+    expression: /^status:/
   },
   {
     name: 'general presence',
     type: 'Presence',
     expression: /^presence:/,
-    policy: { cache: true, maxAgeSeconds: 15 },
+    policy: { cache: true, maxAgeSeconds: 15 }
   },
   {
     name: 'general stream',

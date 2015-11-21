@@ -1,8 +1,9 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Client = require('radar_client').constructor,
-  Tracker = require('callback_tracker'),
-  radar, client
+/* globals describe, it, afterEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
+var radar
+var client
 
 describe('Once radar server is running', function () {
   before(function (done) {

@@ -1,11 +1,12 @@
-var assert = require('assert'),
-  QuotaLimiter = require('../middleware').QuotaLimiter,
-  limit = 1,
-  clientId = '1',
-  clientId2 = '2',
-  toPrefix = 'presence://thing/',
-  to = toPrefix + '1',
-  quotaLimiter
+/* globals describe, it, beforeEach */
+var assert = require('assert')
+var QuotaLimiter = require('../middleware').QuotaLimiter
+var limit = 1
+var clientId = '1'
+var clientId2 = '2'
+var toPrefix = 'presence://thing/'
+var to = toPrefix + '1'
+var quotaLimiter
 
 describe('QuotaLimiter', function () {
   beforeEach(function () {
@@ -36,7 +37,7 @@ describe('QuotaLimiter', function () {
 
   it('duplicates should not count', function () {
     quotaLimiter.add(clientId, to)
-    assert(! quotaLimiter.add(clientId, to))
+    assert(!quotaLimiter.add(clientId, to))
     assert.equal(quotaLimiter.count(clientId), 1)
   })
 

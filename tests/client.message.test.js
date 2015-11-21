@@ -1,8 +1,7 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Persistence = require('../core').Persistence,
-  Client = require('radar_client').constructor,
-  Tracker = require('callback_tracker')
+/* globals describe, it, beforeEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
 
 describe('When using message list resources:', function () {
   var radar, client, client2
@@ -57,7 +56,7 @@ describe('When using message list resources:', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = { state: 'test1'}
+      var message = {state: 'test1'}
 
       var finished = {}
 
@@ -87,16 +86,16 @@ describe('When using message list resources:', function () {
       // Send three messages, client2 will assert if it receieves any
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'},
-        message2 = { state: 'test2' },
-        message3 = { state: 'test3' }
+      var message = { state: 'test1' }
+      var message2 = { state: 'test2' }
+      var message3 = { state: 'test3' }
 
       client2.message('test').on(function (msg) {
         assert.ok(false)
       })
 
       client.message('test').on(function (msg) {
-        if (msg.value.state == 'test3') {
+        if (msg.value.state === 'test3') {
           done()
         }
       })
@@ -111,9 +110,9 @@ describe('When using message list resources:', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'}
-      var message2 = { state: 'test2'}
-      var message3 = { state: 'test3'}
+      var message = {state: 'test1'}
+      var message2 = {state: 'test2'}
+      var message3 = {state: 'test3'}
 
       // test.numAssertions = 3
       client2.message('test').on(function (msg) {
@@ -123,7 +122,7 @@ describe('When using message list resources:', function () {
       })
 
       client.message('test').on(function (msg) {
-        if (msg.value.state == 'test3') {
+        if (msg.value.state === 'test3') {
           // Received third message without asserting
           done()
         }
@@ -134,13 +133,12 @@ describe('When using message list resources:', function () {
     })
 
     it('should receive messages in the order of publish', function (done) {
-      var messages = ['1', '2', '3', '4', 'foobar', { foo: 'bar' }],
-        received = [],
-        assertions = 0
+      var messages = ['1', '2', '3', '4', 'foobar', { foo: 'bar' }]
+      var received = []
 
       client2.message('cached_chat/1').subscribe().on(function (m) {
         received.push(m)
-        if (received.length == 4) {
+        if (received.length === 4) {
           setTimeout(verify, 50)
         }
       })
@@ -186,10 +184,10 @@ describe('When using message list resources:', function () {
     })
 
     it('can publish an Object', function (done) {
-      var message = { state: 'other'}
+      var message = {state: 'other'}
 
       client.message('test').when(function (msg) {
-        if (msg.value && msg.value.state && msg.value.state == 'other') {
+        if (msg.value && msg.value.state && msg.value.state === 'other') {
           assert.equal('message:/dev/test', msg.to)
           assert.equal('other', msg.value.state)
           done()
@@ -223,8 +221,8 @@ describe('When using message list resources:', function () {
     })
 
     it('can sync() when messagelist has String', function (done) {
-      var message = 'foobar',
-        assertions = 0
+      var message = 'foobar'
+      var assertions = 0
       client2.message('cached_chat/1').subscribe()
         .publish(message)
         .once(function () {
@@ -243,8 +241,8 @@ describe('When using message list resources:', function () {
     })
 
     it('can sync() when messagelist has Object', function (done) {
-      var message = { foo: 'bar' },
-        assertions = 0
+      var message = { foo: 'bar' }
+      var assertions = 0
 
       client2.message('cached_chat/1').subscribe()
         .publish(message)
@@ -264,15 +262,15 @@ describe('When using message list resources:', function () {
     })
 
     it('can sync() with multiple values in correct order', function (done) {
-      var messages = ['1', '2', '3', '4', 'foobar', { foo: 'bar' }],
-        received = [],
-        written = 0,
-        assertions = 0
+      var messages = ['1', '2', '3', '4', 'foobar', { foo: 'bar' }]
+      var received = []
+      var written = 0
 
       client2.message('cached_chat/1').subscribe().on(function (m) {
         written++
-        if (written == messages.length)
+        if (written === messages.length) {
           syncTest()
+        }
       })
 
       for (var i = 0; i < messages.length; i++) {
@@ -282,7 +280,7 @@ describe('When using message list resources:', function () {
       function syncTest () {
         client.message('cached_chat/1').on(function (msg) {
           received.push(msg)
-          if (received.length == messages.length) {
+          if (received.length === messages.length) {
             setTimeout(function () {
               assert.equal(messages.length, received.length)
               for (var i = 0; i < received.length; i++) {

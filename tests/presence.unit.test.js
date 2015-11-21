@@ -1,14 +1,15 @@
-var assert = require('assert'),
-  MiniEE = require('miniee'),
-  Persistence = require('persistence'),
-  Common = require('./common.js'),
-  Presence = require('../core/lib/resources/presence')
+/* globals describe, it, beforeEach, afterEach, before, after */
+var assert = require('assert')
+var MiniEE = require('miniee')
+var Persistence = require('persistence')
+var Common = require('./common.js')
+var Presence = require('../core/lib/resources/presence')
 
 describe('given a presence resource', function () {
-  var presence, client, client2,
-    oldExpire = Persistence.expire,
-    oldPersistHash = Persistence.persistHash,
-    oldPublish = Persistence.publish
+  var presence, client, client2
+  var oldExpire = Persistence.expire
+  var oldPersistHash = Persistence.persistHash
+  var oldPublish = Persistence.publish
 
   var Server = {
     broadcast: function () {},
@@ -71,7 +72,7 @@ describe('given a presence resource', function () {
       Persistence.publish = function (scope, m) {
         presence.redisIn(m)
       }
-      presence.set(client, { key: 1, type: 2, value: 'online'})
+      presence.set(client, {key: 1, type: 2, value: 'online'})
       assert.ok(presence.manager.hasUser(1))
       Persistence.publish = function (scope, m) {
         assert.equal(1, m.userId)
@@ -86,8 +87,8 @@ describe('given a presence resource', function () {
     })
 
     it('can be set to online and include arbitrary client data', function () {
-      var published,
-        clientData = { 'abc': 'abc' }
+      var published
+      var clientData = { 'abc': 'abc' }
 
       Persistence.publish = function (scope, m) {
         assert.equal(1, m.userId)
@@ -97,12 +98,12 @@ describe('given a presence resource', function () {
         published = true
         presence.redisIn(m)
       }
-      presence.set(client, { key: 1, type: 2, value: 'online', clientData: clientData})
+      presence.set(client, {key: 1, type: 2, value: 'online', clientData: clientData})
       assert.ok(presence.manager.hasUser(1))
       assert.ok(published)
     })
 
-    it('expires within maxPersistence if set' , function (done) {
+    it('expires within maxPersistence if set', function (done) {
       Persistence.expire = function (scope, expiry) {
         assert.equal(presence.to, scope)
         assert.equal(expiry, 12 * 60 * 60)
@@ -121,9 +122,10 @@ describe('given a presence resource', function () {
       // See also: presence_monitor.test.js / test with the same name
       var calls = 0
       Persistence.publish = function (scope, m) {
-        var online = m.online,
-          userId = m.userId,
-          userType = m.userType
+        var online = m.online
+        var userId = m.userId
+        var userType = m.userType
+
         assert.equal(1, userId)
         assert.equal(2, userType)
         assert.equal(true, online)
@@ -136,6 +138,74 @@ describe('given a presence resource', function () {
       // Persist twice, but only update once
       assert.equal(2, calls)
       assert.ok(presence.manager.hasUser(1))
+    })
+  })
+
+  describe('.sync', function () {
+    it('message v2 sends get response + subscribes', function (done) {
+      var called = {}
+      var socket = {
+        send: function (message) {
+          called[message.op] = message
+        }
+      }
+      presence.fullRead = function (fn) { fn() }
+      presence.subscribe = function () {
+        called.subscribe = true
+      }
+      presence.sync(socket, {op: 'sync', options: {version: '2'}})
+
+      setImmediate(function () {
+        assert.ok(called.get)
+        assert.ok(called.subscribe)
+        done()
+      })
+    })
+    it('message v2 version can be a string or a number', function (done) {
+      var sent = []
+      var socket = {
+        send: function (message) {
+          sent.push(message.op)
+        }
+      }
+
+      // override to make sync
+      presence.fullRead = function (fn) {
+        fn()
+        check()
+      }
+
+      presence.subscribe = function () {}
+
+      presence.sync(socket, {op: 'sync', options: {version: '2'}})
+      function check () {
+        if (sent.length === 1) {
+          presence.sync(socket, {op: 'sync', options: {version: 2}})
+        } else {
+          assert.ok(sent.length === 2 && sent[0] === 'get' && sent[1] === 'get')
+          done()
+        }
+      }
+    })
+    it('message v1 sends online response + subscribes', function (done) {
+      var called = {}
+      var socket = {
+        send: function (message) {
+          called[message.op] = message
+        }
+      }
+      presence.fullRead = function (fn) { fn() }
+      presence.subscribe = function () {
+        called.subscribe = true
+      }
+      // version 1 does not specify options.version
+      presence.sync(socket, {op: 'sync'})
+
+      setImmediate(function () {
+        assert.ok(called.online)
+        assert.ok(called.subscribe)
+        done()
+      })
     })
   })
 
@@ -217,8 +287,8 @@ describe('given a presence resource', function () {
         assert.ok(presence.manager.expiryTimers[123]._idleTimeout > 0)
         assert.equal(Object.keys(presence.manager.expiryTimers).length, 2)
 
-        var remote = [],
-          local = []
+        var remote = []
+        var local = []
         Persistence.publish = function (scope, data) {
           remote.push(data)
           presence.redisIn(data)
@@ -231,7 +301,7 @@ describe('given a presence resource', function () {
         presence.set(client, { key: 1, type: 2, value: 'online' })
         // client 1 should emit periodic online and 123 should have emitted offline
         // one autopublish message
-        assert.ok(remote.some(function (msg) { return msg.userId == 1 && msg.userType == 2 && msg.online; }))
+        assert.ok(remote.some(function (msg) { return msg.userId === 1 && msg.userType === 2 && msg.online }))
         // Timer is cleared
         assert.ok(!presence.manager.expiryTimers[1])
 
@@ -427,7 +497,8 @@ describe('given a presence resource', function () {
 
   describe('userData', function () {
     it('userData should be stored on an incoming message', function () {
-      var persistHash = Persistence.persistHash, called = false
+      var persistHash = Persistence.persistHash
+      var called = false
 
       Persistence.persistHash = function (to, key, value) {
         called = true
@@ -442,14 +513,14 @@ describe('given a presence resource', function () {
 
     it('userData should be included as the value of a client in a presence response', function () {
       var data = {
-          clients: {},
-          userType: 2,
-        },
-        fakeClient = {
-          send: function (msg) {
-            assert.deepEqual(msg.value[123], data)
-          }
+        clients: {},
+        userType: 2
+      }
+      var fakeClient = {
+        send: function (msg) {
+          assert.deepEqual(msg.value[123], data)
         }
+      }
 
       data.clients[client.id] = { test: 1 }
 
@@ -461,6 +532,8 @@ describe('given a presence resource', function () {
 
 describe('a presence resource', function () {
   describe('emitting messages', function () {
+    var radarServer
+
     beforeEach(function (done) {
       radarServer = Common.createRadarServer(done)
     })
@@ -485,16 +558,16 @@ describe('a presence resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var count = 0,
-        setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' },
-        subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' },
-        socketOne = { id: 1, send: function (m) {} },
-        socketTwo = { id: 2, send: function (m) {} }
+      var count = 0
+      var setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' }
+      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' }
+      var socketOne = { id: 1, send: function (m) {} }
+      var socketTwo = { id: 2, send: function (m) {} }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {
           count++
-          if (count === 2) { done(); }
+          if (count === 2) { done() }
         })
       })
 

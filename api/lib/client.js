@@ -1,8 +1,8 @@
-var https = require('https'),
-  http = require('http'),
-  qs = require('querystring'),
-  urlmodule = require('url'),
-  logging = require('minilog')('client')
+var https = require('https')
+var http = require('http')
+var qs = require('querystring')
+var urlmodule = require('url')
+var logging = require('minilog')('client')
 
 function Scope (defaults) {
   // Clone Client.def. We don't want to change the defaults when we modify options further.
@@ -51,7 +51,7 @@ Client.prototype.header = function (key, value) {
 }
 
 Client.prototype.data = function (data) {
-  if (this.options.method == 'GET') {
+  if (this.options.method === 'GET') {
     // Append to QS
     logging.debug('GET append', data)
     this.options.path += '?' + qs.stringify(data)
@@ -71,11 +71,11 @@ Client.prototype.end = function (callback) {
 }
 
 Client.prototype._end = function (callback) {
-  var self = this,
-    options = this.options,
-    secure = this.options.secure,
-    resData = '',
-    protocol = (secure ? https : http)
+  var self = this
+  var options = this.options
+  var secure = this.options.secure
+  var resData = ''
+  var protocol = (secure ? https : http)
 
   if (this.beforeRequest) {
     this.beforeRequest(this)
@@ -86,10 +86,9 @@ Client.prototype._end = function (callback) {
     'request. Options: ', options)
 
   var proxy = protocol.request(options, function (response) {
-    response.on('data', function (chunk) { resData += chunk; })
+    response.on('data', function (chunk) { resData += chunk })
     response.on('end', function () {
-      var err,
-        isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location
+      var isRedirect = Math.floor(response.statusCode / 100) === 3 && response.headers && response.headers.location
 
       logging.debug('Response for the request "' + options.method + ' ' + options.host + options.path + '" has been ended.')
 
@@ -102,7 +101,7 @@ Client.prototype._end = function (callback) {
         response.headers['content-type'].toLowerCase().indexOf('application/json') > -1) {
         try {
           resData = JSON.parse(resData)
-        } catch(jsonParseError) {
+        } catch (jsonParseError) {
           return self._error(jsonParseError, resData, callback)
         }
       }
@@ -124,9 +123,9 @@ Client.prototype._end = function (callback) {
         callback(undefined, resData)
       }
     })
-  }).on('error', function (err) { self._error(err, callback); })
+  }).on('error', function (err) { self._error(err, callback) })
 
-  if (options.data && options.method != 'GET') {
+  if (options.data && options.method !== 'GET') {
     proxy.write(options.data)
   }
 
@@ -142,18 +141,16 @@ Client.prototype._error = function (error, resData, callback) {
   }
 }
 
-Client.prototype._redirect = function (response) {
-  var parts
-
+Client.prototype._redirect = function (response, callback) {
   if (!/^https?:/.test(response.headers.location)) {
-    response.headers.location = urlmodule.resolve(options.url, response.headers.location)
+    response.headers.location = urlmodule.resolve(this.options.url, response.headers.location)
   }
 
   // Parse location to check for port
-  parts = urlmodule.parse(response.headers.location)
-  if (parts.protocol == 'http:') {
-    options.secure = false
-    options.port = parts.port || 80
+  var parts = urlmodule.parse(response.headers.location)
+  if (parts.protocol === 'http:') {
+    this.options.secure = false
+    this.options.port = parts.port || 80
   }
 
   this.options.url = parts.href

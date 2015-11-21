@@ -1,7 +1,7 @@
-var MiniEventEmitter = require('miniee'),
-  QuotaLimiter = require('./quota_limiter.js'),
-  Client = require('../client/client.js'),
-  logging = require('minilog')('radar:quota_manager')
+var MiniEventEmitter = require('miniee')
+var QuotaLimiter = require('./quota_limiter.js')
+var Client = require('../client/client.js')
+var logging = require('minilog')('radar:quota_manager')
 
 var QuotaManager = function () {
   this._limiters = {}
@@ -10,8 +10,8 @@ var QuotaManager = function () {
 MiniEventEmitter.mixin(QuotaManager)
 
 QuotaManager.prototype.checkLimits = function (socket, message, messageType, next) {
-  var limiter = this.getLimiter(messageType),
-    softLimit
+  var limiter = this.getLimiter(messageType)
+  var softLimit
 
   if (!limiter || (message.op !== 'subscribe' && message.op !== 'sync')) {
     next()
@@ -26,7 +26,7 @@ QuotaManager.prototype.checkLimits = function (socket, message, messageType, nex
 
     next(new Error('limit reached'))
   } else {
-    // Log Soft Limit, if available. 
+    // Log Soft Limit, if available
     softLimit = this._getSoftLimit(messageType)
     if (softLimit && limiter.count(socket.id) === softLimit) {
       var client = Client.get(socket.id)
@@ -66,8 +66,8 @@ QuotaManager.prototype.destroyByClient = function (socket, resource, messageType
 }
 
 QuotaManager.prototype.destroyByResource = function (resource, messageType, next) {
-  var to = resource.to,
-    limiter = this.findLimiter(messageType)
+  var to = resource.to
+  var limiter = this.findLimiter(messageType)
 
   if (limiter) {
     limiter.removeByTo(to)

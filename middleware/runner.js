@@ -7,9 +7,9 @@ var Middleware = {
   },
 
   runMiddleware: function () {
-    var context = arguments[0],
-      args = [].slice.call(arguments, 1, -1),
-      callback = [].slice.call(arguments, -1)[0]
+    var context = arguments[0]
+    var args = [].slice.call(arguments, 1, -1)
+    var callback = [].slice.call(arguments, -1)[0]
 
     if (!this._middleware) {
       callback()
@@ -30,7 +30,8 @@ var Middleware = {
 
 module.exports = {
   mixin: function (receiver) {
-    var o = Middleware, k
+    var o = Middleware
+    var k
     for (k in o) {
       if (o.hasOwnProperty(k)) {
         receiver.prototype[k] = o[k]

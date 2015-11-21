@@ -1,11 +1,12 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  logging = require('minilog')('test'),
-  Persistence = require('../core').Persistence,
-  Tracker = require('callback_tracker'),
-  Client = require('radar_client').constructor,
-  PresenceMessage = require('./lib/assert_helper.js').PresenceMessage,
-  radar, client, client2
+/* globals describe, it, beforeEach, afterEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
+var PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
+var radar
+var client
+var client2
+var client3
 
 describe('given two clients and a presence resource', function () {
   var p
@@ -72,7 +73,6 @@ describe('given two clients and a presence resource', function () {
           setTimeout(done, 10)
         })
       })
-
     })
 
     describe('with a client subscribed', function () {
@@ -158,7 +158,6 @@ describe('given two clients and a presence resource', function () {
 
     it('does not implicitly subscribe to the presence', function (done) {
       p = p.for_client(client)
-      var presence = client.presence('test').on(p.notify)
       p.fail_on_any_message(0)
       client.presence('test').set('online', function () {
         setTimeout(done, 500)
@@ -230,28 +229,28 @@ describe('given two clients and a presence resource', function () {
 
       it('should send online notification only once for multiple set(online), unless updated clientData, ' +
         'but only if it differs', function (done) {
-          var clientData = { data: 2 },
-            clientData2 = { data: 3 }
+        var clientData = { data: 2 }
+        var clientData2 = { data: 3 }
 
-          client2.presence('test').on(p.notify)
-            .subscribe(function () {
-              client.presence('test').set('online')
-              client.presence('test').set('online', clientData)
-              client.presence('test').set('online', clientData2)
-              client.presence('test').set('online', clientData2)
-              setTimeout(done, 50)
-            })
-
-          p.fail_on_more_than(4)
-          p.on(4, function () {
-            p.for_client(client).assert_message_sequence([
-              [ 'online' ],
-              [ 'client_online' ],
-              [ 'client_updated', clientData ],
-              [ 'client_updated', clientData2 ]
-            ])
+        client2.presence('test').on(p.notify)
+          .subscribe(function () {
+            client.presence('test').set('online')
+            client.presence('test').set('online', clientData)
+            client.presence('test').set('online', clientData2)
+            client.presence('test').set('online', clientData2)
+            setTimeout(done, 50)
           })
+
+        p.fail_on_more_than(4)
+        p.on(4, function () {
+          p.for_client(client).assert_message_sequence([
+            [ 'online' ],
+            [ 'client_online' ],
+            [ 'client_updated', clientData ],
+            [ 'client_updated', clientData2 ]
+          ])
         })
+      })
 
       it('should send presence messages correctly when toggling back and forth', function (done) {
         var expected = []
@@ -341,7 +340,7 @@ describe('given two clients and a presence resource', function () {
 
         p.on(4, function () {
           p.for_client(client).assert_message_sequence(
-            [ 'online', 'client_online', 'client_implicit_offline', 'offline']
+            ['online', 'client_online', 'client_implicit_offline', 'offline']
           )
           done()
         })
@@ -518,7 +517,7 @@ describe('given two clients and a presence resource', function () {
       setTimeout(function () {
         // Hack a bit so that socketId is saved
         var clientId = client2.currentClientId()
-        client2.currentClientId = function () { return clientId; }
+        client2.currentClientId = function () { return clientId }
         // Disconnect, causing a request timeout or socket close
         client2.manager.close()
       }, 10)
@@ -544,7 +543,7 @@ describe('given two clients and a presence resource', function () {
 
       // Hack a bit so that socketId is saved
       var clientId = client.currentClientId()
-      client.currentClientId = function () { return clientId; }
+      client.currentClientId = function () { return clientId }
 
       client.dealloc('test')
       var time = Date.now()

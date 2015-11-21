@@ -1,11 +1,11 @@
 var logging = require('minilog')('radar:legacy_auth_manager')
 
-// Legacy auth middleware. 
+// Legacy auth middleware
 //
-// This middleware adds support for the legacy authentication process. 
+// This middleware adds support for the legacy authentication process.
 //
-// It checks for existance of an authProvider, and delegates 
-// authentication to it. 
+// It checks for existance of an authProvider, and delegates
+// authentication to it.
 //
 // {
 //    type: '...',
@@ -32,8 +32,8 @@ LegacyAuthManager.prototype.onMessage = function (socket, message, messageType, 
 }
 
 LegacyAuthManager.prototype.isAuthorized = function (socket, message, messageType) {
-  var isAuthorized = true,
-    provider = messageType && messageType.authProvider
+  var isAuthorized = true
+  var provider = messageType && messageType.authProvider
 
   if (provider && provider.authorize) {
     isAuthorized = provider.authorize(messageType, message, socket)

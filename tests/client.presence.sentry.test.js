@@ -1,23 +1,22 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  logging = require('minilog')('test'),
-  Persistence = require('../core').Persistence,
-  Tracker = require('callback_tracker'),
-  PresenceManager = require('../core/lib/resources/presence/presence_manager.js'),
-  Client = require('radar_client').constructor,
-  EE = require('events').EventEmitter,
-  assertHelper = require('./lib/assert_helper.js'),
-  PresenceMessage = assertHelper.PresenceMessage,
-  Sentry = require('../core/lib/resources/presence/sentry.js'),
-  radar, client, client2
+/* globals describe, it, beforeEach, afterEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Persistence = require('../core').Persistence
+var Tracker = require('callback_tracker')
+var PresenceManager = require('../core/lib/resources/presence/presence_manager.js')
+var assertHelper = require('./lib/assert_helper.js')
+var PresenceMessage = assertHelper.PresenceMessage
+var Sentry = require('../core/lib/resources/presence/sentry.js')
+var radar
+var client
 
 describe('given a client and a server,', function () {
-  var p,
-    sentry = new Sentry('test-sentry', assertHelper.SentryDefaults),
-    presenceManager = new PresenceManager('presence:/dev/test', {}, sentry),
-    publishClientOnline = function (client) {
-      presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData)
-    }
+  var p
+  var sentry = new Sentry('test-sentry', assertHelper.SentryDefaults)
+  var presenceManager = new PresenceManager('presence:/dev/test', {}, sentry)
+  var publishClientOnline = function (client) {
+    presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData)
+  }
 
   before(function (done) {
     common.startPersistence(function () {
@@ -85,7 +84,6 @@ describe('given a client and a server,', function () {
           sentry.stop()
           p.on(4, validate)
         }, 1000)
-
       })
 
       it('should still be online if sentry is alive', function (done) {

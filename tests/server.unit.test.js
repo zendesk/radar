@@ -1,13 +1,14 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  sinon = require('sinon'),
-  chai = require('chai'),
-  expect = chai.expect,
-  subscribeMessage = {
-    op: 'subscribe',
-    to: 'presence:/z1/test/ticket/1'
-  },
-  radarServer
+/* globals describe, it, beforeEach, afterEach*/
+var common = require('./common.js')
+var assert = require('assert')
+var sinon = require('sinon')
+var chai = require('chai')
+var expect = chai.expect
+var subscribeMessage = {
+  op: 'subscribe',
+  to: 'presence:/z1/test/ticket/1'
+}
+var radarServer
 
 chai.use(require('sinon-chai'))
 
@@ -85,8 +86,6 @@ describe('given a server', function () {
 
     socket.send = function (x) {}
 
-    var i = 0
-
     radarServer._handleResourceMessage = sinon.spy()
 
     radarServer._processMessage(socket, batchMessage)
@@ -95,15 +94,13 @@ describe('given a server', function () {
       expect(radarServer._handleResourceMessage).to.have.been.called.twice
       done()
     }, 20)
-
   })
 
   it('should stamp incoming messages', function (done) {
-    var called = false,
-      message = {
-        to: 'presence:/dev/test/ticket/1',
-        op: 'subscribe'
-      }
+    var message = {
+      to: 'presence:/dev/test/ticket/1',
+      op: 'subscribe'
+    }
 
     radarServer.on('resource:new', function (resource) {
       resource.subscribe(socket.id, { ack: 1 })

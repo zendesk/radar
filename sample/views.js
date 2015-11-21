@@ -1,3 +1,4 @@
+/* globals RadarClient */
 function Status (elId) {
   this.elId = elId
   this.value = ''
@@ -35,7 +36,6 @@ OnlineToggle.prototype.render = function () {
   this.el || (this.el = document.getElementById(this.elId))
   var status = (model.online[RadarClient.configuration('userId')] ? 'offline' : 'online')
   this.el.innerHTML = '<a onclick="RadarClient.presence(\'foo\').set(\'' + status + '\');" href="javascript:;">Go ' + status + '</a>'
-
 }
 
 function MessageList (elId) {
@@ -51,29 +51,29 @@ MessageList.prototype.render = function () {
   this.el.innerHTML = '<ul>' + str + '</ul>'
 }
 
-model = {
+var model = {
   online: {},
   messages: []
 }
 
-function onlineUpdate (message) {
-  if (message.op != 'online' && message.op != 'offline') return
-  for (var userId in message.value) {
-    if (!message.value.hasOwnProperty(userId)) continue
-    model.online[userId] = !!(message.op == 'online')
-  }
-}
+// function onlineUpdate (message) {
+//   if (message.op !== 'online' && message.op !== 'offline') return
+//   for (var userId in message.value) {
+//     if (!message.value.hasOwnProperty(userId)) continue
+//     model.online[userId] = !!(message.op === 'online')
+//   }
+// }
 
-view = {
-  status: new Status('info'),
-  online: new OnlineList('online'),
-  toggle: new OnlineToggle('toggle'),
-  messages: new MessageList('messages')
-}
+// var view = {
+//   status: new Status('info'),
+//   online: new OnlineList('online'),
+//   toggle: new OnlineToggle('toggle'),
+//   messages: new MessageList('messages')
+// }
 
-function redraw () {
-  Object.keys(view).forEach(function (name) {
-    var view = window.view[name]
-    view.render()
-  })
-}
+// function redraw () {
+//   Object.keys(view).forEach(function (name) {
+//     var view = window.view[name]
+//     view.render()
+//   })
+// }

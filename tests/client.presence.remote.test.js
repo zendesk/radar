@@ -1,19 +1,21 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  logging = require('minilog')('test'),
-  Persistence = require('../core').Persistence,
-  Tracker = require('callback_tracker'),
-  PresenceManager = require('../core/lib/resources/presence/presence_manager.js'),
-  Client = require('radar_client').constructor,
-  EE = require('events').EventEmitter,
-  AssertHelper = require('./lib/assert_helper.js'),
-  PresenceMessage = AssertHelper.PresenceMessage,
-  presenceManagerForSentry = AssertHelper.presenceManagerForSentry
+/* globals describe, it, beforeEach, afterEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Persistence = require('../core').Persistence
+var Tracker = require('callback_tracker')
+var PresenceManager = require('../core/lib/resources/presence/presence_manager.js')
+var AssertHelper = require('./lib/assert_helper.js')
+var PresenceMessage = AssertHelper.PresenceMessage
+var presenceManagerForSentry = AssertHelper.presenceManagerForSentry
 
-var radar, client, client2,
-  p, testSentry, presenceManager, track
+describe('given a client and a server', function () {
+  var client
+  var p
+  var presenceManager
+  var radar
+  var testSentry
+  var track
 
-describe('given a client and a server,', function () {
   before(function (done) {
     common.startPersistence(function () {
       radar = common.spawnRadar()
@@ -30,7 +32,6 @@ describe('given a client and a server,', function () {
   })
 
   beforeEach(function (done) {
-    notifications = []
     testSentry = AssertHelper.newTestSentry('test-sentry')
     presenceManager = new PresenceManager('presence:/dev/test', {}, testSentry)
     p = new PresenceMessage('dev', 'test')
@@ -69,7 +70,7 @@ describe('given a client and a server,', function () {
 
   describe('when listening to a presence,', function () {
     beforeEach(function (done) {
-      client.presence('test').on(p.notify).subscribe(function () { done(); })
+      client.presence('test').on(p.notify).subscribe(function () { done() })
     })
 
     describe('for incoming online messages,', function () {
@@ -99,7 +100,7 @@ describe('given a client and a server,', function () {
       })
 
       it('should ignore messages from dead servers (sentry expired and gone)', function (done) {
-        presenceManagerForSentry('dead', {dead: true }, function (pm) {
+        presenceManagerForSentry('dead', {dead: true}, function (pm) {
           pm.addClient('abc', 100, 2, { name: 'tester' })
         })
 
@@ -115,8 +116,8 @@ describe('given a client and a server,', function () {
         p.fail_on_any_message()
         setTimeout(done, 10)
       })
-
     })
+
     describe('for incoming offline messages,', function () {
       beforeEach(function (done) {
         presenceManager.addClient('abc', 100, 2, { name: 'tester' }, done)
@@ -315,7 +316,7 @@ describe('given a client and a server,', function () {
           done()
         }
 
-        presenceManagerForSentry('expired', { expiration: Date.now() - 10}, function (pm) {
+        presenceManagerForSentry('expired', {expiration: Date.now() - 10}, function (pm) {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function () {
             client.presence('test').on(p.notify).sync({ version: 2 }, function (message) {
               p.for_online_clients(clients.abc, clients.def)
@@ -415,7 +416,6 @@ describe('given a client and a server,', function () {
 
         p.fail_on_any_message()
       })
-
     })
   })
 })

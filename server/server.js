@@ -1,16 +1,15 @@
-var _ = require('underscore'),
-  async = require('async'),
-  MiniEventEmitter = require('miniee'),
-  Core = require('../core'),
-  Type = Core.Type,
-  logging = require('minilog')('radar:server'),
-  hostname = require('os').hostname(),
-  DefaultEngineIO = require('engine.io'),
-  Semver = require('semver'),
-  Client = require('../client/client.js'),
-  Middleware = require('../middleware'),
-  QuotaManager = Middleware.QuotaManager,
-  Stamper = require('../core/stamper.js')
+var _ = require('underscore')
+var async = require('async')
+var MiniEventEmitter = require('miniee')
+var Core = require('../core')
+var Type = Core.Type
+var logging = require('minilog')('radar:server')
+var hostname = require('os').hostname()
+var DefaultEngineIO = require('engine.io')
+var Semver = require('semver')
+var Client = require('../client/client.js')
+var Middleware = require('../middleware')
+var Stamper = require('../core/stamper.js')
 
 function Server () {
   this.socketServer = null
@@ -33,13 +32,13 @@ Server.prototype.attach = function (httpServer, configuration) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function (to) {
-  var self = this,
-    messageType = this._getMessageType(to),
-    resource = this.resources[to]
+  var self = this
+  var messageType = this._getMessageType(to)
+  var resource = this.resources[to]
 
   if (resource) {
     this.runMiddleware('onDestroyResource', resource, messageType, function lastly (err) {
-      // TODO: Handle error.
+      if (err) { throw err }
 
       resource.destroy()
       delete self.resources[to]
@@ -74,8 +73,8 @@ Server.prototype.terminate = function (done) {
 var VERSION_CLIENT_STOREDATA = '0.13.1'
 
 Server.prototype._setup = function (httpServer, configuration) {
-  var engine = DefaultEngineIO,
-    engineConf
+  var engine = DefaultEngineIO
+  var engineConf
 
   this.subscriber = Core.Persistence.pubsub()
 
@@ -95,8 +94,7 @@ Server.prototype._setup = function (httpServer, configuration) {
     engine = configuration.engineio.module
     engineConf = configuration.engineio.conf
 
-    this.engineioPath = configuration.engineio.conf ?
-      configuration.engineio.conf.path : 'default'
+    this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default'
   }
 
   this._setupSentry(configuration)
@@ -124,8 +122,8 @@ Server.prototype._setupSentry = function (configuration) {
 }
 
 Server.prototype._onSocketConnection = function (socket) {
-  var self = this,
-    oldSend = socket.send
+  var self = this
+  var oldSend = socket.send
 
   // Always send data as json
   socket.send = function (message) {
@@ -150,6 +148,7 @@ Server.prototype._onSocketConnection = function (socket) {
       var resource = self.resources[to]
 
       self.runMiddleware('onDestroyClient', socket, resource, resource.options, function lastly (err) {
+        if (err) { throw err }
         if (resource.subscribers[socket.id]) {
           resource.unsubscribe(socket, false)
         }
@@ -163,7 +162,7 @@ Server.prototype._handlePubSubMessage = function (to, data) {
   if (this.resources[to]) {
     try {
       data = JSON.parse(data)
-    } catch(parseError) {
+    } catch (parseError) {
       logging.error('#redis - Corrupted key value [' + to + ']. ' + parseError.message + ': ' + parseError.stack)
       return
     }
@@ -232,7 +231,6 @@ Server.prototype._processMessage = function (socket, message) {
       self._handleResourceMessage(socket, message, messageType)
     }
   })
-
 }
 
 // Initialize a client, and persist messages where required
@@ -247,9 +245,9 @@ Server.prototype._persistClientData = function (socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function (socket, message, messageType) {
-  var self = this,
-    to = message.to,
-    resource = this._getResource(message, messageType)
+  var self = this
+  var to = message.to
+  var resource = this._getResource(message, messageType)
 
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
@@ -278,9 +276,9 @@ Server.prototype._getMessageType = function (messageScope) {
 
 // Get or create resource by "to" (aka, full scope)
 Server.prototype._getResource = function (message, messageType) {
-  var to = message.to,
-    type = messageType.type,
-    resource = this.resources[to]
+  var to = message.to
+  var type = messageType.type
+  var resource = this.resources[to]
 
   if (!resource) {
     if (type && Core.Resources[type]) {
@@ -331,7 +329,8 @@ Server.prototype._sendErrorMessage = function (socket, value, origin) {
 
 // Initialize the current client
 Server.prototype._initClient = function (socket, message) {
-  var client = Client.create(message)
+  // creates the mapping on nameSync
+  Client.create(message)
 }
 
 Server.prototype._stampMessage = function (socket, message) {
@@ -345,7 +344,7 @@ function _parseJSON (data) {
 
   try {
     message = JSON.parse(data)
-  } catch(e) {}
+  } catch (e) {}
 
   return message
 }
