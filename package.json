@@ -3,6 +3,9 @@
   "description": "Realtime apps with a high level API based on engine.io",
   "version": "0.17.0",
   "author": "Mikito Takada <mikito.takada@gmail.com>",
+  "engines" : {
+    "node": "0.10 - 4"
+  },
   "contributors": [
     {
       "name": "Sam Shull",
