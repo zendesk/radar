@@ -42,9 +42,12 @@
     "uuid": "^2.0.1"
   },
   "devDependencies": {
+    "chai": "^3.4.1",
     "mocha": "^2.3.3",
     "radar_client": "^0.14.6",
-    "simple_sentinel": "^0.1.8"
+    "simple_sentinel": "^0.1.8",
+    "sinon": "^1.17.2",
+    "sinon-chai": "^2.8.0"
   },
   "scripts": {
     "prestart": "npm run check-modules",
