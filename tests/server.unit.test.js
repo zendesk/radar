@@ -1,13 +1,19 @@
 var common = require('./common.js'),
     assert = require('assert'),
+    sinon = require('sinon'),
+    chai = require('chai'),
+    expect = chai.expect,
     subscribeMessage = {
       op: 'subscribe',
       to: 'presence:/z1/test/ticket/1'
     },
-    radarServer,
-    socket;
+    radarServer;
+
+chai.use(require('sinon-chai'));
 
 describe('given a server',function() {
+
+  var socket;
 
   beforeEach(function(done) {
     radarServer = common.createRadarServer(done);
@@ -61,6 +67,38 @@ describe('given a server',function() {
 
     radarServer._processMessage(socket, invalidMessage);
   });
+
+  it('should unwrap batch messages', function (done) {
+    var batchMessage = {
+      op: 'batch',
+      length: 2,
+      value: [
+        { 
+          to: 'presence:/dev/test/ticket/1',
+          op: 'subscribe'
+        },
+        { 
+          to: 'presence:/dev/test/ticket/2',
+          op: 'subscribe'
+        }
+      ]
+    }
+
+    socket.send = function (x) {
+    }
+
+    var i = 0
+
+    radarServer._handleResourceMessage = sinon.spy()
+
+    radarServer._processMessage(socket, batchMessage);
+
+    setTimeout(function () {
+      expect(radarServer._handleResourceMessage).to.have.been.called.twice
+      done()
+    }, 20)
+
+  })
 
   it('should stamp incoming messages', function(done) {
     var called = false, 

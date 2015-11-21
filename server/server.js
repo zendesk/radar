@@ -1,4 +1,5 @@
 var _ = require('underscore'),
+    async = require('async'),
     MiniEventEmitter = require('miniee'),
     Core = require('../core'),
     Type = Core.Type,
@@ -199,8 +200,18 @@ Server.prototype._handleSocketMessage = function(socket, data) {
 };
 
 Server.prototype._processMessage = function(socket, message) {
-  var self = this,
-      messageType = this._getMessageType(message.to);
+  var self = this
+
+  // recursively handle `BatchMessage`s
+  if (message.op === 'batch') {
+    async.each(message.value, function (submessage, callback) {
+      self._processMessage(socket, submessage);
+      callback();
+    });
+    return;
+  }
+
+  var messageType = this._getMessageType(message.to);
 
   if (!messageType) {
     logging.warn('#socket.message - unknown type', message, socket.id);
@@ -213,7 +224,6 @@ Server.prototype._processMessage = function(socket, message) {
       logging.warn('#socket.message - pre filter halted execution', message);
       return;
     }
-    
     if (message.op === 'nameSync') {
       logging.info('#socket.message - nameSync', message, socket.id);
       self._initClient(socket, message);
