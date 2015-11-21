@@ -1,6 +1,6 @@
 var assert = require('assert'),
-    Common = require('./common.js'),
-    MessageList = require('../core/lib/resources/message_list.js'),
+    Common = require('./common'),
+    MessageList = require('../core/lib/resources/message_list'),
     Persistence = require('persistence');
 
 describe('For a message list', function() {

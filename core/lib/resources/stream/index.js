@@ -1,4 +1,4 @@
-var Resource = require('../../resource.js'),
+var Resource = require('../resource.js'),
     Persistence = require('persistence'),
     logging = require('minilog')('radar:stream'),
     SubscriberState = require('./subscriber_state.js');

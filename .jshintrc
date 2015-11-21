@@ -6,5 +6,6 @@
     "beforeEach" : false,
     "after"      : false,
     "afterEach"  : false
-  }
+  },
+  "node": true
 }

@@ -1,8 +1,8 @@
-var Resource = require('./lib/resource.js'),
-    MessageList = require('./lib/resources/message_list.js'),
+var Resource = require('./lib/resources/resource'),
+    MessageList = require('./lib/resources/message_list'),
     Presence = require('./lib/resources/presence'),
-    Status = require('./lib/resources/status.js'),
-    Stream = require('./lib/resources/stream/index.js');
+    Status = require('./lib/resources/status'),
+    Stream = require('./lib/resources/stream');
 
 module.exports = {
   Persistence: require('persistence'),

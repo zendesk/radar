@@ -1,7 +1,7 @@
 var Persistence = require('persistence'),
     MiniEventEmitter = require('miniee'),
     logging = require('minilog')('radar:resource'),
-    Stamper = require('../stamper.js');
+    Stamper = require('../../stamper.js');
 
 /*
 
@@ -19,8 +19,10 @@ Resources
 
 */
 
-function recursiveMerge(target) {
-  Array.prototype.slice.call(arguments, 1).forEach(function(source) {
+function recursiveMerge(target /*, ..sources */) {
+  var sources = Array.prototype.slice.call(arguments, 1)
+
+  sources.forEach(function(source) {
     if (source) {
       Object.keys(source).forEach(function(name) {
         // Catch 0s and false too
