@@ -30,7 +30,7 @@ QuotaManager.prototype.checkLimits = function(socket, message, messageType, next
     softLimit = this._getSoftLimit(messageType);
     if (softLimit && limiter.count(socket.id) === softLimit) {
       var client = Client.get(socket.id);
-      this._logLimits(client, softLimit, rateLimiter.count(socket.id));
+      this._logLimits(client, softLimit, limiter.count(socket.id));
     }
 
     next();
