@@ -60,8 +60,9 @@ describe('When radar server restarts', function() {
   it('reconnects existing clients', function(done) {
     this.timeout(4000);
     var clientEvents = [], client2Events = [];
+    var states = ['disconnected', 'connected', 'ready']
 
-    ['disconnected', 'connected', 'ready'].forEach(function(state) {
+    states.forEach(function(state) {
       client.once(state, function() { clientEvents.push(state); });
       client2.once(state, function() { client2Events.push(state); });
     });
