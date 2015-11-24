@@ -1,0 +1,11 @@
+engines:
+  eslint:
+    enabled: true
+exclude_paths:
+- "sample/*"
+ratings:
+  paths:
+  - "client/**"
+  - "core/**"
+  - "middleware/**"
+  - "server/**"

@@ -1,164 +1,163 @@
 var https = require('https'),
-    http = require('http'),
-    qs = require('querystring'),
-    urlmodule = require('url'),
-    logging = require('minilog')('client');
+  http = require('http'),
+  qs = require('querystring'),
+  urlmodule = require('url'),
+  logging = require('minilog')('client')
 
-function Scope(defaults) {
+function Scope (defaults) {
   // Clone Client.def. We don't want to change the defaults when we modify options further.
-  this.defaults = JSON.parse(JSON.stringify(defaults));
+  this.defaults = JSON.parse(JSON.stringify(defaults))
 }
 
-Scope.prototype.get = function(path) {
-  var c = new Client();
+Scope.prototype.get = function (path) {
+  var c = new Client()
 
   // Note: assigning this.defaults to c.options will still cause issues!
   // The problem is that since we modify c.options when forming requests
   // we would end up modifying the defaults values as well.
   // JSON.parse(JSON.stringify) is just used as a lazy way to create a deep copy
-  c.options = JSON.parse(JSON.stringify(this.defaults));
+  c.options = JSON.parse(JSON.stringify(this.defaults))
   c.set('method', 'GET')
-   .set('path', path);
-  return c;
-};
-
-Scope.prototype.post = function(path) {
-  var c = new Client();
-
-  c.options = JSON.parse(JSON.stringify(this.defaults));
-  c.set('method', 'POST')
-   .set('path', path);
-
-  return c;
-};
-
-function Client() {
-  this.options = { 
-    headers: {}, 
-    secure: false
-  };
+    .set('path', path)
+  return c
 }
 
-Client.prototype.set = function(key, value) {
-  this.options[key] = value;
-  return this;
-};
+Scope.prototype.post = function (path) {
+  var c = new Client()
 
-Client.prototype.header = function(key, value) {
-  this.options.headers = this.options.headers || {};
-  this.options.headers[key] = value;
-  return this;
-};
+  c.options = JSON.parse(JSON.stringify(this.defaults))
+  c.set('method', 'POST')
+    .set('path', path)
 
-Client.prototype.data = function(data) {
+  return c
+}
+
+function Client () {
+  this.options = {
+    headers: {},
+    secure: false
+  }
+}
+
+Client.prototype.set = function (key, value) {
+  this.options[key] = value
+  return this
+}
+
+Client.prototype.header = function (key, value) {
+  this.options.headers = this.options.headers || {}
+  this.options.headers[key] = value
+  return this
+}
+
+Client.prototype.data = function (data) {
   if (this.options.method == 'GET') {
     // Append to QS
-    logging.debug('GET append', data);
-    this.options.path += '?'+qs.stringify(data);
+    logging.debug('GET append', data)
+    this.options.path += '?' + qs.stringify(data)
   } else {
     // JSON encoding
-    this.options.headers = this.options.headers || {};
-    this.options.headers['Content-Type'] = 'application/json';
-    this.options.data = JSON.stringify(data);
-    this.options.headers['Content-Length'] = this.options.data.length;
+    this.options.headers = this.options.headers || {}
+    this.options.headers['Content-Type'] = 'application/json'
+    this.options.data = JSON.stringify(data)
+    this.options.headers['Content-Length'] = this.options.data.length
   }
-  return this;
-};
+  return this
+}
 
-Client.prototype.end = function(callback) {
-  this.options.redirects = 0;
-  this._end(callback);
-};
+Client.prototype.end = function (callback) {
+  this.options.redirects = 0
+  this._end(callback)
+}
 
-Client.prototype._end = function(callback) {
+Client.prototype._end = function (callback) {
   var self = this,
-      options = this.options,
-      secure = this.options.secure,
-      resData = '',
-      protocol = (secure ? https : http);
+    options = this.options,
+    secure = this.options.secure,
+    resData = '',
+    protocol = (secure ? https : http)
 
   if (this.beforeRequest) {
-    this.beforeRequest(this);
+    this.beforeRequest(this)
   }
 
-  logging.info('New API Request. Sending a ' + 
-      (secure ? 'https ' : 'http') + 
-      'request. Options: ', options);
+  logging.info('New API Request. Sending a ' +
+    (secure ? 'https ' : 'http') +
+    'request. Options: ', options)
 
-  var proxy = protocol.request(options, function(response) {
-    response.on('data', function(chunk) { resData += chunk; });
-    response.on('end', function() {
+  var proxy = protocol.request(options, function (response) {
+    response.on('data', function (chunk) { resData += chunk; })
+    response.on('end', function () {
       var err,
-          isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location;
+        isRedirect = Math.floor(response.statusCode / 100) == 3 && response.headers && response.headers.location
 
-      logging.debug('Response for the request "'+options.method+' '+options.host + options.path+'" has been ended.');
+      logging.debug('Response for the request "' + options.method + ' ' + options.host + options.path + '" has been ended.')
 
       if (isRedirect && self.options.redirects === 0) {
-        logging.debug('Redirect to: ', response.headers.location);
-        return self._redirect(response);
+        logging.debug('Redirect to: ', response.headers.location)
+        return self._redirect(response)
       }
 
       if (response.headers['content-type'] &&
-          response.headers['content-type'].toLowerCase().indexOf('application/json') > -1 ) {
-
+        response.headers['content-type'].toLowerCase().indexOf('application/json') > -1) {
         try {
-          resData = JSON.parse(resData);
+          resData = JSON.parse(resData)
         } catch(jsonParseError) {
-          return self._error(jsonParseError, resData, callback);
+          return self._error(jsonParseError, resData, callback)
         }
       }
 
       // Detect errors
       if (response.statusCode >= 400) {
-        return self._error(new Error('Unexpected HTTP status code ' + response.statusCode), resData, callback);
+        return self._error(new Error('Unexpected HTTP status code ' + response.statusCode), resData, callback)
       } else if (resData === '') {
-        return self._error(new Error('Response was empty.'), resData, callback);
+        return self._error(new Error('Response was empty.'), resData, callback)
       }
 
       logging.info('The request "' +
-          options.method + ' ' + options.host + options.path + 
-          '" has been responded successfully.');
+        options.method + ' ' + options.host + options.path +
+        '" has been responded successfully.')
 
-      logging.debug('Response body: ', resData);
+      logging.debug('Response body: ', resData)
 
       if (callback) {
-        callback(undefined, resData);
+        callback(undefined, resData)
       }
-    });
-  }).on('error', function(err) { self._error(err, callback); });
+    })
+  }).on('error', function (err) { self._error(err, callback); })
 
   if (options.data && options.method != 'GET') {
-    proxy.write(options.data);
+    proxy.write(options.data)
   }
 
-  proxy.end();
-};
+  proxy.end()
+}
 
-Client.prototype._error = function(error, resData, callback) {
-  logging.error('#api_error - An Error occured', error, 
-    'Received response: <res>' + resData +'</res>');
+Client.prototype._error = function (error, resData, callback) {
+  logging.error('#api_error - An Error occured', error,
+    'Received response: <res>' + resData + '</res>')
 
   if (callback) {
-    callback(error, resData);
+    callback(error, resData)
   }
-};
+}
 
-Client.prototype._redirect = function(response) {
-  var parts;
+Client.prototype._redirect = function (response) {
+  var parts
 
   if (!/^https?:/.test(response.headers.location)) {
-    response.headers.location = urlmodule.resolve(options.url, response.headers.location);
+    response.headers.location = urlmodule.resolve(options.url, response.headers.location)
   }
 
   // Parse location to check for port
-  parts = urlmodule.parse(response.headers.location);
+  parts = urlmodule.parse(response.headers.location)
   if (parts.protocol == 'http:') {
-    options.secure = false;
-    options.port = parts.port || 80;
+    options.secure = false
+    options.port = parts.port || 80
   }
 
-  this.options.url = parts.href;
-  this._end(callback);
-};
+  this.options.url = parts.href
+  this._end(callback)
+}
 
-module.exports = Scope;
+module.exports = Scope

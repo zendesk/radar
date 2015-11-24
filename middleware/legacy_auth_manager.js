@@ -1,4 +1,4 @@
-var logging = require('minilog')('radar:legacy_auth_manager');
+var logging = require('minilog')('radar:legacy_auth_manager')
 
 // Legacy auth middleware. 
 //
@@ -13,33 +13,33 @@ var logging = require('minilog')('radar:legacy_auth_manager');
 //    authProvider: new MyAuthProvider()
 // }
 
-var LegacyAuthManager = function() { };
+var LegacyAuthManager = function () {}
 
-LegacyAuthManager.prototype.onMessage = function(socket, message, messageType, next) {
+LegacyAuthManager.prototype.onMessage = function (socket, message, messageType, next) {
   if (!this.isAuthorized(socket, message, messageType)) {
-    logging.warn('#socket.message - unauthorized', message, socket.id);
+    logging.warn('#socket.message - unauthorized', message, socket.id)
 
     socket.send({
       op: 'err',
       value: 'auth',
       origin: message
-    });
-    
-    next(new Error('Unauthorized'));
+    })
+
+    next(new Error('Unauthorized'))
   } else {
-    next();    
+    next()
   }
-};
+}
 
-LegacyAuthManager.prototype.isAuthorized = function(socket, message, messageType) {
+LegacyAuthManager.prototype.isAuthorized = function (socket, message, messageType) {
   var isAuthorized = true,
-      provider = messageType && messageType.authProvider;
-  
+    provider = messageType && messageType.authProvider
+
   if (provider && provider.authorize) {
-    isAuthorized = provider.authorize(messageType, message, socket);
+    isAuthorized = provider.authorize(messageType, message, socket)
   }
 
-  return isAuthorized; 
-};
+  return isAuthorized
+}
 
-module.exports = LegacyAuthManager;
+module.exports = LegacyAuthManager

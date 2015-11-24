@@ -1,7 +1,7 @@
 var Persistence = require('persistence'),
-    MiniEventEmitter = require('miniee'),
-    logging = require('minilog')('radar:resource'),
-    Stamper = require('../../stamper.js');
+  MiniEventEmitter = require('miniee'),
+  logging = require('minilog')('radar:resource'),
+  Stamper = require('../../stamper.js')
 
 /*
 
@@ -19,103 +19,103 @@ Resources
 
 */
 
-function recursiveMerge(target /*, ..sources */) {
+function recursiveMerge (target /*, ..sources */) {
   var sources = Array.prototype.slice.call(arguments, 1)
 
-  sources.forEach(function(source) {
+  sources.forEach(function (source) {
     if (source) {
-      Object.keys(source).forEach(function(name) {
+      Object.keys(source).forEach(function (name) {
         // Catch 0s and false too
         if (target[name] !== undefined) {
           // Extend the object if it is an Object
           if (target[name] === Object(target[name])) {
-            target[name] = recursiveMerge(target[name], source[name]);
+            target[name] = recursiveMerge(target[name], source[name])
           }
         } else {
-          target[name] = source[name];
+          target[name] = source[name]
         }
-      });
+      })
     }
-  });
+  })
 
-  return target;
+  return target
 }
 
-function Resource(to, server, options, default_options) {
-  this.to = to;
-  this.subscribers = {};
-  this.server = server; // RadarServer instance
-  this.options = recursiveMerge({}, options || {}, default_options || {});
+function Resource (to, server, options, default_options) {
+  this.to = to
+  this.subscribers = {}
+  this.server = server // RadarServer instance
+  this.options = recursiveMerge({}, options || {}, default_options || {})
 }
 
-MiniEventEmitter.mixin(Resource);
-Resource.prototype.type = 'default';
+MiniEventEmitter.mixin(Resource)
+Resource.prototype.type = 'default'
 
 // Add a subscriber (Engine.io socket)
-Resource.prototype.subscribe = function(socket, message) {
-  this.subscribers[socket.id] = true;
+Resource.prototype.subscribe = function (socket, message) {
+  this.subscribers[socket.id] = true
 
-  logging.debug('#'+this.type, '- subscribe', this.to, socket.id,
-                              this.subscribers, message && message.ack);
+  logging.debug('#' + this.type, '- subscribe', this.to, socket.id,
+    this.subscribers, message && message.ack)
 
-  this.ack(socket, message && message.ack);
-};
+  this.ack(socket, message && message.ack)
+}
 
 // Remove a subscriber (Engine.io socket)
-Resource.prototype.unsubscribe = function(socket, message) {
-  delete this.subscribers[socket.id];
+Resource.prototype.unsubscribe = function (socket, message) {
+  delete this.subscribers[socket.id]
 
-  logging.info('#'+this.type, '- unsubscribe', this.to, socket.id,
-                    'subscribers left:', Object.keys(this.subscribers).length);
+  logging.info('#' + this.type, '- unsubscribe', this.to, socket.id,
+    'subscribers left:', Object.keys(this.subscribers).length)
 
   if (!Object.keys(this.subscribers).length) {
-    logging.info('#'+this.type, '- destroying resource', this.to,
-                                          this.subscribers, socket.id);
-    this.server.destroyResource(this.to);
+    logging.info('#' + this.type, '- destroying resource', this.to,
+      this.subscribers, socket.id)
+    this.server.destroyResource(this.to)
   }
 
-  this.ack(socket, message && message.ack);
-};
+  this.ack(socket, message && message.ack)
+}
 
 // Send to Engine.io sockets
-Resource.prototype.redisIn = function(data) {
-  var self = this;
-  
-  Stamper.stamp(data);
+Resource.prototype.redisIn = function (data) {
+  var self = this
 
-  logging.info('#'+this.type, '- incoming from #redis', this.to, data, 'subs:',
-                                          Object.keys(this.subscribers).length );
+  Stamper.stamp(data)
 
-  Object.keys(this.subscribers).forEach(function(socketId) {
-    var socket = self.socketGet(socketId);
-    
+  logging.info('#' + this.type, '- incoming from #redis', this.to, data, 'subs:',
+    Object.keys(this.subscribers).length)
+
+  Object.keys(this.subscribers).forEach(function (socketId) {
+    var socket = self.socketGet(socketId)
+
     if (socket && socket.send) {
-      data.stamp.clientId = socket.id;
-      socket.send(data);
+      data.stamp.clientId = socket.id
+      socket.send(data)
     }
-  });
+  })
 
-  this.emit('message:outgoing', data);
-};
+  this.emit('message:outgoing', data)
+}
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
 Resource.prototype.socketGet = function (id) {
-  return this.server.socketServer.clients[id];
-};
+  return this.server.socketServer.clients[id]
+}
 
-Resource.prototype.ack = function(socket, sendAck) {
+Resource.prototype.ack = function (socket, sendAck) {
   if (socket && socket.send && sendAck) {
-    logging.debug('#socket - send_ack', socket.id, this.to, sendAck);
+    logging.debug('#socket - send_ack', socket.id, this.to, sendAck)
 
     socket.send({
       op: 'ack',
       value: sendAck
-    });
+    })
   }
-};
+}
 
-Resource.prototype.handleMessage = function(socket, message) {
-  switch(message.op) {
+Resource.prototype.handleMessage = function (socket, message) {
+  switch (message.op) {
     case 'subscribe':
     case 'unsubscribe':
     case 'get':
@@ -123,18 +123,18 @@ Resource.prototype.handleMessage = function(socket, message) {
     case 'set':
     case 'publish':
     case 'push':
-      this[message.op](socket, message);
-      this.emit('message:incoming', message);
-      break;
+      this[message.op](socket, message)
+      this.emit('message:incoming', message)
+      break
     default:
-      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id);
+      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id)
   }
-};
+}
 
-Resource.prototype.destroy = function() { };
+Resource.prototype.destroy = function () {}
 
-Resource.setBackend = function(backend) {
-  Persistence = backend;
-};
+Resource.setBackend = function (backend) {
+  Persistence = backend
+}
 
-module.exports = Resource;
+module.exports = Resource
