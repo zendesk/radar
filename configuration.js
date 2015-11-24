@@ -15,33 +15,33 @@ module.exports = {
       // Sentinel master name is required
       id: 'mymaster',
       sentinels: [
-      {
-        host: 'localhost',
-        port: 26379
-      }]
+        {
+          host: 'localhost',
+          port: 26379
+        }]
     },
     cluster2: {
       id: 'mymaster',
       sentinels: [
-      {
-        host: 'localhost',
-        port: 36379
-      },
-      {
-        host: 'localhost',
-        port: 36380
-      },
-      {
-        host: 'localhost',
-        port: 36381
-      }]
+        {
+          host: 'localhost',
+          port: 36379
+        },
+        {
+          host: 'localhost',
+          port: 36380
+        },
+        {
+          host: 'localhost',
+          port: 36381
+        }]
     }
   },
 
   // Only used if a connection_settings hash is present.
   // (Optional). will fallback to default if not present.
-  //use_connection: 'legacy',
+  // use_connection: 'legacy',
 
   // Radar config: Port for radar to run on.
   port: 8000,
-};
+}

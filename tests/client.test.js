@@ -1,144 +1,144 @@
 var common = require('./common.js'),
-    assert = require('assert'),
-    Client = require('../client/client.js'),
-    Persistence = require('../core').Persistence,
-    client, subscriptions;
+  assert = require('assert'),
+  Client = require('../client/client.js'),
+  Persistence = require('../core').Persistence,
+  client, subscriptions
 
-describe('Client', function() {
-  beforeEach(function(done) {
-    common.startPersistence(done); // clean up
-    client = new Client('joe', Math.random(), 'test', 1);
-    subscriptions = {};
-    presences = {};
-  });
+describe('Client', function () {
+  beforeEach(function (done) {
+    common.startPersistence(done) // clean up
+    client = new Client('joe', Math.random(), 'test', 1)
+    subscriptions = {}
+    presences = {}
+  })
 
-  describe('.storeData and .loadData', function() {
-    describe('subscriptions', function() {
-      it('should store subscribe operations', function(done) {
+  describe('.storeData and .loadData', function () {
+    describe('subscriptions', function () {
+      it('should store subscribe operations', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            message = { to: to, op: 'subscribe' };
-        
-        subscriptions[to] = message;
+          message = { to: to, op: 'subscribe' }
 
-        client.storeData(message);
+        subscriptions[to] = message
 
-        client.readData(function(state) {
+        client.storeData(message)
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
-          });
-          done();
-        });
-      });
+          })
+          done()
+        })
+      })
 
-      it('should store sync as subscribes', function(done) {
+      it('should store sync as subscribes', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            message = { to: to, op: 'sync' };
-        
-        subscriptions[to] = message;
+          message = { to: to, op: 'sync' }
 
-        client.storeData(message);
+        subscriptions[to] = message
 
-        client.readData(function(state) {
+        client.storeData(message)
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
-          });
-          done();
-        });
-      });
+          })
+          done()
+        })
+      })
 
-      it('should remove subscriptions on unsubscribe', function(done) {
+      it('should remove subscriptions on unsubscribe', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            subscribe = { to: to, op: 'subscribe' },
-            unsubscribe = { to: to, op: 'unsubscribe' };
-        
-        client.storeData(subscribe);
-        client.storeData(unsubscribe);
+          subscribe = { to: to, op: 'subscribe' },
+          unsubscribe = { to: to, op: 'unsubscribe' }
 
-        client.readData(function(state) {
+        client.storeData(subscribe)
+        client.storeData(unsubscribe)
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: {}
-          });
-          done();
-        });
-      });
+          })
+          done()
+        })
+      })
 
-      it('sync after subscribe, keeps the sync', function(done) {
+      it('sync after subscribe, keeps the sync', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            subscribe = { to: to, op: 'subscribe' },
-            sync = { to: to, op: 'sync' };
-        
-        client.storeData(subscribe);
-        client.storeData(sync);
+          subscribe = { to: to, op: 'subscribe' },
+          sync = { to: to, op: 'sync' }
 
-        subscriptions[to] = sync;
+        client.storeData(subscribe)
+        client.storeData(sync)
 
-        client.readData(function(state) {
+        subscriptions[to] = sync
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
-          });
-          done();
-        });
-      });
+          })
+          done()
+        })
+      })
 
-      it('subscribe after sync, keeps the sync', function(done) {
+      it('subscribe after sync, keeps the sync', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            subscribe = { to: to, op: 'subscribe' },
-            sync = { to: to, op: 'sync' };
-        
-        client.storeData(sync);
-        client.storeData(subscribe);
+          subscribe = { to: to, op: 'subscribe' },
+          sync = { to: to, op: 'sync' }
 
-        subscriptions[to] = sync;
+        client.storeData(sync)
+        client.storeData(subscribe)
 
-        client.readData(function(state) {
+        subscriptions[to] = sync
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
-          });
-          done();
-        });
-      });
-    });
+          })
+          done()
+        })
+      })
+    })
 
-    describe('presences', function() {
-      it('should store set online operations', function(done) {
+    describe('presences', function () {
+      it('should store set online operations', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            message = { to: to, op: 'set', value: 'online' };
-        
-        client.storeData(message);
+          message = { to: to, op: 'set', value: 'online' }
 
-        delete message.value;
-        presences[to] = message;
+        client.storeData(message)
 
-        client.readData(function(state) {
+        delete message.value
+        presences[to] = message
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: presences
-          });
-          done();
-        });
-      });
+          })
+          done()
+        })
+      })
 
-      it('should remove presence when set offline', function(done) {
+      it('should remove presence when set offline', function (done) {
         var to = 'presence:/test/account/ticket/1',
-            online = { to: to, op: 'set', value: 'online' },
-            offline = { to: to, op: 'set', value: 'offline' };
-        
-        client.storeData(online);
-        client.storeData(offline);
+          online = { to: to, op: 'set', value: 'online' },
+          offline = { to: to, op: 'set', value: 'offline' }
 
-        client.readData(function(state) {
+        client.storeData(online)
+        client.storeData(offline)
+
+        client.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: {}
-          });
-          done();
-        });
-      });
-    });
-  });
-});
+          })
+          done()
+        })
+      })
+    })
+  })
+})
