@@ -1,7 +1,8 @@
-var assert = require('assert'),
-  Common = require('./common'),
-  MessageList = require('../core/lib/resources/message_list'),
-  Persistence = require('persistence')
+/* globals describe, it, beforeEach, before, after */
+var assert = require('assert')
+var Common = require('./common')
+var MessageList = require('../core/lib/resources/message_list')
+var Persistence = require('persistence')
 
 describe('For a message list', function () {
   var message_list
@@ -45,7 +46,8 @@ describe('For a message list', function () {
 
     describe('if cache is set to true', function () {
       it('causes a broadcast and a write', function () {
-        var publishCalled = false, persistCalled = false
+        var publishCalled = false
+        var persistCalled = false
         FakePersistence.publish = function (key, message) {
           assert.equal('hello world', message)
           publishCalled = true
@@ -146,6 +148,8 @@ describe('For a message list', function () {
 
 describe('a message list resource', function () {
   describe('emitting messages', function () {
+    var radarServer
+
     beforeEach(function (done) {
       radarServer = Common.createRadarServer(done)
     })
@@ -166,10 +170,10 @@ describe('a message list resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' },
-        publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: {'type': 'activity','user_id': 123456789,'state': 4} },
-        socketOne = { id: 1, send: function (m) {} },
-        socketTwo = { id: 2, send: function (m) {} }
+      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' }
+      var publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: {'type': 'activity', 'user_id': 123456789, 'state': 4} }
+      var socketOne = { id: 1, send: function (m) {} }
+      var socketTwo = { id: 2, send: function (m) {} }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {

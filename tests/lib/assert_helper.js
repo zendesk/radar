@@ -1,21 +1,21 @@
-var _ = require('underscore'),
-  assert = require('assert'),
-  EE = require('events').EventEmitter,
-  Sentry = require('../../core/lib/resources/presence/sentry.js'),
-  PresenceManager = require('../../core/lib/resources/presence/presence_manager.js'),
-  SentryDefaults = {
-    expiryOffset: 4000,
-    refreshInterval: 3500,
-    checkInterval: 5000
-  }
+var _ = require('underscore')
+var assert = require('assert')
+var EE = require('events').EventEmitter
+var Sentry = require('../../core/lib/resources/presence/sentry.js')
+var PresenceManager = require('../../core/lib/resources/presence/presence_manager.js')
+var SentryDefaults = {
+  expiryOffset: 4000,
+  refreshInterval: 3500,
+  checkInterval: 5000
+}
 
 var clone = function (object) {
   return JSON.parse(JSON.stringify(object))
 }
 
 var presenceManagerForSentry = function (name, options, callback) {
-  var tempSentry = newTestSentry(name),
-    pm = new PresenceManager('presence:/dev/test', {}, tempSentry)
+  var tempSentry = newTestSentry(name)
+  var pm = new PresenceManager('presence:/dev/test', {}, tempSentry)
 
   options = options || {}
 
@@ -101,9 +101,9 @@ PresenceMessage.prototype.assert_stamp = function (stamp) {
 // }
 
 PresenceMessage.prototype.assert_online = function (originalMessage) {
-  var value = {},
-    client = this.client,
-    message = clone(originalMessage)
+  var value = {}
+  var client = this.client
+  var message = clone(originalMessage)
 
   this.assert_stamp(message.stamp)
   delete message.stamp
@@ -124,9 +124,9 @@ PresenceMessage.prototype.assert_online = function (originalMessage) {
 //   value: { <user_id>:<user_type> }
 // }
 PresenceMessage.prototype.assert_offline = function (originalMessage) {
-  var value = {},
-    client = this.client,
-    message = clone(originalMessage)
+  var value = {}
+  var client = this.client
+  var message = clone(originalMessage)
 
   this.assert_stamp(message.stamp)
   delete message.stamp
@@ -136,7 +136,7 @@ PresenceMessage.prototype.assert_offline = function (originalMessage) {
   assert.deepEqual({
     to: this.scope,
     op: 'offline',
-    value: value,
+    value: value
   }, message)
 }
 // client_online:
@@ -150,13 +150,13 @@ PresenceMessage.prototype.assert_offline = function (originalMessage) {
 //   }
 // }
 PresenceMessage.prototype.assert_client_online = function (originalMessage) {
-  var client = this.client,
-    message = clone(originalMessage),
-    value = {
-      userId: client.userId,
-      clientId: client.clientId,
-      userData: client.userData
-    }
+  var client = this.client
+  var message = clone(originalMessage)
+  var value = {
+    userId: client.userId,
+    clientId: client.clientId,
+    userData: client.userData
+  }
 
   this.assert_stamp(message.stamp)
   delete message.stamp
@@ -171,14 +171,14 @@ PresenceMessage.prototype.assert_client_online = function (originalMessage) {
 PresenceMessage.prototype.assert_client_updated = function (originalMessage, clientData) {
   assert(clientData, 'client_updated is only triggered on new clientData. To assert it, you need to pass the expected clientData.')
 
-  var client = this.client,
-    message = clone(originalMessage),
-    value = {
-      userId: client.userId,
-      clientId: client.clientId,
-      userData: client.userData,
-      clientData: clientData
-    }
+  var client = this.client
+  var message = clone(originalMessage)
+  var value = {
+    userId: client.userId,
+    clientId: client.clientId,
+    userData: client.userData,
+    clientData: clientData
+  }
 
   this.assert_stamp(message.stamp)
   delete message.stamp
@@ -200,12 +200,12 @@ PresenceMessage.prototype.assert_client_updated = function (originalMessage, cli
 //   }
 // }
 PresenceMessage.prototype.assert_client_offline = function (originalMessage, explicit) {
-  var client = this.client,
-    message = clone(originalMessage),
-    value = {
-      userId: client.userId,
-      clientId: client.clientId
-    }
+  var client = this.client
+  var message = clone(originalMessage)
+  var value = {
+    userId: client.userId,
+    clientId: client.clientId
+  }
 
   this.assert_stamp(message.stamp)
   delete message.stamp
@@ -227,8 +227,10 @@ PresenceMessage.prototype.assert_client_implicit_offline = function (message) {
 }
 
 PresenceMessage.prototype.assert_message_sequence = function (list, from) {
-  var i, method, args,
-    messages = this.notifications.slice(from)
+  var i
+  var method
+  var args
+  var messages = this.notifications.slice(from)
 
   assert.equal(messages.length, list.length, 'mismatch ' + list + ' in messages received : ' + JSON.stringify(messages))
 
@@ -240,18 +242,20 @@ PresenceMessage.prototype.assert_message_sequence = function (list, from) {
       method = 'assert_' + list[i]
     }
 
-    this[method].call(this, messages[i], args)
+    this[method](messages[i], args)
   }
 }
 
 PresenceMessage.prototype.assert_onlines_received = function () {
+  var j
   for (j = 0; j < this.online_clients.length; j++) {
     var client = this.online_clients[j]
     var uid = client.userId
     var cid = client.clientId
     var type = client.userType
-    var udata = client.userData
-    var i, online_idx = -1, client_online_idx = -1
+    var i
+    var online_idx = -1
+    var client_online_idx = -1
 
     for (i = 0; i < this.notifications.length; i++) {
       var value = this.notifications[i].value
@@ -260,14 +264,14 @@ PresenceMessage.prototype.assert_onlines_received = function () {
         online_idx = i
         this.for_client(client).assert_online(this.notifications[i])
       }
-      if (value.userId == uid && value.clientId == cid) {
+      if (value.userId === uid && value.clientId === cid) {
         assert.equal(client_online_idx, -1)
         client_online_idx = i
         this.for_client(client).assert_client_online(this.notifications[i])
       }
     }
-    assert.ok(online_idx != -1)
-    assert.ok(client_online_idx != -1)
+    assert.ok(online_idx !== -1)
+    assert.ok(client_online_idx !== -1)
     assert.ok(client_online_idx > online_idx)
   }
 }
@@ -300,7 +304,7 @@ PresenceMessage.prototype.for_online_clients = function () {
 //   }
 //  }
 PresenceMessage.prototype.assert_get_response = function (message) {
-  clients = this.online_clients || []
+  var clients = this.online_clients || []
   var value = {}
 
   clients.forEach(function (client) {
@@ -329,8 +333,8 @@ PresenceMessage.prototype.assert_get_response = function (message) {
 //  }
 // }
 PresenceMessage.prototype.assert_get_v2_response = function (message, clientData) {
-  var value = {},
-    clients = this.online_clients || []
+  var value = {}
+  var clients = this.online_clients || []
 
   clients.forEach(function (client) {
     var userHash
@@ -368,7 +372,7 @@ PresenceMessage.prototype.assert_get_v2_response = function (message, clientData
 //   }
 //  }
 PresenceMessage.prototype.assert_sync_response = function (message) {
-  clients = this.online_clients || []
+  var clients = this.online_clients || []
   var value = {}
 
   clients.forEach(function (client) {
@@ -527,7 +531,8 @@ StreamMessage.prototype.assert_push_notification = function (message, resource, 
 }
 
 StreamMessage.prototype.assert_message_sequence = function (list, from) {
-  var i, messages = this.notifications.slice(from)
+  var i
+  var messages = this.notifications.slice(from)
   assert.equal(list.length, messages.length, 'mismatch in number of messages')
   for (i = 0; i < messages.length; i++) {
     var listEntry = list[i]
@@ -544,7 +549,8 @@ StreamMessage.prototype.assert_message_sequence = function (list, from) {
 
 StreamMessage.prototype.assert_get_response = function (response, list, idstart) {
   idstart = idstart || 1
-  var values = [], scope = this.scope
+  var values = []
+  var scope = this.scope
   for (var i = 0; i < list.length; i++) {
     var listEntry = list[i]
     assert.equal(listEntry.length, 4)
@@ -555,7 +561,7 @@ StreamMessage.prototype.assert_get_response = function (response, list, idstart)
       action: listEntry[1],
       value: listEntry[2],
       userData: listEntry[3].configuration('userData'),
-      id: idstart + i,
+      id: idstart + i
     })
   }
 

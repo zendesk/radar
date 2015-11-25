@@ -52,6 +52,8 @@ run against redis and sentinel (longer).
 
 - Fork http://github.com/zendesk/radar, clone, make changes (including a Changelog update), commit, push, PR
 
+[![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)
+
 ## Copyright and License
 
 Copyright 2015, Zendesk Inc.

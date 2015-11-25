@@ -1,20 +1,17 @@
-var http = require('http'),
-  Radar = require('../../index.js'),
-  configuration = require('../../configuration.js'),
-  PresenceManager = require('../../core/lib/resources/presence/presence_manager.js'),
-  Presence = require('../../core/lib/resources/presence/index.js'),
-  Sentry = require('../../core/lib/resources/presence/sentry.js'),
-  Middleware = require('../../middleware'),
-  QuotaManager = Middleware.QuotaManager,
-  LegacyAuthManager = Middleware.LegacyAuthManager,
-  Persistence = require('persistence'),
-  Type = require('../../core').Type,
-  Minilog = require('minilog'),
-  logger = Minilog('lib_radar'),
-  formatter = require('./formatter.js'),
-  assertHelper = require('./assert_helper.js'),
-  serverStarted = false,
-  radar, httpServer
+var http = require('http')
+var Radar = require('../../index.js')
+var Middleware = require('../../middleware')
+var QuotaManager = Middleware.QuotaManager
+var LegacyAuthManager = Middleware.LegacyAuthManager
+var Persistence = require('persistence')
+var Type = require('../../core').Type
+var Minilog = require('minilog')
+var logger = Minilog('lib_radar')
+var formatter = require('./formatter.js')
+var assertHelper = require('./assert_helper.js')
+var serverStarted = false
+var radar
+var httpServer
 
 if (process.env.verbose) {
   var minilogPipe = Minilog
@@ -41,7 +38,7 @@ Type.add([
     type: 'MessageList',
     policy: { cache: true, maxAgeSeconds: 30 },
     authProvider: {
-      authorize: function () { return false; }
+      authorize: function () { return false }
     }
   },
   {
@@ -49,7 +46,7 @@ Type.add([
     expression: /^message:\/client_auth\/enabled$/,
     type: 'MessageList',
     authProvider: {
-      authorize: function () { return true; }
+      authorize: function () { return true }
     }
   },
   { // For client.message.test
@@ -88,7 +85,7 @@ Type.add([
     policy: {
       limit: 1
     }
-  },
+  }
 ])
 
 var Service = {}
@@ -97,10 +94,10 @@ Service.start = function (configuration, callback) {
   logger.debug('creating radar', configuration)
   httpServer = http.createServer(p404)
 
-  // Add sentry defaults for testing. 
+  // Add sentry defaults for testing.
   configuration.sentry = assertHelper.SentryDefaults
-
-  radar = new Radar.server()
+  var RadarServer = Radar.server
+  radar = new RadarServer()
 
   radar.use(new QuotaManager())
   radar.use(new LegacyAuthManager())
@@ -120,6 +117,7 @@ Service.start = function (configuration, callback) {
 }
 
 Service.stop = function (arg, callback) {
+  var serverTimeout
   logger.info('stop')
 
   httpServer.on('close', function () {
@@ -141,7 +139,7 @@ Service.stop = function (arg, callback) {
       } else {
         logger.info('closing httpServer')
         logger.info('connections left', httpServer._connections)
-        var val = httpServer.close()
+        httpServer.close()
         serverTimeout = setTimeout(function () {
           // Failsafe, because server.close does not always
           // throw the close event within time.

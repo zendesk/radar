@@ -1,11 +1,9 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Radar = require('../server/server.js'),
-  Backoff = require('radar_client').Backoff,
-  logging = require('minilog')('test:reconnect'),
-  Persistence = require('../core').Persistence,
-  Tracker = require('callback_tracker'),
-  radar
+/* globals describe, it, beforeEach, afterEach, before, after */
+
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
+var radar
 
 describe('When radar server restarts', function () {
   var client, client2
@@ -49,7 +47,7 @@ describe('When radar server restarts', function () {
           assert.deepEqual({ 123: 0 }, message.value)
           done()
         })
-      }, 1000); // let's wait a little
+      }, 1000) // let's wait a little
     }
 
     client.presence('restore').set('online', function () {
@@ -59,12 +57,13 @@ describe('When radar server restarts', function () {
 
   it('reconnects existing clients', function (done) {
     this.timeout(4000)
-    var clientEvents = [], client2Events = []
-    var states = ['disconnected', 'connected', 'ready']
+    var clientEvents = []
+    var client2Events = []
 
+    var states = ['disconnected', 'connected', 'ready']
     states.forEach(function (state) {
-      client.once(state, function () { clientEvents.push(state); })
-      client2.once(state, function () { client2Events.push(state); })
+      client.once(state, function () { clientEvents.push(state) })
+      client2.once(state, function () { client2Events.push(state) })
     })
 
     common.restartRadar(radar, common.configuration, [client, client2], function () {
@@ -115,8 +114,8 @@ describe('When radar server restarts', function () {
     var messages = []
     var verifySubscriptions = function () {
       assert.equal(messages.length, 2)
-      assert.ok(messages.some(function (m) { return m.value == '1';}))
-      assert.ok(messages.some(function (m) { return m.value == '2';}))
+      assert.ok(messages.some(function (m) { return m.value === 'a1' }))
+      assert.ok(messages.some(function (m) { return m.value === 'a2' }))
       done()
     }
 
@@ -124,19 +123,18 @@ describe('When radar server restarts', function () {
       client2.alloc('test', function () {
         client.message('foo').on(function (msg) {
           messages.push(msg)
-          if (messages.length == 2) {
+          if (messages.length === 2) {
             // When we have enough, wait a while and check
             setTimeout(verifySubscriptions, 100)
           }
         }).sync()
 
-        client2.message('foo').publish('1', function () {
+        client2.message('foo').publish('a1', function () {
           common.restartRadar(radar, common.configuration, [client, client2], function () {
-            client.message('foo').publish('2')
+            client.message('foo').publish('a2')
           })
         })
       })
     })
   })
-
 })

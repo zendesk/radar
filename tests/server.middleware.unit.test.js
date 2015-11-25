@@ -1,18 +1,18 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  RadarTypes = require('../core/lib/type.js'),
-  controlMessage = {
-    to: 'control:/dev/test',
-    op: 'nameSync',
-    options: {
-      association: {
-        id: 1,
-        name: 1
-      }
+/* globals describe, it, beforeEach, afterEach */
+var common = require('./common.js')
+var assert = require('assert')
+var controlMessage = {
+  to: 'control:/dev/test',
+  op: 'nameSync',
+  options: {
+    association: {
+      id: 1,
+      name: 1
     }
-  },
-  radarServer,
-  socket
+  }
+}
+var radarServer
+var socket
 
 describe('given a server with filters', function () {
   beforeEach(function (done) {

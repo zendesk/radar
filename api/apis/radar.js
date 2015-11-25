@@ -1,10 +1,10 @@
-var url = require('url'),
-  Status = require('../../core').Status,
-  MessageList = require('../../core').MessageList,
-  Presence = require('../../core').Presence,
-  PresenceManager = require('../../core').PresenceManager,
-  Type = require('../../core').Type,
-  hostname = require('os').hostname()
+var url = require('url')
+var Status = require('../../core').Status
+var MessageList = require('../../core').MessageList
+var Presence = require('../../core').Presence
+var PresenceManager = require('../../core').PresenceManager
+var Type = require('../../core').Type
+var hostname = require('os').hostname()
 
 function jsonResponse (response, object) {
   response.setHeader('Content-type', 'application/json')
@@ -15,10 +15,10 @@ function jsonResponse (response, object) {
 function parseData (response, data, ResourceType) {
   var parameters = data
 
-  if (typeof data == 'string') {
+  if (typeof data === 'string') {
     try {
       parameters = JSON.parse(data)
-    } catch(e) {
+    } catch (e) {
       parameters = false
     }
   }
@@ -27,9 +27,9 @@ function parseData (response, data, ResourceType) {
     return jsonResponse(response, {})
   }
 
-  var resourceTo = ResourceType.prototype.type + ':/' + parameters.accountName + '/' + parameters.scope,
-    options = Type.getByExpression(resourceTo),
-    resource = new ResourceType(resourceTo, {}, options)
+  var resourceTo = ResourceType.prototype.type + ':/' + parameters.accountName + '/' + parameters.scope
+  var options = Type.getByExpression(resourceTo)
+  var resource = new ResourceType(resourceTo, {}, options)
 
   resource.accountName = parameters.accountName
   resource.scope = parameters.scope
@@ -56,7 +56,7 @@ function setStatus (req, res, re, data) {
         op: 'set',
         to: status.to,
         key: status.key,
-        value: status.value,
+        value: status.value
       }, status.options.policy || {}, function () {
         jsonResponse(res, {})
       })
@@ -65,8 +65,8 @@ function setStatus (req, res, re, data) {
 
 // curl -k "https://localhost/radar/status?accountName=test&scope=ticket/1"
 function getStatus (req, res) {
-  var parts = url.parse(req.url, true),
-    status = parseData(res, parts.query, Status)
+  var parts = url.parse(req.url, true)
+  var status = parseData(res, parts.query, Status)
 
   if (status) {
     status._get('status:/' + status.accountName + '/' + status.scope, function (replies) {
@@ -95,8 +95,8 @@ function setMessage (req, res, re, data) {
 }
 
 function getMessage (req, res) {
-  var parts = url.parse(req.url, true),
-    message = parseData(res, parts.query, MessageList)
+  var parts = url.parse(req.url, true)
+  var message = parseData(res, parts.query, MessageList)
 
   if (message) {
     message._sync(message.to, message.options.policy || {}, function (replies) {
@@ -114,11 +114,11 @@ function getMessage (req, res) {
 //  - Response for single scope: { userId: { "clients": { clientId1: {}, clientId2: {} }, userType: }  }
 //  - Response for multiple scopes: {  scope1: ... above ..., scope2: ... above ...  }
 function getPresence (req, res) {
-  var parts = url.parse(req.url, true),
-    q = parts.query
-  if (!q || !q.accountName) { return res.end(); }
-  if (!(q.scope || q.scopes)) { return res.end(); }
-  var versionNumber = parseInt(q.version)
+  var parts = url.parse(req.url, true)
+  var q = parts.query
+  if (!q || !q.accountName) { return res.end() }
+  if (!(q.scope || q.scopes)) { return res.end() }
+  var versionNumber = parseInt(q.version, 10)
   // Sadly, the responses are different when dealing with multiple scopes so can't just put these in a control flow
   if (q.scope) {
     var monitor = new PresenceManager('presence:/' + q.accountName + '/' + q.scope, {}, Presence.sentry)
@@ -126,9 +126,6 @@ function getPresence (req, res) {
       res.setHeader('Content-type', 'application/json')
       res.setHeader('Cache-Control', 'no-cache')
       res.setHeader('X-Radar-Host', hostname)
-
-
-
       if (versionNumber === 2) {
         res.end(JSON.stringify(monitor.getClientsOnline()) + '\n')
       } else {
@@ -136,8 +133,8 @@ function getPresence (req, res) {
       }
     })
   } else {
-    var scopes = q.scopes.split(','),
-      result = {}; // key: scope - value: replies
+    var scopes = q.scopes.split(',')
+    var result = {} // key: scope - value: replies
     scopes.forEach(function (scope) {
       var monitor = new PresenceManager('presence:/' + q.accountName + '/' + scope, {}, Presence.sentry)
       monitor.fullRead(function (online) {
@@ -146,7 +143,7 @@ function getPresence (req, res) {
         } else {
           result[scope] = online
         }
-        if (Object.keys(result).length == scopes.length) {
+        if (Object.keys(result).length === scopes.length) {
           res.setHeader('Content-type', 'application/json')
           res.setHeader('Cache-Control', 'no-cache')
           res.setHeader('X-Radar-Host', hostname)

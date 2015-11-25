@@ -1,5 +1,5 @@
-var _ = require('underscore'),
-  logging = require('minilog')('radar:presence_store')
+var _ = require('underscore')
+var logging = require('minilog')('radar:presence_store')
 
 function PresenceStore (scope) {
   this.scope = scope
@@ -23,8 +23,8 @@ PresenceStore.prototype.cacheRemove = function (socketId) {
 }
 
 PresenceStore.prototype.add = function (socketId, userId, userType, message) {
-  var store = this,
-    events = []
+  var self = this
+  var events = []
 
   logging.debug('#presence - store.add', userId, socketId, message, this.scope)
   this.cacheRemove(socketId)
@@ -47,15 +47,15 @@ PresenceStore.prototype.add = function (socketId, userId, userType, message) {
     }
   }
 
-  events.forEach(function (ev) {
-    logging.debug('#presence - store.emit', ev, message, store.scope)
-    store.emit(ev, message)
+  events.forEach(function (event) {
+    logging.debug('#presence - store.emit', event, message, self.scope)
+    self.emit(event, message)
   })
 }
 
 PresenceStore.prototype.remove = function (socketId, userId, message) {
-  var store = this,
-    events = []
+  var self = this
+  var events = []
 
   logging.debug('#presence - store.remove', userId, socketId, message, this.scope)
 
@@ -78,8 +78,8 @@ PresenceStore.prototype.remove = function (socketId, userId, message) {
   }
 
   events.forEach(function (ev) {
-    logging.debug('#presence - store.emit', ev, message, store.scope)
-    store.emit(ev, message)
+    logging.debug('#presence - store.emit', ev, message, self.scope)
+    self.emit(ev, message)
   })
 }
 
@@ -153,11 +153,12 @@ PresenceStore.prototype.userExists = function (userId) {
 // this code uses each socketId in a separate chained call, the sum of which is
 // costly.
 PresenceStore.prototype.socketsForSentry = function (sentry) {
-  var map = this.map, socketIds = []
+  var map = this.map
+  var socketIds = []
   Object.keys(map).forEach(function (userId) {
     Object.keys(map[userId]).forEach(function (socketId) {
       var data = map[userId][socketId]
-      if (data && data.sentry == sentry) {
+      if (data && data.sentry === sentry) {
         socketIds.push(socketId)
       }
     })

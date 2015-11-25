@@ -50,7 +50,8 @@
     "radar_client": "^0.14.6",
     "simple_sentinel": "^0.1.8",
     "sinon": "^1.17.2",
-    "sinon-chai": "^2.8.0"
+    "sinon-chai": "^2.8.0",
+    "standard": "^5.4.1"
   },
   "scripts": {
     "prestart": "npm run check-modules",
@@ -59,7 +60,8 @@
     "check-clean": "if [[ $(git diff --shortstat 2> /dev/null | tail -n1) != \"\" ]]; then npm run warn-dirty-tree && exit 1; fi",
     "warn-outdated": "echo 'Your node_modules are out of date. Please run \"rm -rf node_modules && npm install\" in order to ensure you have the latest dependencies.'",
     "warn-dirty-tree": "echo 'Your repo tree is dirty.'",
-    "pretest": "npm run check-modules",
+    "lint": "standard",
+    "pretest": "npm run check-modules && npm run lint",
     "test": "npm run test-sentinel",
     "test-full": "npm run test-sentinel && npm run test-redis",
     "test-redis": "ls ./tests/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" npm run test-one'",
@@ -69,5 +71,8 @@
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
+  },
+  "standard": {
+    "ignore": ["sample/"]
   }
 }

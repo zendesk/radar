@@ -1,7 +1,6 @@
-var Persistence = require('persistence'),
-  MiniEventEmitter = require('miniee'),
-  logging = require('minilog')('radar:resource'),
-  Stamper = require('../../stamper.js')
+var MiniEventEmitter = require('miniee')
+var logging = require('minilog')('radar:resource')
+var Stamper = require('../../stamper.js')
 
 /*
 
@@ -134,7 +133,7 @@ Resource.prototype.handleMessage = function (socket, message) {
 Resource.prototype.destroy = function () {}
 
 Resource.setBackend = function (backend) {
-  Persistence = backend
+  // noop
 }
 
 module.exports = Resource

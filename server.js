@@ -1,8 +1,8 @@
-var http = require('http'),
-  configuration = require('./configurator.js').load({persistence: true}),
-  Radar = require('./server/server.js'),
-  Api = require('./api/api.js'),
-  Minilog = require('minilog')
+var http = require('http')
+var configuration = require('./configurator.js').load({persistence: true})
+var Radar = require('./server/server.js')
+var Api = require('./api/api.js')
+var Minilog = require('minilog')
 
 // Configure log output
 Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))

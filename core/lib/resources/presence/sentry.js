@@ -1,11 +1,11 @@
-var _ = require('underscore'),
-  Minilog = require('minilog'),
-  logging = Minilog('radar:sentry'),
-  Persistence = require('persistence'),
-  redisSentriesKey = 'sentry:/radar'
+var _ = require('underscore')
+var Minilog = require('minilog')
+var logging = Minilog('radar:sentry')
+var Persistence = require('persistence')
+var redisSentriesKey = 'sentry:/radar'
 
 var defaultOptions = {
-  EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message. 
+  EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message
   REFRESH_INTERVAL: 10000, // 10 seconds to refresh own sentry
   CHECK_INTERVAL: 30000 // 30 seconds to check for new sentries
 }
@@ -36,9 +36,9 @@ var Sentry = function (name) {
 require('util').inherits(Sentry, require('events').EventEmitter)
 
 Sentry.prototype.start = function (options, callback) {
-  var self = this,
-    keepAliveOptions = {},
-    upMessage
+  var self = this
+  var keepAliveOptions = {}
+  var upMessage
 
   options = options || {}
 
@@ -48,7 +48,7 @@ Sentry.prototype.start = function (options, callback) {
     this._applyOptions(options)
   }
 
-  if (this._refreshTimer) { return; }
+  if (this._refreshTimer) { return }
 
   logging.info('#presence - #sentry - starting', this.name)
 
@@ -63,7 +63,7 @@ Sentry.prototype.start = function (options, callback) {
     self.emit('up', self.name, upMessage)
     Persistence.publish(redisSentriesKey, upMessage)
     self._startListening()
-    if (callback) { callback(); }
+    if (callback) { callback() }
   })
 
   this._refreshTimer = setTimeout(this._refresh.bind(this), Math.floor(this._refreshInterval))
@@ -78,7 +78,7 @@ Sentry.prototype.stop = function (callback) {
   this.sentries = {}
   this._stopListening()
 
-  if (callback) { callback(); }
+  if (callback) { callback() }
 }
 
 Sentry.prototype.sentryNames = function () {
@@ -86,8 +86,8 @@ Sentry.prototype.sentryNames = function () {
 }
 
 Sentry.prototype.isDown = function (name) {
-  var lastMessage = this.sentries[name],
-    isSentryDown = messageIsExpired(lastMessage)
+  var lastMessage = this.sentries[name]
+  var isSentryDown = messageIsExpired(lastMessage)
 
   if (isSentryDown) {
     var text = this.messageExpirationText(lastMessage)
@@ -99,8 +99,8 @@ Sentry.prototype.isDown = function (name) {
 }
 
 Sentry.prototype.messageExpirationText = function (message) {
-  var expiration = messageExpiration(message),
-    text = expiration ? expiration + '/' + this._expiryOffset : 'not-present'
+  var expiration = messageExpiration(message)
+  var text = expiration ? expiration + '/' + this._expiryOffset : 'not-present'
 
   return text
 }
@@ -111,8 +111,8 @@ Sentry.prototype._setName = function (name) {
 }
 
 Sentry.prototype._generateName = function () {
-  var shasum = require('crypto').createHash('sha1'),
-    newName
+  var shasum = require('crypto').createHash('sha1')
+  var newName
 
   shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now())
   newName = shasum.digest('hex').slice(0, 15)
@@ -133,8 +133,8 @@ Sentry.prototype._applyOptions = function (options) {
 
 Sentry.prototype._keepAlive = function (options) {
   options = options || {}
-  var message = this._newKeepAliveMessage(options.name, options.expiration),
-    name = message.name
+  var message = this._newKeepAliveMessage(options.name, options.expiration)
+  var name = message.name
 
   this.sentries[name] = message
 
@@ -161,7 +161,7 @@ Sentry.prototype._expiryOffsetFromNow = function () {
 // It loads the sentries from redis, and performs two tasks:
 //
 // * purges sentries that are no longer available
-// * expire sentries based on stale messages. 
+// * expire sentries based on stale messages.
 //
 Sentry.prototype._loadAndCleanUpSentries = function (callback) {
   var self = this
@@ -179,7 +179,7 @@ Sentry.prototype._loadAndCleanUpSentries = function (callback) {
       }
     })
 
-    if (callback) { callback(); }
+    if (callback) { callback() }
   })
 }
 
@@ -194,21 +194,21 @@ Sentry.prototype._purgeSentry = function (name) {
   this.emit('down', name, lastMessage)
 }
 
-// Deletion of a gone sentry key might just happened, so 
+// Deletion of a gone sentry key might just happened, so
 // we compare existing sentry names to reply names
-// and clear whatever we have that no longer exists. 
+// and clear whatever we have that no longer exists.
 Sentry.prototype._purgeGoneSentries = function (replies, repliesKeys) {
-  var self = this,
-    sentriesGone = _.difference(this.sentryNames(), repliesKeys)
+  var self = this
+  var sentriesGone = _.difference(this.sentryNames(), repliesKeys)
 
   sentriesGone.forEach(function (name) {
     self._purgeSentry(name)
   })
 }
 
-// Listening for new pub sub messages from redis. 
-// As of now, we only care about new sentries going online. 
-// Everything else gets inferred based on time. 
+// Listening for new pub sub messages from redis.
+// As of now, we only care about new sentries going online.
+// Everything else gets inferred based on time.
 Sentry.prototype._startListening = function () {
   var self = this
 

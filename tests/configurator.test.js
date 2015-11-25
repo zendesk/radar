@@ -1,11 +1,11 @@
 /* global describe, it */
 
-var assert = require('assert'),
-  noArgs = ['', ''],
-  noEnv = {},
-  Configurator = require('../configurator.js')
+var assert = require('assert')
+var noArgs = ['', '']
+var noEnv = {}
+var Configurator = require('../configurator.js')
 
-// Helper function. It tests multiple features of a given configuration option. 
+// Helper function. It tests multiple features of a given configuration option.
 function describeOptionTest (configurator, name, options) {
   describe('option: ' + name, function () {
     if (options.default) {
@@ -31,14 +31,14 @@ function describeOptionTest (configurator, name, options) {
 
     if (options.short) {
       it('short arg: ' + options.short, function () {
-        var config = configurator.load({ argv: ['', '', options.short, options.expected ] })
+        var config = configurator.load({ argv: ['', '', options.short, options.expected] })
         assert.equal(config[name], options.expected)
       })
     }
 
     if (options.long) {
       it('long arg: ' + options.long, function () {
-        var config = configurator.load({ argv: ['', '', options.long, options.expected ] })
+        var config = configurator.load({ argv: ['', '', options.long, options.expected] })
         assert.equal(config[name], options.expected)
       })
     }
@@ -73,7 +73,6 @@ describe('the Configurator', function () {
       assert.equal(8004, config.port)
       assert.equal('mymaster', config.sentinelMasterName)
     })
-
   })
 
   describe('default settings', function () {
@@ -110,13 +109,13 @@ describe('the Configurator', function () {
 
   describe('custom setting', function () {
     var newOption = {
-        name: 'testOption', description: 'test option',
-        env: 'RADAR_TEST',
-        abbr: 'e',
-        full: 'exp',
-        default: 'testDefault'
-      },
-      configurator = new Configurator([newOption])
+      name: 'testOption', description: 'test option',
+      env: 'RADAR_TEST',
+      abbr: 'e',
+      full: 'exp',
+      default: 'testDefault'
+    }
+    var configurator = new Configurator([newOption])
 
     describeOptionTest(configurator, 'testOption', {
       default: 'testDefault',
@@ -125,6 +124,5 @@ describe('the Configurator', function () {
       short: '-e',
       env: 'RADAR_TEST'
     })
-
   })
 })

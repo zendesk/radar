@@ -43,5 +43,5 @@ module.exports = {
   // use_connection: 'legacy',
 
   // Radar config: Port for radar to run on.
-  port: 8000,
+  port: 8000
 }

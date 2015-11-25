@@ -1,17 +1,17 @@
-/* 
- * Configurator: Handles configuration for the Radar server. 
+/*
+ * Configurator: Handles configuration for the Radar server.
  *
  * It provides the default configuration.
- * For each allowed variable, it provides a default, which can be overwritten 
- * through ENV or ARGV. 
- * 
- * All the knowledge of what comes in, belongs here. 
- * 
+ * For each allowed variable, it provides a default, which can be overwritten
+ * through ENV or ARGV
+ *
+ * All the knowledge of what comes in, belongs here
+ *
  * ARGV > ENV > DEFAULTS
  *
  */
 
-// Minimal radar settings. 
+// Minimal radar settings
 var defaultSettings = [
   {
     name: 'port', description: 'port to listen',
@@ -52,10 +52,10 @@ var Configurator = function (settings) {
 
 // Class methods
 
-// Creates a Configurator and returns loaded configuration. 
+// Creates a Configurator and returns loaded configuration
 Configurator.load = function () {
-  var configurator = new Configurator(),
-    configuration = configurator.load.apply(configurator, arguments)
+  var configurator = new Configurator()
+  var configuration = configurator.load.apply(configurator, arguments)
 
   return configuration
 }
@@ -63,11 +63,11 @@ Configurator.load = function () {
 // Instance methods
 
 Configurator.prototype.load = function () {
-  var self = this,
-    options = (arguments.length === 1 ? arguments[0] : {}),
-    cli = this._parseCli((options.argv || process.argv)),
-    env = this._parseEnv((options.env || process.env)),
-    config = this._defaultConfiguration()
+  var self = this
+  var options = (arguments.length === 1 ? arguments[0] : {})
+  var cli = this._parseCli((options.argv || process.argv))
+  var env = this._parseEnv((options.env || process.env))
+  var config = this._defaultConfiguration()
 
   merge(config, options.config)
 
@@ -99,8 +99,8 @@ Configurator.prototype._parseCli = function (argv) {
 }
 
 Configurator.prototype._parseEnv = function (env) {
-  var cleanEnv = {},
-    value
+  var cleanEnv = {}
+  var value
 
   this.settings.forEach(function (element) {
     value = env[element.env]
@@ -125,9 +125,9 @@ Configurator.prototype._defaultConfiguration = function () {
 }
 
 Configurator.prototype._pickFirst = function (propName) {
-  var values = [].slice.call(arguments, 1),
-    i = 0,
-    value
+  var values = [].slice.call(arguments, 1)
+  var i = 0
+  var value = null
 
   while (!value && i <= values.length) {
     if (values[i] && values[i][propName]) {
@@ -149,14 +149,13 @@ Configurator.prototype._forPersistence = function (configuration) {
     }
 
     connection = {
-      id: configuration.sentinelMasterName,
+      id: configuration.sentinelMasterName
     }
 
     connection.sentinels = configuration.sentinelUrls
       .split(',')
       .map(parseUrl)
-
-  } else { // Using standalone redis. 
+  } else { // Using standalone redis
     connection = parseUrl(configuration.redisUrl)
   }
 
@@ -169,7 +168,7 @@ Configurator.prototype._forPersistence = function (configuration) {
 }
 
 // Private methods
-// TODO: Move to Util module, or somewhere else. 
+// TODO: Move to Util module, or somewhere else
 
 function parseUrl (redisUrl) {
   var parsedUrl = require('url').parse(redisUrl)

@@ -1,9 +1,9 @@
-var Resource = require('../resource.js'),
-  PresenceManager = require('./presence_manager.js'),
-  Sentry = require('./sentry.js'),
-  EventEmitter = require('events').EventEmitter,
-  Stamper = require('../../../stamper.js'),
-  logging = require('minilog')('radar:presence')
+var Resource = require('../resource.js')
+var PresenceManager = require('./presence_manager.js')
+var Sentry = require('./sentry.js')
+var EventEmitter = require('events').EventEmitter
+var Stamper = require('../../../stamper.js')
+var logging = require('minilog')('radar:presence')
 
 var default_options = {
   policy: {
@@ -99,10 +99,10 @@ Presence.prototype.setup = function () {
   // Keep track of listener count
   Presence.resourceCount++
 
-  var leakCount,
-    sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down')
+  var leakCount
+  var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down')
 
-  if (sentryListenersCount != Presence.resourceCount) {
+  if (sentryListenersCount !== Presence.resourceCount) {
     leakCount = sentryListenersCount - Presence.resourceCount
     logging.warn('sentry listener leak detected', leakCount)
   }
@@ -115,7 +115,7 @@ Presence.prototype.redisIn = function (message) {
 }
 
 Presence.prototype.set = function (socket, message) {
-  if (message.value != 'offline') {
+  if (message.value !== 'offline') {
     this._setOnline(socket, message)
   } else {
     this._setOffline(socket, message)
@@ -123,9 +123,12 @@ Presence.prototype.set = function (socket, message) {
 }
 
 Presence.prototype._setOnline = function (socket, message) {
-  var presence = this,
-    userId = message.key,
-    ackCheck = function () { presence.ack(socket, message.ack); }
+  var presence = this
+  var userId = message.key
+
+  function ackCheck () {
+    presence.ack(socket, message.ack)
+  }
 
   this.manager.addClient(socket.id, userId,
     message.type,
@@ -143,11 +146,12 @@ Presence.prototype._setOnline = function (socket, message) {
 }
 
 Presence.prototype._setOffline = function (socket, message) {
-  var presence = this,
-    userId = message.key,
-    ackCheck = function () {
-      presence.ack(socket, message.ack)
-    }
+  var presence = this
+  var userId = message.key
+
+  function ackCheck () {
+    presence.ack(socket, message.ack)
+  }
 
   // If this is client is not subscribed
   if (!this.subscribers[socket.id]) {
@@ -175,11 +179,9 @@ Presence.prototype.unsubscribe = function (socket, message) {
 Presence.prototype.sync = function (socket, message) {
   var self = this
   this.fullRead(function (online) {
-    if (message.options && message.options.version == 2) {
-      // pob
+    if (message.options && parseInt(message.options.version, 10) === 2) {
       var value = self.manager.getClientsOnline()
       logging.info('#presence - sync', value)
-
       socket.send({
         op: 'get',
         to: self.to,
@@ -206,7 +208,7 @@ Presence.prototype.get = function (socket, message) {
   this.fullRead(function (online) {
     var value
 
-    if (message.options && message.options.version == 2) {
+    if (message.options && message.options.version === 2) {
       // pob
       value = self.manager.getClientsOnline()
       logging.info('#presence - get', value)
@@ -233,7 +235,7 @@ Presence.prototype.broadcast = function (message, except) {
 
   Object.keys(this.subscribers).forEach(function (socketId) {
     var socket = self.socketGet(socketId)
-    if (socket && socket.id != except && self.subscribers[socket.id].listening) {
+    if (socket && socket.id !== except && self.subscribers[socket.id].listening) {
       message.stamp.clientId = socket.id
       socket.send(message)
     } else {
@@ -241,7 +243,6 @@ Presence.prototype.broadcast = function (message, except) {
         'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.to)
     }
   })
-
 }
 
 Presence.prototype.fullRead = function (callback) {

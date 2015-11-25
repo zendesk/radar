@@ -1,10 +1,13 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Client = require('../client/client.js'),
-  Persistence = require('../core').Persistence,
-  client, subscriptions
+/* globals describe, it, beforeEach */
+var common = require('./common.js')
+var assert = require('assert')
+var Client = require('../client/client.js')
 
 describe('Client', function () {
+  var client
+  var presences
+  var subscriptions
+
   beforeEach(function (done) {
     common.startPersistence(done) // clean up
     client = new Client('joe', Math.random(), 'test', 1)
@@ -15,8 +18,8 @@ describe('Client', function () {
   describe('.storeData and .loadData', function () {
     describe('subscriptions', function () {
       it('should store subscribe operations', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          message = { to: to, op: 'subscribe' }
+        var to = 'presence:/test/account/ticket/1'
+        var message = { to: to, op: 'subscribe' }
 
         subscriptions[to] = message
 
@@ -32,8 +35,8 @@ describe('Client', function () {
       })
 
       it('should store sync as subscribes', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          message = { to: to, op: 'sync' }
+        var to = 'presence:/test/account/ticket/1'
+        var message = { to: to, op: 'sync' }
 
         subscriptions[to] = message
 
@@ -49,9 +52,9 @@ describe('Client', function () {
       })
 
       it('should remove subscriptions on unsubscribe', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          subscribe = { to: to, op: 'subscribe' },
-          unsubscribe = { to: to, op: 'unsubscribe' }
+        var to = 'presence:/test/account/ticket/1'
+        var subscribe = { to: to, op: 'subscribe' }
+        var unsubscribe = { to: to, op: 'unsubscribe' }
 
         client.storeData(subscribe)
         client.storeData(unsubscribe)
@@ -66,9 +69,9 @@ describe('Client', function () {
       })
 
       it('sync after subscribe, keeps the sync', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          subscribe = { to: to, op: 'subscribe' },
-          sync = { to: to, op: 'sync' }
+        var to = 'presence:/test/account/ticket/1'
+        var subscribe = { to: to, op: 'subscribe' }
+        var sync = { to: to, op: 'sync' }
 
         client.storeData(subscribe)
         client.storeData(sync)
@@ -85,9 +88,9 @@ describe('Client', function () {
       })
 
       it('subscribe after sync, keeps the sync', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          subscribe = { to: to, op: 'subscribe' },
-          sync = { to: to, op: 'sync' }
+        var to = 'presence:/test/account/ticket/1'
+        var subscribe = { to: to, op: 'subscribe' }
+        var sync = { to: to, op: 'sync' }
 
         client.storeData(sync)
         client.storeData(subscribe)
@@ -106,8 +109,8 @@ describe('Client', function () {
 
     describe('presences', function () {
       it('should store set online operations', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          message = { to: to, op: 'set', value: 'online' }
+        var to = 'presence:/test/account/ticket/1'
+        var message = { to: to, op: 'set', value: 'online' }
 
         client.storeData(message)
 
@@ -124,9 +127,9 @@ describe('Client', function () {
       })
 
       it('should remove presence when set offline', function (done) {
-        var to = 'presence:/test/account/ticket/1',
-          online = { to: to, op: 'set', value: 'online' },
-          offline = { to: to, op: 'set', value: 'offline' }
+        var to = 'presence:/test/account/ticket/1'
+        var online = { to: to, op: 'set', value: 'online' }
+        var offline = { to: to, op: 'set', value: 'offline' }
 
         client.storeData(online)
         client.storeData(offline)

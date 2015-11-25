@@ -1,14 +1,13 @@
-var http = require('http'),
-  logging = require('minilog')('common'),
-  formatter = require('./lib/formatter.js'),
-  Persistence = require('persistence'),
-  RadarServer = new require('../index.js').server,
-  configuration = require('../configurator.js').load({persistence: true}),
-  Sentry = require('../core/lib/resources/presence/sentry.js'),
-  Client = require('radar_client').constructor,
-  fork = require('child_process').fork,
-  Tracker = require('callback_tracker'),
-  radar
+var http = require('http')
+var logging = require('minilog')('common')
+var formatter = require('./lib/formatter')
+var Persistence = require('persistence')
+var RadarServer = require('../index.js').server
+var configuration = require('../configurator').load({persistence: true})
+var Sentry = require('../core/lib/resources/presence/sentry')
+var Client = require('radar_client').constructor
+var fork = require('child_process').fork
+var Tracker = require('callback_tracker')
 
 Sentry.expiry = 4000
 if (process.env.verbose) {
@@ -35,7 +34,7 @@ module.exports = {
       var listener = function (message) {
         message = JSON.parse(message)
         logging.debug('message received', message, action)
-        if (message.action == action) {
+        if (message.action === action) {
           if (callback) callback(message.error)
         }
       }
@@ -110,18 +109,18 @@ module.exports = {
       accountName: account,
       port: configuration.port,
       upgrade: false,
-      userData: userData,
+      userData: userData
     }).once('ready', done).alloc('test')
     return client
   },
   configuration: configuration,
 
-  // Create an in-process radar server, not a child process. 
+  // Create an in-process radar server, not a child process.
   createRadarServer: function (done) {
-    var notFound = function p404 (req, res) {},
-      httpServer = http.createServer(notFound)
+    var notFound = function p404 (req, res) {}
+    var httpServer = http.createServer(notFound)
 
-    radarServer = new RadarServer()
+    var radarServer = new RadarServer()
     radarServer.attach(httpServer, configuration)
 
     if (done) {

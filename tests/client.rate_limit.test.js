@@ -1,8 +1,10 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Tracker = require('callback_tracker'),
-  PresenceMessage = require('./lib/assert_helper.js').PresenceMessage,
-  radar, client
+/* globals describe, it, beforeEach, afterEach, before, after */
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
+var PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
+var radar
+var client
 
 describe('The Server', function () {
   var p
@@ -52,10 +54,10 @@ describe('The Server', function () {
     it('should handle decrement on unsubscribe ', function (done) {
       client.presence('limited1').subscribe(function () {
         client.presence('limited2').subscribe()
-        // Already received the err. 
+        // Already received the err
 
         client.presence('limited1').unsubscribe(function () {
-          client.presence('limited1').subscribe(function () { done(); })
+          client.presence('limited1').subscribe(function () { done() })
         })
       })
     })
@@ -63,9 +65,9 @@ describe('The Server', function () {
     it.skip('should reset rate on client disconnect', function (done) {
       client.presence('limited1').subscribe(function () {
         client.presence('limited2').subscribe()
-        // Already received the err. 
+        // Already received the err
         client.dealloc('test')
-        // we need to find a way to test client disconnect and reconnect. 
+        // we need to find a way to test client disconnect and reconnect
         done()
       })
     })

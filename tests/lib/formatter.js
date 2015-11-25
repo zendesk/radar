@@ -12,14 +12,14 @@ formatter.write = function (name, level, args) {
   }
   var result = [].concat(args)
   for (i = 0; i < result.length; i++) {
-    if (result[i] && typeof result[i] == 'object') {
+    if (result[i] && typeof result[i] === 'object') {
       // Buffers in Node.js look bad when stringified
       if (result[i].constructor && result[i].constructor.isBuffer) {
         result[i] = result[i].toString()
       } else {
         try {
           result[i] = JSON.stringify(result[i])
-        } catch(stringifyError) {
+        } catch (stringifyError) {
           // Happens when an object has a circular structure
           // Do not throw an error, when printing, the toString() method of the object will be used
         }

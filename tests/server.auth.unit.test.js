@@ -1,30 +1,31 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  RadarTypes = require('../core/lib/type.js'),
-  controlMessage = {
-    to: 'control:/dev/test',
-    op: 'nameSync',
-    options: {
-      association: {
-        id: 1,
-        name: 1
-      }
+/* globals describe, it, beforeEach */
+var common = require('./common.js')
+var assert = require('assert')
+var RadarTypes = require('../core/lib/type.js')
+var controlMessage = {
+  to: 'control:/dev/test',
+  op: 'nameSync',
+  options: {
+    association: {
+      id: 1,
+      name: 1
     }
-  },
-  authProvider = {
-    authorize: function (channel, message, client) {
-      return false
-    }
-  },
-  authorizedType = {
-    name: 'general control',
-    type: 'Control',
-    authProvider: authProvider,
-    expression: /^control:/
-  },
-  LegacyAuthManager = require('../middleware').LegacyAuthManager,
-  radarServer,
-  socket
+  }
+}
+var authProvider = {
+  authorize: function (channel, message, client) {
+    return false
+  }
+}
+var authorizedType = {
+  name: 'general control',
+  type: 'Control',
+  authProvider: authProvider,
+  expression: /^control:/
+}
+var LegacyAuthManager = require('../middleware').LegacyAuthManager
+var radarServer
+var socket
 
 describe('given a server', function () {
   describe('without authentication', function () {
@@ -62,5 +63,4 @@ describe('given a server', function () {
       radarServer._processMessage(socket, controlMessage)
     })
   })
-
 })

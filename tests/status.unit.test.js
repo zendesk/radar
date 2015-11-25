@@ -1,14 +1,15 @@
-var assert = require('assert'),
-  Status = require('../core/lib/resources/status'),
-  Persistence = require('persistence'),
-  Common = require('./common.js')
+/* globals describe, it, before, after, beforeEach, afterEach */
+var assert = require('assert')
+var Status = require('../core/lib/resources/status')
+var Persistence = require('persistence')
+var Common = require('./common.js')
 
 describe('given a status resource', function () {
   var status
   var FakePersistence = {
     read: function () {},
     publish: function () {},
-    expire: function () {},
+    expire: function () {}
   }
   var Radar = {
     broadcast: function () {}
@@ -157,7 +158,7 @@ describe('given a status resource', function () {
     it('can be overrided', function (done) {
       var options = {
         policy: {
-          maxPersistence: 24 * 60 * 60,
+          maxPersistence: 24 * 60 * 60
         }
       }
 
@@ -174,6 +175,8 @@ describe('given a status resource', function () {
 })
 
 describe('a status resource', function () {
+  var radarServer
+
   describe('emitting messages', function () {
     beforeEach(function (done) {
       radarServer = Common.createRadarServer(done)
@@ -199,10 +202,10 @@ describe('a status resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' },
-        setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2} },
-        socketOne = { id: 1, send: function (m) {} },
-        socketTwo = { id: 2, send: function (m) {} }
+      var subscribeMessage = {op: 'subscribe', to: 'status:/z1/test/ticket/1'}
+      var setMessage = {op: 'set', to: 'status:/z1/test/ticket/1', value: {1: 2}}
+      var socketOne = {id: 1, send: function (m) {}}
+      var socketTwo = {id: 2, send: function (m) {}}
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {

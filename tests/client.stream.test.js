@@ -1,11 +1,13 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Persistence = require('../core').Persistence,
-  Client = require('radar_client').constructor,
-  StreamMessage = require('./lib/assert_helper.js').StreamMessage,
-  Tracker = require('callback_tracker'),
-  logging = require('minilog')('test'),
-  radar, client, client2
+/* globals describe, it, beforeEach, before, after */
+
+var common = require('./common.js')
+var assert = require('assert')
+var StreamMessage = require('./lib/assert_helper.js').StreamMessage
+var Tracker = require('callback_tracker')
+var logging = require('minilog')('test')
+var radar
+var client
+var client2
 
 describe('When using the stream resource', function () {
   var s = new StreamMessage('dev', 'test')
@@ -16,8 +18,8 @@ describe('When using the stream resource', function () {
     radar.sendCommand('start', common.configuration, function () {
       client = common.getClient('dev', 123, 0, { name: 'tester1' }, track('client 1 ready'))
       client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'))
-      client.on('message:in', function (m) { logging.info('incoming', client.id, m); })
-      client2.on('message:in', function (m) { logging.info('incoming', client2.id, m); })
+      client.on('message:in', function (m) { logging.info('incoming', client.id, m) })
+      client2.on('message:in', function (m) { logging.info('incoming', client2.id, m) })
     })
   })
 
@@ -55,8 +57,8 @@ describe('When using the stream resource', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = { state: 'test1'},
-        finished = {}
+      var message = {state: 'test1'}
+      var finished = {}
 
       function validate (msg, client_name) {
         assert.ok(!finished[client_name])
@@ -92,9 +94,9 @@ describe('When using the stream resource', function () {
       // Send three messages, client2 will assert if it receieves any
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'},
-        message2 = { state: 'test2' },
-        message3 = { state: 'test3' }
+      var message = { state: 'test1' }
+      var message2 = { state: 'test2' }
+      var message3 = { state: 'test3' }
 
       client2.stream('test').on(function (msg) {
         assert.ok(false)
@@ -120,9 +122,9 @@ describe('When using the stream resource', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'}
-      var message2 = { state: 'test2'}
-      var message3 = { state: 'test3'}
+      var message = {state: 'test1'}
+      var message2 = {state: 'test2'}
+      var message3 = {state: 'test3'}
 
       // test.numAssertions = 3
       client2.stream('test').on(function (msg) {
@@ -224,7 +226,7 @@ describe('When using the stream resource', function () {
           s.assert_sync_error_notification(s.notifications[4], { start: 5, end: 6, size: 2, from: 4 })
           s.on(6, function () {
             s.for_sender(client2).assert_message_sequence([
-              [ 'ticket/1', 'open', 'seventh']
+              ['ticket/1', 'open', 'seventh']
             ], 5)
 
             done()
@@ -303,7 +305,7 @@ describe('When using the stream resource', function () {
       var once_push = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
-            [ 'ticket/1', 'open', { hello: 'world' }, client ],
+            [ 'ticket/1', 'open', { hello: 'world' }, client ]
           ])
           done()
         })

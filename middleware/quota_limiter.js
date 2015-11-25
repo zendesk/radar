@@ -1,5 +1,5 @@
-var logging = require('minilog')('radar:rate_limiter'),
-  MiniEventEmitter = require('miniee')
+var logging = require('minilog')('radar:rate_limiter')
+var MiniEventEmitter = require('miniee')
 
 var QuotaLimiter = function (limit) {
   this._limit = limit
@@ -42,7 +42,8 @@ QuotaLimiter.prototype.isAboveLimit = function (id, limit) {
 }
 
 QuotaLimiter.prototype.countAll = function () {
-  var counts = {}, self = this
+  var counts = {}
+  var self = this
 
   Object.keys(this._resources.id).forEach(function (id) {
     counts[id] = self.count(id)
@@ -113,7 +114,7 @@ QuotaLimiter.prototype._deepRemove = function (type, key, results, lookup) {
     Object.keys(results).forEach(function (result) {
       var keys = lookup.call(self, type, result)
 
-      if (keys) { delete keys[key]; }
+      if (keys) { delete keys[key] }
     })
   }
 }

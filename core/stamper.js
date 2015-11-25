@@ -1,6 +1,6 @@
-var uuid = require('uuid'),
-  logging = require('minilog')('radar:stamper'),
-  sentryName
+var uuid = require('uuid')
+var logging = require('minilog')('radar:stamper')
+var sentryName
 
 module.exports = {
   setup: function (name) {

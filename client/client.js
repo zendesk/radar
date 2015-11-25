@@ -1,5 +1,4 @@
-var _ = require('underscore'),
-  log = require('minilog')('radar:client')
+var log = require('minilog')('radar:client')
 
 function Client (name, id, accountName, version) {
   this.createdAt = Date.now()
@@ -63,7 +62,7 @@ Client.prototype.storeData = function (messageIn) {
       break
   }
 
-  // FIXME: For now log everything Later, enable sample logging. 
+  // FIXME: For now log everything Later, enable sample logging
   if (processedOp) {
     this._logState()
   }
@@ -82,8 +81,8 @@ Client.prototype.readData = function (cb) {
 }
 
 Client.prototype._logState = function () {
-  var subCount = Object.keys(this.subscriptions).length,
-    presCount = Object.keys(this.presences).length
+  var subCount = Object.keys(this.subscriptions).length
+  var presCount = Object.keys(this.presences).length
 
   log.info('#storeData', {
     client_id: this.id,
@@ -93,9 +92,9 @@ Client.prototype._logState = function () {
 }
 
 Client.prototype._storeDataSubscriptions = function (messageIn) {
-  var message = _cloneForStorage(messageIn),
-    to = message.to,
-    existingSubscription
+  var message = _cloneForStorage(messageIn)
+  var to = message.to
+  var existingSubscription
 
   // Persist the message data, according to type
   switch (message.op) {
@@ -119,12 +118,12 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
 }
 
 Client.prototype._storeDataPresences = function (messageIn) {
-  var message = _cloneForStorage(messageIn),
-    to = message.to,
-    existingPresence
+  var message = _cloneForStorage(messageIn)
+  var to = message.to
+  var existingPresence
 
   // Persist the message data, according to type
-  if (message.op === 'set' && to.substr(0, 'presence:/'.length) == 'presence:/') {
+  if (message.op === 'set' && to.substr(0, 'presence:/'.length) === 'presence:/') {
     existingPresence = this.presences[to]
 
     // Should go offline

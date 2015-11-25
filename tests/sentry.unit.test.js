@@ -1,16 +1,20 @@
-var assert = require('assert'),
-  Tracker = require('callback_tracker'),
-  Sentry = require('../core/lib/resources/presence/sentry.js'),
-  Persistence = require('persistence'),
-  configuration = require('../configurator.js').load({persistence: true}),
-  _ = require('underscore'),
-  currentSentry = 0,
-  sentry, sentryOne, sentryTwo, sentryThree, sentries = [],
-  defaults = {
-    expiryOffset: 200,
-    refreshInterval: 100,
-    checkInterval: 200
-  }
+/* globals describe, it, beforeEach, afterEach, before */
+var assert = require('assert')
+var Sentry = require('../core/lib/resources/presence/sentry.js')
+var Persistence = require('persistence')
+var configuration = require('../configurator.js').load({persistence: true})
+var _ = require('underscore')
+var currentSentry = 0
+var sentry
+var sentryOne
+var sentryTwo
+var sentryThree
+var sentries = []
+var defaults = {
+  expiryOffset: 200,
+  refreshInterval: 100,
+  checkInterval: 200
+}
 
 function newSentry (options) {
   var name = 'sentry-' + currentSentry++
@@ -19,7 +23,7 @@ function newSentry (options) {
 }
 
 function assertSentriesKnowEachOther (sentries, done) {
-  var sentryNames = sentries.map(function (s) { return s.name; })
+  var sentryNames = sentries.map(function (s) { return s.name })
 
   sentries.forEach(function (sentry) {
     _.mapObject(sentry.sentries, function (message) {
@@ -27,7 +31,7 @@ function assertSentriesKnowEachOther (sentries, done) {
     })
   })
 
-  if (done) { done(); }
+  if (done) { done() }
 }
 
 describe('a Server Entry (Sentry)', function () {
@@ -38,8 +42,8 @@ describe('a Server Entry (Sentry)', function () {
 
   afterEach(function (done) {
     Persistence.redis().del('sentry:/radar', function () {
-      if (sentry) { sentry.stop(done); } else { done(); }
-      sentries.forEach(function (s) { s.stop(); })
+      if (sentry) { sentry.stop(done) } else { done() }
+      sentries.forEach(function (s) { s.stop() })
     })
   })
 
@@ -60,7 +64,6 @@ describe('a Server Entry (Sentry)', function () {
         assert.equal(sentry.isDown(sentry.name), false)
       })
     })
-
   })
 
   describe('keep alive', function () {
@@ -101,7 +104,7 @@ describe('a Server Entry (Sentry)', function () {
         setTimeout(function () {
           assert.equal(sentryOne.sentries[sentryTwo.name], undefined)
           done()
-        }, 300)
+        }, 500)
       }
 
       sentryTwo.stop(checkForSentryTwoGone)
@@ -110,8 +113,8 @@ describe('a Server Entry (Sentry)', function () {
 
   describe('complex scenario, with more than two sentries, when one dies', function () {
     it('all remaining sentries should do proper cleanup', function (done) {
-      sentryOne = newSentry({ checkInterval: 10})
-      sentryTwo = newSentry({ checkInterval: 20}); // It's important that sentryTwo is slower. 
+      sentryOne = newSentry({checkInterval: 10})
+      sentryTwo = newSentry({checkInterval: 20}) // It's important that sentryTwo is slower.
       sentryThree = newSentry()
       sentries = [ sentryOne, sentryTwo, sentryThree ]
 
@@ -119,7 +122,7 @@ describe('a Server Entry (Sentry)', function () {
         // stop one
         sentryThree.stop(function () {
           setTimeout(function () {
-            // assert existing sentries no longer know sentryThree. 
+            // assert existing sentries no longer know sentryThree.
             assert.equal(sentryOne.sentries[sentryThree.name], undefined)
             assert.equal(sentryTwo.sentries[sentryThree.name], undefined)
             done()
@@ -141,7 +144,7 @@ describe('a Server Entry (Sentry)', function () {
 
   describe('when emiting events', function () {
     it('should emit up when going up', function (done) {
-      sentryOne = newSentry({ checkInterval: 10})
+      sentryOne = newSentry({checkInterval: 10})
       sentryOne.on('up', function (name, message) {
         assert.equal(name, sentryOne.name)
         done()
@@ -164,7 +167,6 @@ describe('a Server Entry (Sentry)', function () {
           sentryTwo.stop()
         })
       })
-
     })
   })
 })

@@ -1,9 +1,11 @@
-var common = require('./common.js'),
-  assert = require('assert'),
-  Persistence = require('../core').Persistence,
-  Client = require('radar_client').constructor,
-  Tracker = require('callback_tracker'),
-  radar, client, client2
+/* globals describe, it, beforeEach, before, after */
+
+var common = require('./common.js')
+var assert = require('assert')
+var Tracker = require('callback_tracker')
+var radar
+var client
+var client2
 
 describe('When using status resources', function () {
   before(function (done) {
@@ -51,8 +53,8 @@ describe('When using status resources', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = { state: 'test1'},
-        finished = {}
+      var message = {state: 'test1'}
+      var finished = {}
 
       function validate (msg, client_name) {
         assert.equal('status:/dev/test', msg.to)
@@ -90,16 +92,16 @@ describe('When using status resources', function () {
       // Send three messages, client2 will assert if it receieves any
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'},
-        message2 = { state: 'test2' },
-        message3 = { state: 'test3' }
+      var message = { state: 'test1' }
+      var message2 = { state: 'test2' }
+      var message3 = { state: 'test3' }
 
       client2.status('test').on(function (msg) {
         assert.ok(false)
       })
 
       client.status('test').on(function (msg) {
-        if (msg.value.state == 'test3') {
+        if (msg.value.state === 'test3') {
           done()
         }
       })
@@ -114,9 +116,9 @@ describe('When using status resources', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1'}
-      var message2 = { state: 'test2'}
-      var message3 = { state: 'test3'}
+      var message = {state: 'test1'}
+      var message2 = {state: 'test2'}
+      var message3 = {state: 'test3'}
 
       // test.numAssertions = 3
       client2.status('test').on(function (msg) {
@@ -126,7 +128,7 @@ describe('When using status resources', function () {
       })
 
       client.status('test').on(function (msg) {
-        if (msg.value.state == 'test3') {
+        if (msg.value.state === 'test3') {
           // Received third message without asserting
           done()
         }
@@ -221,7 +223,7 @@ describe('When using status resources', function () {
         }).sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op)
-          assert.deepEqual({ 246: 'foo'}, message.value)
+          assert.deepEqual({246: 'foo'}, message.value)
           setTimeout(done, 50)
         })
       })
@@ -239,7 +241,7 @@ describe('When using status resources', function () {
         }).sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op)
-          assert.deepEqual({ 123: 'foo'}, message.value)
+          assert.deepEqual({123: 'foo'}, message.value)
           client.status('test').set('bar')
         })
       })
@@ -249,7 +251,7 @@ describe('When using status resources', function () {
         client.status('test').sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.equal('get', message.op)
-          assert.deepEqual({ 123: 'foo'}, message.value)
+          assert.deepEqual({123: 'foo'}, message.value)
           done()
         })
       })

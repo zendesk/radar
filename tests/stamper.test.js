@@ -1,7 +1,8 @@
-var assert = require('assert'),
-  Stamper = require('../core/stamper.js'),
-  sentryName = 'theSentryName',
-  clientId = 'clientId'
+/* globals describe, it */
+var assert = require('assert')
+var Stamper = require('../core/stamper.js')
+var sentryName = 'theSentryName'
+var clientId = 'clientId'
 
 Stamper.setup('theSentryName')
 
@@ -29,7 +30,7 @@ describe('a Stamper service', function () {
   })
 
   it('does not override id if present', function () {
-    var message = {stamp: { id: 1 } }
+    var message = {stamp: {id: 1}}
 
     Stamper.stamp(message, clientId)
 
