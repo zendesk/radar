@@ -7,7 +7,7 @@ var logging = require('minilog')('radar:server')
 var hostname = require('os').hostname()
 var DefaultEngineIO = require('engine.io')
 var Semver = require('semver')
-var Client = require('../client/client.js')
+var ClientSession = require('../client/client_session.js')
 var Middleware = require('../middleware')
 var Stamper = require('../core/stamper.js')
 
@@ -235,11 +235,11 @@ Server.prototype._processMessage = function (socket, message) {
 
 // Initialize a client, and persist messages where required
 Server.prototype._persistClientData = function (socket, message) {
-  var client = Client.get(socket.id)
+  var clientSession = ClientSession.get(socket.id)
 
-  if (client && Semver.gte(client.version, VERSION_CLIENT_STOREDATA)) {
+  if (clientSession && Semver.gte(clientSession.version, VERSION_CLIENT_STOREDATA)) {
     logging.info('#socket.message - _persistClientData', message, socket.id)
-    client.storeData(message)
+    clientSession.storeData(message)
   }
 }
 
@@ -330,7 +330,7 @@ Server.prototype._sendErrorMessage = function (socket, value, origin) {
 // Initialize the current client
 Server.prototype._initClient = function (socket, message) {
   // creates the mapping on nameSync
-  Client.create(message)
+  ClientSession.create(message)
 }
 
 Server.prototype._stampMessage = function (socket, message) {

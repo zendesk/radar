@@ -1,6 +1,6 @@
 var MiniEventEmitter = require('miniee')
 var QuotaLimiter = require('./quota_limiter.js')
-var Client = require('../client/client.js')
+var ClientSession = require('../client/client_session.js')
 var logging = require('minilog')('radar:quota_manager')
 
 var QuotaManager = function () {
@@ -29,8 +29,8 @@ QuotaManager.prototype.checkLimits = function (socket, message, messageType, nex
     // Log Soft Limit, if available
     softLimit = this._getSoftLimit(messageType)
     if (softLimit && limiter.count(socket.id) === softLimit) {
-      var client = Client.get(socket.id)
-      this._logLimits(client, softLimit, limiter.count(socket.id))
+      var clientSession = ClientSession.get(socket.id)
+      this._logLimits(clientSession, softLimit, limiter.count(socket.id))
     }
 
     next()

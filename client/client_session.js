@@ -1,6 +1,6 @@
 var log = require('minilog')('radar:client')
 
-function Client (name, id, accountName, version) {
+function ClientSession (name, id, accountName, version) {
   this.createdAt = Date.now()
   this.lastModified = Date.now()
   this.name = name
@@ -11,42 +11,42 @@ function Client (name, id, accountName, version) {
 }
 
 // Class properties
-Client.clients = {} // keyed by name
-Client.names = {} // keyed by id
+ClientSession.clients = {} // keyed by name
+ClientSession.names = {} // keyed by id
 
-require('util').inherits(Client, require('events').EventEmitter)
+require('util').inherits(ClientSession, require('events').EventEmitter)
 
 // Public API
 
 // Class methods
 
 // Get current client associated with a given socket id
-Client.get = function (id) {
-  var name = Client.names[id]
+ClientSession.get = function (id) {
+  var name = ClientSession.names[id]
   if (name) {
-    return Client.clients[name]
+    return ClientSession.clients[name]
   }
 }
 
 // Set up client name/id association, and return new client instance
-Client.create = function (message) {
+ClientSession.create = function (message) {
   var association = message.options.association
-  Client.names[association.id] = association.name
-  var client = new Client(association.name, association.id,
+  ClientSession.names[association.id] = association.name
+  var clientSession = new ClientSession(association.name, association.id,
     message.accountName, message.options.clientVersion)
 
-  Client.clients[association.name] = client
+  ClientSession.clients[association.name] = clientSession
 
   log.info('create: association name: ' + association.name +
     '; association id: ' + association.id)
 
-  return client
+  return clientSession
 }
 
 // Instance methods
 
 // Persist subscriptions and presences when not already persisted in memory
-Client.prototype.storeData = function (messageIn) {
+ClientSession.prototype.storeData = function (messageIn) {
   var processedOp = false
 
   // Persist the message data, according to type
@@ -70,7 +70,7 @@ Client.prototype.storeData = function (messageIn) {
   return true
 }
 
-Client.prototype.readData = function (cb) {
+ClientSession.prototype.readData = function (cb) {
   var data = {subscriptions: this.subscriptions, presences: this.presences}
 
   if (cb) {
@@ -80,7 +80,7 @@ Client.prototype.readData = function (cb) {
   }
 }
 
-Client.prototype._logState = function () {
+ClientSession.prototype._logState = function () {
   var subCount = Object.keys(this.subscriptions).length
   var presCount = Object.keys(this.presences).length
 
@@ -91,7 +91,7 @@ Client.prototype._logState = function () {
   })
 }
 
-Client.prototype._storeDataSubscriptions = function (messageIn) {
+ClientSession.prototype._storeDataSubscriptions = function (messageIn) {
   var message = _cloneForStorage(messageIn)
   var to = message.to
   var existingSubscription
@@ -117,7 +117,7 @@ Client.prototype._storeDataSubscriptions = function (messageIn) {
   return false
 }
 
-Client.prototype._storeDataPresences = function (messageIn) {
+ClientSession.prototype._storeDataPresences = function (messageIn) {
   var message = _cloneForStorage(messageIn)
   var to = message.to
   var existingPresence
@@ -150,4 +150,4 @@ function _cloneForStorage (messageIn) {
   return message
 }
 
-module.exports = Client
+module.exports = ClientSession

@@ -1,16 +1,16 @@
 /* globals describe, it, beforeEach */
 var common = require('./common.js')
 var assert = require('assert')
-var Client = require('../client/client.js')
+var ClientSession = require('../client/client_session.js')
 
-describe('Client', function () {
-  var client
+describe('ClientSession', function () {
+  var clientSession
   var presences
   var subscriptions
 
   beforeEach(function (done) {
     common.startPersistence(done) // clean up
-    client = new Client('joe', Math.random(), 'test', 1)
+    clientSession = new ClientSession('joe', Math.random(), 'test', 1)
     subscriptions = {}
     presences = {}
   })
@@ -23,9 +23,9 @@ describe('Client', function () {
 
         subscriptions[to] = message
 
-        client.storeData(message)
+        clientSession.storeData(message)
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
@@ -40,9 +40,9 @@ describe('Client', function () {
 
         subscriptions[to] = message
 
-        client.storeData(message)
+        clientSession.storeData(message)
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
@@ -56,10 +56,10 @@ describe('Client', function () {
         var subscribe = { to: to, op: 'subscribe' }
         var unsubscribe = { to: to, op: 'unsubscribe' }
 
-        client.storeData(subscribe)
-        client.storeData(unsubscribe)
+        clientSession.storeData(subscribe)
+        clientSession.storeData(unsubscribe)
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: {}
@@ -73,12 +73,12 @@ describe('Client', function () {
         var subscribe = { to: to, op: 'subscribe' }
         var sync = { to: to, op: 'sync' }
 
-        client.storeData(subscribe)
-        client.storeData(sync)
+        clientSession.storeData(subscribe)
+        clientSession.storeData(sync)
 
         subscriptions[to] = sync
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
@@ -92,12 +92,12 @@ describe('Client', function () {
         var subscribe = { to: to, op: 'subscribe' }
         var sync = { to: to, op: 'sync' }
 
-        client.storeData(sync)
-        client.storeData(subscribe)
+        clientSession.storeData(sync)
+        clientSession.storeData(subscribe)
 
         subscriptions[to] = sync
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: subscriptions,
             presences: {}
@@ -112,12 +112,12 @@ describe('Client', function () {
         var to = 'presence:/test/account/ticket/1'
         var message = { to: to, op: 'set', value: 'online' }
 
-        client.storeData(message)
+        clientSession.storeData(message)
 
         delete message.value
         presences[to] = message
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: presences
@@ -131,10 +131,10 @@ describe('Client', function () {
         var online = { to: to, op: 'set', value: 'online' }
         var offline = { to: to, op: 'set', value: 'offline' }
 
-        client.storeData(online)
-        client.storeData(offline)
+        clientSession.storeData(online)
+        clientSession.storeData(offline)
 
-        client.readData(function (state) {
+        clientSession.readData(function (state) {
           assert.deepEqual(state, {
             subscriptions: {},
             presences: {}
