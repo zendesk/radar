@@ -1,6 +1,8 @@
 var log = require('minilog')('radar:client')
+var EventEmitter = require('events').EventEmitter
+var inherits = require('util').inherits
 
-function ClientSession (name, id, accountName, version) {
+function ClientSession (name, id, accountName, version, transport) {
   this.createdAt = Date.now()
   this.lastModified = Date.now()
   this.name = name
@@ -8,42 +10,25 @@ function ClientSession (name, id, accountName, version) {
   this.subscriptions = {}
   this.presences = {}
   this.version = version
+  EventEmitter.call(this)
+
+  this.transport = transport
+  this._setupTransport()
 }
-
-// Class properties
-ClientSession.clients = {} // keyed by name
-ClientSession.names = {} // keyed by id
-
-require('util').inherits(ClientSession, require('events').EventEmitter)
-
-// Public API
-
-// Class methods
-
-// Get current client associated with a given socket id
-ClientSession.get = function (id) {
-  var name = ClientSession.names[id]
-  if (name) {
-    return ClientSession.clients[name]
-  }
-}
-
-// Set up client name/id association, and return new client instance
-ClientSession.create = function (message) {
-  var association = message.options.association
-  ClientSession.names[association.id] = association.name
-  var clientSession = new ClientSession(association.name, association.id,
-    message.accountName, message.options.clientVersion)
-
-  ClientSession.clients[association.name] = clientSession
-
-  log.info('create: association name: ' + association.name +
-    '; association id: ' + association.id)
-
-  return clientSession
-}
+inherits(ClientSession, EventEmitter)
 
 // Instance methods
+
+// ClientSession Message API:
+//
+// Incoming messages:
+// clientSession.on('message', messageHandler)
+// Outcoming messages:
+// clientSession.send(message)
+
+ClientSession.prototype.send = function (message) {
+  this.transport.send(message)
+}
 
 // Persist subscriptions and presences when not already persisted in memory
 ClientSession.prototype.storeData = function (messageIn) {
@@ -78,6 +63,16 @@ ClientSession.prototype.readData = function (cb) {
   } else {
     return data
   }
+}
+
+// Private methods
+
+ClientSession.prototype._setupTransport = function () {
+  var self = this
+
+  this.transport && this.transport.on && this.transport.on('message', function emitClientMessage (message) {
+    self.emit('message', message)
+  })
 }
 
 ClientSession.prototype._logState = function () {
@@ -150,4 +145,33 @@ function _cloneForStorage (messageIn) {
   return message
 }
 
+// TODO: move these to SessionManager
+var ClientIdsByName = {} // keyed by name
+var ClientNamesById = {} // keyed by id
+
+// (String) => ClientSession
+function getClientSessionBySocketId (id) {
+  var name = ClientNamesById[id]
+  if (name) {
+    return ClientIdsByName[name]
+  }
+}
+
+// Set up client name/id association, and return new client instance
+function createClientSessionFromNameSyncMessage (message) {
+  var association = message.options.association
+  ClientNamesById[association.id] = association.name
+  var clientSession = new ClientSession(association.name, association.id,
+    message.accountName, message.options.clientVersion)
+
+  ClientIdsByName[association.name] = clientSession
+
+  log.info('create: association name: ' + association.name +
+    '; association id: ' + association.id)
+
+  return clientSession
+}
+
 module.exports = ClientSession
+module.exports.get = getClientSessionBySocketId
+module.exports.create = createClientSessionFromNameSyncMessage

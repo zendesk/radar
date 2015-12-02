@@ -2,17 +2,44 @@
 var common = require('./common.js')
 var assert = require('assert')
 var ClientSession = require('../client/client_session.js')
+var EventEmitter = require('events').EventEmitter
+var sinon = require('sinon')
 
 describe('ClientSession', function () {
   var clientSession
   var presences
   var subscriptions
+  var transport = new EventEmitter()
+  transport.send = sinon.spy()
 
   beforeEach(function (done) {
     common.startPersistence(done) // clean up
-    clientSession = new ClientSession('joe', Math.random(), 'test', 1)
+    clientSession = new ClientSession('joe', Math.random(), 'test', 1, transport)
     subscriptions = {}
     presences = {}
+  })
+
+  describe('message api', function () {
+    describe('incoming', function () {
+      it('emits transport message events', function (done) {
+        var originalMessage = {message: 'foo'}
+        clientSession.on('message', function (message) {
+          assert.equal(message, originalMessage)
+          done()
+        })
+
+        transport.emit('message', originalMessage)
+      })
+    })
+    describe('outgoing - .send', function () {
+      it('calls transport.send', function () {
+        var originalMessage = {message: 'bar'}
+
+        clientSession.send(originalMessage)
+
+        assert.ok(transport.send.calledWith(originalMessage))
+      })
+    })
   })
 
   describe('.storeData and .loadData', function () {
