@@ -9,16 +9,16 @@ var QuotaManager = function () {
 
 MiniEventEmitter.mixin(QuotaManager)
 
-QuotaManager.prototype.checkLimits = function (socket, message, messageType, next) {
+QuotaManager.prototype.checkLimits = function (clientSession, message, messageType, next) {
   var limiter = this.getLimiter(messageType)
   var softLimit
 
   if (!limiter || (message.op !== 'subscribe' && message.op !== 'sync')) {
     next()
-  } else if (limiter.isAboveLimit(socket.id)) {
-    logging.warn('#socket.message - rate_limited', message, socket.id)
+  } else if (limiter.isAboveLimit(clientSession.id)) {
+    logging.warn('#clientSession.message - rate_limited', message, clientSession.id)
 
-    socket.send({
+    clientSession.send({
       op: 'err',
       value: 'rate limited',
       origin: message
@@ -28,26 +28,26 @@ QuotaManager.prototype.checkLimits = function (socket, message, messageType, nex
   } else {
     // Log Soft Limit, if available
     softLimit = this._getSoftLimit(messageType)
-    if (softLimit && limiter.count(socket.id) === softLimit) {
-      var clientSession = ClientSession.get(socket.id)
-      this._logLimits(clientSession, softLimit, limiter.count(socket.id))
+    if (softLimit && limiter.count(clientSession.id) === softLimit) {
+      var client = ClientSession.get(clientSession.id)
+      this._logLimits(client, softLimit, limiter.count(clientSession.id))
     }
 
     next()
   }
 }
 
-QuotaManager.prototype.updateLimits = function (socket, resource, message, messageType, next) {
+QuotaManager.prototype.updateLimits = function (clientSession, resource, message, messageType, next) {
   var limiter = this.getLimiter(messageType)
 
   if (limiter) {
     switch (message.op) {
       case 'sync':
       case 'subscribe':
-        limiter.add(socket.id, message.to)
+        limiter.add(clientSession.id, message.to)
         break
       case 'unsubscribe':
-        limiter.remove(socket.id, message.to)
+        limiter.remove(clientSession.id, message.to)
         break
     }
   }
@@ -55,11 +55,11 @@ QuotaManager.prototype.updateLimits = function (socket, resource, message, messa
   next()
 }
 
-QuotaManager.prototype.destroyByClient = function (socket, resource, messageType, next) {
+QuotaManager.prototype.destroyByClient = function (clientSession, resource, messageType, next) {
   var limiter = this.findLimiter(messageType)
 
   if (limiter) {
-    limiter.remove(socket.id, resource.to)
+    limiter.remove(clientSession.id, resource.to)
   }
 
   next()
@@ -130,7 +130,7 @@ QuotaManager.prototype._logLimits = function (client, expected, actual) {
     return
   }
 
-  logging.warn('#socket.message - rate soft limit reached', client.id, {
+  logging.warn('#clientSession.message - rate soft limit reached', client.id, {
     name: client.name,
     actual: actual,
     expected: expected,

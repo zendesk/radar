@@ -515,7 +515,7 @@ describe('given two clients and a presence resource', function () {
     client.presence('test').on(p.notify).subscribe(function () {
       client2.presence('test').set('online')
       setTimeout(function () {
-        // Hack a bit so that socketId is saved
+        // Hack a bit so that clientSessionId is saved
         var clientId = client2.currentClientId()
         client2.currentClientId = function () { return clientId }
         // Disconnect, causing a request timeout or socket close
@@ -541,7 +541,7 @@ describe('given two clients and a presence resource', function () {
         ['online', 'client_online']
       )
 
-      // Hack a bit so that socketId is saved
+      // Hack a bit so that clientSessionId is saved
       var clientId = client.currentClientId()
       client.currentClientId = function () { return clientId }
 

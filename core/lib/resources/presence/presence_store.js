@@ -12,22 +12,22 @@ function PresenceStore (scope) {
 require('util').inherits(PresenceStore, require('events').EventEmitter)
 
 // Cache the client data without adding
-PresenceStore.prototype.cacheAdd = function (socketId, message) {
-  this.cache[socketId] = message
+PresenceStore.prototype.cacheAdd = function (clientSessionId, message) {
+  this.cache[clientSessionId] = message
 }
 
-PresenceStore.prototype.cacheRemove = function (socketId) {
-  var val = this.cache[socketId]
-  delete this.cache[socketId]
+PresenceStore.prototype.cacheRemove = function (clientSessionId) {
+  var val = this.cache[clientSessionId]
+  delete this.cache[clientSessionId]
   return val
 }
 
-PresenceStore.prototype.add = function (socketId, userId, userType, message) {
+PresenceStore.prototype.add = function (clientSessionId, userId, userType, message) {
   var self = this
   var events = []
 
-  logging.debug('#presence - store.add', userId, socketId, message, this.scope)
-  this.cacheRemove(socketId)
+  logging.debug('#presence - store.add', userId, clientSessionId, message, this.scope)
+  this.cacheRemove(clientSessionId)
 
   if (!this.map[userId]) {
     events.push('user_added')
@@ -35,40 +35,41 @@ PresenceStore.prototype.add = function (socketId, userId, userType, message) {
     this.userTypes[userId] = userType
   }
 
-  if (!this.map[userId][socketId]) {
+  if (!this.map[userId][clientSessionId]) {
     events.push('client_added')
-    this.map[userId][socketId] = message
-    this.socketUserMap[socketId] = userId
+    this.map[userId][clientSessionId] = message
+    this.socketUserMap[clientSessionId] = userId
   } else {
-    var previous = this.map[userId][socketId]
+    var previous = this.map[userId][clientSessionId]
     if (message.clientData && !_.isEqual(message.clientData, previous.clientData)) {
       events.push('client_updated')
-      this.map[userId][socketId] = message
+      this.map[userId][clientSessionId] = message
     }
   }
 
   events.forEach(function (event) {
     logging.debug('#presence - store.emit', event, message, self.scope)
+
     self.emit(event, message)
   })
 }
 
-PresenceStore.prototype.remove = function (socketId, userId, message) {
+PresenceStore.prototype.remove = function (clientSessionId, userId, message) {
   var self = this
   var events = []
 
-  logging.debug('#presence - store.remove', userId, socketId, message, this.scope)
+  logging.debug('#presence - store.remove', userId, clientSessionId, message, this.scope)
 
-  this.cacheRemove(socketId)
+  this.cacheRemove(clientSessionId)
 
   // When non-existent, return
-  if (!this.map[userId] || !this.map[userId][socketId]) {
+  if (!this.map[userId] || !this.map[userId][clientSessionId]) {
     return
   }
 
   events.push('client_removed')
-  delete this.map[userId][socketId]
-  delete this.socketUserMap[socketId]
+  delete this.map[userId][clientSessionId]
+  delete this.socketUserMap[clientSessionId]
 
   // Empty user
   if (Object.keys(this.map[userId]).length === 0) {
@@ -83,20 +84,20 @@ PresenceStore.prototype.remove = function (socketId, userId, message) {
   })
 }
 
-PresenceStore.prototype.removeClient = function (socketId, message) {
-  var userId = this.socketUserMap[socketId]
-  this.cacheRemove(socketId)
+PresenceStore.prototype.removeClient = function (clientSessionId, message) {
+  var userId = this.socketUserMap[clientSessionId]
+  this.cacheRemove(clientSessionId)
 
   // When non-existent, return
   if (!userId) {
     logging.warn('#presence - store.removeClient: cannot find data for',
-      socketId, this.scope)
+      clientSessionId, this.scope)
     return
   }
 
-  logging.debug('#presence - store.removeClient', userId, socketId, message, this.scope)
-  delete this.map[userId][socketId]
-  delete this.socketUserMap[socketId]
+  logging.debug('#presence - store.removeClient', userId, clientSessionId, message, this.scope)
+  delete this.map[userId][clientSessionId]
+  delete this.socketUserMap[clientSessionId]
 
   logging.debug('#presence - store.emit', 'client_removed', message, this.scope)
   this.emit('client_removed', message)
@@ -112,12 +113,12 @@ PresenceStore.prototype.removeUserIfEmpty = function (userId, message) {
   }
 }
 
-PresenceStore.prototype.userOf = function (socketId) {
-  return this.socketUserMap[socketId]
+PresenceStore.prototype.userOf = function (clientSessionId) {
+  return this.socketUserMap[clientSessionId]
 }
 
-PresenceStore.prototype.get = function (socketId, userId) {
-  return (this.map[userId] && this.map[userId][socketId])
+PresenceStore.prototype.get = function (clientSessionId, userId) {
+  return (this.map[userId] && this.map[userId][clientSessionId])
 }
 
 PresenceStore.prototype.users = function () {
@@ -131,8 +132,8 @@ PresenceStore.prototype.sockets = function (userId) {
 PresenceStore.prototype.forEachClient = function (callback) {
   var store = this
   this.users().forEach(function (userId) {
-    store.sockets(userId).forEach(function (socketId) {
-      if (callback) callback(userId, socketId, store.get(socketId, userId))
+    store.sockets(userId).forEach(function (clientSessionId) {
+      if (callback) callback(userId, clientSessionId, store.get(clientSessionId, userId))
     })
   })
 }
@@ -149,22 +150,22 @@ PresenceStore.prototype.userExists = function (userId) {
   return !!this.map[userId]
 }
 
-// This returns a list of socketIds, which is not costly.  The code that calls
-// this code uses each socketId in a separate chained call, the sum of which is
+// This returns a list of clientSessionIds, which is not costly.  The code that calls
+// this code uses each clientSessionId in a separate chained call, the sum of which is
 // costly.
 PresenceStore.prototype.socketsForSentry = function (sentry) {
   var map = this.map
-  var socketIds = []
+  var clientSessionIds = []
   Object.keys(map).forEach(function (userId) {
-    Object.keys(map[userId]).forEach(function (socketId) {
-      var data = map[userId][socketId]
+    Object.keys(map[userId]).forEach(function (clientSessionId) {
+      var data = map[userId][clientSessionId]
       if (data && data.sentry === sentry) {
-        socketIds.push(socketId)
+        clientSessionIds.push(clientSessionId)
       }
     })
   })
 
-  return socketIds
+  return clientSessionIds
 }
 
 module.exports = PresenceStore

@@ -123,10 +123,11 @@ Server.prototype._setupSentry = function (configuration) {
 
 Server.prototype._onSocketConnection = function (socket) {
   var self = this
-  var oldSend = socket.send
 
-  // Always send data as json
+  // wrap socket.send
+  var oldSend = socket.send
   socket.send = function (message) {
+    // Always send data as json
     var data = JSON.stringify(message)
 
     logging.info('#socket.message.outgoing', socket.id, data)
@@ -236,7 +237,6 @@ Server.prototype._processMessage = function (socket, message) {
 // Initialize a client, and persist messages where required
 Server.prototype._persistClientData = function (socket, message) {
   var clientSession = ClientSession.get(socket.id)
-
   if (clientSession && Semver.gte(clientSession.version, VERSION_CLIENT_STOREDATA)) {
     logging.info('#socket.message - _persistClientData', message, socket.id)
     clientSession.storeData(message)

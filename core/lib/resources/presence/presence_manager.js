@@ -49,12 +49,12 @@ PresenceManager.prototype.setup = function () {
 
   // Save so you removeListener on destroy
   this.sentryListener = function (sentry) {
-    var socketIds = store.socketsForSentry(sentry)
+    var clientSessionIds = store.socketsForSentry(sentry)
 
-    logging.info('#presence - #sentry down with ' + socketIds.length +
-      ' clients ', socketIds)
+    logging.info('#presence - #sentry down with ' + clientSessionIds.length +
+      ' clients ', clientSessionIds)
 
-    if (!socketIds.length) { return }
+    if (!clientSessionIds.length) { return }
 
     var destroyNextSocket = function () {
       if (self.destroying) {
@@ -62,13 +62,13 @@ PresenceManager.prototype.setup = function () {
         return
       }
 
-      var socketId = socketIds.pop()
-      if (!socketId) {
+      var clientSessionId = clientSessionIds.pop()
+      if (!clientSessionId) {
         return
       }
 
-      logging.info('#presence - #sentry down, removing socket:', sentry, scope, socketId)
-      self.sentryDownForClient(socketId)
+      logging.info('#presence - #sentry down, removing socket:', sentry, scope, clientSessionId)
+      self.sentryDownForClient(clientSessionId)
 
       setImmediate(function () {
         destroyNextSocket()
@@ -84,13 +84,13 @@ PresenceManager.prototype.setup = function () {
   this.sentry.on('down', this.sentryListener)
 }
 
-PresenceManager.prototype.sentryDownForClient = function (socketId) {
-  var userId = this.store.userOf(socketId)
+PresenceManager.prototype.sentryDownForClient = function (clientSessionId) {
+  var userId = this.store.userOf(clientSessionId)
   var userType = this.store.userTypeOf(userId)
   var message = {
     userId: userId,
     userType: userType,
-    clientId: socketId,
+    clientId: clientSessionId,
     online: false,
     explicit: false
   }
@@ -123,9 +123,9 @@ PresenceManager.prototype.destroy = function () {
   delete this.store
 }
 // FIXME: Method signature is getting unmanageable
-PresenceManager.prototype.addClient = function (socketId, userId, userType,
+PresenceManager.prototype.addClient = function (clientSessionId, userId, userType,
   userData, clientData, callback) {
-  if (typeof (clientData) === 'function') {
+  if (typeof clientData === 'function') {
     callback = clientData
   }
 
@@ -133,7 +133,7 @@ PresenceManager.prototype.addClient = function (socketId, userId, userType,
     userId: userId,
     userType: userType,
     userData: userData,
-    clientId: socketId,
+    clientId: clientSessionId,
     online: true,
     sentry: this.sentry.name
   }
@@ -141,9 +141,9 @@ PresenceManager.prototype.addClient = function (socketId, userId, userType,
   if (clientData) { message.clientData = clientData }
 
   // We might need the details before we actually do a store.add
-  this.store.cacheAdd(socketId, message)
+  this.store.cacheAdd(clientSessionId, message)
 
-  Persistence.persistHash(this.scope, userId + '.' + socketId, message)
+  Persistence.persistHash(this.scope, userId + '.' + clientSessionId, message)
 
   if (this.policy && this.policy.maxPersistence) {
     Persistence.expire(this.scope, this.policy.maxPersistence)
@@ -153,32 +153,32 @@ PresenceManager.prototype.addClient = function (socketId, userId, userType,
 }
 
 // Explicit disconnect (set('offline'))
-PresenceManager.prototype.removeClient = function (socketId, userId, userType, callback) {
+PresenceManager.prototype.removeClient = function (clientSessionId, userId, userType, callback) {
   var message = {
     userId: userId,
     userType: userType,
-    clientId: socketId,
+    clientId: clientSessionId,
     online: false,
     explicit: true
   }
 
-  Persistence.deleteHash(this.scope, userId + '.' + socketId)
+  Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
   Persistence.publish(this.scope, message, callback)
 }
 
 // Implicit disconnect (broken connection)
-PresenceManager.prototype.disconnectClient = function (socketId, callback) {
-  var userId = this.store.userOf(socketId)
+PresenceManager.prototype.disconnectClient = function (clientSessionId, callback) {
+  var userId = this.store.userOf(clientSessionId)
   var userType
 
   // If there is no userid, then we've already removed the user (e.g. via a remove
   // call) or, we have not added this client to the store yet. (redis reply for
   // addClient has not come)
   if (!userId) {
-    var message = this.store.cacheRemove(socketId)
+    var message = this.store.cacheRemove(clientSessionId)
     if (!message) {
       // This is possible if multiple servers are expiring a fallen server's clients
-      logging.warn('#presence - no userId/userType found for', socketId,
+      logging.warn('#presence - no userId/userType found for', clientSessionId,
         'in store, userId:', userId, this.scope)
       return
     } else {
@@ -188,20 +188,20 @@ PresenceManager.prototype.disconnectClient = function (socketId, callback) {
   } else {
     userType = this.store.userTypeOf(userId)
   }
-  this._implicitDisconnect(socketId, userId, userType, callback)
+  this._implicitDisconnect(clientSessionId, userId, userType, callback)
 }
 
-PresenceManager.prototype._implicitDisconnect = function (socketId, userId,
+PresenceManager.prototype._implicitDisconnect = function (clientSessionId, userId,
   userType, callback) {
   var message = {
     userId: userId,
     userType: userType,
-    clientId: socketId,
+    clientId: clientSessionId,
     online: false,
     explicit: false
   }
 
-  Persistence.deleteHash(this.scope, userId + '.' + socketId)
+  Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
   Persistence.publish(this.scope, message, callback)
 }
 
@@ -210,7 +210,7 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
   var self = this
   var sentry = this.sentry
   var userId = message.userId
-  var socketId = message.clientId
+  var clientSessionId = message.clientId
   var userType = message.userType
 
   logging.debug('#presence - processRedisEntry:', message, this.scope)
@@ -221,27 +221,27 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
 
     if (!isDown) {
       self.clearExpiry(userId)
-      store.add(socketId, userId, userType, message)
+      store.add(clientSessionId, userId, userType, message)
     } else {
       logging.debug('#presence - processRedisEntry: sentry.isDown', isDown,
         message.sentry, this.scope)
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
-      Persistence.deleteHash(this.scope, userId + '.' + socketId)
-      self.handleOffline(socketId, userId, userType, false /* explicit */)
+      Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
+      self.handleOffline(clientSessionId, userId, userType, false /* explicit */)
     }
     callback()
   } else {
-    this.handleOffline(socketId, userId, userType, message.explicit)
+    this.handleOffline(clientSessionId, userId, userType, message.explicit)
     callback()
   }
 }
 
-PresenceManager.prototype.handleOffline = function (socketId, userId, userType, explicit) {
+PresenceManager.prototype.handleOffline = function (clientSessionId, userId, userType, explicit) {
   var message = {
     userId: userId,
     userType: userType,
-    clientId: socketId,
+    clientId: clientSessionId,
     online: false,
     explicit: explicit
   }
@@ -250,10 +250,10 @@ PresenceManager.prototype.handleOffline = function (socketId, userId, userType, 
   // When user has an expiry timer running, then don't force remove yet
   // Remove user after 15 seconds when no other clients exist
   if (explicit === false || this.isUserExpiring(userId)) {
-    this.store.removeClient(socketId, message)
+    this.store.removeClient(clientSessionId, message)
     this.setupExpiry(userId, userType)
   } else {
-    this.store.remove(socketId, userId, message)
+    this.store.remove(clientSessionId, userId, message)
   }
 }
 
