@@ -73,52 +73,29 @@ Server.prototype.terminate = function (done) {
 var VERSION_CLIENT_STOREDATA = '0.13.1'
 
 Server.prototype._setup = function (httpServer, configuration) {
-  var engine = DefaultEngineIO
-  var engineConf
-
-  this.subscriber = Core.Persistence.pubsub()
-
-  this.subscriber.on('message', this._handlePubSubMessage.bind(this))
-
-  var oldPublish = Core.Persistence.publish
-
-  // Log all outgoing to redis server
-  Core.Persistence.publish = function (channel, data, callback) {
-    logging.info('#redis.message.outgoing', channel, data)
-    oldPublish(channel, data, callback)
-  }
-
   configuration = configuration || {}
 
-  if (configuration.engineio) {
-    engine = configuration.engineio.module
-    engineConf = configuration.engineio.conf
-
-    this.engineioPath = configuration.engineio.conf ? configuration.engineio.conf.path : 'default'
-  }
-
   this._setupSentry(configuration)
-
-  this.socketServer = engine.attach(httpServer, engineConf)
-  this.socketServer.on('connection', this._onSocketConnection.bind(this))
+  this._setupEngineio(httpServer, configuration.engineio)
+  this._setupDistributor()
 
   logging.debug('#server - start ' + new Date().toString())
   this.emit('ready')
 }
 
-Server.prototype._setupSentry = function (configuration) {
-  var sentryOptions = {
-    host: hostname,
-    port: configuration.port
+Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
+  var engine = DefaultEngineIO
+  var engineConf
+
+  if (engineioConfig) {
+    engine = engineioConfig.module
+    engineConf = engineioConfig.conf
+
+    this.engineioPath = engineioConfig.conf ? engineioConfig.conf.path : 'default'
   }
 
-  if (configuration.sentry) {
-    _.extend(sentryOptions, configuration.sentry)
-  }
-
-  Stamper.setup(this.sentry.name)
-
-  this.sentry.start(sentryOptions)
+  this.socketServer = engine.attach(httpServer, engineConf)
+  this.socketServer.on('connection', this._onSocketConnection.bind(this))
 }
 
 Server.prototype._onSocketConnection = function (socket) {
@@ -156,6 +133,35 @@ Server.prototype._onSocketConnection = function (socket) {
       })
     })
   })
+}
+
+Server.prototype._setupDistributor = function () {
+  this.subscriber = Core.Persistence.pubsub()
+
+  this.subscriber.on('message', this._handlePubSubMessage.bind(this))
+
+  var oldPublish = Core.Persistence.publish
+
+  // Log all outgoing to redis server
+  Core.Persistence.publish = function (channel, data, callback) {
+    logging.info('#redis.message.outgoing', channel, data)
+    oldPublish(channel, data, callback)
+  }
+}
+
+Server.prototype._setupSentry = function (configuration) {
+  var sentryOptions = {
+    host: hostname,
+    port: configuration.port
+  }
+
+  if (configuration.sentry) {
+    _.extend(sentryOptions, configuration.sentry)
+  }
+
+  Stamper.setup(this.sentry.name)
+
+  this.sentry.start(sentryOptions)
 }
 
 // Process a message from persistence (i.e. subscriber)
