@@ -36,6 +36,7 @@
     "async": "^1.5.0",
     "callback_tracker": "0.1.0",
     "engine.io": "1.4.2",
+    "lodash.bind": "^3.1.0",
     "miniee": "0.0.5",
     "minilog": "2.0.8",
     "nomnom": "^1.8.1",
@@ -73,6 +74,8 @@
     "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
   },
   "standard": {
-    "ignore": ["sample/"]
+    "ignore": [
+      "sample/"
+    ]
   }
 }

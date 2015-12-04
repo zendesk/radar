@@ -1,8 +1,11 @@
 var log = require('minilog')('radar:client')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
+var ClientSessionStateMachine = require('./client_session_state_machine')
 
 function ClientSession (name, id, accountName, version, transport) {
+  this.state = ClientSessionStateMachine.create(this)
+
   this.createdAt = Date.now()
   this.lastModified = Date.now()
   this.name = name
@@ -16,6 +19,10 @@ function ClientSession (name, id, accountName, version, transport) {
   this._setupTransport()
 }
 inherits(ClientSession, EventEmitter)
+
+ClientSession.prototype._initialize = function (set) {
+
+}
 
 // Instance methods
 
