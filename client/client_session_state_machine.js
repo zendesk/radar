@@ -1,5 +1,4 @@
 var StateMachine = require('javascript-state-machine')
-// var bind = require('lodash.bind')
 
 var bind = function (fn, context) {
   return function () {
@@ -16,15 +15,20 @@ module.exports.create = function createClientSessionStateMachine (clientSession)
       {name: 'initialize', from: 'initializing', to: 'ready'},
       {name: 'leave', from: 'ready', to: 'not ready'},
       {name: 'comeback', from: 'not ready', to: 'ready'},
-      {name: 'end', from: ['ready', 'not ready'], to: 'ended'},
-      {name: 'abort', from: 'initializing', to: 'ended'}
+      {name: 'end', from: ['initializing', 'ready', 'not ready'], to: 'ended'}
     ],
     callbacks: {
-      oninitialize: bind(oninitialize, clientSession)
+      oninitialize: bind(oninitialize, clientSession),
+      onend: bind(onend, clientSession)
     }
   })
 }
 
 function oninitialize () {
-  console.log('oninitialize', arguments)
+  this.emit('initialize')
+}
+
+function onend () {
+  this._cleanup()
+  this.emit('end')
 }
