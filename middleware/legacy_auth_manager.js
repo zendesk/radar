@@ -18,7 +18,7 @@ var LegacyAuthManager = function () {}
 LegacyAuthManager.prototype.onMessage = function (clientSession, message, messageType, next) {
   if (!this.isAuthorized(clientSession, message, messageType)) {
     logging.warn('#clientSession.message - unauthorized', message, clientSession.id)
-
+    console.log('auth', clientSession.constructor.name)
     clientSession.send({
       op: 'err',
       value: 'auth',

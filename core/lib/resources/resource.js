@@ -1,7 +1,7 @@
 var MiniEventEmitter = require('miniee')
 var logging = require('minilog')('radar:resource')
 var Stamper = require('../../stamper.js')
-
+var ClientSession = require('../../../client/client_session')
 /*
 
 Resources
@@ -100,11 +100,11 @@ Resource.prototype.redisIn = function (data) {
 // Return a socket reference; eio server hash is "clients", not "sockets"
 Resource.prototype.socketGet = function (id) {
   logging.debug('DEPRECATED: use clientSessionGet instead')
-  return this.server.socketServer.clients[id]
+  return this.getClientSession(id)
 }
 
 Resource.prototype.getClientSession = function (id) {
-  return this.server.socketServer.clients[id]
+  return ClientSession.get(id)
 }
 
 Resource.prototype.ack = function (clientSession, sendAck) {

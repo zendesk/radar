@@ -9,19 +9,35 @@ function ClientSession (name, id, accountName, version, transport) {
   this.createdAt = Date.now()
   this.lastModified = Date.now()
   this.name = name
+  this.accountName = accountName
   this.id = id
   this.subscriptions = {}
   this.presences = {}
-  this.version = version
+  this.version = version || '0.0.0'
   EventEmitter.call(this)
 
   this.transport = transport
   this._setupTransport()
+  clientsById[this.id] = this
 }
+
 inherits(ClientSession, EventEmitter)
 
 ClientSession.prototype._initialize = function (set) {
+  var self = this
 
+  if (set) {
+    Object.keys(set).forEach(function (key) {
+      self[key] = set[key]
+    })
+  }
+
+  this.state.initialize()
+  this.lastModified = Date.now()
+}
+
+ClientSession.prototype._cleanup = function () {
+  delete clientsById[this.id]
 }
 
 // Instance methods
@@ -34,7 +50,9 @@ ClientSession.prototype._initialize = function (set) {
 // clientSession.send(message)
 
 ClientSession.prototype.send = function (message) {
-  this.transport.send(message)
+  var data = JSON.stringify(message)
+  log.info('#socket.message.outgoing', this.id, data)
+  this.transport.send(data)
 }
 
 // Persist subscriptions and presences when not already persisted in memory
@@ -77,9 +95,73 @@ ClientSession.prototype.readData = function (cb) {
 ClientSession.prototype._setupTransport = function () {
   var self = this
 
-  this.transport && this.transport.on && this.transport.on('message', function emitClientMessage (message) {
-    self.emit('message', message)
+  if (!this.transport || !this.transport.on) {
+    return
+  }
+
+  this.transport.on('message', function emitClientMessage (message) {
+    var decoded = self._decodeIncomingMessage(message)
+    if (decoded) {
+      log.info('#socket.message.incoming', self.id, decoded)
+
+      switch (self.state.current) {
+        case 'initializing':
+          self._initializeOnNameSync(decoded)
+          self.emit('message', decoded)
+          break
+        case 'ready':
+          self.emit('message', decoded)
+          break
+      }
+    }
   })
+
+  this.transport.on('close', function () {
+    log.info('#socket - disconnect', self.id)
+    self.state.end()
+  })
+}
+
+ClientSession.prototype._initializeOnNameSync = function (message) {
+  if (message.op !== 'nameSync') { return }
+
+  log.info('#socket.message - nameSync', message, this.id)
+
+  this.send({ op: 'ack', value: message && message.ack })
+
+  var association = message.options.association
+
+  ClientNamesById[association.id] = association.name
+  ClientIdsByName[association.name] = this
+
+  log.info('create: association name: ' + association.name +
+    '; association id: ' + association.id)
+
+  // (name, id, accountName, version, transport)
+
+  this._initialize({
+    name: association.name,
+    accountName: message.accountName,
+    clientVersion: message.options.clientVersion
+  })
+}
+
+ClientSession.prototype._decodeIncomingMessage = function (message) {
+  var decoded
+  try {
+    decoded = JSON.parse(message)
+  } catch (e) {
+    log.warn('#clientSession.message - json parse error', e)
+    return
+  }
+
+  // Format check
+  if (!decoded || !decoded.op) {
+    log.warn('#socket.message - rejected', this.id, decoded)
+    return
+  }
+
+  return decoded
 }
 
 ClientSession.prototype._logState = function () {
@@ -153,23 +235,22 @@ function _cloneForStorage (messageIn) {
 }
 
 // TODO: move these to SessionManager
+var clientsById = {}
 var ClientIdsByName = {} // keyed by name
 var ClientNamesById = {} // keyed by id
 
 // (String) => ClientSession
 function getClientSessionBySocketId (id) {
-  var name = ClientNamesById[id]
-  if (name) {
-    return ClientIdsByName[name]
-  }
+  return clientsById[id]
 }
 
 // Set up client name/id association, and return new client instance
-function createClientSessionFromNameSyncMessage (message) {
+function createClientSessionFromNameSyncMessage (message, socket) {
   var association = message.options.association
   ClientNamesById[association.id] = association.name
+
   var clientSession = new ClientSession(association.name, association.id,
-    message.accountName, message.options.clientVersion)
+    message.accountName, message.options.clientVersion, socket)
 
   ClientIdsByName[association.name] = clientSession
 
@@ -179,6 +260,11 @@ function createClientSessionFromNameSyncMessage (message) {
   return clientSession
 }
 
+function createClientSessionFromSocket (socket) {
+  return new ClientSession(undefined, socket.id, undefined, undefined, socket)
+}
+
 module.exports = ClientSession
 module.exports.get = getClientSessionBySocketId
 module.exports.create = createClientSessionFromNameSyncMessage
+module.exports.createFromSocket = createClientSessionFromSocket

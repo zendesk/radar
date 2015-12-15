@@ -101,30 +101,20 @@ Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
 Server.prototype._onSocketConnection = function (socket) {
   var self = this
 
-  // wrap socket.send
-  var oldSend = socket.send
-  socket.send = function (message) {
-    // Always send data as json
-    var data = JSON.stringify(message)
-
-    logging.info('#socket.message.outgoing', socket.id, data)
-    oldSend.call(socket, data)
-  }
-
   // Event: socket connected
   logging.info('#socket - connect', socket.id)
 
-  socket.on('message', function (data) {
-    self._handleSocketMessage(socket, data)
+  var clientSession = ClientSession.createFromSocket(socket)
+
+  clientSession.on('message', function (data) {
+    self._processMessage(clientSession, data)
   })
 
-  socket.on('close', function () {
-    // Event: socket disconnected
-    logging.info('#socket - disconnect', socket.id)
+  clientSession.on('end', function () {
+    Object.keys(self.resources).forEach(function (scope) {
+      var resource = self.resources[scope]
 
-    Object.keys(self.resources).forEach(function (to) {
-      var resource = self.resources[to]
-
+      // TODO: rename middleware event to make clear that this is per client*resource pair
       self.runMiddleware('onDestroyClient', socket, resource, resource.options, function lastly (err) {
         if (err) { throw err }
         if (resource.subscribers[socket.id]) {
@@ -186,32 +176,13 @@ Server.prototype._handlePubSubMessage = function (to, data) {
   }
 }
 
-// Process a socket message
-Server.prototype._handleSocketMessage = function (socket, data) {
-  var message = _parseJSON(data)
-
-  if (!socket) {
-    logging.info('_handleSocketMessage: socket is null')
-    return
-  }
-
-  // Format check
-  if (!message || !message.op || !message.to) {
-    logging.warn('#socket.message - rejected', socket.id, data)
-    return
-  }
-
-  logging.info('#socket.message.incoming', socket.id, JSON.stringify(message))
-  this._processMessage(socket, message)
-}
-
-Server.prototype._processMessage = function (socket, message) {
+Server.prototype._processMessage = function (clientSession, message) {
   var self = this
 
   // recursively handle `BatchMessage`s
   if (message.op === 'batch') {
     async.each(message.value, function (submessage, callback) {
-      self._processMessage(socket, submessage)
+      self._processMessage(clientSession, submessage)
       callback()
     })
     return
@@ -220,22 +191,18 @@ Server.prototype._processMessage = function (socket, message) {
   var messageType = this._getMessageType(message.to)
 
   if (!messageType) {
-    logging.warn('#socket.message - unknown type', message, socket.id)
-    this._sendErrorMessage(socket, 'unknown_type', message)
+    logging.warn('#socket.message - unknown type', message, clientSession.id)
+    this._sendErrorMessage(clientSession, 'unknown_type', message)
     return
   }
 
-  this.runMiddleware('onMessage', socket, message, messageType, function lastly (err) {
+  this.runMiddleware('onMessage', clientSession, message, messageType, function lastly (err) {
     if (err) {
       logging.warn('#socket.message - pre filter halted execution', message)
       return
     }
-    if (message.op === 'nameSync') {
-      logging.info('#socket.message - nameSync', message, socket.id)
-      self._initClient(socket, message)
-      socket.send({ op: 'ack', value: message && message.ack })
-    } else {
-      self._handleResourceMessage(socket, message, messageType)
+    if (message.op !== 'nameSync') {
+      self._handleResourceMessage(clientSession, message, messageType)
     }
   })
 }
@@ -264,14 +231,15 @@ Server.prototype._handleResourceMessage = function (socket, message, messageType
     this.runMiddleware('onResource', socket, resource, message, messageType, function (err) {
       if (err) {
         logging.warn('#socket.message - post filter halted execution', message)
-      } else {
-        self._persistClientData(socket, message)
-        self._storeResource(resource)
-        self._persistenceSubscribe(resource.to, socket.id)
-        self._stampMessage(socket, message)
-        resource.handleMessage(socket, message)
-        self.emit(message.op, socket, message)
+        return
       }
+
+      self._persistClientData(socket, message)
+      self._storeResource(resource)
+      self._persistenceSubscribe(resource.to, socket.id)
+      self._stampMessage(socket, message)
+      resource.handleMessage(socket, message)
+      self.emit(message.op, socket, message)
     })
   }
 }
@@ -333,26 +301,8 @@ Server.prototype._sendErrorMessage = function (socket, value, origin) {
   })
 }
 
-// Initialize the current client
-Server.prototype._initClient = function (socket, message) {
-  // creates the mapping on nameSync
-  ClientSession.create(message)
-}
-
 Server.prototype._stampMessage = function (socket, message) {
   return Stamper.stamp(message, socket.id)
-}
-
-// Private functions
-// TODO: move to util module
-function _parseJSON (data) {
-  var message = false
-
-  try {
-    message = JSON.parse(data)
-  } catch (e) {}
-
-  return message
 }
 
 module.exports = Server
