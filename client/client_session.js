@@ -3,6 +3,9 @@ var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
 var ClientSessionStateMachine = require('./client_session_state_machine')
 
+// TODO: move to a SessionManager class
+var clientsById = {}
+
 function ClientSession (name, id, accountName, version, transport) {
   this.state = ClientSessionStateMachine.create(this)
 
@@ -133,9 +136,6 @@ ClientSession.prototype._initializeOnNameSync = function (message) {
 
   var association = message.options.association
 
-  ClientNamesById[association.id] = association.name
-  ClientIdsByName[association.name] = this
-
   log.info('create: association name: ' + association.name +
     '; association id: ' + association.id)
 
@@ -236,30 +236,9 @@ function _cloneForStorage (messageIn) {
   return message
 }
 
-// TODO: move these to SessionManager
-var clientsById = {}
-var ClientIdsByName = {} // keyed by name
-var ClientNamesById = {} // keyed by id
-
 // (String) => ClientSession
 function getClientSessionBySocketId (id) {
   return clientsById[id]
-}
-
-// Set up client name/id association, and return new client instance
-function createClientSessionFromNameSyncMessage (message, socket) {
-  var association = message.options.association
-  ClientNamesById[association.id] = association.name
-
-  var clientSession = new ClientSession(association.name, association.id,
-    message.accountName, message.options.clientVersion, socket)
-
-  ClientIdsByName[association.name] = clientSession
-
-  log.info('create: association name: ' + association.name +
-    '; association id: ' + association.id)
-
-  return clientSession
 }
 
 function createClientSessionFromSocket (socket) {
@@ -268,5 +247,4 @@ function createClientSessionFromSocket (socket) {
 
 module.exports = ClientSession
 module.exports.get = getClientSessionBySocketId
-module.exports.create = createClientSessionFromNameSyncMessage
 module.exports.createFromSocket = createClientSessionFromSocket
