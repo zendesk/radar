@@ -1,3 +1,13 @@
+### 0.18.0
+Switched to http://standardjs.com/ style
+* #195, #197 - format for standard
+* #199 - Extract server setup into components
+* #198 - Encapsulate socket in client (add ClientSession class)
+
+### 0.17.1
+* #193 - Cleanup - reorganize Resources files
+* #194 - Support incoming BatchMessage in server
+* #196 - Fix typo when soft limiting
 
 ### 0.17.0
 * Introduce middleware runner.
