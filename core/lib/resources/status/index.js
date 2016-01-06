@@ -16,13 +16,13 @@ Status.prototype = new Resource()
 Status.prototype.type = 'status'
 
 // Get status
-Status.prototype.get = function (socket) {
+Status.prototype.get = function (clientSession) {
   var to = this.to
 
-  logger.debug('#status - get', this.to, (socket && socket.id))
+  logger.debug('#status - get', this.to, (clientSession && clientSession.id))
 
   this._get(to, function (replies) {
-    socket.send({
+    clientSession.send({
       op: 'get',
       to: to,
       value: replies || {}
@@ -34,13 +34,13 @@ Status.prototype._get = function (to, callback) {
   Persistence.readHashAll(to, callback)
 }
 
-Status.prototype.set = function (socket, message) {
+Status.prototype.set = function (clientSession, message) {
   var self = this
 
-  logger.debug('#status - set', this.to, message, (socket && socket.id))
+  logger.debug('#status - set', this.to, message, (clientSession && clientSession.id))
 
   Status.prototype._set(this.to, message, this.options.policy, function () {
-    self.ack(socket, message.ack)
+    self.ack(clientSession, message.ack)
   })
 }
 
@@ -57,11 +57,11 @@ Status.prototype._set = function (scope, message, policy, callback) {
   Persistence.publish(scope, message, callback)
 }
 
-Status.prototype.sync = function (socket) {
-  logger.debug('#status - sync', this.to, (socket && socket.id))
+Status.prototype.sync = function (clientSession) {
+  logger.debug('#status - sync', this.to, (clientSession && clientSession.id))
 
-  this.subscribe(socket, false)
-  this.get(socket)
+  this.subscribe(clientSession, false)
+  this.get(clientSession)
 }
 
 Status.setBackend = function (backend) {

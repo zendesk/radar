@@ -1,5 +1,5 @@
-function StreamSubscriber (socketId) {
-  this.id = socketId
+function StreamSubscriber (clientSessionId) {
+  this.id = clientSessionId
   this.sent = null
   this.sendEnabled = true
 }
@@ -21,15 +21,15 @@ function SubscriberState () {
   this.subscribers = {}
 }
 
-SubscriberState.prototype.get = function (socketId) {
-  if (!this.subscribers[socketId]) {
-    this.subscribers[socketId] = new StreamSubscriber(socketId)
+SubscriberState.prototype.get = function (clientSessionId) {
+  if (!this.subscribers[clientSessionId]) {
+    this.subscribers[clientSessionId] = new StreamSubscriber(clientSessionId)
   }
-  return this.subscribers[socketId]
+  return this.subscribers[clientSessionId]
 }
 
-SubscriberState.prototype.remove = function (socketId) {
-  delete this.subscribers[socketId]
+SubscriberState.prototype.remove = function (clientSessionId) {
+  delete this.subscribers[clientSessionId]
 }
 
 module.exports = SubscriberState

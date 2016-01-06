@@ -55,45 +55,45 @@ Presence.prototype.setup = function () {
     })
   })
 
-  this.manager.on('client_online', function (socketId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_online', socketId, userId, self.to, userData, clientData)
+  this.manager.on('client_online', function (clientSessionId, userId, userType, userData, clientData) {
+    logging.info('#presence - client_online', clientSessionId, userId, self.to, userData, clientData)
     self.broadcast({
       to: self.to,
       op: 'client_online',
       value: {
         userId: userId,
-        clientId: socketId,
+        clientId: clientSessionId,
         userData: userData,
         clientData: clientData
       }
     })
   })
 
-  this.manager.on('client_updated', function (socketId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_updated', socketId, userId, self.to, userData, clientData)
+  this.manager.on('client_updated', function (clientSessionId, userId, userType, userData, clientData) {
+    logging.info('#presence - client_updated', clientSessionId, userId, self.to, userData, clientData)
     self.broadcast({
       to: self.to,
       op: 'client_updated',
       value: {
         userId: userId,
-        clientId: socketId,
+        clientId: clientSessionId,
         userData: userData,
         clientData: clientData
       }
     })
   })
 
-  this.manager.on('client_offline', function (socketId, userId, explicit) {
-    logging.info('#presence - client_offline', socketId, userId, explicit, self.to)
+  this.manager.on('client_offline', function (clientSessionId, userId, explicit) {
+    logging.info('#presence - client_offline', clientSessionId, userId, explicit, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_offline',
       explicit: !!explicit,
       value: {
         userId: userId,
-        clientId: socketId
+        clientId: clientSessionId
       }
-    }, socketId)
+    }, clientSessionId)
   })
 
   // Keep track of listener count
@@ -114,96 +114,95 @@ Presence.prototype.redisIn = function (message) {
   this.manager.processRedisEntry(message)
 }
 
-Presence.prototype.set = function (socket, message) {
+Presence.prototype.set = function (clientSession, message) {
   if (message.value !== 'offline') {
-    this._setOnline(socket, message)
+    this._setOnline(clientSession, message)
   } else {
-    this._setOffline(socket, message)
+    this._setOffline(clientSession, message)
   }
 }
 
-Presence.prototype._setOnline = function (socket, message) {
+Presence.prototype._setOnline = function (clientSession, message) {
   var presence = this
   var userId = message.key
 
   function ackCheck () {
-    presence.ack(socket, message.ack)
+    presence.ack(clientSession, message.ack)
   }
-
-  this.manager.addClient(socket.id, userId,
+  this.manager.addClient(clientSession.id, userId,
     message.type,
     message.userData,
     message.clientData,
     ackCheck)
 
-  if (!this.subscribers[socket.id]) {
+  if (!this.subscribers[clientSession.id]) {
     // We use subscribe/unsubscribe to trap the "close" event, so subscribe now
-    this.subscribe(socket)
+    this.subscribe(clientSession)
 
     // We are subscribed, but not listening
-    this.subscribers[socket.id] = { listening: false }
+    this.subscribers[clientSession.id] = { listening: false }
   }
 }
 
-Presence.prototype._setOffline = function (socket, message) {
+Presence.prototype._setOffline = function (clientSession, message) {
   var presence = this
   var userId = message.key
 
   function ackCheck () {
-    presence.ack(socket, message.ack)
+    presence.ack(clientSession, message.ack)
   }
 
   // If this is client is not subscribed
-  if (!this.subscribers[socket.id]) {
+  if (!this.subscribers[clientSession.id]) {
     // This is possible if a client does .set('offline') without
     // set-online/sync/subscribe
-    Resource.prototype.unsubscribe.call(this, socket, message)
+    Resource.prototype.unsubscribe.call(this, clientSession, message)
   } else {
     // Remove from local
-    this.manager.removeClient(socket.id, userId, message.type, ackCheck)
+    this.manager.removeClient(clientSession.id, userId, message.type, ackCheck)
   }
 }
 
-Presence.prototype.subscribe = function (socket, message) {
-  Resource.prototype.subscribe.call(this, socket, message)
-  this.subscribers[socket.id] = { listening: true }
+Presence.prototype.subscribe = function (clientSession, message) {
+  Resource.prototype.subscribe.call(this, clientSession, message)
+  this.subscribers[clientSession.id] = { listening: true }
 }
 
-Presence.prototype.unsubscribe = function (socket, message) {
-  logging.info('#presence - implicit disconnect', socket.id, this.to)
-  this.manager.disconnectClient(socket.id)
+Presence.prototype.unsubscribe = function (clientSession, message) {
+  logging.info('#presence - implicit disconnect', clientSession.id, this.to)
+  this.manager.disconnectClient(clientSession.id)
 
-  Resource.prototype.unsubscribe.call(this, socket, message)
+  Resource.prototype.unsubscribe.call(this, clientSession, message)
 }
 
-Presence.prototype.sync = function (socket, message) {
+Presence.prototype.sync = function (clientSession, message) {
   var self = this
   this.fullRead(function (online) {
     if (message.options && parseInt(message.options.version, 10) === 2) {
       var value = self.manager.getClientsOnline()
       logging.info('#presence - sync', value)
-      socket.send({
+      clientSession.send({
         op: 'get',
         to: self.to,
         value: value
       })
     } else {
-      logging.warn('presence v1 received, sending online', self.to, socket.id)
+      logging.warn('presence v1 received, sending online', self.to, clientSession.id)
 
       // Will deprecate when syncs no longer need to use "online" to look like
       // regular messages
-      socket.send({
+      clientSession.send({
         op: 'online',
         to: self.to,
         value: online
       })
     }
   })
-  this.subscribe(socket, message)
+  this.subscribe(clientSession, message)
 }
 
 // This is a full sync of the online status from Redis
-Presence.prototype.get = function (socket, message) {
+Presence.prototype.get = function (clientSession, message) {
   var self = this
   this.fullRead(function (online) {
     var value
@@ -216,7 +215,7 @@ Presence.prototype.get = function (socket, message) {
       value = online
     }
 
-    socket.send({
+    clientSession.send({
       op: 'get',
       to: self.to,
       value: value
@@ -233,14 +232,14 @@ Presence.prototype.broadcast = function (message, except) {
 
   logging.debug('#presence - update subscribed clients', message, except, this.to)
 
-  Object.keys(this.subscribers).forEach(function (socketId) {
-    var socket = self.socketGet(socketId)
-    if (socket && socket.id !== except && self.subscribers[socket.id].listening) {
-      message.stamp.clientId = socket.id
-      socket.send(message)
+  Object.keys(this.subscribers).forEach(function (clientSessionId) {
+    var clientSession = self.getClientSession(clientSessionId)
+    if (clientSession && clientSessionId !== except && self.subscribers[clientSessionId].listening) {
+      message.stamp.clientId = clientSessionId
+      clientSession.send(message)
     } else {
-      logging.warn('#socket - not sending: ', (socket && socket.id), message, except,
-        'explicit:', (socket && socket.id && self.subscribers[socket.id]), self.to)
+      logging.warn('#clientSession - not sending: ', clientSessionId, message, except,
+        'explicit:', self.subscribers[clientSessionId], self.to)
     }
   })
 }

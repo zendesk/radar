@@ -4,7 +4,7 @@ var assert = require('assert')
 var RadarTypes = require('../core/lib/type.js')
 var controlMessage = {
   to: 'control:/dev/test',
-  op: 'nameSync',
+  op: 'ctl',
   options: {
     association: {
       id: 1,
@@ -36,11 +36,9 @@ describe('given a server', function () {
     })
 
     it('it should allow access', function (done) {
-      socket.send = function (message) {
-        assert.equal('ack', message.op)
+      radarServer._handleResourceMessage = function () {
         done()
       }
-
       radarServer._processMessage(socket, controlMessage)
     })
   })

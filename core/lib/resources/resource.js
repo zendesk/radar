@@ -1,7 +1,7 @@
 var MiniEventEmitter = require('miniee')
 var logging = require('minilog')('radar:resource')
 var Stamper = require('../../stamper.js')
-
+var ClientSession = require('../../../client/client_session')
 /*
 
 Resources
@@ -50,33 +50,33 @@ function Resource (to, server, options, default_options) {
 MiniEventEmitter.mixin(Resource)
 Resource.prototype.type = 'default'
 
-// Add a subscriber (Engine.io socket)
-Resource.prototype.subscribe = function (socket, message) {
-  this.subscribers[socket.id] = true
+// Add a subscriber (ClientSession)
+Resource.prototype.subscribe = function (clientSession, message) {
+  this.subscribers[clientSession.id] = true
 
-  logging.debug('#' + this.type, '- subscribe', this.to, socket.id,
+  logging.debug('#' + this.type, '- subscribe', this.to, clientSession.id,
     this.subscribers, message && message.ack)
 
-  this.ack(socket, message && message.ack)
+  this.ack(clientSession, message && message.ack)
 }
 
-// Remove a subscriber (Engine.io socket)
-Resource.prototype.unsubscribe = function (socket, message) {
-  delete this.subscribers[socket.id]
+// Remove a subscriber (ClientSession)
+Resource.prototype.unsubscribe = function (clientSession, message) {
+  delete this.subscribers[clientSession.id]
 
-  logging.info('#' + this.type, '- unsubscribe', this.to, socket.id,
+  logging.info('#' + this.type, '- unsubscribe', this.to, clientSession.id,
     'subscribers left:', Object.keys(this.subscribers).length)
 
   if (!Object.keys(this.subscribers).length) {
     logging.info('#' + this.type, '- destroying resource', this.to,
-      this.subscribers, socket.id)
+      this.subscribers, clientSession.id)
     this.server.destroyResource(this.to)
   }
 
-  this.ack(socket, message && message.ack)
+  this.ack(clientSession, message && message.ack)
 }
 
-// Send to Engine.io sockets
+// Send to clients
 Resource.prototype.redisIn = function (data) {
   var self = this
 
@@ -85,12 +85,12 @@ Resource.prototype.redisIn = function (data) {
   logging.info('#' + this.type, '- incoming from #redis', this.to, data, 'subs:',
     Object.keys(this.subscribers).length)
 
-  Object.keys(this.subscribers).forEach(function (socketId) {
-    var socket = self.socketGet(socketId)
+  Object.keys(this.subscribers).forEach(function (clientSessionId) {
+    var clientSession = self.getClientSession(clientSessionId)
 
-    if (socket && socket.send) {
-      data.stamp.clientId = socket.id
-      socket.send(data)
+    if (clientSession && clientSession.send) {
+      data.stamp.clientId = clientSession.id
+      clientSession.send(data)
     }
   })
 
@@ -99,21 +99,26 @@ Resource.prototype.redisIn = function (data) {
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
 Resource.prototype.socketGet = function (id) {
-  return this.server.socketServer.clients[id]
+  logging.debug('DEPRECATED: use clientSessionGet instead')
+  return this.getClientSession(id)
 }
 
-Resource.prototype.ack = function (socket, sendAck) {
-  if (socket && socket.send && sendAck) {
-    logging.debug('#socket - send_ack', socket.id, this.to, sendAck)
+Resource.prototype.getClientSession = function (id) {
+  return ClientSession.get(id)
+}
 
-    socket.send({
+Resource.prototype.ack = function (clientSession, sendAck) {
+  if (clientSession && clientSession.send && sendAck) {
+    logging.debug('#clientSession - send_ack', clientSession.id, this.to, sendAck)
+
+    clientSession.send({
       op: 'ack',
       value: sendAck
     })
   }
 }
 
-Resource.prototype.handleMessage = function (socket, message) {
+Resource.prototype.handleMessage = function (clientSession, message) {
   switch (message.op) {
     case 'subscribe':
     case 'unsubscribe':
@@ -122,11 +127,11 @@ Resource.prototype.handleMessage = function (socket, message) {
     case 'set':
     case 'publish':
     case 'push':
-      this[message.op](socket, message)
+      this[message.op](clientSession, message)
       this.emit('message:incoming', message)
       break
     default:
-      logging.error('#resource - Unknown message.op, ignoring', message, socket && socket.id)
+      logging.error('#resource - Unknown message.op, ignoring', message, clientSession && clientSession.id)
   }
 }
 

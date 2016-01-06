@@ -3,7 +3,7 @@ var common = require('./common.js')
 var assert = require('assert')
 var controlMessage = {
   to: 'control:/dev/test',
-  op: 'nameSync',
+  op: 'ctl',
   options: {
     association: {
       id: 1,
@@ -26,12 +26,10 @@ describe('given a server with filters', function () {
 
   describe('with no filters', function () {
     it('should not halt execution', function (done) {
-      socket.send = function (message) {
-        assert.equal('ack', message.op)
+      radarServer._handleResourceMessage = function () {
         done()
       }
-
-      radarServer._processMessage(socket, controlMessage)
+      radarServer._processMessage(null, controlMessage)
     })
   })
 
@@ -39,9 +37,7 @@ describe('given a server with filters', function () {
     it('if OK, it should run it and continue', function (done) {
       var called = false
 
-      // Will be called
-      socket.send = function (message) {
-        assert.equal('ack', message.op)
+      radarServer._handleResourceMessage = function () {
         assert.ok(called)
         done()
       }

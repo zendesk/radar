@@ -15,11 +15,11 @@ var logging = require('minilog')('radar:legacy_auth_manager')
 
 var LegacyAuthManager = function () {}
 
-LegacyAuthManager.prototype.onMessage = function (socket, message, messageType, next) {
-  if (!this.isAuthorized(socket, message, messageType)) {
-    logging.warn('#socket.message - unauthorized', message, socket.id)
-
-    socket.send({
+LegacyAuthManager.prototype.onMessage = function (clientSession, message, messageType, next) {
+  if (!this.isAuthorized(clientSession, message, messageType)) {
+    logging.warn('#clientSession.message - unauthorized', message, clientSession.id)
+    console.log('auth', clientSession.constructor.name)
+    clientSession.send({
       op: 'err',
       value: 'auth',
       origin: message
@@ -31,12 +31,12 @@ LegacyAuthManager.prototype.onMessage = function (socket, message, messageType, 
   }
 }
 
-LegacyAuthManager.prototype.isAuthorized = function (socket, message, messageType) {
+LegacyAuthManager.prototype.isAuthorized = function (clientSession, message, messageType) {
   var isAuthorized = true
   var provider = messageType && messageType.authProvider
 
   if (provider && provider.authorize) {
-    isAuthorized = provider.authorize(messageType, message, socket)
+    isAuthorized = provider.authorize(messageType, message, clientSession)
   }
 
   return isAuthorized

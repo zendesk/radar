@@ -20,13 +20,13 @@ MessageList.prototype = new Resource()
 MessageList.prototype.type = 'message'
 
 // Publish to Redis
-MessageList.prototype.publish = function (socket, message) {
+MessageList.prototype.publish = function (clientSession, message) {
   var self = this
 
-  logger.debug('#message_list - publish', this.to, message, socket && socket.id)
+  logger.debug('#message_list - publish', this.to, message, clientSession && clientSession.id)
 
   this._publish(this.to, this.options.policy, message, function () {
-    self.ack(socket, message.ack)
+    self.ack(clientSession, message.ack)
   })
 }
 
@@ -40,13 +40,13 @@ MessageList.prototype._publish = function (to, policy, message, callback) {
   Persistence.publish(to, message, callback)
 }
 
-MessageList.prototype.sync = function (socket, message) {
+MessageList.prototype.sync = function (clientSession, message) {
   var to = this.to
 
-  logger.debug('#message_list - sync', this.to, message, socket && socket.id)
+  logger.debug('#message_list - sync', this.to, message, clientSession && clientSession.id)
 
   this._sync(to, this.options.policy, function (replies) {
-    socket.send({
+    clientSession.send({
       op: 'sync',
       to: to,
       value: replies,
@@ -54,7 +54,7 @@ MessageList.prototype.sync = function (socket, message) {
     })
   })
 
-  this.subscribe(socket, message)
+  this.subscribe(clientSession, message)
 }
 
 MessageList.prototype._sync = function (to, policy, callback) {
@@ -65,8 +65,8 @@ MessageList.prototype._sync = function (to, policy, callback) {
   Persistence.readOrderedWithScores(to, policy, callback)
 }
 
-MessageList.prototype.unsubscribe = function (socket, message) {
-  Resource.prototype.unsubscribe.call(this, socket, message)
+MessageList.prototype.unsubscribe = function (clientSession, message) {
+  Resource.prototype.unsubscribe.call(this, clientSession, message)
   // Note that since this is not synchronized across multiple backend servers,
   // it is possible for a channel that is subscribed elsewhere to have a TTL set
   // on it again. The assumption is that the TTL is so long that any normal
