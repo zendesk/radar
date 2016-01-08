@@ -2,11 +2,13 @@
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
   "version": "0.18.0",
-  "author": "Mikito Takada <mikito.takada@gmail.com>",
+  "author": "Zendesk, Inc.",
+  "license": "apache-2.0",
   "engines": {
-    "node": "0.10 - 4"
+    "node": "0.10 - 5"
   },
   "contributors": [
+    "Mikito Takada <mikito.takada@gmail.com>",
     {
       "name": "Sam Shull",
       "url": "http://github.com/samshull"
@@ -18,11 +20,16 @@
     {
       "name": "Nicolas Herment",
       "url": "https://github.com/nherment"
-    }
+    },
+    "jden <jason@denizac.org>"
   ],
-  "main": "index.js",
   "keywords": [
     "realtime",
+    "real-time",
+    "pubsub",
+    "pub-sub",
+    "socketio",
+    "server",
     "socket.io",
     "engine.io",
     "comet",
