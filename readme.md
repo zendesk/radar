@@ -1,60 +1,78 @@
-## Radar
+## radar
 
-High level API and backend for writing web apps that use real-time information.
+The real-time service layer for your web application
+
+[![Build Status](https://travis-ci.org/zendesk/radar.svg?branch=master)](https://travis-ci.org/zendesk/radar)
+[![Dependency Status](https://david-dm.org/zendesk/radar.svg)](https://david-dm.org/zendesk/radar)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
+
 
 ## Documentation
 
-See http://radar.zendesk.com/index.html for detailed documentation.
+See [radar.zendesk.com](http://radar.zendesk.com) for detailed documentation.
 
-[![Build Status](https://travis-ci.org/zendesk/radar.png?branch=master)](https://travis-ci.org/zendesk/radar)
+This is the project necessary for running a radar server. Documentation about building an app and using the client-side libraries is available at [radar.zendesk.com](http://radar.zendesk.com). Browse [radar client libraries and tools](https://github.com/zendesk?utf8=%E2%9C%93&query=radar).
 
 ## Installation
+Requires: redis 2.8+, node.js 0.10+
 
-###Installing from scratch:
+###Installing from npm:
 
-- Install and start Redis
-- Install a 0.10.x or better branch of Node, look in http://nodejs.org/dist/
-- git clone git@github.com:zendesk/radar.git
-- npm install
-- npm start
-
-###Installing from NPM:
-
-- Install and start redis
-- Install a 0.10.x or better branch of Node, look in http://nodejs.org/dist/
-- npm init
-- npm install --save radar
-- create a file called server.js with the contents:
+```sh
+$ npm install radar
 ```
-  var http = require('http');
-  var Radar = require('radar').server;
 
-  var httpServer = http.createServer(function(req, res) {
-    res.end('Nothing here.');
-  });
 
-  // Radar server
-  var radar = new Radar();
-  radar.attach(httpServer, { redis_host: 'localhost', redis_port: 6379 });
+### Programmatic usage
+radar can be extended programmatically with custom code and middleware:
 
-  httpServer.listen(8000);
+```js
+var http = require('http');
+var Radar = require('radar').server;
+
+var httpServer = http.createServer(function(req, res) {
+res.end('Nothing here.');
+});
+
+// Radar server
+var radar = new Radar();
+radar.attach(httpServer, { redis_host: 'localhost', redis_port: 6379 });
+
+httpServer.listen(8000);
 ```
-- node server.js
+
+See also the [`sample`](https://github.com/zendesk/radar/tree/master/sample) directory in the `radar` repository.
+
+
+### Out-of-the-box usage
+```sh
+$ git clone git@github.com:zendesk/radar.git
+$ cd radar
+$ npm install
+$ npm start
+```
+
+*See [radar.zendesk.com/server](http://radar.zendesk.com/server) for additional usage and configuration documentation* 
+
+## Contributing
 
 ## Running tests
+```sh
+$ npm test
+```
 
-By default, when running `npm test`, tests are ran only against sentinel. 
+By default, tests are run only against redis sentinel. 
 
-If you want to run against redis directly, you should execute: `npm run test-redis` or `npm run test-full` to 
-run against redis and sentinel (longer). 
+If you want to run against redis directly: `$ npm run test-redis` 
+For direct redis and redis sentinel: `$ npm run test-full`
 
-## How to contribute
+
+## Workflow
 
 - Fork http://github.com/zendesk/radar, clone, make changes (including a Changelog update), commit, push, PR
 
-[![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)
 
 ## Copyright and License
 
-Copyright 2015, Zendesk Inc.
+Copyright 2016, Zendesk Inc.
 Licensed under the Apache License Version 2.0, http://www.apache.org/licenses/LICENSE-2.0
