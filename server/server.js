@@ -10,6 +10,7 @@ var Semver = require('semver')
 var ClientSession = require('../client/client_session.js')
 var Middleware = require('../middleware')
 var Stamper = require('../core/stamper.js')
+var ServiceInterface = require('./service_interface')
 
 function Server () {
   this.socketServer = null
@@ -78,9 +79,14 @@ Server.prototype._setup = function (httpServer, configuration) {
   this._setupSentry(configuration)
   this._setupEngineio(httpServer, configuration.engineio)
   this._setupDistributor()
+  this._setupServiceInterface(httpServer)
 
   logging.debug('#server - start ' + new Date().toString())
   this.emit('ready')
+}
+
+Server.prototype._setupServiceInterface = function (httpServer) {
+  this._serviceInterface = ServiceInterface.setup(httpServer)
 }
 
 Server.prototype._setupEngineio = function (httpServer, engineioConfig) {

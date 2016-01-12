@@ -43,6 +43,7 @@
     "async": "^1.5.0",
     "callback_tracker": "0.1.0",
     "engine.io": "1.4.2",
+    "http-attach": "git+ssh://git@github.com/zendesk/node-http-attach.git",
     "javascript-state-machine": "^2.3.5",
     "lodash.bind": "^3.1.0",
     "miniee": "0.0.5",
