@@ -85,5 +85,47 @@ describe('ServiceInterface', function () {
       }
       serviceInterface.middleware(req, res)
     })
+
+    it('supports batch gets', function (done) {
+      var expectedResponse = {
+        op: 'batch',
+        length: 2,
+        value: [
+          {
+            op: 'get',
+            to: 'status:/foo/bar',
+            value: 'message'
+          },
+          {
+            op: 'get',
+            to: 'status:/foo/baz',
+            value: 'message'
+          }
+        ]
+      }
+
+      var Status = function () {}
+      Status.prototype._get = sinon.stub().yieldsAsync('message')
+
+      var ServiceInterface = proxyquire('../server/service_interface', {
+        '../core': {Status: Status}
+      })
+      serviceInterface = new ServiceInterface()
+
+      var req = {
+        method: 'GET',
+        url: '/radar/service?to=status:/foo/bar,status:/foo/baz'
+      }
+      var res = {
+        write: function (value) {
+          expect(value).to.equal(JSON.stringify(expectedResponse))
+        },
+        end: function () {
+          expect(Status.prototype._get).to.have.been.calledWith('status:/foo/bar')
+          done()
+        }
+      }
+      serviceInterface.middleware(req, res)
+    })
   })
 })

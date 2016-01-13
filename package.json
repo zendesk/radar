@@ -50,6 +50,7 @@
     "minilog": "2.0.8",
     "nomnom": "^1.8.1",
     "persistence": ">= 1.0.5",
+    "radar_message": "^1.1.0",
     "semver": "^5.0.3",
     "underscore": "^1.8.3",
     "uuid": "^2.0.1"

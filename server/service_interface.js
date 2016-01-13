@@ -4,6 +4,8 @@ var httpAttach = require('http-attach')
 var log = require('minilog')('radar:service_interface')
 var parseUrl = require('url').parse
 var Type = require('../core/lib/type')
+var async = require('async')
+var RadarMessage = require('radar_message')
 
 var Presence = require('../core').Presence
 var Status = require('../core').Status
@@ -46,11 +48,24 @@ ServiceInterface.prototype._get = function (req, res) {
   if (!qs.to) {
     return getSampleResponse(res)
   }
-  getResource(qs.to, function (err, value) {
+
+  var scopes = qs.to.split(',')
+
+  async.map(scopes, getResource, function (err, resources) {
     if (err) { return error(err, res) }
 
-    res.write(JSON.stringify(value))
-    res.end()
+    if (resources.length === 1) {
+      res.write(JSON.stringify(resources[0]))
+      res.end()
+    } else {
+      var batch = new RadarMessage.Batch()
+      resources.forEach(function (resource) {
+        batch.add(resource)
+      })
+      res.write(JSON.stringify(batch))
+      res.end()
+      return error(new Error('batch not impl'), res)
+    }
   })
 }
 
