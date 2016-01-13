@@ -81,7 +81,8 @@
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
-    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
+    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
+    "test:memory": "mocha --expose-gc tests/*.memory.test.js --ui exports --reporter spec"
   },
   "standard": {
     "ignore": [
