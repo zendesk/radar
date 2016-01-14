@@ -42,6 +42,10 @@ ClientSession.prototype._initialize = function (set) {
 }
 
 ClientSession.prototype._cleanup = function () {
+  if (this._cleanupTransport) {
+    this._cleanupTransport()
+  }
+
   delete clientsById[this.id]
 }
 
@@ -104,7 +108,8 @@ ClientSession.prototype._setupTransport = function () {
     return
   }
 
-  this.transport.on('message', function emitClientMessage (message) {
+  this.transport.on('message', emitClientMessage)
+  function emitClientMessage (message) {
     var decoded = self._decodeIncomingMessage(message)
     if (!decoded) {
       log.warn('#socket.message.incoming.decode - could not decode')
@@ -119,12 +124,17 @@ ClientSession.prototype._setupTransport = function () {
         self.emit('message', decoded)
         break
     }
-  })
+  }
 
-  this.transport.on('close', function () {
+  this.transport.once('close', function () {
     log.info('#socket - disconnect', self.id)
     self.state.end()
   })
+
+  this._cleanupTransport = function () {
+    self.transport.removeListener('message', emitClientMessage)
+    delete self.transport
+  }
 }
 
 ClientSession.prototype._initializeOnNameSync = function (message) {

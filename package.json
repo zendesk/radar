@@ -3,7 +3,7 @@
   "description": "Realtime apps with a high level API based on engine.io",
   "version": "0.18.0",
   "author": "Zendesk, Inc.",
-  "license": "apache-2.0",
+  "license": "Apache-2.0",
   "engines": {
     "node": "0.10 - 5"
   },
@@ -62,6 +62,7 @@
     "simple_sentinel": "^0.1.8",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
+    "smooth-progress": "^1.0.4",
     "standard": "^5.4.1"
   },
   "scripts": {
@@ -81,7 +82,8 @@
     "posttest-sentinel": "./node_modules/.bin/simple_sentinel stop",
     "test-one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
     "test-one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
-    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\""
+    "test-debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
+    "test:memory": "mocha --expose-gc tests/*.memory.test.js --ui exports --reporter spec"
   },
   "standard": {
     "ignore": [
