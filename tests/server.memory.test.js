@@ -3,7 +3,6 @@ var common = require('./common.js')
 var chai = require('chai')
 var expect = chai.expect
 var EventEmitter = require('events').EventEmitter
-var progress = require('smooth-progress')
 
 describe('given a server', function () {
   var radarServer
@@ -17,6 +16,8 @@ describe('given a server', function () {
   })
 
   if (typeof gc === 'function') {
+    var progress = require('smooth-progress')
+
     it('should not leak memory when clients connect and disconnect', function (done) {
       this.timeout(0)
       var totalConnections = 100000
