@@ -6,6 +6,8 @@ var parseUrl = require('url').parse
 var Type = require('../core/lib/type')
 var async = require('async')
 var RadarMessage = require('radar_message')
+var concatStream = require('concat-stream')
+var uuid = require('uuid')
 
 var Presence = require('../core').Presence
 var Status = require('../core').Status
@@ -27,6 +29,8 @@ ServiceInterface.prototype.middleware = function (req, res, next) {
 }
 
 ServiceInterface.prototype._dispatch = function (req, res) {
+  req.id = uuid.v4()
+  log.info('Incoming ServiceInterface request', req.method, req.id)
   switch (req.method) {
     case 'GET':
       this._get(req, res)
@@ -64,7 +68,6 @@ ServiceInterface.prototype._get = function (req, res) {
       })
       res.write(JSON.stringify(batch))
       res.end()
-      return error(new Error('batch not impl'), res)
     }
   })
 }
@@ -133,7 +136,61 @@ function getSampleResponse (res) {
   res.end()
 }
 
-ServiceInterface.prototype._post = function (req, res) {}
+ServiceInterface.prototype._post = function (req, res) {
+  var self = this
+  if (!req.headers || req.headers['content-type'] !== 'application/json') {
+    var err = new Error('Content-type must be application/json')
+    err.statusCode = 415
+    return error(err, res)
+  }
+
+  req.pipe(concatStream(function (body) {
+    try {
+      var message = JSON.parse(body)
+    } catch (e) {
+      var err = new Error('Body must be valid JSON')
+      err.statusCode = 400
+      return error(err, res)
+    }
+
+    try {
+      log.info('POST incoming message', message)
+      self._postMessage(message, req, res)
+    } catch (e) {
+      e.statusCode = e.statusCode || 500
+      return error(e, res)
+    }
+  }))
+}
+
+function allowedOp (op) {
+  switch (op) {
+    case 'get':
+    case 'set':
+      return true
+    default:
+      return false
+  }
+}
+
+ServiceInterface.prototype._postMessage = function (message, req, res) {
+  if (!allowedOp(message.op)) {
+    var err = new Error('Only get and set op allowed via ServiceInterface')
+    err.statusCode = 400
+    return error(err, res)
+  }
+
+  var clientSession = {
+    id: req.id,
+    send: function (msg) {
+      log.debug('ServiceInterfaceClientSession Send', msg)
+      res.write(JSON.stringify(msg))
+      res.end()
+    }
+  }
+  message.ack = message.ack || clientSession.id
+  this.emit('request', clientSession, message)
+}
 
 function setup (httpServer) {
   var serviceInterface = new ServiceInterface()

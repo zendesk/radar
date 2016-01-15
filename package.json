@@ -42,6 +42,7 @@
   "dependencies": {
     "async": "^1.5.0",
     "callback_tracker": "0.1.0",
+    "concat-stream": "^1.5.1",
     "engine.io": "1.4.2",
     "http-attach": "git+ssh://git@github.com/zendesk/node-http-attach.git",
     "javascript-state-machine": "^2.3.5",
@@ -58,6 +59,7 @@
   "devDependencies": {
     "chai": "^3.4.1",
     "chai-interface": "^2.0.2",
+    "literal-stream": "^0.1.0",
     "mocha": "^2.3.3",
     "proxyquire": "^1.7.3",
     "radar_client": "^0.14.6",
