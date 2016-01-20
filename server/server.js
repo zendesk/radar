@@ -87,7 +87,7 @@ Server.prototype._setup = function (httpServer, configuration) {
 
 Server.prototype._setupServiceInterface = function (httpServer) {
   var self = this
-  var service = ServiceInterface.setup(httpServer)
+  var service = ServiceInterface.setup(httpServer, self)
   this._serviceInterface = service
 
   service.on('request', function (clientSession, message) {

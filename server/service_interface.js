@@ -3,18 +3,20 @@ var inherits = require('util').inherits
 var httpAttach = require('http-attach')
 var log = require('minilog')('radar:service_interface')
 var parseUrl = require('url').parse
-var Type = require('../core/lib/type')
-var async = require('async')
 var RadarMessage = require('radar_message')
 var concatStream = require('concat-stream')
 var uuid = require('uuid')
 
-var Presence = require('../core').Presence
-var Status = require('../core').Status
-var PresenceManager = require('../core').PresenceManager
-
-function ServiceInterface () {
+function ServiceInterface (middlewareRunner) {
+  this._middlewareRunner = middlewareRunner || noopMiddlewareRunner
   log.debug('New ServiceInterface')
+}
+
+var noopMiddlewareRunner = {
+  runMiddleware: function () {
+    var callback = arguments[arguments.length - 1]
+    callback()
+  }
 }
 
 inherits(ServiceInterface, EventEmitter)
@@ -47,75 +49,22 @@ ServiceInterface.prototype._dispatch = function (req, res) {
 
 // simple "get"
 ServiceInterface.prototype._get = function (req, res) {
+  var self = this
   var qs = parseUrl(req.url, true).query
 
   if (!qs.to) {
     return getSampleResponse(res)
   }
 
-  var scopes = qs.to.split(',')
+  var message = RadarMessage.Request.buildGet(qs.to).message
 
-  async.map(scopes, getResource, function (err, resources) {
-    if (err) { return error(err, res) }
-
-    if (resources.length === 1) {
-      res.write(JSON.stringify(resources[0]))
-      res.end()
-    } else {
-      var batch = new RadarMessage.Batch()
-      resources.forEach(function (resource) {
-        batch.add(resource)
-      })
-      res.write(JSON.stringify(batch))
-      res.end()
-    }
-  })
-}
-
-var get = {}
-
-function getResource (scope, callback) {
-  var resourceType = parseScope(scope).resourceType
-  log.info('GET', resourceType, scope)
-  if (!get[resourceType]) {
-    return callback(new Error('cannot get resource type ' + resourceType + ' for scope ' + scope))
+  try {
+    log.info('POST incoming message', message)
+    self._postMessage(message, req, res)
+  } catch (e) {
+    e.statusCode = e.statusCode || 500
+    return error(e, res)
   }
-
-  get[resourceType](scope, function (err, value) {
-    if (err) { return callback(err) }
-    var message = {
-      op: 'get',
-      to: scope,
-      value: value
-    }
-    callback(null, message)
-  })
-}
-
-get.Presence = function getPresence (scope, callback) {
-  var presence = new PresenceManager(scope, {}, Presence.sentry)
-  presence.fullRead(function (online) {
-    callback(null, online)
-  })
-}
-
-get.Status = function getStatus (scope, callback) {
-  var status = new Status(scope, {}, {})
-  status._get(scope, function (replies) {
-    callback(null, replies)
-  })
-}
-
-function parseScope (scope) {
-  var parsed = {
-    resourceType: null,
-    accountName: null,
-    resourceId: null
-  }
-
-  parsed.resourceType = Type.getByExpression(scope).type
-
-  return parsed
 }
 
 function error (err, res) {
@@ -174,26 +123,33 @@ function allowedOp (op) {
 }
 
 ServiceInterface.prototype._postMessage = function (message, req, res) {
+  var self = this
+
   if (!allowedOp(message.op)) {
     var err = new Error('Only get and set op allowed via ServiceInterface')
     err.statusCode = 400
     return error(err, res)
   }
 
-  var clientSession = {
-    id: req.id,
-    send: function (msg) {
-      log.debug('ServiceInterfaceClientSession Send', msg)
-      res.write(JSON.stringify(msg))
-      res.end()
+  this._middlewareRunner.runMiddleware('onServiceInterfacePostMessage', message, req, res, function (err) {
+    if (err) { return error(err, res) }
+
+    var clientSession = {
+      id: req.id,
+      send: function (msg) {
+        log.debug('ServiceInterfaceClientSession Send', msg)
+        res.write(JSON.stringify(msg))
+        res.end()
+      }
     }
-  }
-  message.ack = message.ack || clientSession.id
-  this.emit('request', clientSession, message)
+
+    message.ack = message.ack || clientSession.id
+    self.emit('request', clientSession, message)
+  })
 }
 
-function setup (httpServer) {
-  var serviceInterface = new ServiceInterface()
+function setup (httpServer, middlewareRunner) {
+  var serviceInterface = new ServiceInterface(middlewareRunner)
   httpAttach(httpServer, function () {
     serviceInterface.middleware.apply(serviceInterface, arguments)
   })

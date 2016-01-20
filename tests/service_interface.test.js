@@ -4,7 +4,6 @@ var sinon = require('sinon')
 var chai = require('chai')
 chai.use(require('sinon-chai'))
 var expect = require('chai').expect
-var proxyquire = require('proxyquire')
 var literalStream = require('literal-stream')
 // require('minilog').enable()
 
@@ -36,98 +35,20 @@ describe('ServiceInterface', function () {
   })
 
   describe('GET', function () {
-    it('returns a Status', function (done) {
-      var Status = function () {}
-      Status.prototype._get = sinon.stub().yieldsAsync({a: 1, b: 2})
-
-      var ServiceInterface = proxyquire('../server/service_interface', {
-        '../core': {Status: Status}
-      })
-      serviceInterface = new ServiceInterface()
-
+    it('builds a GET message', function (done) {
       var req = {
         method: 'GET',
         url: '/radar/service?to=status:/foo/bar'
       }
-      var res = {
-        write: function (value) {
-          expect(value).to.equal('{"op":"get","to":"status:/foo/bar","value":{"a":1,"b":2}}')
-        },
-        end: function () {
-          expect(Status.prototype._get).to.have.been.calledWith('status:/foo/bar')
-          done()
-        }
-      }
-      serviceInterface.middleware(req, res)
-    })
-
-    it('returns a Presence', function (done) {
-      var PresenceManager = function () {}
-      PresenceManager.prototype.fullRead = sinon.stub().yieldsAsync({'1452560641403': 2})
-      var Presence = function () {}
-      var ServiceInterface = proxyquire('../server/service_interface', {
-        '../core': {
-          PresenceManager: PresenceManager,
-          Presence: Presence
-        }
-      })
-      serviceInterface = new ServiceInterface()
-
-      var req = {
-        method: 'GET',
-        url: '/radar/service?to=presence:/foo/baz'
-      }
-      var res = {
-        write: function (value) {
-          expect(value).to.equal('{"op":"get","to":"presence:/foo/baz","value":{"1452560641403":2}}')
-        },
-        end: function () {
-          done()
-        }
-      }
-      serviceInterface.middleware(req, res)
-    })
-
-    it('supports batch gets', function (done) {
-      var expectedResponse = {
-        op: 'batch',
-        length: 2,
-        value: [
-          {
-            op: 'get',
-            to: 'status:/foo/bar',
-            value: 'message'
-          },
-          {
-            op: 'get',
-            to: 'status:/foo/baz',
-            value: 'message'
-          }
-        ]
+      serviceInterface._postMessage = function (message, req, res) {
+        expect(message).to.deep.equal({
+          op: 'get',
+          to: 'status:/foo/bar'
+        })
+        done()
       }
 
-      var Status = function () {}
-      Status.prototype._get = sinon.stub().yieldsAsync('message')
-
-      var ServiceInterface = proxyquire('../server/service_interface', {
-        '../core': {Status: Status}
-      })
-      serviceInterface = new ServiceInterface()
-
-      var req = {
-        method: 'GET',
-        url: '/radar/service?to=status:/foo/bar,status:/foo/baz'
-      }
-      var res = {
-        write: function (value) {
-          expect(value).to.equal(JSON.stringify(expectedResponse))
-        },
-        end: function () {
-          expect(Status.prototype._get).to.have.been.calledWith('status:/foo/bar')
-          done()
-        }
-      }
-      serviceInterface.middleware(req, res)
+      serviceInterface.middleware(req, {})
     })
   })
 
@@ -198,6 +119,60 @@ describe('ServiceInterface', function () {
 
         serviceInterface._postMessage(msg, req, res)
       })
+
+      describe('middleware', function () {
+        it('runs onServiceInterfacePostMessage after parsing message emitting request', function (done) {
+          var msg = {
+            op: 'set',
+            to: 'status:/test/result',
+            value: 'pending'
+          }
+
+          serviceInterface._middlewareRunner = {
+            runMiddleware: function (type, _msg, _req, _res, cb) {
+              expect(type).to.equal('onServiceInterfacePostMessage')
+              expect(_msg).to.equal(msg)
+              expect(_req).to.equal(req)
+              expect(_res).to.equal(res)
+              cb()
+            }
+          }
+
+          serviceInterface.on('request', function (clientSession, message) {
+            done()
+          })
+
+          var req = {}
+          var res = {}
+
+          serviceInterface._postMessage(msg, req, res)
+        })
+        it('can modify the message', function (done) {
+          var msg = {
+            op: 'set',
+            to: 'status:/test/result',
+            value: 'pending'
+          }
+
+          serviceInterface._middlewareRunner = {
+            runMiddleware: function (type, _msg, _req, _res, cb) {
+              _msg.otherKey = 'string'
+              cb()
+            }
+          }
+
+          serviceInterface.on('request', function (clientSession, message) {
+            expect(message.otherKey).to.equal('string')
+            done()
+          })
+
+          var req = {}
+          var res = {}
+
+          serviceInterface._postMessage(msg, req, res)
+        })
+      })
+
       it('uses the req.id for the clientSession.id', function (done) {
         var msg = {
           op: 'set',
