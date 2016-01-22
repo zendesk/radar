@@ -137,7 +137,15 @@ ServiceInterface.prototype._postMessage = function (message, req, res) {
     var clientSession = {
       id: req.id,
       send: function (msg) {
+        if (res.finished) {
+          log.info('ServiceInterfaceClientSession already ended, dropped message', msg)
+          return
+        }
+
         log.debug('ServiceInterfaceClientSession Send', msg)
+        if (msg.op === 'err') {
+          res.statusCode = 400
+        }
         res.write(JSON.stringify(msg))
         res.end()
       }

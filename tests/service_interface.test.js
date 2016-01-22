@@ -225,25 +225,66 @@ describe('ServiceInterface', function () {
 
         serviceInterface._postMessage(msg, req, res)
       })
-      it('clientSession.send writes and ends the res', function (done) {
-        var msg = {op: 'get'}
+      describe('clientSession.send', function () {
+        it('clientSession.send writes and ends the res', function (done) {
+          var msg = {op: 'get'}
 
-        serviceInterface.on('request', function (clientSession, message) {
-          clientSession.send({message: 'contents'})
-        })
+          serviceInterface.on('request', function (clientSession, message) {
+            clientSession.send({message: 'contents'})
+          })
 
-        var req = {}
-        var res = {
-          write: sinon.spy(),
-          end: function () {
-            expect(res.write).to.have.been.calledWith('{"message":"contents"}')
-            done()
+          var req = {}
+          var res = {
+            write: sinon.spy(),
+            end: function () {
+              expect(res.write).to.have.been.calledWith('{"message":"contents"}')
+              done()
+            }
           }
-        }
 
-        serviceInterface._postMessage(msg, req, res)
+          serviceInterface._postMessage(msg, req, res)
+        })
+        it('if response message is an error, raises it to http statusCode error', function (done) {
+          var msg = {op: 'get'}
+
+          serviceInterface.on('request', function (clientSession, message) {
+            clientSession.send({op: 'err', value: 'invalid'})
+          })
+
+          var req = {}
+          var res = {
+            write: sinon.spy(),
+            end: function () {
+              expect(res.statusCode).to.equal(400)
+              done()
+            }
+          }
+
+          serviceInterface._postMessage(msg, req, res)
+        })
+        it('if HttpResponse is already ended, does not try to write again', function (done) {
+          var msg = {op: 'get'}
+
+          serviceInterface.on('request', function (clientSession, message) {
+            clientSession.send({message: '1'})
+            clientSession.send({message: '2'})
+          })
+
+          var req = {}
+          var res = {
+            write: sinon.spy(),
+            end: function () {
+              res.finished = true
+              expect(res.write).to.have.been.called.once
+              done()
+            }
+          }
+
+          serviceInterface._postMessage(msg, req, res)
+        })
       })
     })
+
     describe('op filtering', function () {
       it('allows get', expect200('get'))
       it('allows set', expect200('set'))
