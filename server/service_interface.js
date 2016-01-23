@@ -71,9 +71,14 @@ function error (err, res) {
   err.statusCode = err.statusCode || 400
   log.warn(err.statusCode, err.stack)
   res.statusCode = err.statusCode
+  var message = {op: 'err'}
+
   if (process.env.NODE_ENV !== 'PRODUCTION') {
-    res.write('<pre>' + err.statusCode + ' ' + err.stack)
+    message.stack = err.stack
+    message.code = err.statusCode
   }
+  res.setHeader('content-type', 'application/json')
+  res.write(JSON.stringify(message))
   res.end()
 }
 
