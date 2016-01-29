@@ -5,6 +5,7 @@ var chai = require('chai')
 chai.use(require('sinon-chai'))
 var expect = require('chai').expect
 var literalStream = require('literal-stream')
+var _ = require('underscore')
 // require('minilog').enable()
 
 describe('ServiceInterface', function () {
@@ -14,12 +15,22 @@ describe('ServiceInterface', function () {
     serviceInterface = new ServiceInterface()
   })
 
+  function stubRes (o) {
+    return _.extend({
+      statusCode: 200,
+      setHeader: sinon.spy(),
+      write: sinon.spy(),
+      end: sinon.spy()
+    }, o)
+  }
+
   describe('Routing middleware', function () {
     it('responds to requests in /radar/service/*', function (done) {
       var req = {
+        method: 'GET',
         url: '/radar/service/foo'
       }
-      var res = {write: sinon.spy(), end: done}
+      var res = stubRes({end: done})
       var next = sinon.spy()
       serviceInterface.middleware(req, res, next)
 
@@ -27,9 +38,10 @@ describe('ServiceInterface', function () {
     })
     it('delegates requests not in /radar/service/*', function (done) {
       var req = {
+        method: 'GET',
         url: '/some/other/path'
       }
-      var res = {}
+      var res = stubRes()
       serviceInterface.middleware(req, res, done)
     })
   })
@@ -48,7 +60,7 @@ describe('ServiceInterface', function () {
         done()
       }
 
-      serviceInterface.middleware(req, {})
+      serviceInterface.middleware(req, stubRes())
     })
   })
 
@@ -75,13 +87,12 @@ describe('ServiceInterface', function () {
         value: 'pending'
       })
       req.headers['content-type'] = 'some bad mime type'
-      var res = {
-        write: function () {},
+      var res = stubRes({
         end: function () {
           expect(res.statusCode).to.equal(415)
           done()
         }
-      }
+      })
       serviceInterface.middleware(req, res)
     })
     it('requires valid json in body', function (done) {
@@ -91,13 +102,12 @@ describe('ServiceInterface', function () {
         'content-type': 'application/json'
       }
       req.url = '/radar/service'
-      var res = {
-        write: function () {},
+      var res = stubRes({
         end: function () {
           expect(res.statusCode).to.equal(400)
           done()
         }
-      }
+      })
       serviceInterface.middleware(req, res)
     })
     describe('_postMessage', function () {
@@ -316,14 +326,12 @@ describe('ServiceInterface', function () {
         })
 
         var req = postReq(msg)
-        var res = {
-          statusCode: 200,
-          write: sinon.spy(),
+        var res = stubRes({
           end: function () {
             expect(res.statusCode).to.equal(expectedStatusCode)
             done()
           }
-        }
+        })
 
         serviceInterface.middleware(req, res)
       }
