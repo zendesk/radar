@@ -31,7 +31,7 @@ ServiceInterface.prototype.middleware = function (req, res, next) {
 }
 
 ServiceInterface.prototype._dispatch = function (req, res) {
-  req.id = uuid.v4()
+  req.id = req.id || uuid.v4()
   log.info('Incoming ServiceInterface request', req.method, req.id)
   switch (req.method) {
     case 'GET':
@@ -157,6 +157,7 @@ ServiceInterface.prototype._postMessage = function (message, req, res) {
     }
 
     message.ack = message.ack || clientSession.id
+    log.info('ServiceInterface request', message)
     self.emit('request', clientSession, message)
   })
 }

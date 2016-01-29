@@ -6,7 +6,7 @@ chai.use(require('sinon-chai'))
 var expect = require('chai').expect
 var literalStream = require('literal-stream')
 var _ = require('underscore')
-// require('minilog').enable()
+var uuid = require('uuid')
 
 describe('ServiceInterface', function () {
   var ServiceInterface = require('../server/service_interface')
@@ -14,6 +14,13 @@ describe('ServiceInterface', function () {
   beforeEach(function () {
     serviceInterface = new ServiceInterface()
   })
+
+  function getReq (o) {
+    return _.extend({
+      method: 'GET',
+      url: '/radar/service'
+    }, o)
+  }
 
   function stubRes (o) {
     return _.extend({
@@ -26,10 +33,7 @@ describe('ServiceInterface', function () {
 
   describe('Routing middleware', function () {
     it('responds to requests in /radar/service/*', function (done) {
-      var req = {
-        method: 'GET',
-        url: '/radar/service/foo'
-      }
+      var req = getReq()
       var res = stubRes({end: done})
       var next = sinon.spy()
       serviceInterface.middleware(req, res, next)
@@ -37,10 +41,9 @@ describe('ServiceInterface', function () {
       expect(next).to.not.have.been.called
     })
     it('delegates requests not in /radar/service/*', function (done) {
-      var req = {
-        method: 'GET',
+      var req = getReq({
         url: '/some/other/path'
-      }
+      })
       var res = stubRes()
       serviceInterface.middleware(req, res, done)
     })
@@ -48,10 +51,9 @@ describe('ServiceInterface', function () {
 
   describe('GET', function () {
     it('builds a GET message', function (done) {
-      var req = {
-        method: 'GET',
+      var req = getReq({
         url: '/radar/service?to=status:/foo/bar'
-      }
+      })
       serviceInterface._postMessage = function (message, req, res) {
         expect(message).to.deep.equal({
           op: 'get',
@@ -110,6 +112,34 @@ describe('ServiceInterface', function () {
       })
       serviceInterface.middleware(req, res)
     })
+
+    it('generates a uuid req.id if not already set', function (done) {
+      var req = getReq()
+      var res = stubRes({
+        end: function () {
+          expect(req).to.have.property('id')
+          // gen.id is a uuid:
+          expect(uuid.unparse(uuid.parse(req.id))).to.equal(req.id)
+          done()
+        }
+      })
+
+      serviceInterface.middleware(req, res)
+    })
+    it('does not overwrite req.id if already set', function (done) {
+      var req = getReq({
+        id: 'preset id'
+      })
+      var res = stubRes({
+        end: function () {
+          expect(req.id).to.equal('preset id')
+          done()
+        }
+      })
+
+      serviceInterface.middleware(req, res)
+    })
+
     describe('_postMessage', function () {
       it('emits request event with stubbed client session and message', function (done) {
         var msg = {
