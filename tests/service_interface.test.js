@@ -64,6 +64,19 @@ describe('ServiceInterface', function () {
 
       serviceInterface.middleware(req, stubRes())
     })
+
+    it('returns 400 if missing to parameter on querystring', function (done) {
+      var req = getReq({
+        url: '/radar/service'
+      })
+      var res = stubRes({
+        end: function () {
+          expect(res.statusCode).to.equal(400)
+          done()
+        }
+      })
+      serviceInterface.middleware(req, res)
+    })
   })
 
   describe('POST', function () {
@@ -74,7 +87,7 @@ describe('ServiceInterface', function () {
         value: 'pending'
       }
       var req = postReq(message)
-      var res = {}
+      var res = stubRes()
       serviceInterface._postMessage = function (incomingMessage) {
         expect(incomingMessage).to.deep.equal(message)
         done()

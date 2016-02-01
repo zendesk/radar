@@ -53,7 +53,9 @@ ServiceInterface.prototype._get = function (req, res) {
   var qs = parseUrl(req.url, true).query
 
   if (!qs.to) {
-    return getSampleResponse(res)
+    var e = new Error('Missing required parameter to')
+    e.statusCode = 400
+    return error(e, res)
   }
 
   var message = RadarMessage.Request.buildGet(qs.to).message
@@ -67,26 +69,19 @@ ServiceInterface.prototype._get = function (req, res) {
   }
 }
 
+var SHOW_STACK_TRACE = !String(process.env.NODE_ENV).match(/prod/i)
 function error (err, res) {
   err.statusCode = err.statusCode || 400
   log.warn(err.statusCode, err.stack)
   res.statusCode = err.statusCode
   var message = {op: 'err'}
 
-  if (process.env.NODE_ENV !== 'PRODUCTION') {
+  if (SHOW_STACK_TRACE) {
     message.stack = err.stack
     message.code = err.statusCode
   }
   res.setHeader('content-type', 'application/json')
   res.write(JSON.stringify(message))
-  res.end()
-}
-
-function getSampleResponse (res) {
-  res.setHeader('content-type', 'text/html')
-  res.write('DEV MSG: this is the simple GET service interface.' +
-    'must contain a query string with the resource scope, eg ' +
-    '<a href="/radar/service?to=presence:/jdoe_inc/test/1">/radar/service?to=presence:/jdoe_inc/test/1</a>')
   res.end()
 }
 
