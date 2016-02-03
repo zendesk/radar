@@ -11,8 +11,13 @@ var ClientSession = require('../client/client_session.js')
 var Middleware = require('../middleware')
 var Stamper = require('../core/stamper.js')
 var ServiceInterface = require('./service_interface')
+var SessionManager = require('./session_manager')
+var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
 
 function Server () {
+  this.sessionManager = new SessionManager({
+    adapters: [new SocketClientSessionAdapter(ClientSession)]
+  })
   this.socketServer = null
   this.resources = {}
   this.subscriber = null
@@ -116,7 +121,7 @@ Server.prototype._onSocketConnection = function (socket) {
   // Event: socket connected
   logging.info('#socket - connect', socket.id)
 
-  var clientSession = ClientSession.createFromSocket(socket)
+  var clientSession = this.sessionManager.add(socket)
 
   clientSession.on('message', function (data) {
     self._processMessage(clientSession, data)

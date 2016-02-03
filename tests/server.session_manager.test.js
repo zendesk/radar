@@ -31,10 +31,19 @@ describe('SessionManager', function () {
   })
 
   describe('client session adapters', function () {
-    it('can be instantiated with adapters', function () {
-      var adapters = [{}, {}]
-      sessionManager = new SessionManager({adapters: adapters})
-      expect(sessionManager.adapters).to.deep.equal(adapters)
+    describe('when instantiating with adapters option', function () {
+      var adapters = [{canAdapt: function () {}, adapt: function () {}}]
+      var sessionManager = new SessionManager({adapters: adapters})
+
+      it('assigns the adapters to this.adapters', function () {
+        expect(sessionManager.adapters).to.deep.equal(adapters)
+      })
+
+      it('validates the adapters', function () {
+        expect(function () {
+          new SessionManager({ adapters: [{bad: 'adapter'}] }) // eslint-disable-line
+        }).to.throw(TypeError, /invalid adapter/i)
+      })
     })
 
     describe('#canAdapt', function () {
@@ -97,6 +106,42 @@ describe('SessionManager', function () {
     })
   })
 
+  describe('#isValidAdapter', function () {
+    it('returns true if has methods canAdapt and adapt', function () {
+      var adapter = {
+        canAdapt: function () {},
+        adapt: function () {}
+      }
+      expect(sessionManager.isValidAdapter(adapter))
+        .to.be.true
+    })
+    it('returns false otherwise', function () {
+      expect(sessionManager.isValidAdapter({}))
+        .to.be.false
+      expect(sessionManager.isValidAdapter({adapt: function () {}}))
+        .to.be.false
+      expect(sessionManager.isValidAdapter({canAdapt: function () {}}))
+        .to.be.false
+    })
+  })
+
+  describe('#add', function () {
+    it('returns the ClientSession', function () {
+      var session = new ClientSession()
+      var added = sessionManager.add(session)
+      expect(added).to.equal(session)
+    })
+    it('returns an adapted ClientSession', function () {
+      var session = new ClientSession()
+      sessionManager.adapters.push({
+        adapt: sinon.stub().returns(session),
+        canAdapt: sinon.stub().returns(true)
+      })
+      var added = sessionManager.add({})
+      expect(added).to.equal(session)
+    })
+  })
+
   describe('when adding a session', function () {
     var clientSession
     beforeEach(function () {
@@ -119,10 +164,12 @@ describe('SessionManager', function () {
     })
 
     it('adding same session multiple times has no effect', function () {
-      sessionManager.add(clientSession)
-      sessionManager.add(clientSession)
+      var added1 = sessionManager.add(clientSession)
+      var added2 = sessionManager.add(clientSession)
       expect(sessionManager.length()).to.equal(1)
       expect(clientSession.once).to.have.callCount(1)
+      expect(added1).to.equal(clientSession)
+      expect(added2).to.equal(clientSession)
     })
 
     describe('given a ClientSession', function () {

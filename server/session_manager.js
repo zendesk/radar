@@ -13,9 +13,21 @@ function SessionManager (opt) {
   })
 
   this.adapters = opt && opt.adapters || []
+  this.adapters.forEach(function (adapter) {
+    if (!self.isValidAdapter(adapter)) {
+      throw new TypeError('Invalid Adapter: ' + adapter)
+    }
+  })
 }
 inherits(SessionManager, EventEmitter)
 
+SessionManager.prototype.isValidAdapter = function (adapter) {
+  return adapter &&
+    typeof adapter.canAdapt === 'function' &&
+    typeof adapter.adapt === 'function'
+}
+
+// (ClientSesion|Any) => ClientSession?
 SessionManager.prototype.add = function (obj) {
   var self = this
   var session
@@ -30,7 +42,7 @@ SessionManager.prototype.add = function (obj) {
 
   if (this.has(session.id)) {
     log.info('Attemping to add duplicate session id:', session.id)
-    return this
+    return session
   }
 
   this.sessions.set(session.id, session)
@@ -38,7 +50,7 @@ SessionManager.prototype.add = function (obj) {
     self.sessions.delete(session.id)
     self.emit('end', session)
   })
-  return this
+  return session
 }
 
 SessionManager.prototype.has = function (id) {
@@ -65,7 +77,19 @@ SessionManager.prototype.adapt = function (obj) {
   var adapter = _.find(this.adapters, function (adapter) {
     return adapter.canAdapt(obj)
   })
-  return adapter && adapter.adapt(obj) || null
+  log.info('Adapting ClientSession with ' + nameOf(adapter))
+  var adapted = adapter && adapter.adapt(obj)
+  return adapted || null
+}
+
+function nameOf (obj) {
+  if (obj && obj.name) {
+    return obj.name
+  }
+  if (obj && obj.constructor && obj.constructor.name) {
+    return obj.constructor.name
+  }
+  return String(obj)
 }
 
 module.exports = SessionManager
