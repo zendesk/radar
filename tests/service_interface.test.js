@@ -54,7 +54,7 @@ describe('ServiceInterface', function () {
       var req = getReq({
         url: '/radar/service?to=status:/foo/bar'
       })
-      serviceInterface._postMessage = function (message, req, res) {
+      serviceInterface._processIncomingMessage = function (message, req, res) {
         expect(message).to.deep.equal({
           op: 'get',
           to: 'status:/foo/bar'
@@ -88,7 +88,7 @@ describe('ServiceInterface', function () {
       }
       var req = postReq(message)
       var res = stubRes()
-      serviceInterface._postMessage = function (incomingMessage) {
+      serviceInterface._processIncomingMessage = function (incomingMessage) {
         expect(incomingMessage).to.deep.equal(message)
         done()
       }
@@ -153,7 +153,7 @@ describe('ServiceInterface', function () {
       serviceInterface.middleware(req, res)
     })
 
-    describe('_postMessage', function () {
+    describe('_processIncomingMessage', function () {
       it('emits request event with stubbed client session and message', function (done) {
         var msg = {
           op: 'set',
@@ -170,11 +170,11 @@ describe('ServiceInterface', function () {
         var req = {}
         var res = {}
 
-        serviceInterface._postMessage(msg, req, res)
+        serviceInterface._processIncomingMessage(msg, req, res)
       })
 
       describe('middleware', function () {
-        it('runs onServiceInterfacePostMessage after parsing message emitting request', function (done) {
+        it('runs onServiceInterfaceIncomingMessage after parsing message emitting request', function (done) {
           var msg = {
             op: 'set',
             to: 'status:/test/result',
@@ -183,7 +183,7 @@ describe('ServiceInterface', function () {
 
           serviceInterface._middlewareRunner = {
             runMiddleware: function (type, _msg, _req, _res, cb) {
-              expect(type).to.equal('onServiceInterfacePostMessage')
+              expect(type).to.equal('onServiceInterfaceIncomingMessage')
               expect(_msg).to.equal(msg)
               expect(_req).to.equal(req)
               expect(_res).to.equal(res)
@@ -198,7 +198,7 @@ describe('ServiceInterface', function () {
           var req = {}
           var res = {}
 
-          serviceInterface._postMessage(msg, req, res)
+          serviceInterface._processIncomingMessage(msg, req, res)
         })
         it('can modify the message', function (done) {
           var msg = {
@@ -222,7 +222,7 @@ describe('ServiceInterface', function () {
           var req = {}
           var res = {}
 
-          serviceInterface._postMessage(msg, req, res)
+          serviceInterface._processIncomingMessage(msg, req, res)
         })
       })
 
@@ -241,7 +241,7 @@ describe('ServiceInterface', function () {
         var req = {id: 'asdfg'}
         var res = {}
 
-        serviceInterface._postMessage(msg, req, res)
+        serviceInterface._processIncomingMessage(msg, req, res)
       })
       it('uses the req.id for the message.ack if not set', function (done) {
         var msg = {
@@ -258,7 +258,7 @@ describe('ServiceInterface', function () {
         var req = {id: 'asdfg'}
         var res = {}
 
-        serviceInterface._postMessage(msg, req, res)
+        serviceInterface._processIncomingMessage(msg, req, res)
       })
       it('does not overwrite message.ack if specified', function (done) {
         var msg = {
@@ -276,7 +276,7 @@ describe('ServiceInterface', function () {
         var req = {}
         var res = {}
 
-        serviceInterface._postMessage(msg, req, res)
+        serviceInterface._processIncomingMessage(msg, req, res)
       })
       describe('clientSession.send', function () {
         it('clientSession.send writes and ends the res', function (done) {
@@ -295,7 +295,7 @@ describe('ServiceInterface', function () {
             }
           }
 
-          serviceInterface._postMessage(msg, req, res)
+          serviceInterface._processIncomingMessage(msg, req, res)
         })
         it('if response message is an error, raises it to http statusCode error', function (done) {
           var msg = {op: 'get'}
@@ -313,7 +313,7 @@ describe('ServiceInterface', function () {
             }
           }
 
-          serviceInterface._postMessage(msg, req, res)
+          serviceInterface._processIncomingMessage(msg, req, res)
         })
         it('if HttpResponse is already ended, does not try to write again', function (done) {
           var msg = {op: 'get'}
@@ -333,7 +333,7 @@ describe('ServiceInterface', function () {
             }
           }
 
-          serviceInterface._postMessage(msg, req, res)
+          serviceInterface._processIncomingMessage(msg, req, res)
         })
       })
     })

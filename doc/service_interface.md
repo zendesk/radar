@@ -8,10 +8,10 @@ The Service Interface is a simple HTTP-based interface for services to query rad
 
 ## GET
 
-E.g. `http://localhost:8000/radar/service?to=status:/segment/foobar`
+E.g. `http://localhost:8000/radar/service?to=status:/account/foobar`
 
 ### Querystring Parameters
-- `to` : the full resource scope, e.g. `status:/segment/foobar`
+- `to` : the full resource scope, e.g. `status:/account/foobar`
 
 This is a simplified case of the POST endpoint for Radar resources supporting `get` operations.
 

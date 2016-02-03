@@ -62,7 +62,7 @@ ServiceInterface.prototype._get = function (req, res) {
 
   try {
     log.info('POST incoming message', message)
-    self._postMessage(message, req, res)
+    self._processIncomingMessage(message, req, res)
   } catch (e) {
     e.statusCode = e.statusCode || 500
     return error(e, res)
@@ -104,7 +104,7 @@ ServiceInterface.prototype._post = function (req, res) {
 
     try {
       log.info('POST incoming message', message)
-      self._postMessage(message, req, res)
+      self._processIncomingMessage(message, req, res)
     } catch (e) {
       e.statusCode = e.statusCode || 500
       return error(e, res)
@@ -122,7 +122,7 @@ function allowedOp (op) {
   }
 }
 
-ServiceInterface.prototype._postMessage = function (message, req, res) {
+ServiceInterface.prototype._processIncomingMessage = function (message, req, res) {
   var self = this
 
   if (!allowedOp(message.op)) {
@@ -131,7 +131,7 @@ ServiceInterface.prototype._postMessage = function (message, req, res) {
     return error(err, res)
   }
 
-  this._middlewareRunner.runMiddleware('onServiceInterfacePostMessage', message, req, res, function (err) {
+  this._middlewareRunner.runMiddleware('onServiceInterfaceIncomingMessage', message, req, res, function (err) {
     if (err) { return error(err, res) }
 
     var clientSession = {
