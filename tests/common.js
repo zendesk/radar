@@ -63,7 +63,7 @@ module.exports = {
     })
 
     radarProcess.running = true
-
+    radarProcess.port = configuration.port
     return radarProcess
   },
 
