@@ -297,24 +297,46 @@ describe('ServiceInterface', function () {
 
           serviceInterface._processIncomingMessage(msg, req, res)
         })
-        it('if response message is an error, raises it to http statusCode error', function (done) {
-          var msg = {op: 'get'}
 
-          serviceInterface.on('request', function (clientSession, message) {
-            clientSession.send({op: 'err', value: 'invalid'})
-          })
+        describe('when response message is an error', function () {
+          it('raises it to http statusCode error 400', function (done) {
+            var msg = {op: 'get'}
 
-          var req = {}
-          var res = {
-            write: sinon.spy(),
-            end: function () {
-              expect(res.statusCode).to.equal(400)
-              done()
+            serviceInterface.on('request', function (clientSession, message) {
+              clientSession.send({op: 'err', value: 'invalid'})
+            })
+
+            var req = {}
+            var res = {
+              write: sinon.spy(),
+              end: function () {
+                expect(res.statusCode).to.equal(400)
+                done()
+              }
             }
-          }
 
-          serviceInterface._processIncomingMessage(msg, req, res)
+            serviceInterface._processIncomingMessage(msg, req, res)
+          })
+          it('auth errors are statusCode 403', function (done) {
+            var msg = {op: 'get'}
+
+            serviceInterface.on('request', function (clientSession, message) {
+              clientSession.send({op: 'err', value: 'auth'})
+            })
+
+            var req = {}
+            var res = {
+              write: sinon.spy(),
+              end: function () {
+                expect(res.statusCode).to.equal(403)
+                done()
+              }
+            }
+
+            serviceInterface._processIncomingMessage(msg, req, res)
+          })
         })
+
         it('if HttpResponse is already ended, does not try to write again', function (done) {
           var msg = {op: 'get'}
 

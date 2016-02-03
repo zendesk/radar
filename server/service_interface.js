@@ -138,14 +138,19 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
       id: req.id,
       send: function (msg) {
         if (res.finished) {
-          log.info('ServiceInterfaceClientSession already ended, dropped message', msg)
+          log.warn('ServiceInterfaceClientSession already ended, dropped message', msg)
           return
         }
 
-        log.debug('ServiceInterfaceClientSession Send', msg)
         if (msg.op === 'err') {
-          res.statusCode = 400
+          if (msg.value === 'auth') {
+            res.statusCode = 403
+          } else {
+            res.statusCode = 400
+          }
         }
+
+        log.debug('ServiceInterfaceClientSession Send', res.statusCode, msg)
         res.write(JSON.stringify(msg))
         res.end()
       }
