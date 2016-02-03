@@ -60,21 +60,110 @@ describe('Given a Radar server', function () {
       })
     })
 
-    it('Presence get', function () {
-      options.body = JSON.stringify({
-        op: 'get',
-        to: 'presence:/account/ticket/1'
+    describe('Presence get', function () {
+      describe('given no clients online on a Presence resource', function () {
+        it('gets v1', function () {
+          options.body = JSON.stringify({
+            op: 'get',
+            to: 'presence:/account/ticket/1'
+          })
+
+          return fetch(endpoint, options).then(function (res) {
+            expect(res.status).to.equal(200)
+
+            return res.json()
+          }).then(function (body) {
+            expect(body).to.deep.equal({
+              op: 'get',
+              to: 'presence:/account/ticket/1',
+              value: {}
+            })
+          })
+        })
+        it('gets v2', function () {
+          options.body = JSON.stringify({
+            op: 'get',
+            to: 'presence:/account/ticket/1',
+            options: {version: 2}
+          })
+
+          return fetch(endpoint, options).then(function (res) {
+            expect(res.status).to.equal(200)
+
+            return res.json()
+          }).then(function (body) {
+            expect(body).to.deep.equal({
+              op: 'get',
+              to: 'presence:/account/ticket/1',
+              value: {}
+            })
+          })
+        })
       })
+      describe('given a client online on a presence resource', function () {
+        var client
+        var scope = 'test_presence_with_clients'
+        var USER_TYPE_AGENT = 2
+        before(function (done) {
+          client = common.getClient('account', 123, USER_TYPE_AGENT, {}, function () {
+            client.presence(scope).set('online', function (ack) {
+              done()
+            })
+          })
+        })
 
-      return fetch(endpoint, options).then(function (res) {
-        expect(res.status).to.equal(200)
+        after(function (done) {
+          client.presence(scope).set('offline', function (ack) {
+            client.dealloc('test')
+            done()
+          }).removeAllListeners()
+        })
 
-        return res.json()
-      }).then(function (body) {
-        expect(body).to.deep.equal({
-          op: 'get',
-          to: 'presence:/account/ticket/1',
-          value: {}
+        it('gets v1', function () {
+          options.body = JSON.stringify({
+            op: 'get',
+            to: 'presence:/account/' + scope
+          })
+
+          return fetch(endpoint, options).then(function (res) {
+            expect(res.status).to.equal(200)
+            return res.json()
+          }).then(function (body) {
+            expect(body).to.deep.equal({
+              op: 'get',
+              to: 'presence:/account/' + scope,
+              value: {
+                123: USER_TYPE_AGENT
+              }
+            })
+          })
+        })
+
+        it('gets v2', function () {
+          options.body = JSON.stringify({
+            op: 'get',
+            to: 'presence:/account/' + scope,
+            options: {version: 2}
+          })
+
+          return fetch(endpoint, options).then(function (res) {
+            expect(res.status).to.equal(200)
+            return res.json()
+          }).then(function (body) {
+            var expected = {
+              op: 'get',
+              to: 'presence:/account/' + scope,
+              value: {
+                123: {
+                  clients: {},
+                  userType: USER_TYPE_AGENT
+                }
+              }
+            }
+            expected.value[123].clients[client.currentClientId()] = {}
+
+            expect(body).to.deep.equal(expected)
+          })
         })
       })
     })
