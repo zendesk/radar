@@ -76,6 +76,10 @@ function error (err, res) {
   res.statusCode = err.statusCode
   var message = {op: 'err'}
 
+  if (err.statusCode === 401 || err.statusCode === 403) {
+    message.value = 'auth'
+  }
+
   if (SHOW_STACK_TRACE) {
     message.stack = err.stack
     message.code = err.statusCode
@@ -142,7 +146,7 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
           return
         }
 
-        if (msg.op === 'err') {
+        if (res.statusCode < 400 && msg.op === 'err') {
           if (msg.value === 'auth') {
             res.statusCode = 403
           } else {

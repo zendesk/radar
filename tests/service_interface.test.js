@@ -308,6 +308,7 @@ describe('ServiceInterface', function () {
 
             var req = {}
             var res = {
+              statusCode: 200,
               write: sinon.spy(),
               end: function () {
                 expect(res.statusCode).to.equal(400)
@@ -317,23 +318,41 @@ describe('ServiceInterface', function () {
 
             serviceInterface._processIncomingMessage(msg, req, res)
           })
-          it('auth errors are statusCode 403', function (done) {
+          describe('given auth err message', function () {
             var msg = {op: 'get'}
 
-            serviceInterface.on('request', function (clientSession, message) {
-              clientSession.send({op: 'err', value: 'auth'})
+            beforeEach(function () {
+              serviceInterface.on('request', function (clientSession, message) {
+                clientSession.send({op: 'err', value: 'auth'})
+              })
             })
 
-            var req = {}
-            var res = {
-              write: sinon.spy(),
-              end: function () {
-                expect(res.statusCode).to.equal(403)
-                done()
+            it('auth errors are statusCode 403 by default', function (done) {
+              var req = {}
+              var res = {
+                statusCode: 200,
+                write: sinon.spy(),
+                end: function () {
+                  expect(res.statusCode).to.equal(403)
+                  done()
+                }
               }
-            }
 
-            serviceInterface._processIncomingMessage(msg, req, res)
+              serviceInterface._processIncomingMessage(msg, req, res)
+            })
+            it('if res.statusCode is already 401 or 403, existing value is used', function (done) {
+              var req = {}
+              var res = {
+                statusCode: 401,
+                write: sinon.spy(),
+                end: function () {
+                  expect(res.statusCode).to.equal(401)
+                  done()
+                }
+              }
+
+              serviceInterface._processIncomingMessage(msg, req, res)
+            })
           })
         })
 
