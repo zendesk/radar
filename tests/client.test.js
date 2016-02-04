@@ -21,20 +21,6 @@ describe('ClientSession', function () {
     presences = {}
   })
 
-  describe('.createFromSocket', function () {
-    it('instantiates a new ClientSession from a socket', function () {
-      var socket = {
-        id: 'asdf'
-      }
-      var clientSession = ClientSession.createFromSocket(socket)
-
-      assert.ok(clientSession instanceof ClientSession)
-      assert.equal(clientSession.id, socket.id)
-      assert.equal(clientSession.transport, socket)
-      assert.equal(clientSession.state.current, 'initializing')
-    })
-  })
-
   describe('state', function () {
     describe('_initialize', function () {
       it('sets state to ready', function () {
