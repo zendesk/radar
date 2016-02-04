@@ -1,3 +1,9 @@
+### 0.19.0
+* [PR #203](https://github.com/zendesk/radar/pull/203) - HTTP ServiceInterface
+* [PR #202](https://github.com/zendesk/radar/pull/202) - Add memory leak regression tests for ClientSessions
+* [PR #200](https://github.com/zendesk/radar/pull/200) - Cleanup package.json
+* [PR #201](https://github.com/zendesk/radar/pull/201) - Spruce up the readme a bit
+
 ### 0.18.0
 Switched to http://standardjs.com/ style
 * #195, #197 - format for standard
