@@ -108,6 +108,14 @@ Presence.prototype.setup = function () {
   }
 }
 
+Presence.prototype.socketsForSentry = function() {
+  this.manager.socketsForSentry()
+}
+
+Presence.prototype.disconnectRemoteClient = function(clientSessionId, callback) {
+  this.manager.disconnectRemoteClient(clientSessionId, callback)
+}
+
 Presence.prototype.redisIn = function (message) {
   logging.info('#presence - incoming from #redis', this.to, message, 'subs:',
     Object.keys(this.subscribers).length)
