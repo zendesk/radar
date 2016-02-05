@@ -188,21 +188,44 @@ PresenceManager.prototype.disconnectClient = function (clientSessionId, callback
   } else {
     userType = this.store.userTypeOf(userId)
   }
-  this._implicitDisconnect(clientSessionId, userId, userType, callback)
-}
 
-PresenceManager.prototype._implicitDisconnect = function (clientSessionId, userId,
-  userType, callback) {
-  var message = {
+  this._implicitDisconnect({
+    clientSessionId: clientSessionId,
     userId: userId,
     userType: userType,
-    clientId: clientSessionId,
+    remote: false
+  }, callback)
+}
+
+PresenceManager.prototype.disconnectRemoteClient = function(clientSessionId, callback) {
+  var userId = this.store.userOf(clientSessionId)
+  var userType = this.store.userTypeOf(userId)
+  this._implicitDisconnect({
+    clientSessionId: clientSessionId,
+    userId: userId,
+    userType: userType,
+    remote: true
+  }, callback)
+}
+
+PresenceManager.prototype._implicitDisconnect = function (clientOptions, callback) {
+  var self = this
+  var message = {
+    userId: clientOptions.userId,
+    userType: clientOptions.userType,
+    clientId: clientOptions.clientSessionId,
     online: false,
     explicit: false
   }
 
-  Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
-  Persistence.publish(this.scope, message, callback)
+  if(clientOptions.remote) {
+    setImmediate(function() {
+      self.processRedisEntry(message, callback)
+    })
+  } else {
+    Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
+    Persistence.publish(this.scope, message, callback)
+  }
 }
 
 PresenceManager.prototype.processRedisEntry = function (message, callback) {
