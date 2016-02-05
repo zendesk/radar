@@ -55,6 +55,23 @@ describe('given a server', function () {
     }, 100)
   })
 
+  it('should emit resource:destroy when a resource is destroyed', function (done) {
+    var stubResource = {
+      destroy: function () {}
+    }
+
+    radarServer.on('resource:destroy', function (resource) {
+      expect(resource).to.equal(stubResource)
+      done()
+    })
+
+    radarServer.resources = {
+      'status:/test/foo': stubResource
+    }
+
+    radarServer.destroyResource('status:/test/foo')
+  })
+
   it('should return an error when an invalid message type is sent', function (done) {
     var invalidMessage = {
       to: 'invalid:/thing'

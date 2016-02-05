@@ -42,6 +42,7 @@ Server.prototype.destroyResource = function (to) {
       if (err) { throw err }
 
       resource.destroy()
+      self.emit('resource:destroy', resource)
       delete self.resources[to]
       delete self.subs[to]
 
