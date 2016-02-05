@@ -1,3 +1,7 @@
+### 0.19.1
+* [PR #210](https://github.com/zendesk/radar/pull/210) - Server: Emit resource:destroy event
+* [PR #206](https://github.com/zendesk/radar/pull/206) - Add npm version badge to readme
+
 ### 0.19.0
 * [PR #203](https://github.com/zendesk/radar/pull/203) - HTTP ServiceInterface
 * [PR #202](https://github.com/zendesk/radar/pull/202) - Add memory leak regression tests for ClientSessions
