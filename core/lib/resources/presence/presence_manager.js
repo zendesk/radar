@@ -77,26 +77,10 @@ PresenceManager.prototype.setup = function () {
 
     destroyNextSocket()
   }
-
-  // Listen to all sentries. This should not be costly,
-  // since we should not be going down often.
-  logging.debug('#presence - add sentry listener', scope)
-  this.sentry.on('down', this.sentryListener)
 }
 
-PresenceManager.prototype.sentryDownForClient = function (clientSessionId) {
-  var userId = this.store.userOf(clientSessionId)
-  var userType = this.store.userTypeOf(userId)
-  var message = {
-    userId: userId,
-    userType: userType,
-    clientId: clientSessionId,
-    online: false,
-    explicit: false
-  }
-
-  // Process directly
-  this.processRedisEntry(message)
+PresenceManager.prototype.socketsForSentry = function(sentry) {
+  this.store.socketsForSentry(sentry);
 }
 
 PresenceManager.prototype.destroy = function () {
@@ -108,12 +92,6 @@ PresenceManager.prototype.destroy = function () {
   Object.keys(this.expiryTimers).forEach(function (userId) {
     self.clearExpiry(userId)
   })
-
-  if (this.sentryListener) {
-    logging.debug('#presence - remove sentry listener', this.scope)
-    this.sentry.removeListener('down', this.sentryListener)
-    delete this.sentryListener
-  }
 
   // Client issues a full read and then dies and destroy is called
   if (this.handleRedisReply) {
