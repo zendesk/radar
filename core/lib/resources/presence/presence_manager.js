@@ -4,10 +4,10 @@ var Persistence = require('persistence')
 var Minilog = require('minilog')
 var logging = Minilog('radar:presence_manager')
 
-function PresenceManager (scope, policy, sentry) {
+function PresenceManager (scope, policy, sentryManager) {
   this.scope = scope
   this.policy = policy
-  this.sentry = sentry
+  this.sentryManager = sentryManager
   this.store = new PresenceStore(scope)
   this.expiryTimers = {}
   this.setup()
@@ -18,7 +18,6 @@ require('util').inherits(PresenceManager, require('events').EventEmitter)
 
 PresenceManager.prototype.setup = function () {
   var store = this.store
-  var scope = this.scope
   var self = this
 
   store.on('user_added', function (message) {
@@ -46,37 +45,6 @@ PresenceManager.prototype.setup = function () {
     self.emit('client_offline', message.clientId, message.userId,
       message.explicit)
   })
-
-  // Save so you removeListener on destroy
-  this.sentryListener = function (sentry) {
-    var clientSessionIds = store.socketsForSentry(sentry)
-
-    logging.info('#presence - #sentry down with ' + clientSessionIds.length +
-      ' clients ', clientSessionIds)
-
-    if (!clientSessionIds.length) { return }
-
-    var destroyNextSocket = function () {
-      if (self.destroying) {
-        logging.info('#presence - manager.destroying true')
-        return
-      }
-
-      var clientSessionId = clientSessionIds.pop()
-      if (!clientSessionId) {
-        return
-      }
-
-      logging.info('#presence - #sentry down, removing socket:', sentry, scope, clientSessionId)
-      self.sentryDownForClient(clientSessionId)
-
-      setImmediate(function () {
-        destroyNextSocket()
-      })
-    }
-
-    destroyNextSocket()
-  }
 }
 
 PresenceManager.prototype.socketsForSentry = function (sentry) {
@@ -113,7 +81,7 @@ PresenceManager.prototype.addClient = function (clientSessionId, userId, userTyp
     userData: userData,
     clientId: clientSessionId,
     online: true,
-    sentry: this.sentry.name
+    sentry: this.sentryManager.name()
   }
 
   if (clientData) { message.clientData = clientData }
@@ -209,7 +177,7 @@ PresenceManager.prototype._implicitDisconnect = function (clientOptions, callbac
 PresenceManager.prototype.processRedisEntry = function (message, callback) {
   var store = this.store
   var self = this
-  var sentry = this.sentry
+
   var userId = message.userId
   var clientSessionId = message.clientId
   var userType = message.userType
@@ -218,7 +186,7 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
   callback = callback || function () {}
 
   if (message.online) {
-    var isDown = sentry.isDown(message.sentry)
+    var isDown = this.sentryManager.isDown(message.sentry)
 
     if (!isDown) {
       self.clearExpiry(userId)

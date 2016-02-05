@@ -30,6 +30,10 @@ function SentryManager (radar_server, configuration) {
   this.sentry.start(sentryOptions)
 }
 
+SentryManager.prototype.isDown = function (sentry) {
+  return this.sentry.isDown(sentry)
+}
+
 SentryManager.prototype.channel = function () {
   return this.sentry.channel
 }

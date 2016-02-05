@@ -1,7 +1,5 @@
 var Resource = require('../resource.js')
 var PresenceManager = require('./presence_manager.js')
-var Sentry = require('./sentry.js')
-var EventEmitter = require('events').EventEmitter
 var Stamper = require('../../../stamper.js')
 var logging = require('minilog')('radar:presence')
 
@@ -15,22 +13,18 @@ var default_options = {
   }
 }
 
-Presence.Sentry = Sentry
-Presence.sentry = new Sentry()
-
 function Presence (to, server, options) {
   Resource.call(this, to, server, options, default_options)
-  this.setup()
+  this.setup(server.sentryManager)
 }
 
-Presence.resourceCount = 0
 Presence.prototype = new Resource()
 Presence.prototype.type = 'presence'
 
-Presence.prototype.setup = function () {
+Presence.prototype.setup = function (sentryManager) {
   var self = this
 
-  this.manager = new PresenceManager(this.to, this.options.policy, Presence.sentry)
+  this.manager = new PresenceManager(this.to, this.options.policy, sentryManager)
 
   this.manager.on('user_online', function (userId, userType, userData) {
     logging.info('#presence - user_online', userId, userType, self.to)
@@ -95,17 +89,6 @@ Presence.prototype.setup = function () {
       }
     }, clientSessionId)
   })
-
-  // Keep track of listener count
-  Presence.resourceCount++
-
-  var leakCount
-  var sentryListenersCount = EventEmitter.listenerCount(Presence.sentry, 'down')
-
-  if (sentryListenersCount !== Presence.resourceCount) {
-    leakCount = sentryListenersCount - Presence.resourceCount
-    logging.warn('sentry listener leak detected', leakCount)
-  }
 }
 
 Presence.prototype.socketsForSentry = function () {
@@ -258,7 +241,6 @@ Presence.prototype.fullRead = function (callback) {
 
 Presence.prototype.destroy = function () {
   this.manager.destroy()
-  Presence.resourceCount--
 }
 
 Presence.setBackend = function (backend) {
