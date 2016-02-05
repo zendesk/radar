@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var async = require('async')
 var MiniEventEmitter = require('miniee')
 var Core = require('../core')
@@ -76,7 +75,7 @@ var VERSION_CLIENT_STOREDATA = '0.13.1'
 Server.prototype._setup = function (httpServer, configuration) {
   configuration = configuration || {}
 
-  this.sentryManager = new SentryManager(self, configuration)
+  this.sentryManager = new SentryManager(this, configuration)
   Stamper.setup(this.sentryManager.name())
 
   this._setupEngineio(httpServer, configuration.engineio)

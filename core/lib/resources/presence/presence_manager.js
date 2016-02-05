@@ -79,8 +79,8 @@ PresenceManager.prototype.setup = function () {
   }
 }
 
-PresenceManager.prototype.socketsForSentry = function(sentry) {
-  this.store.socketsForSentry(sentry);
+PresenceManager.prototype.socketsForSentry = function (sentry) {
+  this.store.socketsForSentry(sentry)
 }
 
 PresenceManager.prototype.destroy = function () {
@@ -175,7 +175,7 @@ PresenceManager.prototype.disconnectClient = function (clientSessionId, callback
   }, callback)
 }
 
-PresenceManager.prototype.disconnectRemoteClient = function(clientSessionId, callback) {
+PresenceManager.prototype.disconnectRemoteClient = function (clientSessionId, callback) {
   var userId = this.store.userOf(clientSessionId)
   var userType = this.store.userTypeOf(userId)
   this._implicitDisconnect({
@@ -196,12 +196,12 @@ PresenceManager.prototype._implicitDisconnect = function (clientOptions, callbac
     explicit: false
   }
 
-  if(clientOptions.remote) {
-    setImmediate(function() {
+  if (clientOptions.remote) {
+    setImmediate(function () {
       self.processRedisEntry(message, callback)
     })
   } else {
-    Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
+    Persistence.deleteHash(this.scope, clientOptions.userId + '.' + clientOptions.clientSessionId)
     Persistence.publish(this.scope, message, callback)
   }
 }

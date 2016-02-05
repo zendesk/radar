@@ -108,11 +108,11 @@ Presence.prototype.setup = function () {
   }
 }
 
-Presence.prototype.socketsForSentry = function() {
+Presence.prototype.socketsForSentry = function () {
   this.manager.socketsForSentry()
 }
 
-Presence.prototype.disconnectRemoteClient = function(clientSessionId, callback) {
+Presence.prototype.disconnectRemoteClient = function (clientSessionId, callback) {
   this.manager.disconnectRemoteClient(clientSessionId, callback)
 }
 
