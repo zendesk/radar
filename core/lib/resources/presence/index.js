@@ -15,7 +15,6 @@ var default_options = {
   }
 }
 
-Presence.Sentry = Sentry
 Presence.sentry = new Sentry()
 
 function Presence (to, server, options) {
