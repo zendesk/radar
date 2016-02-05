@@ -29,6 +29,10 @@ function SentryManager(radar_server, configuration) {
   this.sentry.start(sentryOptions)
 }
 
+SentryManager.prototype.channel = function() {
+  return this.sentry.channel
+}
+
 SentryManager.prototype.name = function() {
   return this.sentry.name
 }

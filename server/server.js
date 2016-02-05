@@ -4,20 +4,19 @@ var MiniEventEmitter = require('miniee')
 var Core = require('../core')
 var Type = Core.Type
 var logging = require('minilog')('radar:server')
-var hostname = require('os').hostname()
 var DefaultEngineIO = require('engine.io')
 var Semver = require('semver')
 var ClientSession = require('../client/client_session.js')
 var Middleware = require('../middleware')
 var Stamper = require('../core/stamper.js')
 var ServiceInterface = require('./service_interface')
+var SentryManager = require('./sentry_manager')
 
 function Server () {
   this.socketServer = null
   this.resources = {}
   this.subscriber = null
   this.subs = {}
-  this.sentry = Core.Resources.Presence.sentry
 }
 
 MiniEventEmitter.mixin(Server)
@@ -61,7 +60,7 @@ Server.prototype.terminate = function (done) {
     self.destroyResource(to)
   })
 
-  this.sentry.stop()
+  this.sentryManager.destroy()
 
   if (this.socketServer) {
     this.socketServer.close()
@@ -77,7 +76,9 @@ var VERSION_CLIENT_STOREDATA = '0.13.1'
 Server.prototype._setup = function (httpServer, configuration) {
   configuration = configuration || {}
 
-  this._setupSentry(configuration)
+  this.sentryManager = new SentryManager(self, configuration)
+  Stamper.setup(this.sentryManager.name())
+
   this._setupEngineio(httpServer, configuration.engineio)
   this._setupDistributor()
   this._setupServiceInterface(httpServer)
@@ -152,21 +153,6 @@ Server.prototype._setupDistributor = function () {
   }
 }
 
-Server.prototype._setupSentry = function (configuration) {
-  var sentryOptions = {
-    host: hostname,
-    port: configuration.port
-  }
-
-  if (configuration.sentry) {
-    _.extend(sentryOptions, configuration.sentry)
-  }
-
-  Stamper.setup(this.sentry.name)
-
-  this.sentry.start(sentryOptions)
-}
-
 // Process a message from persistence (i.e. subscriber)
 Server.prototype._handlePubSubMessage = function (to, data) {
   if (this.resources[to]) {
@@ -181,7 +167,7 @@ Server.prototype._handlePubSubMessage = function (to, data) {
     this.resources[to].redisIn(data)
   } else {
     // Don't log sentry channel pub messages
-    if (to === Core.Presence.Sentry.channel) {
+    if (to === this.sentryManager.channel()) {
       return
     }
 
