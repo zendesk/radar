@@ -251,10 +251,5 @@ function getClientSessionBySocketId (id) {
   return clientsById[id]
 }
 
-function createClientSessionFromSocket (socket) {
-  return new ClientSession(undefined, socket.id, undefined, undefined, socket)
-}
-
 module.exports = ClientSession
 module.exports.get = getClientSessionBySocketId
-module.exports.createFromSocket = createClientSessionFromSocket
