@@ -1,3 +1,6 @@
+### 0.19.2
+* [PR #217](https://github.com/zendesk/radar/pull/217) - Log when missing transport on ClientSession.prototype.send
+
 ### 0.19.1
 * [PR #210](https://github.com/zendesk/radar/pull/210) - Server: Emit resource:destroy event
 * [PR #206](https://github.com/zendesk/radar/pull/206) - Add npm version badge to readme
