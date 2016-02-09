@@ -218,7 +218,6 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
 
   if (message.online) {
     var isDown = sentry.isDown(message.sentry)
-
     if (!isDown) {
       self.clearExpiry(userId)
       store.add(clientSessionId, userId, userType, message)

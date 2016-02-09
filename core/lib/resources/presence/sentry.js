@@ -255,3 +255,4 @@ Sentry.prototype._stopTimer = function (methodName) {
 }
 
 module.exports = Sentry
+module.exports.channel = redisSentriesKey
