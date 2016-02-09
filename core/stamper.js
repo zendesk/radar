@@ -1,4 +1,4 @@
-var uuid = require('uuid')
+var id = require('./id')
 var logging = require('minilog')('radar:stamper')
 var sentryName
 
@@ -16,7 +16,7 @@ module.exports = {
       message.stamp.clientId = clientId
     } else {
       message.stamp = {
-        id: uuid.v4(),
+        id: id(),
         clientId: clientId,
         sentryId: sentryName,
         timestamp: new Date().toJSON()

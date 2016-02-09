@@ -15,9 +15,12 @@ var ServiceInterface = require('./service_interface')
 var SessionManager = require('./session_manager')
 var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
 var Promise = require('polyfill-promise')
+var id = require('../core/id')
+var Sentry = require('../core/lib/resources/presence/sentry')
 
 function Server () {
   var self = this
+  this.id = id()
   this.sessionManager = new SessionManager({
     adapters: [new SocketClientSessionAdapter(ClientSession)]
   })
@@ -25,7 +28,7 @@ function Server () {
   this.resources = {}
   this.subscriber = null
   this.subs = {}
-  this.sentry = Core.Resources.Presence.sentry
+  this.sentry = null
 
   this._ready
   this.ready = new Promise(function (resolve) {
@@ -94,14 +97,17 @@ Server.prototype._setup = function (httpServer, configuration) {
   return self._setupRedis(configuration.persistence)
   .then(function () {
     self._setupSentry(configuration)
+    Stamper.setup(self.sentry.name)
     self._setupEngineio(httpServer, configuration.engineio)
     self._setupDistributor()
     self._setupServiceInterface(httpServer)
   })
   .then(function () {
-    logging.debug('#server - start ' + new Date().toString())
+    logging.debug('#server - started ' + self.id)
     self.emit('ready')
     self._ready()
+  }, function (err) {
+    logging.error('#server - could not start', err)
   })
 }
 
@@ -161,8 +167,7 @@ Server.prototype._setupSentry = function (configuration) {
     _.extend(sentryOptions, configuration.sentry)
   }
 
-  Stamper.setup(this.sentry.name)
-
+  this.sentry = new Sentry()
   this.sentry.start(sentryOptions)
 }
 
