@@ -153,13 +153,13 @@ PresenceStore.prototype.userExists = function (userId) {
 // This returns a list of clientSessionIds, which is not costly.  The code that calls
 // this code uses each clientSessionId in a separate chained call, the sum of which is
 // costly.
-PresenceStore.prototype.socketsForSentry = function (sentry) {
+PresenceStore.prototype.clientSessionIdsForSentryId = function (sentryId) {
   var map = this.map
   var clientSessionIds = []
   Object.keys(map).forEach(function (userId) {
     Object.keys(map[userId]).forEach(function (clientSessionId) {
       var data = map[userId][clientSessionId]
-      if (data && data.sentry === sentry) {
+      if (data && data.sentry === sentryId) {
         clientSessionIds.push(clientSessionId)
       }
     })

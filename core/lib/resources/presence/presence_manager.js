@@ -49,7 +49,7 @@ PresenceManager.prototype.setup = function () {
 
   // Save so you removeListener on destroy
   this.sentryListener = function (sentry) {
-    var clientSessionIds = store.socketsForSentry(sentry)
+    var clientSessionIds = store.clientSessionIdsForSentryId(sentry)
 
     logging.info('#presence - #sentry down with ' + clientSessionIds.length +
       ' clients ', clientSessionIds)
@@ -189,6 +189,25 @@ PresenceManager.prototype.disconnectClient = function (clientSessionId, callback
     userType = this.store.userTypeOf(userId)
   }
   this._implicitDisconnect(clientSessionId, userId, userType, callback)
+}
+
+PresenceManager.prototype.disconnectRemoteClient = function (clientSessionId, callback) {
+  // send implicit disconnect to our subscribers, but dont publish via redis
+  var userId = this.store.userOf(clientSessionId)
+  var userType = this.store.userTypeOf(userId)
+  var self = this
+
+  var message = {
+    userId: userId,
+    userType: userType,
+    clientId: clientSessionId,
+    online: false,
+    explicit: false
+  }
+
+  setImmediate(function () {
+    self.processRedisEntry(message, callback)
+  })
 }
 
 PresenceManager.prototype._implicitDisconnect = function (clientSessionId, userId,
