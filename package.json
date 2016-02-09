@@ -52,6 +52,7 @@
     "nomnom": "^1.8.1",
     "observable-map": "0.0.4",
     "persistence": ">= 1.0.5",
+    "polyfill-promise": "^4.0.1",
     "radar_message": "^1.1.0",
     "semver": "^5.0.3",
     "underscore": "^1.8.3",
