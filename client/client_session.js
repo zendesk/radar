@@ -61,8 +61,12 @@ ClientSession.prototype._cleanup = function () {
 ClientSession.prototype.send = function (message) {
   var data = JSON.stringify(message)
   log.info('#socket.message.outgoing', this.id, data)
+  if (this.state.current === 'ended') {
+    log.warn('ClientSession ' + this.id + ' ended, outgoing message not sent')
+    return
+  }
   if (!this.transport || !this.transport.send) {
-    log.warn('Missing transport, skipping message send', this.id, this.accountName, this.name)
+    log.warn('Missing transport, skipping message send', this.id, this.state.current, this.accountName, this.name)
   } else {
     this.transport.send(data)
   }
