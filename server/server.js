@@ -185,11 +185,6 @@ Server.prototype._handlePubSubMessage = function (to, data) {
     logging.info('#redis.message.incoming', to, data)
     this.resources[to].redisIn(data)
   } else {
-    // Don't log sentry channel pub messages
-    if (to === Core.Presence.Sentry.channel) {
-      return
-    }
-
     logging.warn('#redis - message not handled', to, data)
   }
 }
