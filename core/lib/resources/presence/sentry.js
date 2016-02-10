@@ -3,6 +3,7 @@ var Minilog = require('minilog')
 var logging = Minilog('radar:sentry')
 var Persistence = require('persistence')
 var redisSentriesKey = 'sentry:/radar'
+var id = require('../../../id')
 
 var defaultOptions = {
   EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message
@@ -58,7 +59,6 @@ Sentry.prototype.start = function (options, callback) {
 
   upMessage = self._keepAlive(keepAliveOptions)
 
-  this.setMaxListeners(0)
   this._loadAndCleanUpSentries(function () {
     self.emit('up', self.name, upMessage)
     Persistence.publish(redisSentriesKey, upMessage)
@@ -106,18 +106,8 @@ Sentry.prototype.messageExpirationText = function (message) {
 }
 
 Sentry.prototype._setName = function (name) {
-  this.name = name || this._generateName()
+  this.name = name || id()
   return this.name
-}
-
-Sentry.prototype._generateName = function () {
-  var shasum = require('crypto').createHash('sha1')
-  var newName
-
-  shasum.update(require('os').hostname() + ' ' + Math.random() + ' ' + Date.now())
-  newName = shasum.digest('hex').slice(0, 15)
-
-  return newName
 }
 
 Sentry.prototype._applyOptions = function (options) {
@@ -264,3 +254,4 @@ Sentry.prototype._stopTimer = function (methodName) {
 }
 
 module.exports = Sentry
+module.exports.channel = redisSentriesKey

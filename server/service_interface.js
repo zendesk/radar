@@ -5,7 +5,7 @@ var log = require('minilog')('radar:service_interface')
 var parseUrl = require('url').parse
 var RadarMessage = require('radar_message')
 var concatStream = require('concat-stream')
-var uuid = require('uuid')
+var id = require('../core/id')
 
 function ServiceInterface (middlewareRunner) {
   this._middlewareRunner = middlewareRunner || noopMiddlewareRunner
@@ -31,7 +31,7 @@ ServiceInterface.prototype.middleware = function (req, res, next) {
 }
 
 ServiceInterface.prototype._dispatch = function (req, res) {
-  req.id = req.id || uuid.v4()
+  req.id = req.id || id()
   log.info('Incoming ServiceInterface request', req.method, req.id)
   switch (req.method) {
     case 'GET':

@@ -1,6 +1,7 @@
 var _ = require('underscore')
 var async = require('async')
 var MiniEventEmitter = require('miniee')
+var Redis = require('persistence')
 var Core = require('../core')
 var Type = Core.Type
 var logging = require('minilog')('radar:server')
@@ -13,8 +14,14 @@ var Stamper = require('../core/stamper.js')
 var ServiceInterface = require('./service_interface')
 var SessionManager = require('./session_manager')
 var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
+var Promise = require('polyfill-promise')
+var id = require('../core/id')
+var Sentry = require('../core/lib/resources/presence/sentry')
+var nonblocking = require('nonblocking')
 
 function Server () {
+  var self = this
+  this.id = id()
   this.sessionManager = new SessionManager({
     adapters: [new SocketClientSessionAdapter(ClientSession)]
   })
@@ -22,7 +29,12 @@ function Server () {
   this.resources = {}
   this.subscriber = null
   this.subs = {}
-  this.sentry = Core.Resources.Presence.sentry
+  this.sentry = null
+
+  this._ready
+  this.ready = new Promise(function (resolve) {
+    self._ready = resolve
+  })
 }
 
 MiniEventEmitter.mixin(Server)
@@ -32,8 +44,7 @@ Middleware.Runner.mixin(Server)
 
 // Attach to a http server
 Server.prototype.attach = function (httpServer, configuration) {
-  var finishSetup = this._setup.bind(this, httpServer, configuration)
-  this._setupPersistence(configuration, finishSetup)
+  this._setup(httpServer, configuration)
 }
 
 // Destroy empty resource
@@ -79,16 +90,33 @@ Server.prototype.terminate = function (done) {
 
 var VERSION_CLIENT_STOREDATA = '0.13.1'
 
+// (HttpServer, configuration: Object) => Promise
 Server.prototype._setup = function (httpServer, configuration) {
   configuration = configuration || {}
+  var self = this
 
-  this._setupSentry(configuration)
-  this._setupEngineio(httpServer, configuration.engineio)
-  this._setupDistributor()
-  this._setupServiceInterface(httpServer)
+  return self._setupRedis(configuration.persistence)
+  .then(function () {
+    self._setupSentry(configuration)
+    Stamper.setup(self.sentry.name)
+    self._setupEngineio(httpServer, configuration.engineio)
+    self._setupDistributor()
+    self._setupServiceInterface(httpServer)
+  })
+  .then(function () {
+    logging.debug('#server - started ' + self.id)
+    self.emit('ready')
+    self._ready()
+  }, function (err) {
+    logging.error('#server - could not start', err)
+  })
+}
 
-  logging.debug('#server - start ' + new Date().toString())
-  this.emit('ready')
+Server.prototype._setupRedis = function (configuration) {
+  return new Promise(function (resolve) {
+    Redis.setConfig(configuration)
+    Redis.connect(resolve)
+  })
 }
 
 Server.prototype._setupServiceInterface = function (httpServer) {
@@ -116,6 +144,83 @@ Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
   this.socketServer.on('connection', this._onSocketConnection.bind(this))
 }
 
+Server.prototype._setupDistributor = function () {
+  this.subscriber = Redis.pubsub()
+
+  this.subscriber.on('message', this._handlePubSubMessage.bind(this))
+
+  var oldPublish = Redis.publish
+
+  // Log all outgoing to redis server
+  Redis.publish = function (channel, data, callback) {
+    logging.info('#redis.message.outgoing', channel, data)
+    oldPublish(channel, data, callback)
+  }
+}
+
+Server.prototype._setupSentry = function (configuration) {
+  var self = this
+  var sentryOptions = {
+    host: hostname,
+    port: configuration.port
+  }
+
+  if (configuration.sentry) {
+    _.extend(sentryOptions, configuration.sentry)
+  }
+
+  var sentry = new Sentry()
+  this.sentry = sentry
+  this.sentry.start(sentryOptions)
+
+  sentry.on('down', function (sentryId) {
+    self._onSentryDown(sentryId)
+  })
+}
+
+Server.prototype._onSentryDown = function (sentryId) {
+  var resources = this.resources
+  var presences = []
+
+  Object.keys(resources).forEach(function (scope) {
+    if (resources[scope].type === 'presence') {
+      presences.push(resources[scope])
+    }
+  })
+
+  var expected = 0
+  var disconnects = 0
+  var started = Date.now()
+
+  nonblocking(presences).forEach(function (presence) {
+    var clientSessionIds = presence.manager.store.clientSessionIdsForSentryId(sentryId)
+    expected += clientSessionIds.length
+
+    nonblocking(clientSessionIds).forEach(function (clientSessionId) {
+      disconnects += 1
+      logging.info('#presence - #sentry down, removing socket:', sentryId, presence.to, clientSessionId)
+      presence.manager.disconnectRemoteClient(clientSessionId)
+    }, function () {
+      if (expected === disconnects) {
+        end()
+      }
+    })
+  })
+
+  var self = this
+  function end () {
+    var duration = Date.now() - started
+    self.emit('profiling', {
+      name: '_onSentryDown',
+      duration: duration,
+      data: {
+        sentryId: sentryId,
+        sessionCount: disconnects
+      }
+    })
+  }
+}
+
 Server.prototype._onSocketConnection = function (socket) {
   var self = this
 
@@ -129,9 +234,11 @@ Server.prototype._onSocketConnection = function (socket) {
   })
 
   clientSession.on('end', function () {
-    Object.keys(self.resources).forEach(function (scope) {
-      var resource = self.resources[scope]
-
+    nonblocking(self.resources).forEach(function (resource) {
+      // resource may have already been destroyed
+      if (!resource) {
+        return
+      }
       // TODO: rename middleware event to make clear that this is per client*resource pair
       self.runMiddleware('onDestroyClient', socket, resource, resource.options, function lastly (err) {
         if (err) { throw err }
@@ -141,35 +248,6 @@ Server.prototype._onSocketConnection = function (socket) {
       })
     })
   })
-}
-
-Server.prototype._setupDistributor = function () {
-  this.subscriber = Core.Persistence.pubsub()
-
-  this.subscriber.on('message', this._handlePubSubMessage.bind(this))
-
-  var oldPublish = Core.Persistence.publish
-
-  // Log all outgoing to redis server
-  Core.Persistence.publish = function (channel, data, callback) {
-    logging.info('#redis.message.outgoing', channel, data)
-    oldPublish(channel, data, callback)
-  }
-}
-
-Server.prototype._setupSentry = function (configuration) {
-  var sentryOptions = {
-    host: hostname,
-    port: configuration.port
-  }
-
-  if (configuration.sentry) {
-    _.extend(sentryOptions, configuration.sentry)
-  }
-
-  Stamper.setup(this.sentry.name)
-
-  this.sentry.start(sentryOptions)
 }
 
 // Process a message from persistence (i.e. subscriber)
@@ -186,7 +264,7 @@ Server.prototype._handlePubSubMessage = function (to, data) {
     this.resources[to].redisIn(data)
   } else {
     // Don't log sentry channel pub messages
-    if (to === Core.Presence.Sentry.channel) {
+    if (to === Sentry.channel) {
       return
     }
 
@@ -303,12 +381,6 @@ Server.prototype._persistenceSubscribe = function (to, id) {
     })
     this.subs[to] = true
   }
-}
-
-// Transforms Redis URL into persistence configuration object
-Server.prototype._setupPersistence = function (configuration, done) {
-  Core.Persistence.setConfig(configuration.persistence)
-  Core.Persistence.connect(done)
 }
 
 Server.prototype._sendErrorMessage = function (socket, value, origin) {

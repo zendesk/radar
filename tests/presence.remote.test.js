@@ -4,10 +4,19 @@ var Persistence = require('persistence')
 var Presence = require('../index.js').core.Presence
 var Common = require('./common.js')
 var readHashAll = Persistence.readHashAll
+var chai = require('chai')
+var expect = chai.expect
+
 var Server = {
   broadcast: function () {},
   server: {
     clients: { }
+  },
+  sentry: {
+    start: function (opts, cb) { cb() },
+    on: function () {},
+    stop: function () {},
+    isDown: function (sentryId) { return sentryId === 'unknown' }
   }
 }
 
@@ -16,15 +25,12 @@ exports['given a presence monitor'] = {
     var self = this
     Persistence.readHashAll = readHashAll
     Common.startPersistence(function () {
-      Presence.sentry.start()
       self.presence = new Presence('aaa', Server, {})
-
       done()
     })
   },
 
   afterEach: function (done) {
-    Presence.sentry.stop()
     Common.endPersistence(done)
   },
 
@@ -42,10 +48,10 @@ exports['given a presence monitor'] = {
         })
         // Remote and local messages are treated differently
         // Namely, remote messages about local clients cannot trigger the fast path
-        presence.redisIn({online: false, userId: 123, clientId: 'aab', userType: 0, sentry: Presence.sentry.name})
+        presence.redisIn({online: false, userId: 123, clientId: 'aab', userType: 0, sentry: presence.sentry.name})
       })
     })
-    presence.redisIn({online: true, userId: 123, clientId: 'aab', userType: 0, sentry: Presence.sentry.name})
+    presence.redisIn({online: true, userId: 123, clientId: 'aab', userType: 0, sentry: presence.sentry.name})
   },
 
   'messages from Redis are not broadcast, only changes in status are': function () {
@@ -64,7 +70,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      sentry: Presence.sentry.name
+      sentry: presence.sentry.name
     })
     assert.equal(1, updates.length)
     assert.deepEqual([true, 123, 2], updates[0])
@@ -75,7 +81,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: true,
-      sentry: Presence.sentry.name
+      sentry: presence.sentry.name
     })
     assert.equal(1, updates.length)
 
@@ -85,7 +91,7 @@ exports['given a presence monitor'] = {
       userType: 0,
       clientId: 'ccc',
       online: true,
-      sentry: Presence.sentry.name
+      sentry: presence.sentry.name
     })
 
     assert.equal(2, updates.length)
@@ -97,7 +103,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'bbb',
       online: false,
-      sentry: Presence.sentry.name
+      sentry: presence.sentry.name
     })
     assert.equal(2, updates.length)
 
@@ -107,7 +113,7 @@ exports['given a presence monitor'] = {
       userType: 2,
       clientId: 'aab',
       online: false,
-      sentry: Presence.sentry.name
+      sentry: presence.sentry.name
     })
     assert.equal(3, updates.length)
     assert.deepEqual([false, 123, 2], updates[2])
@@ -122,8 +128,8 @@ exports['given a presence monitor'] = {
       calls++
     })
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name })
-    presence.redisIn({ online: true, userId: 123, userType: 0, sentry: Presence.sentry.name })
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name })
+    presence.redisIn({ online: true, userId: 123, userType: 0, sentry: presence.sentry.name })
 
     assert.equal(1, calls)
     done()
@@ -138,18 +144,19 @@ exports['given a presence monitor'] = {
       calls++
     })
 
-    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name })
-    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', sentry: Presence.sentry.name })
+    presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name })
+    presence.redisIn({ online: true, userId: '123', userType: 0, clientId: 'aab', sentry: presence.sentry.name })
 
     assert.equal(1, calls)
     done()
   },
 
   'full reads consider users with a valid sentry as online': function (done) {
+    var presence = this.presence
     Persistence.readHashAll = function (scope, callback) {
       callback({
-        123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name },
-        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name }
+        123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name },
+        124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: presence.sentry.name }
       })
     }
     var users = {}
@@ -166,14 +173,15 @@ exports['given a presence monitor'] = {
 
   'full reads exclude users that were set to online with an invalid sentry': function (done) {
     // This may happen if the server gets terminated, so the key is never deleted properly...
+    var presence = this.presence
     Persistence.readHashAll = function (scope, callback) {
       callback({
         123: {online: true, userId: 123, userType: 0, clientId: 'aab', sentry: 'unknown'},
-        124: {online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name}
+        124: {online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: presence.sentry.name}
       })
     }
     this.presence.fullRead(function (online) {
-      assert.deepEqual({124: 2}, online)
+      expect(online).to.deep.equal({124: 2})
       done()
     })
   },
@@ -181,12 +189,12 @@ exports['given a presence monitor'] = {
   'full reads cause change events based on what was previously known': function (done) {
     var presence = this.presence
     // Make 123 online
-    presence.redisIn({online: true, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name})
+    presence.redisIn({online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name})
 
     Persistence.readHashAll = function (scope, callback) {
       callback({
-        123: {online: false, userId: 123, userType: 0, clientId: 'aab', sentry: Presence.sentry.name},
-        124: {online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: Presence.sentry.name}
+        123: {online: false, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name},
+        124: {online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: presence.sentry.name}
       })
     }
     var added = {}
@@ -212,11 +220,11 @@ exports['given a presence monitor'] = {
     Persistence.readHashAll = function (scope, callback) {
       callback({
         // So, one clientId disconnected and another connected - at the same timestamp: user should be considered to be online
-        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', sentry: Presence.sentry.name },
-        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', sentry: Presence.sentry.name },
-        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', sentry: Presence.sentry.name },
-        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', sentry: Presence.sentry.name },
-        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', sentry: Presence.sentry.name }
+        '200.aaz': { online: true, userId: 200, userType: 2, clientId: 'aaz', sentry: presence.sentry.name },
+        '200.sss': { online: false, userId: 200, userType: 2, clientId: 'sss', sentry: presence.sentry.name },
+        '200.1a': { online: false, userId: 200, userType: 2, clientId: '1a', sentry: presence.sentry.name },
+        '201.aaq': { online: false, userId: 201, userType: 4, clientId: 'aaq', sentry: presence.sentry.name },
+        '201.www': { online: true, userId: 201, userType: 4, clientId: 'www', sentry: presence.sentry.name }
       })
     }
 

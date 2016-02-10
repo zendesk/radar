@@ -4,6 +4,7 @@ var MiniEE = require('miniee')
 var Persistence = require('persistence')
 var Common = require('./common.js')
 var Presence = require('../core/lib/resources/presence')
+var sinon = require('sinon')
 
 describe('given a presence resource', function () {
   var presence, client, client2
@@ -17,6 +18,12 @@ describe('given a presence resource', function () {
     destroyResource: function () {},
     socketServer: {
       clients: { }
+    },
+    sentry: {
+      start: function (opts, cb) { cb() },
+      on: function () {},
+      stop: function () {},
+      isDown: sinon.stub().returns(false)
     }
   }
 
@@ -26,7 +33,6 @@ describe('given a presence resource', function () {
 
   beforeEach(function (done) {
     Persistence.delWildCard('*', function () {
-      Presence.sentry.start()
       presence = new Presence('aaa', Server, {})
       client = new MiniEE()
       client.send = function () {}
@@ -36,7 +42,9 @@ describe('given a presence resource', function () {
       client2.send = function () {}
       Server.channels = { }
       Server.channels[presence.to] = presence
-      done()
+      presence.sentry.start({}, function () {
+        done()
+      })
     })
   })
 
@@ -44,7 +52,6 @@ describe('given a presence resource', function () {
     Persistence.expire = oldExpire
     Persistence.publish = oldPublish
     Persistence.persistHash = oldPersistHash
-    Presence.sentry.stop()
   })
 
   after(function (done) {

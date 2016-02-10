@@ -102,7 +102,7 @@ Service.start = function (configuration, callback) {
   radar.use(new QuotaManager())
   radar.use(new LegacyAuthManager())
 
-  radar.once('ready', function () {
+  radar.ready.then(function () {
     httpServer.listen(configuration.port, function () {
       logger.debug('httpServer listening on', configuration.port)
       serverStarted = true
