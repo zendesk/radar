@@ -50,6 +50,7 @@
     "miniee": "0.0.5",
     "minilog": "2.0.8",
     "nomnom": "^1.8.1",
+    "nonblocking": "^1.0.1",
     "observable-map": "0.0.4",
     "persistence": ">= 1.0.5",
     "polyfill-promise": "^4.0.1",

@@ -17,6 +17,7 @@ var SocketClientSessionAdapter = require('../client/socket_client_session_adapte
 var Promise = require('polyfill-promise')
 var id = require('../core/id')
 var Sentry = require('../core/lib/resources/presence/sentry')
+var nonblocking = require('nonblocking')
 
 function Server () {
   var self = this
@@ -158,6 +159,7 @@ Server.prototype._setupDistributor = function () {
 }
 
 Server.prototype._setupSentry = function (configuration) {
+  var self = this
   var sentryOptions = {
     host: hostname,
     port: configuration.port
@@ -167,8 +169,55 @@ Server.prototype._setupSentry = function (configuration) {
     _.extend(sentryOptions, configuration.sentry)
   }
 
-  this.sentry = new Sentry()
+  var sentry = new Sentry()
+  this.sentry = sentry
   this.sentry.start(sentryOptions)
+
+  sentry.on('down', function (sentryId) {
+    self._onSentryDown(sentryId)
+  })
+}
+
+Server.prototype._onSentryDown = function (sentryId, callback) {
+  var resources = this.resources
+  var presences = []
+
+  Object.keys(resources).forEach(function (scope) {
+    if (resources[scope].type === 'presence') {
+      presences.push(resources[scope])
+    }
+  })
+
+  var expected = 0
+  var disconnects = 0
+  var started = Date.now()
+
+  nonblocking(presences).forEach(function (presence) {
+    var clientSessionIds = presence.manager.store.clientSessionIdsForSentryId(sentryId)
+    expected += clientSessionIds.length
+
+    nonblocking(clientSessionIds).forEach(function (clientSessionId) {
+      disconnects += 1
+      presence.manager.disconnectRemoteClient(clientSessionId)
+    }, function () {
+      if (expected === disconnects) {
+        end()
+      }
+    })
+  })
+
+  var self = this
+  function end () {
+    var duration = Date.now() - started
+    self.emit('profiling', {
+      name: '_onSentryDown',
+      duration: duration,
+      data: {
+        sentryId: sentryId,
+        sessionCount: disconnects
+      }
+    })
+  }
 }
 
 Server.prototype._onSocketConnection = function (socket) {
