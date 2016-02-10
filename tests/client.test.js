@@ -182,6 +182,14 @@ describe('ClientSession', function () {
         assert.ok(transport.send.called)
       })
 
+      it('skips sending message if state is ended', function () {
+        clientSession.state.end()
+
+        clientSession.send({})
+
+        assert.ok(!transport.send.called)
+      })
+
       it('JSON stringifies message', function () {
         var originalMessage = {message: 'bar'}
         var expectedMessage = '{"message":"bar"}'
