@@ -234,10 +234,7 @@ Server.prototype._onSocketConnection = function (socket) {
   })
 
   clientSession.on('end', function () {
-    var scopes = Object.keys(self.resources)
-
-    nonblocking(scopes).forEach(function (scope) {
-      var resource = self.resources[scope]
+    nonblocking(self.resources).forEach(function (resource) {
       // resource may have already been destroyed
       if (!resource) {
         return
