@@ -59,7 +59,6 @@ Sentry.prototype.start = function (options, callback) {
 
   upMessage = self._keepAlive(keepAliveOptions)
 
-  this.setMaxListeners(0)
   this._loadAndCleanUpSentries(function () {
     self.emit('up', self.name, upMessage)
     Persistence.publish(redisSentriesKey, upMessage)

@@ -18,7 +18,6 @@ require('util').inherits(PresenceManager, require('events').EventEmitter)
 
 PresenceManager.prototype.setup = function () {
   var store = this.store
-  var scope = this.scope
   var self = this
 
   store.on('user_added', function (message) {
@@ -46,57 +45,6 @@ PresenceManager.prototype.setup = function () {
     self.emit('client_offline', message.clientId, message.userId,
       message.explicit)
   })
-
-  // Save so you removeListener on destroy
-  this.sentryListener = function (sentry) {
-    var clientSessionIds = store.clientSessionIdsForSentryId(sentry)
-
-    logging.info('#presence - #sentry down with ' + clientSessionIds.length +
-      ' clients ', clientSessionIds)
-
-    if (!clientSessionIds.length) { return }
-
-    var destroyNextSocket = function () {
-      if (self.destroying) {
-        logging.info('#presence - manager.destroying true')
-        return
-      }
-
-      var clientSessionId = clientSessionIds.pop()
-      if (!clientSessionId) {
-        return
-      }
-
-      logging.info('#presence - #sentry down, removing socket:', sentry, scope, clientSessionId)
-      self.sentryDownForClient(clientSessionId)
-
-      setImmediate(function () {
-        destroyNextSocket()
-      })
-    }
-
-    destroyNextSocket()
-  }
-
-  // Listen to all sentries. This should not be costly,
-  // since we should not be going down often.
-  logging.debug('#presence - add sentry listener', scope)
-  this.sentry.on('down', this.sentryListener)
-}
-
-PresenceManager.prototype.sentryDownForClient = function (clientSessionId) {
-  var userId = this.store.userOf(clientSessionId)
-  var userType = this.store.userTypeOf(userId)
-  var message = {
-    userId: userId,
-    userType: userType,
-    clientId: clientSessionId,
-    online: false,
-    explicit: false
-  }
-
-  // Process directly
-  this.processRedisEntry(message)
 }
 
 PresenceManager.prototype.destroy = function () {
@@ -108,12 +56,6 @@ PresenceManager.prototype.destroy = function () {
   Object.keys(this.expiryTimers).forEach(function (userId) {
     self.clearExpiry(userId)
   })
-
-  if (this.sentryListener) {
-    logging.debug('#presence - remove sentry listener', this.scope)
-    this.sentry.removeListener('down', this.sentryListener)
-    delete this.sentryListener
-  }
 
   // Client issues a full read and then dies and destroy is called
   if (this.handleRedisReply) {

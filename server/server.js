@@ -178,7 +178,7 @@ Server.prototype._setupSentry = function (configuration) {
   })
 }
 
-Server.prototype._onSentryDown = function (sentryId, callback) {
+Server.prototype._onSentryDown = function (sentryId) {
   var resources = this.resources
   var presences = []
 
@@ -198,6 +198,7 @@ Server.prototype._onSentryDown = function (sentryId, callback) {
 
     nonblocking(clientSessionIds).forEach(function (clientSessionId) {
       disconnects += 1
+      logging.info('#presence - #sentry down, removing socket:', sentryId, presence.to, clientSessionId)
       presence.manager.disconnectRemoteClient(clientSessionId)
     }, function () {
       if (expected === disconnects) {
