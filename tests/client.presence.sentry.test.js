@@ -6,7 +6,7 @@ var Tracker = require('callback_tracker')
 var PresenceManager = require('../core/lib/resources/presence/presence_manager.js')
 var assertHelper = require('./lib/assert_helper.js')
 var PresenceMessage = assertHelper.PresenceMessage
-var Sentry = require('../core/lib/resources/presence/sentry.js')
+var Sentry = require('../server/sentry')
 var radar
 var client
 
