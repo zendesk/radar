@@ -61,11 +61,12 @@ ClientSession.prototype._cleanup = function () {
 ClientSession.prototype.send = function (message) {
   var data = JSON.stringify(message)
   log.info('#socket.message.outgoing', this.id, data)
-  if (!this.transport || !this.transport.send) {
-    log.warn('Missing transport, skipping message send', this.id, this.accountName, this.name)
-  } else {
-    this.transport.send(data)
+  if (this.state.current === 'ended') {
+    log.warn('Cannot send message after ClientSession ended', this.id, data)
+    return
   }
+
+  this.transport.send(data)
 }
 
 // Persist subscriptions and presences when not already persisted in memory
