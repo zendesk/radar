@@ -9,6 +9,8 @@ var subscribeMessage = {
   to: 'presence:/z1/test/ticket/1'
 }
 var radarServer
+var listenerCount = require('events').listenerCount
+var EventEmitter = require('events').EventEmitter
 
 chai.use(require('sinon-chai'))
 
@@ -135,10 +137,71 @@ describe('given a server', function () {
     }, 100)
   })
 
+  describe('#_onSocketConnection', function () {
+    var stubClientSession
+    var socket
+    beforeEach(function () {
+      stubClientSession = new EventEmitter()
+      stubClientSession.id = 1
+      radarServer.sessionManager = {add: function () { return stubClientSession }}
+      socket = {id: 1}
+      radarServer._onSocketConnection(socket)
+    })
+    it('registers clientSession on message handler', function () {
+      expect(listenerCount(stubClientSession, 'message')).to.equal(1)
+    })
+    it('registers clientSession on end handler', function () {
+      expect(listenerCount(stubClientSession, 'end')).to.equal(1)
+    })
+    describe('clientSesion on end handler', function () {
+      it('calls onDestroyClient middleware for each resource', function (done) {
+        radarServer.resources = {
+          123: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()},
+          234: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()}
+        }
+
+        var calls = []
+        radarServer.runMiddleware = function () {
+          calls.push(arguments)
+          if (calls.length === 2) {
+            check()
+          }
+        }
+
+        function check () {
+          expect(calls[0][0]).to.equal('onDestroyClient')
+          expect(calls[0][1]).to.equal(socket)
+          expect(calls[0][2]).to.equal(radarServer.resources[123])
+          expect(calls[1][0]).to.equal('onDestroyClient')
+          expect(calls[1][1]).to.equal(socket)
+          expect(calls[1][2]).to.equal(radarServer.resources[234])
+          done()
+        }
+
+        stubClientSession.emit('end')
+      })
+
+      it('calls resource.unsubscribe for each resource', function (done) {
+        radarServer.resources = {
+          123: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()},
+          234: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()}
+        }
+
+        stubClientSession.emit('end')
+
+        setTimeout(function () {
+          expect(radarServer.resources[123].unsubscribe).to.have.been.calledWith(socket, false)
+          expect(radarServer.resources[234].unsubscribe).to.have.been.calledWith(socket, false)
+          done()
+        }, 30)
+      })
+    })
+  })
+
   describe('Sentry setup', function () {
     it('registers sentry on down handler', function () {
       var sentry = radarServer.sentry
-      var listenerCount = require('events').listenerCount
+
       expect(listenerCount(sentry, 'down')).to.equal(1)
     })
 

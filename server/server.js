@@ -234,9 +234,14 @@ Server.prototype._onSocketConnection = function (socket) {
   })
 
   clientSession.on('end', function () {
-    Object.keys(self.resources).forEach(function (scope) {
-      var resource = self.resources[scope]
+    var scopes = Object.keys(self.resources)
 
+    nonblocking(scopes).forEach(function (scope) {
+      var resource = self.resources[scope]
+      // resource may have already been destroyed
+      if (!resource) {
+        return
+      }
       // TODO: rename middleware event to make clear that this is per client*resource pair
       self.runMiddleware('onDestroyClient', socket, resource, resource.options, function lastly (err) {
         if (err) { throw err }
