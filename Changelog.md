@@ -1,3 +1,9 @@
+### 0.20.0
+* [PR #219](https://github.com/zendesk/radar/pull/219) - Avoid blocking iteration on large collections
+* [PR #218](https://github.com/zendesk/radar/pull/218) - Skip message on ClientSession#send if ClientSession is ended
+* [PR #217](https://github.com/zendesk/radar/pull/217) - Log when missing transport on ClientSession.prototype.send
+* [PR #204](https://github.com/zendesk/radar/pull/204) - Implement SessionManager
+
 ### 0.19.1
 * [PR #210](https://github.com/zendesk/radar/pull/210) - Server: Emit resource:destroy event
 * [PR #206](https://github.com/zendesk/radar/pull/206) - Add npm version badge to readme
