@@ -31,7 +31,6 @@ function Server () {
   this.subs = {}
   this.sentry = null
 
-  this._ready
   this.ready = new Promise(function (resolve) {
     self._ready = resolve
   })
@@ -45,6 +44,7 @@ Middleware.Runner.mixin(Server)
 // Attach to a http server
 Server.prototype.attach = function (httpServer, configuration) {
   this._setup(httpServer, configuration)
+  return this.ready
 }
 
 // Destroy empty resource

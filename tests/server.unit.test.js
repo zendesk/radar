@@ -3,6 +3,7 @@ var common = require('./common.js')
 var assert = require('assert')
 var sinon = require('sinon')
 var chai = require('chai')
+var Server = require('../server/server')
 var expect = chai.expect
 var subscribeMessage = {
   op: 'subscribe',
@@ -207,6 +208,16 @@ describe('given a server', function () {
           done()
         }, 30)
       })
+    })
+  })
+
+  describe('#attach', function () {
+    it('returns ready promise', function () {
+      var httpServer = require('http').createServer(function () {})
+      var radarServer = new Server()
+
+      var returned = radarServer.attach(httpServer, common.configuration)
+      expect(returned).to.equal(radarServer.ready)
     })
   })
 
