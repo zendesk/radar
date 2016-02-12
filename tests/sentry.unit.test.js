@@ -4,6 +4,11 @@ var Sentry = require('../server/sentry')
 var Persistence = require('persistence')
 var configuration = require('../configurator.js').load({persistence: true})
 var _ = require('underscore')
+var chai = require('chai')
+var expect = chai.expect
+chai.use(require('sinon-chai'))
+var sinon = require('sinon')
+
 var currentSentry = 0
 var sentry
 var sentryOne
@@ -108,6 +113,27 @@ describe('a Server Entry (Sentry)', function () {
       }
 
       sentryTwo.stop(checkForSentryTwoGone)
+    })
+
+    it('does not check in tilt mode', function () {
+      var sentry = newSentry()
+      sentry.isTilted = function () { return true }
+      sentry._loadAndCleanUpSentries = sinon.stub()
+      sentry._checkSentries()
+      expect(sentry._loadAndCleanUpSentries).not.to.have.been.called
+    })
+  })
+
+  describe('tilt mode - .isTilted()', function () {
+    it('is true if check interval is more than 1sec late', function () {
+      var sentry = newSentry()
+      sentry._lastChecked = Date.now() - sentry._checkInterval - 1500
+      expect(sentry.isTilted()).to.equal(true)
+    })
+    it('is false if check interval is on time', function () {
+      var sentry = newSentry()
+      sentry._lastChecked = Date.now()
+      expect(sentry.isTilted()).to.equal(false)
     })
   })
 
