@@ -217,6 +217,27 @@ describe('given a server', function () {
       expect(listenerCount(sentry, 'down')).to.equal(1)
     })
 
+    it('forwards sentry on down event', function (done) {
+      var sentry = radarServer.sentry
+
+      radarServer.on('sentry:down', function (sentryId, message) {
+        expect(sentryId).to.equal('sentryId')
+        expect(message).to.deep.equal({message: true})
+        done()
+      })
+      sentry.emit('down', 'sentryId', {message: true})
+    })
+    it('forwards sentry on up event', function (done) {
+      var sentry = radarServer.sentry
+
+      radarServer.on('sentry:up', function (sentryId, message) {
+        expect(sentryId).to.equal('sentryId')
+        expect(message).to.deep.equal({message: true})
+        done()
+      })
+      sentry.emit('up', 'sentryId', {message: true})
+    })
+
     describe('#_onSentryDown', function () {
       var stubStore
       beforeEach(function () {

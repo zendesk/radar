@@ -169,11 +169,15 @@ Server.prototype._setupSentry = function (configuration) {
     _.extend(sentryOptions, configuration.sentry)
   }
 
-  var sentry = new Sentry()
-  this.sentry = sentry
+  this.sentry = new Sentry()
   this.sentry.start(sentryOptions)
 
-  sentry.on('down', function (sentryId) {
+  this.sentry.on('up', function (sentryId, message) {
+    self.emit('sentry:up', sentryId, message)
+  })
+
+  this.sentry.on('down', function (sentryId, message) {
+    self.emit('sentry:down', sentryId, message)
     self._onSentryDown(sentryId)
   })
 }
