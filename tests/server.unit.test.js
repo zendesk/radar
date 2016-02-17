@@ -219,6 +219,16 @@ describe('given a server', function () {
       var returned = radarServer.attach(httpServer, common.configuration)
       expect(returned).to.equal(radarServer.ready)
     })
+
+    it('ready promise resolves once server is setup', function () {
+      var httpServer = require('http').createServer(function () {})
+      var radarServer = new Server()
+      radarServer._stup = sinon.spy(radarServer, '_setup')
+      return radarServer.attach(httpServer, common.configuration)
+        .then(function () {
+          expect(radarServer._setup).to.have.been.called
+        })
+    })
   })
 
   describe('Sentry setup', function () {
