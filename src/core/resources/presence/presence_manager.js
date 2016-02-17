@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
 var PresenceStore = require('./presence_store.js')
 var Persistence = require('persistence')
 var Minilog = require('minilog')

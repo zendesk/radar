@@ -3,7 +3,7 @@ var ClientSession = require('../client/client_session')
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
 var ObservableMap = require('observable-map')
-var _ = require('underscore')
+var _ = require('lodash')
 
 function SessionManager (opt) {
   var self = this

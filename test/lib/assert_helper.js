@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
 var assert = require('assert')
 var EE = require('events').EventEmitter
 var Sentry = require('../../src/core/resources/presence/sentry.js')

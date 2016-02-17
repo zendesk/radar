@@ -3,7 +3,7 @@ var assert = require('assert')
 var Sentry = require('../src/core/resources/presence/sentry.js')
 var Persistence = require('persistence')
 var configuration = require('../configurator.js').load({persistence: true})
-var _ = require('underscore')
+var _ = require('lodash')
 var currentSentry = 0
 var sentry
 var sentryOne
@@ -26,7 +26,7 @@ function assertSentriesKnowEachOther (sentries, done) {
   var sentryNames = sentries.map(function (s) { return s.name })
 
   sentries.forEach(function (sentry) {
-    _.mapObject(sentry.sentries, function (message) {
+    _.map(sentry.sentries, function (message) {
       assert(_.indexOf(sentryNames, message.name) >= -1)
     })
   })

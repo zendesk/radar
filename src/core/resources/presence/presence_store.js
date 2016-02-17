@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
 var logging = require('minilog')('radar:presence_store')
 
 function PresenceStore (scope) {
