@@ -3,7 +3,7 @@ var Minilog = require('minilog')
 var logging = Minilog('radar:sentry')
 var Persistence = require('persistence')
 var redisSentriesKey = 'sentry:/radar'
-var id = require('../../../id')
+var id = require('../core/id')
 
 var defaultOptions = {
   EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message
@@ -241,9 +241,24 @@ Sentry.prototype._refresh = function () {
 Sentry.prototype._checkSentries = function () {
   var interval = Math.floor(this._checkInterval)
 
-  logging.info('#presence - #sentry checking sentries:', this.name)
-  this._loadAndCleanUpSentries()
+  if (!this.isTilted()) {
+    logging.info('#presence - #sentry checking sentries:', this.name)
+    this._loadAndCleanUpSentries()
+  }
+
+  this._lastChecked = Date.now()
   this._checkSentriesTimer = setTimeout(this._checkSentries.bind(this), interval)
+}
+
+// tilt mode: based on http://redis.io/topics/sentinel#tilt-mode
+// before recognizing a remote sentry as down,
+// make sure we trust our own observations by checking for clock skew.
+// since sentry checking is based on time, we need to be sure our own sense of
+// time is not distorted by blocking event loop lag by making sure this check is
+// happening when it was scheduled to
+Sentry.prototype.isTilted = function () {
+  // tilted if we missed the check interval by more than 1 second
+  return (Date.now() - this._lastChecked) > (this._checkInterval + 1000)
 }
 
 Sentry.prototype._stopTimer = function (methodName) {
