@@ -1,3 +1,8 @@
+### 0.21.0
+* [PR #223](https://github.com/zendesk/radar/pull/223) - Return Server#ready promise from Server#attach
+* [PR #222](https://github.com/zendesk/radar/pull/222) - Forward sentry events on server
+* [PR #221](https://github.com/zendesk/radar/pull/221) - Disable eslint in codeclimate
+
 ### 0.20.0
 * [PR #219](https://github.com/zendesk/radar/pull/219) - Avoid blocking iteration on large collections
 * [PR #218](https://github.com/zendesk/radar/pull/218) - Skip message on ClientSession#send if ClientSession is ended
