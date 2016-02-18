@@ -16,7 +16,7 @@ var SessionManager = require('./session_manager')
 var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
 var Promise = require('polyfill-promise')
 var id = require('../core/id')
-var Sentry = require('../core/lib/resources/presence/sentry')
+var Sentry = require('../core/resources/presence/sentry')
 var nonblocking = require('nonblocking')
 
 function Server () {

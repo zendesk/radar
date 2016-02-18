@@ -3,7 +3,7 @@ var Minilog = require('minilog')
 var logging = Minilog('radar:sentry')
 var Persistence = require('persistence')
 var redisSentriesKey = 'sentry:/radar'
-var id = require('../../../id')
+var id = require('../../id')
 
 var defaultOptions = {
   EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message

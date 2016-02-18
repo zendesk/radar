@@ -1,8 +1,8 @@
 var _ = require('underscore')
 var assert = require('assert')
 var EE = require('events').EventEmitter
-var Sentry = require('../../src/core/lib/resources/presence/sentry.js')
-var PresenceManager = require('../../src/core/lib/resources/presence/presence_manager.js')
+var Sentry = require('../../src/core/resources/presence/sentry.js')
+var PresenceManager = require('../../src/core/resources/presence/presence_manager.js')
 var SentryDefaults = {
   expiryOffset: 4000,
   refreshInterval: 3500,

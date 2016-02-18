@@ -1,6 +1,6 @@
 var Resource = require('../resource.js')
 var PresenceManager = require('./presence_manager.js')
-var Stamper = require('../../../stamper.js')
+var Stamper = require('../../stamper.js')
 var logging = require('minilog')('radar:presence')
 
 var default_options = {

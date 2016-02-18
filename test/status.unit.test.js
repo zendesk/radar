@@ -1,6 +1,6 @@
 /* globals describe, it, before, after, beforeEach, afterEach */
 var assert = require('assert')
-var Status = require('../src/core/lib/resources/status')
+var Status = require('../src/core/resources/status')
 var Persistence = require('persistence')
 var Common = require('./common.js')
 

@@ -1,7 +1,7 @@
 var MiniEventEmitter = require('miniee')
 var logging = require('minilog')('radar:resource')
-var Stamper = require('../../stamper.js')
-var ClientSession = require('../../../client/client_session')
+var Stamper = require('../stamper.js')
+var ClientSession = require('../../client/client_session')
 /*
 
 Resources

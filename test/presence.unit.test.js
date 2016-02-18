@@ -3,7 +3,7 @@ var assert = require('assert')
 var MiniEE = require('miniee')
 var Persistence = require('persistence')
 var Common = require('./common.js')
-var Presence = require('../src/core/lib/resources/presence')
+var Presence = require('../src/core/resources/presence')
 var sinon = require('sinon')
 
 describe('given a presence resource', function () {

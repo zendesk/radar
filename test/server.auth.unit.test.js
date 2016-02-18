@@ -1,7 +1,7 @@
 /* globals describe, it, beforeEach */
 var common = require('./common.js')
 var assert = require('assert')
-var RadarTypes = require('../src/core/lib/type.js')
+var RadarTypes = require('../src/core/type.js')
 var controlMessage = {
   to: 'control:/dev/test',
   op: 'ctl',
