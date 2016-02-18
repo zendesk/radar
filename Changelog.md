@@ -1,3 +1,7 @@
+### 0.21.1
+* [PR #224](https://github.com/zendesk/radar/pull/224) - Replace underscore with lodash
+* [PR #225](https://github.com/zendesk/radar/pull/225) - Cleanup directory structure
+
 ### 0.21.0
 * [PR #223](https://github.com/zendesk/radar/pull/223) - Return Server#ready promise from Server#attach
 * [PR #222](https://github.com/zendesk/radar/pull/222) - Forward sentry events on server
