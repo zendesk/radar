@@ -1,9 +1,9 @@
 var url = require('url')
-var Status = require('../../core').Status
-var MessageList = require('../../core').MessageList
-var Presence = require('../../core').Presence
-var PresenceManager = require('../../core').PresenceManager
-var Type = require('../../core').Type
+var Status = require('../../src/core').Status
+var MessageList = require('../../src/core').MessageList
+var Presence = require('../../src/core').Presence
+var PresenceManager = require('../../src/core').PresenceManager
+var Type = require('../../src/core').Type
 var hostname = require('os').hostname()
 
 function jsonResponse (response, object) {
