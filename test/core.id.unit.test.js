@@ -1,7 +1,7 @@
 /* globals describe, it, beforeEach */
 var chai = require('chai')
 var expect = chai.expect
-var _ = require('underscore')
+var _ = require('lodash')
 var sinon = require('sinon')
 chai.use(require('sinon-chai'))
 
@@ -20,7 +20,7 @@ describe('id', function () {
     expect(ids[0]).to.be.a('string')
     expect(ids[1]).to.be.a('string')
     expect(ids[2]).to.be.a('string')
-    expect(_.unique(ids)).to.deep.equal(ids)
+    expect(_.uniq(ids)).to.deep.equal(ids)
   })
 
   describe('.setGenerator', function () {

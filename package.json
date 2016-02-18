@@ -46,6 +46,7 @@
     "engine.io": "1.4.2",
     "http-attach": "^1.0.0",
     "javascript-state-machine": "^2.3.5",
+    "lodash": "^4.5.0",
     "lodash.bind": "^3.1.0",
     "miniee": "0.0.5",
     "minilog": "2.0.8",
@@ -56,7 +57,6 @@
     "polyfill-promise": "^4.0.1",
     "radar_message": "^1.1.0",
     "semver": "^5.0.3",
-    "underscore": "^1.8.3",
     "uuid": "^2.0.1"
   },
   "devDependencies": {

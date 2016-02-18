@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
 var Minilog = require('minilog')
 var logging = Minilog('radar:sentry')
 var Persistence = require('persistence')

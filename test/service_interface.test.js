@@ -5,7 +5,7 @@ var chai = require('chai')
 chai.use(require('sinon-chai'))
 var expect = require('chai').expect
 var literalStream = require('literal-stream')
-var _ = require('underscore')
+var _ = require('lodash')
 var uuid = require('uuid')
 
 describe('ServiceInterface', function () {
