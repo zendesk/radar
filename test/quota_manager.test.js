@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
 var assert = require('assert')
-var QuotaManager = require('../middleware').QuotaManager
+var QuotaManager = require('../src/middleware').QuotaManager
 var quotaManager
 var client = {
   id: 1,

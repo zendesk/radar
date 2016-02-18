@@ -6,7 +6,7 @@ var sinon = require('sinon')
 chai.use(require('sinon-chai'))
 
 describe('id', function () {
-  var id = require('../core/id')
+  var id = require('../src/core/id')
 
   beforeEach(function () {
     id.setGenerator(id.defaultGenerator)

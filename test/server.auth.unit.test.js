@@ -1,7 +1,7 @@
 /* globals describe, it, beforeEach */
 var common = require('./common.js')
 var assert = require('assert')
-var RadarTypes = require('../core/lib/type.js')
+var RadarTypes = require('../src/core/lib/type.js')
 var controlMessage = {
   to: 'control:/dev/test',
   op: 'ctl',
@@ -23,7 +23,7 @@ var authorizedType = {
   authProvider: authProvider,
   expression: /^control:/
 }
-var LegacyAuthManager = require('../middleware').LegacyAuthManager
+var LegacyAuthManager = require('../src/middleware').LegacyAuthManager
 var radarServer
 var socket
 

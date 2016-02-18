@@ -3,7 +3,7 @@
 var assert = require('assert')
 var noArgs = ['', '']
 var noEnv = {}
-var Configurator = require('../configurator.js')
+var Configurator = require('../configurator')
 
 // Helper function. It tests multiple features of a given configuration option.
 function describeOptionTest (configurator, name, options) {

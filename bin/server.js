@@ -1,7 +1,7 @@
 var http = require('http')
-var configuration = require('./configurator.js').load({persistence: true})
-var Radar = require('./server/server.js')
-var Api = require('./api/api.js')
+var configuration = require('../configurator.js').load({persistence: true})
+var Radar = require('../server/server.js')
+var Api = require('../api/api.js')
 var Minilog = require('minilog')
 
 // Configure log output

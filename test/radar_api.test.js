@@ -2,12 +2,12 @@ var http = require('http')
 var assert = require('assert')
 var Api = require('../api/api.js')
 var ClientScope = require('../api/lib/client')
-var Persistence = require('../core').Persistence
-var PresenceManager = require('../core').PresenceManager
-var Presence = require('../core').Presence
-var Type = require('../core').Type
-var Status = require('../core').Status
-var MessageList = require('../core').MessageList
+var Persistence = require('../src/core').Persistence
+var PresenceManager = require('../src/core').PresenceManager
+var Presence = require('../src/core').Presence
+var Type = require('../src/core').Type
+var Status = require('../src/core').Status
+var MessageList = require('../src/core').MessageList
 var Common = require('./common.js')
 var frontend
 

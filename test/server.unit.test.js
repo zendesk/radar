@@ -3,7 +3,7 @@ var common = require('./common.js')
 var assert = require('assert')
 var sinon = require('sinon')
 var chai = require('chai')
-var Server = require('../server/server')
+var Server = require('../src/server/server')
 var expect = chai.expect
 var subscribeMessage = {
   op: 'subscribe',

@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
-var SessionManager = require('../server/session_manager')
-var ClientSession = require('../client/client_session')
+var SessionManager = require('../src/server/session_manager')
+var ClientSession = require('../src/client/client_session')
 var chai = require('chai')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-interface'))

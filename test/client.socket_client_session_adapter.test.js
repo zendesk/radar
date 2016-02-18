@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
-var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
-var ClientSession = require('../client/client_session')
+var SocketClientSessionAdapter = require('../src/client/socket_client_session_adapter')
+var ClientSession = require('../src/client/client_session')
 var chai = require('chai')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-interface'))

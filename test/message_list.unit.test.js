@@ -1,7 +1,7 @@
 /* globals describe, it, beforeEach, before, after */
 var assert = require('assert')
 var Common = require('./common')
-var MessageList = require('../core/lib/resources/message_list')
+var MessageList = require('../src/core/lib/resources/message_list')
 var Persistence = require('persistence')
 
 describe('For a message list', function () {

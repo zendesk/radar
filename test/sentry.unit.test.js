@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach, afterEach, before */
 var assert = require('assert')
-var Sentry = require('../core/lib/resources/presence/sentry.js')
+var Sentry = require('../src/core/lib/resources/presence/sentry.js')
 var Persistence = require('persistence')
 var configuration = require('../configurator.js').load({persistence: true})
 var _ = require('underscore')

@@ -3,7 +3,7 @@ var chai = require('chai')
 var expect = chai.expect
 
 describe('PresenceManager', function () {
-  var PresenceManager = require('../core/lib/resources/presence/presence_manager')
+  var PresenceManager = require('../src/core/lib/resources/presence/presence_manager')
 
   describe('#disconnectRemoteClient', function () {
     it('sends implicit offline message without updating redis', function (done) {

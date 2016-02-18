@@ -1,6 +1,6 @@
 /* globals describe, it */
 var assert = require('assert')
-var Stamper = require('../core/stamper.js')
+var Stamper = require('../src/core/stamper.js')
 var sentryName = 'theSentryName'
 var clientId = 'clientId'
 

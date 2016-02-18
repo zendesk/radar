@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
 var assert = require('assert')
-var QuotaLimiter = require('../middleware').QuotaLimiter
+var QuotaLimiter = require('../src/middleware').QuotaLimiter
 var limit = 1
 var clientId = '1'
 var clientId2 = '2'

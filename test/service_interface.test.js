@@ -9,7 +9,7 @@ var _ = require('underscore')
 var uuid = require('uuid')
 
 describe('ServiceInterface', function () {
-  var ServiceInterface = require('../server/service_interface')
+  var ServiceInterface = require('../src/server/service_interface')
   var serviceInterface
   beforeEach(function () {
     serviceInterface = new ServiceInterface()

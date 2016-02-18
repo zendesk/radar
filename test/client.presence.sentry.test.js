@@ -1,12 +1,12 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
 var common = require('./common.js')
 var assert = require('assert')
-var Persistence = require('../core').Persistence
+var Persistence = require('../src/core').Persistence
 var Tracker = require('callback_tracker')
-var PresenceManager = require('../core/lib/resources/presence/presence_manager.js')
+var PresenceManager = require('../src/core/lib/resources/presence/presence_manager.js')
 var assertHelper = require('./lib/assert_helper.js')
 var PresenceMessage = assertHelper.PresenceMessage
-var Sentry = require('../core/lib/resources/presence/sentry.js')
+var Sentry = require('../src/core/lib/resources/presence/sentry.js')
 var radar
 var client
 

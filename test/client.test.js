@@ -1,7 +1,7 @@
 /* globals describe, it, beforeEach */
 var common = require('./common.js')
 var assert = require('assert')
-var ClientSession = require('../client/client_session.js')
+var ClientSession = require('../src/client/client_session.js')
 var EventEmitter = require('events').EventEmitter
 var sinon = require('sinon')
 var proxyquire = require('proxyquire')
@@ -203,7 +203,7 @@ describe('ClientSession', function () {
         function logging () { return logging }
         logging.info = sinon.spy()
 
-        var ClientSession = proxyquire('../client/client_session.js', {
+        var ClientSession = proxyquire('../src/client/client_session.js', {
           minilog: logging
         })
         var id = Math.random()
