@@ -197,6 +197,10 @@ Server.prototype._onSentryDown = function (sentryId) {
   var started = Date.now()
 
   nonblocking(presences).forEach(function (presence) {
+    if (presence.destroyed) {
+      return
+    }
+
     var clientSessionIds = presence.manager.store.clientSessionIdsForSentryId(sentryId)
     expected += clientSessionIds.length
 

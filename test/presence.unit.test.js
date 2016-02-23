@@ -5,6 +5,7 @@ var Persistence = require('persistence')
 var Common = require('./common.js')
 var Presence = require('../src/core/resources/presence')
 var sinon = require('sinon')
+var expect = require('chai').expect
 
 describe('given a presence resource', function () {
   var presence, client, client2
@@ -533,6 +534,14 @@ describe('given a presence resource', function () {
 
       presence.set(client, { type: 2, key: 123, value: 'online', userData: { test: 1 } })
       presence.get(fakeClient, { options: { version: 2 } })
+    })
+  })
+
+  describe('#destroy()', function () {
+    it('sets resource.destroyed flag to true', function () {
+      expect(!presence.destroyed).to.equal(true)
+      presence.destroy()
+      expect(presence.destroyed).to.equal(true)
     })
   })
 })
