@@ -1,4 +1,8 @@
-### 0.21.1
+### 0.21.2
+* [PR #227](https://github.com/zendesk/radar/pull/227) - Don't delete presence_store when disposing presence resource
+* [PR #226](https://github.com/zendesk/radar/pull/226) - fix readme
+
+### 0.21.1 - known bad, do not deploy
 * [PR #224](https://github.com/zendesk/radar/pull/224) - Replace underscore with lodash
 * [PR #225](https://github.com/zendesk/radar/pull/225) - Cleanup directory structure
 
