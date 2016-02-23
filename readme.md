@@ -32,7 +32,7 @@ var http = require('http');
 var Radar = require('radar').server;
 
 var httpServer = http.createServer(function(req, res) {
-res.end('Nothing here.');
+  res.end('Nothing here.');
 });
 
 // Radar server
