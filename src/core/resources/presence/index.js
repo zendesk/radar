@@ -234,6 +234,7 @@ Presence.prototype.fullRead = function (callback) {
 
 Presence.prototype.destroy = function () {
   this.manager.destroy()
+  Resource.prototype.destroy.call(this)
 }
 
 Presence.setBackend = function (backend) {

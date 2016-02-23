@@ -135,7 +135,9 @@ Resource.prototype.handleMessage = function (clientSession, message) {
   }
 }
 
-Resource.prototype.destroy = function () {}
+Resource.prototype.destroy = function () {
+  this.destroyed = true
+}
 
 Resource.setBackend = function (backend) {
   // noop

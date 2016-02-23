@@ -286,6 +286,16 @@ describe('given a server', function () {
         })
       })
 
+      it('ignores presences that are destroyed during processing', function (done) {
+        radarServer._onSentryDown('sentry1')
+        radarServer.resources[234].destroyed = true
+        radarServer.on('profiling', function () {
+          expect(radarServer.resources[123].manager.disconnectRemoteClient).to.have.been.calledTwice
+          expect(radarServer.resources[234].manager.disconnectRemoteClient).not.to.have.been.called
+          done()
+        })
+      })
+
       it('emits profiling event', function (done) {
         radarServer._onSentryDown('sentry1')
         radarServer.on('profiling', function (e) {

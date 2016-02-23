@@ -61,8 +61,6 @@ PresenceManager.prototype.destroy = function () {
   if (this.handleRedisReply) {
     this.handleRedisReply = function () {}
   }
-
-  delete this.store
 }
 // FIXME: Method signature is getting unmanageable
 PresenceManager.prototype.addClient = function (clientSessionId, userId, userType,
