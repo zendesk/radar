@@ -1,3 +1,6 @@
+### 0.21.3
+* [PR #229](https://github.com/zendesk/radar/pull/229) - Initialize Sentry id with Server id
+
 ### 0.21.2
 * [PR #227](https://github.com/zendesk/radar/pull/227) - Don't delete presence_store when disposing presence resource
 * [PR #226](https://github.com/zendesk/radar/pull/226) - fix readme
