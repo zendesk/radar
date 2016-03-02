@@ -169,7 +169,7 @@ Server.prototype._setupSentry = function (configuration) {
     _.extend(sentryOptions, configuration.sentry)
   }
 
-  this.sentry = new Sentry()
+  this.sentry = new Sentry(this.id)
   this.sentry.start(sentryOptions)
 
   this.sentry.on('up', function (sentryId, message) {
