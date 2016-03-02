@@ -238,6 +238,10 @@ describe('given a server', function () {
       expect(listenerCount(sentry, 'down')).to.equal(1)
     })
 
+    it('uses Server.id as sentry name', function () {
+      expect(radarServer.sentry.name).to.equal(radarServer.id)
+    })
+
     it('forwards sentry on down event', function (done) {
       var sentry = radarServer.sentry
 
