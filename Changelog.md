@@ -1,3 +1,6 @@
+### 0.21.4
+* [PR #228](https://github.com/zendesk/radar/pull/228) - Add bin/server.js to package.json bin
+
 ### 0.21.3
 * [PR #229](https://github.com/zendesk/radar/pull/229) - Initialize Sentry id with Server id
 
