@@ -211,6 +211,18 @@ describe('given a server', function () {
     })
   })
 
+  describe('#_handleResourceMessage', function () {
+    it('skips control messages', function () {
+      var radarServer = new Server()
+      var typeDefinition = {
+        type: 'Control'
+      }
+      radarServer._getResource = sinon.spy()
+      radarServer._handleResourceMessage({}, {}, typeDefinition)
+      expect(radarServer._getResource).not.to.have.been.called
+    })
+  })
+
   describe('#attach', function () {
     it('returns ready promise', function () {
       var httpServer = require('http').createServer(function () {})
