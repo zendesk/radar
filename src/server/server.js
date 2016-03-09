@@ -156,6 +156,8 @@ Server.prototype._setupDistributor = function () {
     logging.info('#redis.message.outgoing', channel, data)
     oldPublish(channel, data, callback)
   }
+
+  this.publish = Redis.publish
 }
 
 Server.prototype._setupSentry = function (configuration) {

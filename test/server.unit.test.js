@@ -231,6 +231,14 @@ describe('given a server', function () {
     })
   })
 
+  describe('Distributor setup', function () {
+    it('exposes publish function', function () {
+      var radarServer = new Server()
+      radarServer._setupDistributor()
+      expect(radarServer.publish).to.be.a('function')
+    })
+  })
+
   describe('Sentry setup', function () {
     it('registers sentry on down handler', function () {
       var sentry = radarServer.sentry
