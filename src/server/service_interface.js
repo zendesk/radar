@@ -126,6 +126,31 @@ function allowedOp (op) {
   }
 }
 
+function ServiceInterfaceClientSession (req, res) {
+  this.id = req.id
+  this._req = req
+  this._res = res
+}
+
+ServiceInterfaceClientSession.prototype.send = function (msg) {
+  if (this._res.finished) {
+    log.warn('ServiceInterfaceClientSession already ended, dropped message', msg)
+    return
+  }
+
+  if (this._res.statusCode < 400 && msg.op === 'err') {
+    if (msg.value === 'auth') {
+      this._res.statusCode = 403
+    } else {
+      this._res.statusCode = 400
+    }
+  }
+
+  log.debug('ServiceInterfaceClientSession Send', this._res.statusCode, msg)
+  this._res.write(JSON.stringify(msg))
+  this._res.end()
+}
+
 ServiceInterface.prototype._processIncomingMessage = function (message, req, res) {
   var self = this
 
@@ -138,27 +163,7 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
   this._middlewareRunner.runMiddleware('onServiceInterfaceIncomingMessage', message, req, res, function (err) {
     if (err) { return error(err, res) }
 
-    var clientSession = {
-      id: req.id,
-      send: function (msg) {
-        if (res.finished) {
-          log.warn('ServiceInterfaceClientSession already ended, dropped message', msg)
-          return
-        }
-
-        if (res.statusCode < 400 && msg.op === 'err') {
-          if (msg.value === 'auth') {
-            res.statusCode = 403
-          } else {
-            res.statusCode = 400
-          }
-        }
-
-        log.debug('ServiceInterfaceClientSession Send', res.statusCode, msg)
-        res.write(JSON.stringify(msg))
-        res.end()
-      }
-    }
+    var clientSession = new ServiceInterfaceClientSession(req, res)
 
     message.ack = message.ack || clientSession.id
     log.info('ServiceInterface request', message)
