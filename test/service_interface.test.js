@@ -168,7 +168,7 @@ describe('ServiceInterface', function () {
         })
 
         var req = {}
-        var res = {}
+        var res = {end: function () {}}
 
         serviceInterface._processIncomingMessage(msg, req, res)
       })
@@ -196,7 +196,7 @@ describe('ServiceInterface', function () {
           })
 
           var req = {}
-          var res = {}
+          var res = {end: function () {}}
 
           serviceInterface._processIncomingMessage(msg, req, res)
         })
@@ -220,7 +220,7 @@ describe('ServiceInterface', function () {
           })
 
           var req = {}
-          var res = {}
+          var res = {end: function () {}}
 
           serviceInterface._processIncomingMessage(msg, req, res)
         })
@@ -239,7 +239,7 @@ describe('ServiceInterface', function () {
         })
 
         var req = {id: 'asdfg'}
-        var res = {}
+        var res = {end: function () {}}
 
         serviceInterface._processIncomingMessage(msg, req, res)
       })
@@ -256,7 +256,7 @@ describe('ServiceInterface', function () {
         })
 
         var req = {id: 'asdfg'}
-        var res = {}
+        var res = {end: function () {}}
 
         serviceInterface._processIncomingMessage(msg, req, res)
       })
@@ -379,24 +379,85 @@ describe('ServiceInterface', function () {
       })
     })
 
-    describe('op filtering', function () {
-      it('allows get', expect200('get'))
-      it('allows set', expect200('set'))
-      it('disallows batch', expect400('batch'))
-      it('disallows nameSync', expect400('nameSync'))
-      it('disallows subscribe', expect400('subscribe'))
-      it('disallows sync', expect400('sync'))
-      it('disallows unsubscribe', expect400('unsubscripe'))
-
-      function expect200 (op) {
-        return function (done) {
-          return tryOp(op, 200, done)
+    describe('fast return for command routes', function () {
+      describe('when no ack specified in message', function () {
+        var msg = {
+          op: 'set'
         }
-      }
+        it('returns 202 Accepted', function (done) {
+          // serviceInterface.on('request', function (clientSession, message) {
+          //   clientSession.send({message: 'contents'})
+          // })
 
-      function expect400 (op) {
+          var req = postReq(msg)
+          var res = stubRes({
+            end: function () {
+              this.finished = true
+              expect(res.statusCode).to.equal(202)
+              done()
+            }
+          })
+
+          serviceInterface.middleware(req, res)
+        })
+        it('ends http response before emitting request event', function (done) {
+          var called = []
+
+          var req = postReq(msg)
+          var res = stubRes({
+            end: function () {
+              if (this.finished) { return }
+              this.finished = true
+              called.push('res.end')
+              expect(called).to.deep.equal(['res.end'])
+            }
+          })
+
+          serviceInterface.on('request', function () {
+            called.push('emit.request')
+            expect(called).to.deep.equal(['res.end', 'emit.request'])
+            done()
+          })
+
+          serviceInterface.middleware(req, res)
+        })
+      })
+      describe('when ack specified in message', function () {
+        var msg = {
+          op: 'set',
+          ack: '23'
+        }
+        it('returns 200 OK', function (done) {
+          serviceInterface.on('request', function (clientSession, message) {
+            clientSession.send({message: 'contents'})
+          })
+
+          var req = postReq(msg)
+          var res = stubRes({
+            end: function () {
+              this.finished = true
+              expect(res.statusCode).to.equal(200)
+              done()
+            }
+          })
+
+          serviceInterface.middleware(req, res)
+        })
+      })
+    })
+
+    describe('op filtering', function () {
+      it('allows get', expectResponse(200, 'get'))
+      it('allows set', expectResponse(202, 'set'))
+      it('disallows batch', expectResponse(400, 'batch'))
+      it('disallows nameSync', expectResponse(400, 'nameSync'))
+      it('disallows subscribe', expectResponse(400, 'subscribe'))
+      it('disallows sync', expectResponse(400, 'sync'))
+      it('disallows unsubscribe', expectResponse(400, 'unsubscripe'))
+
+      function expectResponse (code, op) {
         return function (done) {
-          return tryOp(op, 400, done)
+          return tryOp(op, code, done)
         }
       }
 
@@ -412,6 +473,7 @@ describe('ServiceInterface', function () {
         var req = postReq(msg)
         var res = stubRes({
           end: function () {
+            this.finished = true
             expect(res.statusCode).to.equal(expectedStatusCode)
             done()
           }

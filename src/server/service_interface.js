@@ -126,10 +126,17 @@ function allowedOp (op) {
   }
 }
 
-function ServiceInterfaceClientSession (req, res) {
+function ServiceInterfaceClientSession (req, res, opts) {
   this.id = req.id
   this._req = req
   this._res = res
+  opts = opts || {}
+
+  if (!opts.awaitResponse) {
+    // don't block for message processing and end http response early
+    this._res.statusCode = 202
+    this._res.end('{}')
+  }
 }
 
 ServiceInterfaceClientSession.prototype.send = function (msg) {
@@ -163,12 +170,24 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
   this._middlewareRunner.runMiddleware('onServiceInterfaceIncomingMessage', message, req, res, function (err) {
     if (err) { return error(err, res) }
 
-    var clientSession = new ServiceInterfaceClientSession(req, res)
+    var clientSession = createClientSession(message, req, res)
 
     message.ack = message.ack || clientSession.id
     log.info('ServiceInterface request', message)
     self.emit('request', clientSession, message)
   })
+}
+
+function createClientSession (message, req, res) {
+  var opts = {
+    awaitResponse: isQuery(message) || message.ack
+  }
+
+  return new ServiceInterfaceClientSession(req, res, opts)
+}
+
+function isQuery (message) {
+  return message.op === 'get' || message.op === 'sync'
 }
 
 function setup (httpServer, middlewareRunner) {
