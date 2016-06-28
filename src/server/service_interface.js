@@ -6,6 +6,7 @@ var parseUrl = require('url').parse
 var RadarMessage = require('radar_message')
 var concatStream = require('concat-stream')
 var id = require('../core/id')
+var parseContentType = require('content-type').parse
 
 function ServiceInterface (middlewareRunner) {
   this._middlewareRunner = middlewareRunner || noopMiddlewareRunner
@@ -91,7 +92,14 @@ function error (err, res) {
 
 ServiceInterface.prototype._post = function (req, res) {
   var self = this
-  if (!req.headers || req.headers['content-type'] !== 'application/json') {
+
+  try {
+    var contentType = parseContentType(req.headers['content-type']).type
+  } catch (e) {
+    log.info('Parsing content-type failed', req.headers['content-type'])
+  }
+
+  if (!req.headers || contentType !== 'application/json') {
     var err = new Error('Content-type must be application/json')
     err.statusCode = 415
     return error(err, res)

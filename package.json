@@ -44,6 +44,7 @@
     "async": "^1.5.0",
     "callback_tracker": "0.1.0",
     "concat-stream": "^1.5.1",
+    "content-type": "^1.0.2",
     "engine.io": "1.4.2",
     "http-attach": "^1.0.0",
     "javascript-state-machine": "^2.3.5",

@@ -110,6 +110,27 @@ describe('ServiceInterface', function () {
       })
       serviceInterface.middleware(req, res)
     })
+
+    it('allows content-type with charset', function (done) {
+      var req = postReq({
+        op: 'get',
+        to: 'status:/test/result',
+        key: 'abc'
+      })
+
+      req.headers['content-type'] = 'application/json;charset=UTF-8'
+      var res = stubRes({
+        end: function () {
+          expect(res.statusCode).to.equal(200)
+          done()
+        }
+      })
+      serviceInterface.on('request', function (clientSession, message) {
+        clientSession.send({status: 'ok'})
+      })
+      serviceInterface.middleware(req, res)
+    })
+
     it('requires valid json in body', function (done) {
       var req = literalStream('some non-json garbage')
       req.method = 'POST'
