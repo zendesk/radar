@@ -1,3 +1,7 @@
+### 0.21.5
+* [PR #233](https://github.com/zendesk/radar/pull/233) - Allow charset in ServiceInterface content-type
+* [PR #231](https://github.com/zendesk/radar/pull/231) - Extract class: ServiceInterfaceClientSession
+
 ### 0.21.4
 * [PR #228](https://github.com/zendesk/radar/pull/228) - Add bin/server.js to package.json bin
 
