@@ -1,3 +1,6 @@
+### 0.21.6
+* [PR #234](https://github.com/zendesk/radar/pull/234) - Lower "type not found" log level from error -> warn
+
 ### 0.21.5
 * [PR #233](https://github.com/zendesk/radar/pull/233) - Allow charset in ServiceInterface content-type
 * [PR #231](https://github.com/zendesk/radar/pull/231) - Extract class: ServiceInterfaceClientSession
