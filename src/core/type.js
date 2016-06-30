@@ -47,7 +47,7 @@ function getByExpression (to) {
       }
     }
   }
-  logger.error('#type - Unable to find a valid type definition for:', to)
+  logger.warn('#type - Unable to find a valid type definition for:' + to)
 }
 
 module.exports = {
