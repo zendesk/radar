@@ -135,7 +135,7 @@ function allowedOp (op) {
 }
 
 function ServiceInterfaceClientSession (req, res) {
-  this.id = req.id
+  this.id = req.headers['x-session-id'] || req.id
   this._req = req
   this._res = res
 }
