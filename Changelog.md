@@ -1,3 +1,6 @@
+### 0.21.7
+* [PR #235](https://github.com/zendesk/radar/pull/235) - Support parsing ServiceInterfaceClient session id form http header
+
 ### 0.21.6
 * [PR #234](https://github.com/zendesk/radar/pull/234) - Lower "type not found" log level from error -> warn
 
