@@ -8,6 +8,8 @@ var literalStream = require('literal-stream')
 var _ = require('lodash')
 var uuid = require('uuid')
 
+var EMPTY_REQ = {headers: {}}
+
 describe('ServiceInterface', function () {
   var ServiceInterface = require('../src/server/service_interface')
   var serviceInterface
@@ -18,7 +20,8 @@ describe('ServiceInterface', function () {
   function getReq (o) {
     return _.extend({
       method: 'GET',
-      url: '/radar/service'
+      url: '/radar/service',
+      headers: {}
     }, o)
   }
 
@@ -188,7 +191,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {}
+        var req = EMPTY_REQ
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -216,7 +219,7 @@ describe('ServiceInterface', function () {
             done()
           })
 
-          var req = {}
+          var req = EMPTY_REQ
           var res = {}
 
           serviceInterface._processIncomingMessage(msg, req, res)
@@ -240,14 +243,30 @@ describe('ServiceInterface', function () {
             done()
           })
 
-          var req = {}
+          var req = EMPTY_REQ
           var res = {}
 
           serviceInterface._processIncomingMessage(msg, req, res)
         })
       })
+      it('uses the x-session-id header for the clientSession.id if set', function (done) {
+        var msg = {
+          op: 'set',
+          to: 'status:/test/result',
+          value: 'pending'
+        }
 
-      it('uses the req.id for the clientSession.id', function (done) {
+        serviceInterface.on('request', function (clientSession, message) {
+          expect(clientSession.id).to.equal('qwerty')
+          done()
+        })
+
+        var req = {id: 'asdfg', headers: {'x-session-id': 'qwerty'}}
+        var res = {}
+
+        serviceInterface._processIncomingMessage(msg, req, res)
+      })
+      it('uses the req.id for the clientSession.id if header not set', function (done) {
         var msg = {
           op: 'set',
           to: 'status:/test/result',
@@ -259,7 +278,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {id: 'asdfg'}
+        var req = {id: 'asdfg', headers: {}}
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -276,7 +295,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {id: 'asdfg'}
+        var req = {id: 'asdfg', headers: {}}
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -294,7 +313,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {}
+        var req = EMPTY_REQ
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -307,7 +326,7 @@ describe('ServiceInterface', function () {
             clientSession.send({message: 'contents'})
           })
 
-          var req = {}
+          var req = EMPTY_REQ
           var res = {
             write: sinon.spy(),
             end: function () {
@@ -327,7 +346,7 @@ describe('ServiceInterface', function () {
               clientSession.send({op: 'err', value: 'invalid'})
             })
 
-            var req = {}
+            var req = EMPTY_REQ
             var res = {
               statusCode: 200,
               write: sinon.spy(),
@@ -349,7 +368,7 @@ describe('ServiceInterface', function () {
             })
 
             it('auth errors are statusCode 403 by default', function (done) {
-              var req = {}
+              var req = EMPTY_REQ
               var res = {
                 statusCode: 200,
                 write: sinon.spy(),
@@ -362,7 +381,7 @@ describe('ServiceInterface', function () {
               serviceInterface._processIncomingMessage(msg, req, res)
             })
             it('if res.statusCode is already 401 or 403, existing value is used', function (done) {
-              var req = {}
+              var req = EMPTY_REQ
               var res = {
                 statusCode: 401,
                 write: sinon.spy(),
@@ -385,7 +404,7 @@ describe('ServiceInterface', function () {
             clientSession.send({message: '2'})
           })
 
-          var req = {}
+          var req = EMPTY_REQ
           var res = {
             write: sinon.spy(),
             end: function () {
