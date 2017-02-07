@@ -95,6 +95,11 @@ Resource.prototype.redisIn = function (data) {
   })
 
   this.emit('message:outgoing', data)
+
+  if (!Object.keys(this.subscribers).length) {
+    logging.info('#' + this.type, '- no subscribers, destroying resource', this.to)
+    this.server.destroyResource(this.to)
+  }
 }
 
 // Return a socket reference; eio server hash is "clients", not "sockets"
