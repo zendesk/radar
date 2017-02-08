@@ -156,6 +156,8 @@ Server.prototype._setupDistributor = function () {
     logging.info('#redis.message.outgoing', channel, data)
     oldPublish(channel, data, callback)
   }
+
+  this.publish = Redis.publish
 }
 
 Server.prototype._setupSentry = function (configuration) {
@@ -323,6 +325,9 @@ Server.prototype._persistClientData = function (socket, message) {
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function (socket, message, messageType) {
   var self = this
+  if (messageType.type === 'Control') {
+    return
+  }
   var to = message.to
   var resource = this._getResource(message, messageType)
 

@@ -211,6 +211,18 @@ describe('given a server', function () {
     })
   })
 
+  describe('#_handleResourceMessage', function () {
+    it('skips control messages', function () {
+      var radarServer = new Server()
+      var typeDefinition = {
+        type: 'Control'
+      }
+      radarServer._getResource = sinon.spy()
+      radarServer._handleResourceMessage({}, {}, typeDefinition)
+      expect(radarServer._getResource).not.to.have.been.called
+    })
+  })
+
   describe('#attach', function () {
     it('returns ready promise', function () {
       var httpServer = require('http').createServer(function () {})
@@ -228,6 +240,14 @@ describe('given a server', function () {
         .then(function () {
           expect(radarServer._setup).to.have.been.called
         })
+    })
+  })
+
+  describe('Distributor setup', function () {
+    it('exposes publish function', function () {
+      var radarServer = new Server()
+      radarServer._setupDistributor()
+      expect(radarServer.publish).to.be.a('function')
     })
   })
 
