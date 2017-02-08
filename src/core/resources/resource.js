@@ -96,7 +96,7 @@ Resource.prototype.redisIn = function (data) {
 
   this.emit('message:outgoing', data)
 
-  if (!Object.keys(this.subscribers).length) {
+  if (Object.keys(this.subscribers).length === 0) {
     logging.info('#' + this.type, '- no subscribers, destroying resource', this.to)
     this.server.destroyResource(this.to)
   }
