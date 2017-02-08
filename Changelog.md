@@ -1,3 +1,6 @@
+### 0.21.8
+* [PR #236](https://github.com/zendesk/radar/pull/236) - Api status set: unsubscribe if list of subscribers is empty
+
 ### 0.21.7
 * [PR #235](https://github.com/zendesk/radar/pull/235) - Support parsing ServiceInterfaceClient session id form http header
 
