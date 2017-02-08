@@ -218,5 +218,38 @@ describe('a status resource', function () {
         radarServer._processMessage(socketTwo, setMessage)
       }, 100)
     })
+
+    // Case when setting status with the api
+    describe('when not subscribed', function () {
+      it('should emit outgoing messages', function (done) {
+        var setMessage = {op: 'set', to: 'status:/z1/test/ticket/1', value: {1: 2}}
+        var socketOne = {id: 1, send: function (m) {}}
+
+        radarServer.on('resource:new', function (resource) {
+          resource.on('message:outgoing', function (message) {
+            done()
+          })
+        })
+
+        setTimeout(function () {
+          radarServer._processMessage(socketOne, setMessage)
+        }, 100)
+      })
+
+      it('should unsubcribe (destroy resource) if there are no subscribers', function (done) {
+        var to = 'status:/z1/test/ticket/1'
+        var setMessage = {op: 'set', to: to, value: {1: 2}}
+        var socketOne = {id: 1, send: function (m) {}}
+
+        radarServer.on('resource:destroy', function (resource) {
+          assert.equal(radarServer.resources[to], resource)
+          done()
+        })
+
+        setTimeout(function () {
+          radarServer._processMessage(socketOne, setMessage)
+        }, 100)
+      })
+    })
   })
 })
