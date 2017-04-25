@@ -3,15 +3,17 @@
 var common = require('./common.js')
 var assert = require('assert')
 var Tracker = require('callback_tracker')
+var Backoff = require('radar_client').Backoff
 var radar
 
 describe('When radar server restarts', function () {
   var client, client2
 
   before(function (done) {
-    // FIXME: Need to fix transport.close in radar_client, probably not needed in 0.7.4
-    // Backoff.durations = [ 500, 600, 700, 800, 900 ] //make them quicker
-    // Backoff.fallback = 200
+    Backoff.durations = [ 100, 200, 400 ]
+    Backoff.fallback = 200
+    Backoff.maxSplay = 100
+
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, done)
   })
