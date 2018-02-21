@@ -78,15 +78,16 @@ Presence.prototype.setup = function () {
     })
   })
 
-  this.manager.on('client_offline', function (clientSessionId, userId, explicit) {
-    logging.info('#presence - client_offline', clientSessionId, userId, explicit, self.to)
+  this.manager.on('client_offline', function (clientSessionId, userId, explicit, userData) {
+    logging.info('#presence - client_offline', clientSessionId, userId, explicit, userData, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_offline',
       explicit: !!explicit,
       value: {
         userId: userId,
-        clientId: clientSessionId
+        clientId: clientSessionId,
+        userData: userData
       }
     }, clientSessionId)
   })
