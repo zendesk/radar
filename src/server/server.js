@@ -192,27 +192,25 @@ Server.prototype._onSentryDown = function (sentryId) {
     }
   })
 
-  var expected = 0
-  var disconnects = 0
   var started = Date.now()
+  var sentrySessions = []
 
   nonblocking(presences).forEach(function (presence) {
     if (presence.destroyed) {
       return
     }
 
-    var clientSessionIds = presence.manager.store.clientSessionIdsForSentryId(sentryId)
-    expected += clientSessionIds.length
-
-    nonblocking(clientSessionIds).forEach(function (clientSessionId) {
-      disconnects += 1
-      logging.info('#presence - #sentry down, removing socket:', sentryId, presence.to, clientSessionId)
-      presence.manager.disconnectRemoteClient(clientSessionId)
-    }, function () {
-      if (expected === disconnects) {
-        end()
-      }
+    presence.manager.store.clientSessionIdsForSentryId(sentryId).forEach(function (clientSessionId) {
+      sentrySessions.push({
+        presence: presence,
+        clientSessionId: clientSessionId
+      })
     })
+  }, function () {
+    nonblocking(sentrySessions).forEach(function (sentrySession) {
+      logging.debug('#presence - #sentry down, removing socket:', sentryId, sentrySession.presence.to, sentrySession.clientSessionId)
+      sentrySession.presence.manager.disconnectRemoteClient(sentrySession.clientSessionId)
+    }, end)
   })
 
   var self = this
@@ -223,7 +221,7 @@ Server.prototype._onSentryDown = function (sentryId) {
       duration: duration,
       data: {
         sentryId: sentryId,
-        sessionCount: disconnects
+        sessionCount: sentrySessions.length
       }
     })
   }
