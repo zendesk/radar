@@ -1,11 +1,11 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.21.8",
+  "version": "0.30.0",
   "author": "Zendesk, Inc.",
   "license": "Apache-2.0",
   "engines": {
-    "node": "0.10 - 5"
+    "node": ">=4"
   },
   "contributors": [
     "Mikito Takada <mikito.takada@gmail.com>",

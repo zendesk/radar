@@ -1,5 +1,5 @@
-### 0.21.9
-* [PR #243](https://github.com/zendesk/radar/pull/243) - Emit profiling once on sentry down
+### 0.30.0
+* [PR #243](https://github.com/zendesk/radar/pull/243) - Remove support for node v0.1x / Emit profiling once on sentry down
 
 ### 0.21.8
 * [PR #236](https://github.com/zendesk/radar/pull/236) - Api status set: unsubscribe if list of subscribers is empty
