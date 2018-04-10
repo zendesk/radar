@@ -15,7 +15,7 @@ See [radar.zendesk.com](http://radar.zendesk.com) for detailed documentation.
 This is the project necessary for running a radar server. Documentation about building an app and using the client-side libraries is available at [radar.zendesk.com](http://radar.zendesk.com). Browse [radar client libraries and tools](https://github.com/zendesk?utf8=%E2%9C%93&query=radar).
 
 ## Installation
-Requires: redis 2.8+, node.js 0.10+
+Requires: redis 2.8+, node.js 4+
 
 ###Installing from npm:
 
