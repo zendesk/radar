@@ -164,7 +164,7 @@ Presence.prototype.sync = function (clientSession, message) {
   this.fullRead(function (online) {
     if (message.options && parseInt(message.options.version, 10) === 2) {
       var value = self.manager.getClientsOnline()
-      logging.info('#presence - sync', value)
+      logging.info('#presence - sync', self.to, clientSession.id, value)
       clientSession.send({
         op: 'get',
         to: self.to,
@@ -194,7 +194,7 @@ Presence.prototype.get = function (clientSession, message) {
     if (message.options && message.options.version === 2) {
       // pob
       value = self.manager.getClientsOnline()
-      logging.info('#presence - get', value)
+      logging.info('#presence - get', self.to, clientSession.id, value)
     } else {
       value = online
     }
