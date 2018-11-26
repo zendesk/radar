@@ -62,15 +62,21 @@ describe('When radar server restarts', function () {
     var clientEvents = []
     var client2Events = []
 
-    var states = ['disconnected', 'connected', 'ready']
-    states.forEach(function (state) {
-      client.once(state, function () { clientEvents.push(state) })
-      client2.once(state, function () { client2Events.push(state) })
+    var states = ['connected', 'activated']
+    client.once('disconnected', function () {
+      states.forEach(function (state) {
+        client.once(state, function () { clientEvents.push(state) })
+      })
+    })
+    client2.once('disconnected', function () {
+      states.forEach(function (state) {
+        client2.once(state, function () { client2Events.push(state) })
+      })
     })
 
     common.restartRadar(radar, common.configuration, [client, client2], function () {
-      assert.deepEqual(clientEvents, ['disconnected', 'connected', 'ready'])
-      assert.deepEqual(client2Events, ['disconnected', 'connected', 'ready'])
+      assert.deepEqual(clientEvents, ['connected', 'activated'])
+      assert.deepEqual(client2Events, ['connected', 'activated'])
       assert.equal('activated', client.currentState())
       assert.equal('activated', client2.currentState())
       done()
