@@ -5,6 +5,7 @@ vendor/bundle/
 npm-debug.log
 devmode.log
 logs/radar.log
+*.swp
 
 # mac os file explorer settings
 .DS_Store

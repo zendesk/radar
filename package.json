@@ -5,7 +5,7 @@
   "author": "Zendesk, Inc.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=4"
+    "node": ">=12"
   },
   "contributors": [
     "Mikito Takada <mikito.takada@gmail.com>",
@@ -65,7 +65,7 @@
     "chai": "^3.4.1",
     "chai-interface": "^2.0.2",
     "literal-stream": "^0.1.0",
-    "mocha": "^2.3.3",
+    "mocha": "~4",
     "node-fetch": "^1.3.3",
     "proxyquire": "^1.7.3",
     "radar_client": "^0.14.6",
@@ -90,9 +90,9 @@
     "pretest:sentinel": "./node_modules/.bin/simple_sentinel start",
     "test:sentinel": "ls ./test/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" RADAR_SENTINEL_URLS=sentinel://localhost:26379 RADAR_SENTINEL_MASTER_NAME=mymaster npm run test:one'",
     "posttest:sentinel": "./node_modules/.bin/simple_sentinel stop",
-    "test:one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail \"$TEST\"",
-    "test:one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 2000ms --timeout 4000ms --bail",
-    "test:debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --bail \"$TEST\"",
+    "test:one": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 4000ms --timeout 8000ms --exit \"$TEST\"",
+    "test:one-solo": "./node_modules/.bin/mocha --ui exports --reporter spec --slow 4000ms --timeout 8000ms --exit",
+    "test:debug": "./node_modules/.bin/mocha debug --ui exports --reporter spec --slow 4000ms --exit \"$TEST\"",
     "test:memory": "mocha --expose-gc test/*.memory.test.js --ui exports --reporter spec"
   },
   "standard": {

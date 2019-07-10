@@ -40,7 +40,7 @@ describe('When radar server restarts', function () {
   })
 
   it('reestablishes presence', function (done) {
-    this.timeout(4000)
+    this.timeout(8000)
     var verifySubscriptions = function () {
       setTimeout(function () {
         client2.presence('restore').get(function (message) {
@@ -58,7 +58,7 @@ describe('When radar server restarts', function () {
   })
 
   it('reconnects existing clients', function (done) {
-    this.timeout(4000)
+    this.timeout(8000)
     var clientEvents = []
     var client2Events = []
 
@@ -78,7 +78,7 @@ describe('When radar server restarts', function () {
   })
 
   it('resubscribes to subscriptions', function (done) {
-    this.timeout(4000)
+    this.timeout(8000)
     var verifySubscriptions = function () {
       var tracker = Tracker.create('resources updated', done)
 
@@ -112,7 +112,7 @@ describe('When radar server restarts', function () {
   })
 
   it('must not repeat synced chat (messagelist) messages, with two clients', function (done) {
-    this.timeout(4000)
+    this.timeout(8000)
     var messages = []
     var verifySubscriptions = function () {
       assert.equal(messages.length, 2)
@@ -125,7 +125,8 @@ describe('When radar server restarts', function () {
       client2.alloc('test', function () {
         client.message('foo').on(function (msg) {
           messages.push(msg)
-          if (messages.length === 2) {
+          console.log(messages)
+          if (messages.length > 1) {
             // When we have enough, wait a while and check
             setTimeout(verifySubscriptions, 100)
           }
