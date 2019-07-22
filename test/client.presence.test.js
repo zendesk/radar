@@ -70,7 +70,7 @@ describe('given two clients and a presence resource', function () {
         client.presence('test').unsubscribe(function (message) {
           p.for_client(client).assert_ack_for_unsubscribe(message)
           client2.presence('test').set('offline')
-          setTimeout(done(), 10)
+          setTimeout(done, 10)
         })
       })
     })

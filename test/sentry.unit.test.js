@@ -71,8 +71,8 @@ describe('a Server Entry (Sentry)', function () {
       sentry = newSentry()
 
       sentry.start(defaults, function () {
-        assert.equal(sentry.sentries.length, 1)
-        assert.equal(sentry.name, sentry.sentries[0].name)
+        assert.equal(Object.keys(sentry.sentries).length, 1)
+        assert.equal(sentry.sentries[Object.keys(sentry.sentries)[0]].name, sentry.name)
       })
     })
   })
