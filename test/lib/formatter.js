@@ -25,7 +25,7 @@ formatter.write = function (name, level, args) {
         }
       }
     } else {
-      result[i] = result[i]
+      result[i] = result[i] // eslint-disable-line
     }
   }
 

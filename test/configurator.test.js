@@ -19,27 +19,27 @@ function describeOptionTest (configurator, name, options) {
       var configOptions = {}
       configOptions[name] = options.expected
       var config = configurator.load({ config: configOptions, argv: noArgs, env: noEnv })
-      assert.equal(config[name], options.expected)
+      assert.strictEqual(config[name], options.expected)
     })
 
     it('env: ' + options.env, function () {
       var envOptions = {}
       envOptions[options.env] = options.expected
       var config = configurator.load({ env: envOptions })
-      assert.equal(config[name], options.expected)
+      assert.strictEqual(config[name], options.expected)
     })
 
     if (options.short) {
       it('short arg: ' + options.short, function () {
         var config = configurator.load({ argv: ['', '', options.short, options.expected] })
-        assert.equal(config[name], options.expected)
+        assert.strictEqual(config[name], options.expected)
       })
     }
 
     if (options.long) {
       it('long arg: ' + options.long, function () {
         var config = configurator.load({ argv: ['', '', options.long, options.expected] })
-        assert.equal(config[name], options.expected)
+        assert.strictEqual(config[name], options.expected)
       })
     }
   })
@@ -56,22 +56,22 @@ describe('the Configurator', function () {
       var config = new Configurator().load({
         config: { port: 8000 },
         argv: noArgs,
-        env: { 'RADAR_PORT': 8001 }
+        env: { RADAR_PORT: 8001 }
       })
 
-      assert.equal(8001, config.port)
+      assert.strictEqual(8001, config.port)
     })
 
     it('should only overwrite the right keys', function () {
       var config = Configurator.load({
-        config: {port: 8004},
+        config: { port: 8004 },
         env: {
-          'RADAR_SENTINEL_MASTER_NAME': 'mymaster',
-          'RADAR_SENTINEL_URLS': 'sentinel://localhost:7777'
+          RADAR_SENTINEL_MASTER_NAME: 'mymaster',
+          RADAR_SENTINEL_URLS: 'sentinel://localhost:7777'
         }
       })
-      assert.equal(8004, config.port)
-      assert.equal('mymaster', config.sentinelMasterName)
+      assert.strictEqual(8004, config.port)
+      assert.strictEqual('mymaster', config.sentinelMasterName)
     })
   })
 
@@ -109,7 +109,8 @@ describe('the Configurator', function () {
 
   describe('custom setting', function () {
     var newOption = {
-      name: 'testOption', description: 'test option',
+      name: 'testOption',
+      description: 'test option',
       env: 'RADAR_TEST',
       abbr: 'e',
       full: 'exp',

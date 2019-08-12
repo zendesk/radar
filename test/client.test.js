@@ -32,18 +32,18 @@ describe('ClientSession', function () {
 
         clientSession._initialize()
         assert.ok(clientSession.state.initialize.called)
-        assert.equal(clientSession.state.current, 'ready')
+        assert.strictEqual(clientSession.state.current, 'ready')
       })
       it('updates lastModified', function () {
         var clock = sinon.useFakeTimers()
 
         try {
           clientSession = new ClientSession()
-          assert.equal(clientSession.lastModified, 0)
+          assert.strictEqual(clientSession.lastModified, 0)
 
           clock.tick(100)
           clientSession._initialize()
-          assert.equal(clientSession.lastModified, 100)
+          assert.strictEqual(clientSession.lastModified, 100)
         } finally {
           clock.restore()
         }
@@ -54,19 +54,19 @@ describe('ClientSession', function () {
           accountName: 'qwe'
         })
 
-        assert.equal(clientSession.name, 'abc')
-        assert.equal(clientSession.accountName, 'qwe')
-        assert.equal(clientSession.state.current, 'ready')
+        assert.strictEqual(clientSession.name, 'abc')
+        assert.strictEqual(clientSession.accountName, 'qwe')
+        assert.strictEqual(clientSession.state.current, 'ready')
       })
     })
     describe('_initializeOnNameSync', function () {
       it('is called on transport message', function () {
         clientSession._initializeOnNameSync = sinon.spy()
-        transport.emit('message', JSON.stringify({op: 'nameSync'}))
+        transport.emit('message', JSON.stringify({ op: 'nameSync' }))
         assert.ok(clientSession._initializeOnNameSync.called)
       })
       it('returns undefined when message op is not nameSync', function () {
-        assert.equal(clientSession._initializeOnNameSync({op: 'foo'}), undefined)
+        assert.strictEqual(clientSession._initializeOnNameSync({ op: 'foo' }), undefined)
       })
       it('proxies to _initialize', function () {
         clientSession._initialize = sinon.spy()
@@ -74,7 +74,7 @@ describe('ClientSession', function () {
         transport.emit('message', JSON.stringify({
           op: 'nameSync',
           options: {
-            association: {name: 'name'},
+            association: { name: 'name' },
             clientVersion: 2.5
           },
           accountName: 'accountName'
@@ -115,7 +115,7 @@ describe('ClientSession', function () {
   describe('message api', function () {
     describe('incoming', function () {
       it('emits transport message events if in ready state', function (done) {
-        var originalMessage = {message: 'foo', op: 'blah'}
+        var originalMessage = { message: 'foo', op: 'blah' }
         clientSession.on('message', function (message) {
           done()
         })
@@ -124,16 +124,16 @@ describe('ClientSession', function () {
       })
 
       it('parses JSON to object', function (done) {
-        var originalMessage = {message: 'foo', op: 'blah'}
+        var originalMessage = { message: 'foo', op: 'blah' }
         clientSession.on('message', function (message) {
-          assert.deepEqual(message, originalMessage)
+          assert.deepStrictEqual(message, originalMessage)
           done()
         })
         clientSession.state.current = 'ready'
         transport.emit('message', JSON.stringify(originalMessage))
       })
       it('does not emit transport message event if message is malformed', function (done) {
-        var originalMessage = {bad: true}
+        var originalMessage = { bad: true }
         setTimeout(function () {
           done()
         }, 10)
@@ -144,8 +144,8 @@ describe('ClientSession', function () {
         transport.emit('message', JSON.stringify(originalMessage))
       })
       it('dispatches namesync', function () {
-        var message = {op: 'nameSync', options: {association: {id: 1, name: 'one'}}}
-        assert.equal(clientSession.state.current, 'initializing')
+        var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
+        assert.strictEqual(clientSession.state.current, 'initializing')
         var called = 0
         var orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
@@ -154,11 +154,11 @@ describe('ClientSession', function () {
         }
 
         transport.emit('message', JSON.stringify(message))
-        assert.equal(called, 1)
+        assert.strictEqual(called, 1)
       })
       it('dispatches namesync again after already initialized (multiple nameSync messages over session lifetime)', function () {
-        var message = {op: 'nameSync', options: {association: {id: 1, name: 'one'}}}
-        assert.equal(clientSession.state.current, 'initializing')
+        var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
+        assert.strictEqual(clientSession.state.current, 'initializing')
         var called = 0
         var orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
@@ -167,15 +167,15 @@ describe('ClientSession', function () {
         }
 
         transport.emit('message', JSON.stringify(message))
-        assert.equal(called, 1)
-        assert.equal(clientSession.state.current, 'ready')
+        assert.strictEqual(called, 1)
+        assert.strictEqual(clientSession.state.current, 'ready')
         transport.emit('message', JSON.stringify(message))
-        assert.equal(called, 2)
+        assert.strictEqual(called, 2)
       })
     })
     describe('outgoing - .send', function () {
       it('calls transport.send', function () {
-        var originalMessage = {message: 'bar'}
+        var originalMessage = { message: 'bar' }
 
         clientSession.send(originalMessage)
 
@@ -191,7 +191,7 @@ describe('ClientSession', function () {
       })
 
       it('JSON stringifies message', function () {
-        var originalMessage = {message: 'bar'}
+        var originalMessage = { message: 'bar' }
         var expectedMessage = '{"message":"bar"}'
 
         clientSession.send(originalMessage)
@@ -209,7 +209,7 @@ describe('ClientSession', function () {
         var id = Math.random()
         var clientSession = new ClientSession('joe', id, 'test', 1, transport)
 
-        clientSession.send({message: 'foo'})
+        clientSession.send({ message: 'foo' })
 
         assert.ok(logging.info.calledWith('#socket.message.outgoing', id, '{"message":"foo"}'))
       })
@@ -227,7 +227,7 @@ describe('ClientSession', function () {
         clientSession.storeData(message)
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: subscriptions,
             presences: {}
           })
@@ -244,7 +244,7 @@ describe('ClientSession', function () {
         clientSession.storeData(message)
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: subscriptions,
             presences: {}
           })
@@ -261,7 +261,7 @@ describe('ClientSession', function () {
         clientSession.storeData(unsubscribe)
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: {},
             presences: {}
           })
@@ -280,7 +280,7 @@ describe('ClientSession', function () {
         subscriptions[to] = sync
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: subscriptions,
             presences: {}
           })
@@ -299,7 +299,7 @@ describe('ClientSession', function () {
         subscriptions[to] = sync
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: subscriptions,
             presences: {}
           })
@@ -319,7 +319,7 @@ describe('ClientSession', function () {
         presences[to] = message
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: {},
             presences: presences
           })
@@ -336,7 +336,7 @@ describe('ClientSession', function () {
         clientSession.storeData(offline)
 
         clientSession.readData(function (state) {
-          assert.deepEqual(state, {
+          assert.deepStrictEqual(state, {
             subscriptions: {},
             presences: {}
           })

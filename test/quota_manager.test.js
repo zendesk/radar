@@ -33,7 +33,7 @@ var otherMessage = {
 var assertLimitCount = function (manager, type, client, count, done) {
   var limiter = manager.getLimiter(type)
   assert(limiter)
-  assert.equal(limiter.count(client.id), count)
+  assert.strictEqual(limiter.count(client.id), count)
   if (done) { done() }
 }
 
@@ -120,11 +120,11 @@ describe('QuotaManager', function () {
 
       quotaManager.updateLimits(client, resource, subscribeMessage, limitedType, function () {
         limiter = quotaManager.getLimiter(limitedType)
-        assert.equal(limiter.count(client.id), 1)
+        assert.strictEqual(limiter.count(client.id), 1)
 
         quotaManager.destroyByResource(resource, limitedType, function () {
           limiter = quotaManager.getLimiter(limitedType)
-          assert.equal(limiter.count(client.id), 0)
+          assert.strictEqual(limiter.count(client.id), 0)
           done()
         })
       })
@@ -137,11 +137,11 @@ describe('QuotaManager', function () {
 
       quotaManager.updateLimits(client, resource, subscribeMessage, limitedType, function () {
         limiter = quotaManager.getLimiter(limitedType)
-        assert.equal(limiter.count(client.id), 1)
+        assert.strictEqual(limiter.count(client.id), 1)
 
         quotaManager.destroyByClient(client, resource, limitedType, function () {
           limiter = quotaManager.getLimiter(limitedType)
-          assert.equal(limiter.count(client.id), 0)
+          assert.strictEqual(limiter.count(client.id), 0)
           done()
         })
       })

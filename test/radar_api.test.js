@@ -54,7 +54,7 @@ exports['Radar api tests'] = {
       .data({ accountName: 'test', scope: 'ticket/1' })
       .end(function (err, response) {
         if (err) { return done(err) }
-        assert.deepEqual({foo: 'bar'}, response)
+        assert.deepStrictEqual({ foo: 'bar' }, response)
         Persistence.ttl('status:/test/ticket/1', function (err, reply) {
           if (err) { return done(err) }
           assert.ok((parseInt(reply, 10) > 0))
@@ -69,13 +69,13 @@ exports['Radar api tests'] = {
       .data({ accountName: 'test', scope: 'ticket/2', key: 'foo', value: 'bar' })
       .end(function (err, response) {
         if (err) { return done(err) }
-        assert.deepEqual({}, response)
+        assert.deepStrictEqual({}, response)
 
         Client.get('/node/radar/status')
           .data({ accountName: 'test', scope: 'ticket/2' })
           .end(function (err, response) {
             if (err) { return done(err) }
-            assert.deepEqual({foo: 'bar'}, response)
+            assert.deepStrictEqual({ foo: 'bar' }, response)
             Persistence.ttl('status:/test/ticket/2', function (err, reply) {
               if (err) { return done(err) }
               assert.ok((parseInt(reply, 10) > 0))
@@ -87,14 +87,14 @@ exports['Radar api tests'] = {
 
   // GET /radar/message?accountName=test&scope=chat/1
   'can get a message scope': function (done) {
-    var message_type = {
+    var messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
       authProvider: false,
       policy: { cache: true, maxAgeSeconds: 30 }
     }
 
-    Type.register('message', message_type)
+    Type.register('message', messageType)
 
     var to = 'message:/setStatus/chat/1'
     var opts = Type.getByExpression(to)
@@ -109,14 +109,14 @@ exports['Radar api tests'] = {
       .data({ accountName: 'setStatus', scope: 'chat/1' })
       .end(function (error, response) {
         if (error) { return done(error) }
-        assert.deepEqual({key: 'foo', value: 'bar'}, JSON.parse(response[0]))
+        assert.deepStrictEqual({ key: 'foo', value: 'bar' }, JSON.parse(response[0]))
         done()
       })
   },
 
   // POST /radar/message { accountName:'test', scope:'ticket/1' }
   'can set a message scope': function (done) {
-    var message_type = {
+    var messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'MessageList',
       authProvider: false,
@@ -126,19 +126,19 @@ exports['Radar api tests'] = {
       }
     }
 
-    Type.register('message', message_type)
+    Type.register('message', messageType)
 
     Client.post('/node/radar/message')
       .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })
       .end(function (error, response) {
         if (error) { return done(error) }
-        assert.deepEqual({}, response)
+        assert.deepStrictEqual({}, response)
 
         Client.get('/node/radar/message')
           .data({ accountName: 'setStatus', scope: 'chat/2' })
           .end(function (error, response) {
             if (error) { return done(error) }
-            assert.deepEqual('hello', JSON.parse(response[0]).value)
+            assert.deepStrictEqual('hello', JSON.parse(response[0]).value)
             Persistence.ttl('message:/setStatus/chat/2', function (err, reply) {
               if (err) { return done(err) }
               assert.ok((parseInt(reply, 10) > 0))
@@ -163,7 +163,7 @@ exports['Radar api tests'] = {
           }
         },
         'presence:/test/ticket/2': {
-          '2.1001': {
+          2.1001: {
             userId: 2,
             userType: 4,
             clientId: 1001,
@@ -173,11 +173,11 @@ exports['Radar api tests'] = {
         }
       }
 
-      FakePersistence.readHashAll = function (scope, callback) {
-        callback(messages[scope])
+      FakePersistence.readHashAll = function (scope, callbackFn) {
+        callbackFn(messages[scope])
       }
 
-      FakePersistence.deleteHash = function (scope, callback) {}
+      FakePersistence.deleteHash = function (scope, callbackFn) {}
 
       PresenceManager.setBackend(FakePersistence)
       var fakeSentry = {
@@ -204,7 +204,7 @@ exports['Radar api tests'] = {
         .data({ accountName: 'test', scope: 'ticket/1' })
         .end(function (error, response) {
           if (error) { return done(error) }
-          assert.deepEqual({'1': 0}, response)
+          assert.deepStrictEqual({ 1: 0 }, response)
           done()
         })
     },
@@ -214,7 +214,7 @@ exports['Radar api tests'] = {
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2' })
         .end(function (error, response) {
           if (error) { return done(error) }
-          assert.deepEqual({'ticket/1': {'1': 0}, 'ticket/2': {'2': 4}}, response)
+          assert.deepStrictEqual({ 'ticket/1': { 1: 0 }, 'ticket/2': { 2: 4 } }, response)
           done()
         })
     },
@@ -224,7 +224,7 @@ exports['Radar api tests'] = {
         .data({ accountName: 'test', scope: 'ticket/1', version: 2 })
         .end(function (error, response) {
           if (error) { return done(error) }
-          assert.deepEqual({'1': {'clients': {'1000': {}}, 'userType': 0}}, response)
+          assert.deepStrictEqual({ 1: { clients: { 1000: {} }, userType: 0 } }, response)
           done()
         })
     },
@@ -234,7 +234,7 @@ exports['Radar api tests'] = {
         .data({ accountName: 'test', scopes: 'ticket/1,ticket/2', version: 2 })
         .end(function (error, response) {
           if (error) { return done(error) }
-          assert.deepEqual({'ticket/1': {'1': {'clients': {'1000': {}}, 'userType': 0}}, 'ticket/2': {'2': {'clients': {'1001': {}}, 'userType': 4}}}, response)
+          assert.deepStrictEqual({ 'ticket/1': { 1: { clients: { 1000: {} }, userType: 0 } }, 'ticket/2': { 2: { clients: { 1001: {} }, userType: 4 } } }, response)
           done()
         })
     }

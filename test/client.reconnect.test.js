@@ -10,7 +10,7 @@ describe('When radar server restarts', function () {
   var client, client2
 
   before(function (done) {
-    Backoff.durations = [ 100, 200, 400 ]
+    Backoff.durations = [100, 200, 400]
     Backoff.fallback = 200
     Backoff.maxSplay = 100
 
@@ -44,9 +44,9 @@ describe('When radar server restarts', function () {
     var verifySubscriptions = function () {
       setTimeout(function () {
         client2.presence('restore').get(function (message) {
-          assert.equal('get', message.op)
-          assert.equal('presence:/test/restore', message.to)
-          assert.deepEqual({ 123: 0 }, message.value)
+          assert.strictEqual('get', message.op)
+          assert.strictEqual('presence:/test/restore', message.to)
+          assert.deepStrictEqual({ 123: 0 }, message.value)
           done()
         })
       }, 1000) // let's wait a little
@@ -69,10 +69,10 @@ describe('When radar server restarts', function () {
     })
 
     common.restartRadar(radar, common.configuration, [client, client2], function () {
-      assert.deepEqual(clientEvents, ['disconnected', 'connected', 'ready'])
-      assert.deepEqual(client2Events, ['disconnected', 'connected', 'ready'])
-      assert.equal('activated', client.currentState())
-      assert.equal('activated', client2.currentState())
+      assert.deepStrictEqual(clientEvents, ['disconnected', 'connected', 'ready'])
+      assert.deepStrictEqual(client2Events, ['disconnected', 'connected', 'ready'])
+      assert.strictEqual('activated', client.currentState())
+      assert.strictEqual('activated', client2.currentState())
       done()
     })
   })
@@ -83,22 +83,22 @@ describe('When radar server restarts', function () {
       var tracker = Tracker.create('resources updated', done)
 
       client.message('restore').on(tracker('message updated', function (message) {
-        assert.equal(message.to, 'message:/test/restore')
-        assert.equal(message.op, 'publish')
-        assert.equal(message.value, 'hello')
+        assert.strictEqual(message.to, 'message:/test/restore')
+        assert.strictEqual(message.op, 'publish')
+        assert.strictEqual(message.value, 'hello')
       })).publish('hello')
 
       client.status('restore').on(tracker('status updated', function (message) {
-        assert.equal(message.to, 'status:/test/restore')
-        assert.equal(message.op, 'set')
-        assert.equal(message.value, 'hello')
+        assert.strictEqual(message.to, 'status:/test/restore')
+        assert.strictEqual(message.op, 'set')
+        assert.strictEqual(message.value, 'hello')
       })).set('hello')
 
-      var presence_done = tracker('presence updated')
+      var presenceDone = tracker('presence updated')
       client.presence('restore').on(function (message) {
         if (message.op === 'online') {
-          assert.equal(message.to, 'presence:/test/restore')
-          presence_done()
+          assert.strictEqual(message.to, 'presence:/test/restore')
+          presenceDone()
         }
       }).set('online')
     }
@@ -115,7 +115,7 @@ describe('When radar server restarts', function () {
     this.timeout(8000)
     var messages = []
     var verifySubscriptions = function () {
-      assert.equal(messages.length, 2)
+      assert.strictEqual(messages.length, 2)
       assert.ok(messages.some(function (m) { return m.value === 'a1' }))
       assert.ok(messages.some(function (m) { return m.value === 'a2' }))
       done()

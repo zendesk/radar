@@ -14,8 +14,8 @@ describe('a Stamper service', function () {
 
     assert(message.stamp)
     assert(message.stamp.id)
-    assert.equal(message.stamp.clientId, clientId)
-    assert.equal(message.stamp.sentryId, sentryName)
+    assert.strictEqual(message.stamp.clientId, clientId)
+    assert.strictEqual(message.stamp.sentryId, sentryName)
   })
 
   it('allows optional client id', function () {
@@ -25,16 +25,16 @@ describe('a Stamper service', function () {
 
     assert(message.stamp)
     assert(message.stamp.id)
-    assert.equal(message.stamp.clientId, undefined)
-    assert.equal(message.stamp.sentryId, sentryName)
+    assert.strictEqual(message.stamp.clientId, undefined)
+    assert.strictEqual(message.stamp.sentryId, sentryName)
   })
 
   it('does not override id if present', function () {
-    var message = {stamp: {id: 1}}
+    var message = { stamp: { id: 1 } }
 
     Stamper.stamp(message, clientId)
 
-    assert.equal(message.stamp.id, 1)
-    assert.equal(message.stamp.clientId, clientId)
+    assert.strictEqual(message.stamp.id, 1)
+    assert.strictEqual(message.stamp.clientId, clientId)
   })
 })

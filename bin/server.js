@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var http = require('http')
-var configuration = require('../configurator.js').load({persistence: true})
+var configuration = require('../configurator.js').load({ persistence: true })
 var Radar = require('../src/server/server.js')
 var Api = require('../api/api.js')
 var Minilog = require('minilog')

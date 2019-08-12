@@ -62,11 +62,11 @@ describe('given a presence resource', function () {
   describe('.set', function () {
     it('can be set online', function () {
       var published
-      Persistence.publish = function (scope, m, callback) {
-        assert.equal(1, m.userId)
-        assert.equal(2, m.userType)
-        assert.equal(true, m.online)
-        assert.equal(undefined, m.clientData)
+      Persistence.publish = function (scope, m, callbackFn) {
+        assert.strictEqual(1, m.userId)
+        assert.strictEqual(2, m.userType)
+        assert.strictEqual(true, m.online)
+        assert.strictEqual(undefined, m.clientData)
         presence.redisIn(m)
         published = true
       }
@@ -80,12 +80,12 @@ describe('given a presence resource', function () {
       Persistence.publish = function (scope, m) {
         presence.redisIn(m)
       }
-      presence.set(client, {key: 1, type: 2, value: 'online'})
+      presence.set(client, { key: 1, type: 2, value: 'online' })
       assert.ok(presence.manager.hasUser(1))
       Persistence.publish = function (scope, m) {
-        assert.equal(1, m.userId)
-        assert.equal(2, m.userType)
-        assert.equal(false, m.online)
+        assert.strictEqual(1, m.userId)
+        assert.strictEqual(2, m.userType)
+        assert.strictEqual(false, m.online)
         published = true
         presence.redisIn(m)
       }
@@ -96,25 +96,25 @@ describe('given a presence resource', function () {
 
     it('can be set to online and include arbitrary client data', function () {
       var published
-      var clientData = { 'abc': 'abc' }
+      var clientData = { abc: 'abc' }
 
       Persistence.publish = function (scope, m) {
-        assert.equal(1, m.userId)
-        assert.equal(2, m.userType)
-        assert.equal(true, m.online)
-        assert.equal(clientData, m.clientData)
+        assert.strictEqual(1, m.userId)
+        assert.strictEqual(2, m.userType)
+        assert.strictEqual(true, m.online)
+        assert.strictEqual(clientData, m.clientData)
         published = true
         presence.redisIn(m)
       }
-      presence.set(client, {key: 1, type: 2, value: 'online', clientData: clientData})
+      presence.set(client, { key: 1, type: 2, value: 'online', clientData: clientData })
       assert.ok(presence.manager.hasUser(1))
       assert.ok(published)
     })
 
     it('expires within maxPersistence if set', function (done) {
       Persistence.expire = function (scope, expiry) {
-        assert.equal(presence.to, scope)
-        assert.equal(expiry, 12 * 60 * 60)
+        assert.strictEqual(presence.to, scope)
+        assert.strictEqual(expiry, 12 * 60 * 60)
         done()
       }
 
@@ -134,9 +134,9 @@ describe('given a presence resource', function () {
         var userId = m.userId
         var userType = m.userType
 
-        assert.equal(1, userId)
-        assert.equal(2, userType)
-        assert.equal(true, online)
+        assert.strictEqual(1, userId)
+        assert.strictEqual(2, userType)
+        assert.strictEqual(true, online)
         calls++
         presence.redisIn(m)
       }
@@ -144,7 +144,7 @@ describe('given a presence resource', function () {
       presence.set(client, { key: 1, type: 2, value: 'online' })
 
       // Persist twice, but only update once
-      assert.equal(2, calls)
+      assert.strictEqual(2, calls)
       assert.ok(presence.manager.hasUser(1))
     })
   })
@@ -161,7 +161,7 @@ describe('given a presence resource', function () {
       presence.subscribe = function () {
         called.subscribe = true
       }
-      presence.sync(socket, {op: 'sync', options: {version: '2'}})
+      presence.sync(socket, { op: 'sync', options: { version: '2' } })
 
       setImmediate(function () {
         assert.ok(called.get)
@@ -185,10 +185,10 @@ describe('given a presence resource', function () {
 
       presence.subscribe = function () {}
 
-      presence.sync(socket, {op: 'sync', options: {version: '2'}})
+      presence.sync(socket, { op: 'sync', options: { version: '2' } })
       function check () {
         if (sent.length === 1) {
-          presence.sync(socket, {op: 'sync', options: {version: 2}})
+          presence.sync(socket, { op: 'sync', options: { version: 2 } })
         } else {
           assert.ok(sent.length === 2 && sent[0] === 'get' && sent[1] === 'get')
           done()
@@ -207,7 +207,7 @@ describe('given a presence resource', function () {
         called.subscribe = true
       }
       // version 1 does not specify options.version
-      presence.sync(socket, {op: 'sync'})
+      presence.sync(socket, { op: 'sync' })
 
       setImmediate(function () {
         assert.ok(called.online)
@@ -220,7 +220,7 @@ describe('given a presence resource', function () {
   describe('user disconnects', function () {
     describe('when implicit', function () {
       it('should notify correctly even if redis has not replied to set(online) yet', function (done) {
-        var client_online_called = false
+        var clientOnlineCalled = false
 
         Persistence.publish = function (scope, m) {
           // 10ms delay
@@ -232,10 +232,10 @@ describe('given a presence resource', function () {
         presence.set(client, { key: 1, type: 2, value: 'online' })
         presence.unsubscribe(client)
         presence.manager.once('client_online', function () {
-          client_online_called = true
+          clientOnlineCalled = true
         })
         presence.manager.once('client_offline', function () {
-          assert.ok(client_online_called)
+          assert.ok(clientOnlineCalled)
           done()
         })
       })
@@ -248,14 +248,14 @@ describe('given a presence resource', function () {
         presence.set(client, { key: 1, type: 2, value: 'online' })
 
         assert.ok(!presence.manager.expiryTimers[1])
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 0)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 0)
         presence.unsubscribe(client)
         // userExpiry timer is added
         assert.ok(presence.manager.expiryTimers[1])
 
         // Active
         assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0)
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 1)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 1)
 
         presence.set(client2, { key: 1, type: 2, value: 'online' })
         presence.unsubscribe(client2)
@@ -264,7 +264,7 @@ describe('given a presence resource', function () {
 
         // Active
         assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0)
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 1)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 1)
 
         done()
       })
@@ -276,7 +276,7 @@ describe('given a presence resource', function () {
         presence.set(client, { key: 1, type: 2, value: 'online' })
 
         assert.ok(!presence.manager.expiryTimers[1])
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 0)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 0)
         presence.unsubscribe(client)
 
         // Disconnect is queued; userExpiry timer is added
@@ -284,7 +284,7 @@ describe('given a presence resource', function () {
 
         // Active
         assert.ok(presence.manager.expiryTimers[1]._idleTimeout > 0)
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 1)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 1)
 
         presence.set(client2, { key: 123, type: 0, value: 'online' })
         presence.unsubscribe(client2)
@@ -293,7 +293,7 @@ describe('given a presence resource', function () {
 
         // Active
         assert.ok(presence.manager.expiryTimers[123]._idleTimeout > 0)
-        assert.equal(Object.keys(presence.manager.expiryTimers).length, 2)
+        assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 2)
 
         var remote = []
         var local = []
@@ -319,7 +319,7 @@ describe('given a presence resource', function () {
 
         // One broadcast of a user offline
         // First message is client_online for user 1
-        assert.deepEqual(local[1], { to: 'aaa', op: 'offline', value: { '123': 0 } })
+        assert.deepStrictEqual(local[1], { to: 'aaa', op: 'offline', value: { 123: 0 } })
 
         presence.broadcast = oldBroadcast
       })
@@ -365,13 +365,13 @@ describe('given a presence resource', function () {
       it('should emit a user disconnect only after both disconnect (both explicit)', function () {
         presence.set(client, { key: 1, type: 2, value: 'offline' })
 
-        assert.equal(remote.length, 1)
+        assert.strictEqual(remote.length, 1)
         // A client_offline should be sent for CID 1
 
         // Remove stamp, it makes no sense to test those
         delete remote[0].stamp
 
-        assert.deepEqual(remote[0], { userId: 1,
+        assert.deepStrictEqual(remote[0], { userId: 1,
           userType: 2,
           clientId: client.id,
           online: false,
@@ -384,9 +384,9 @@ describe('given a presence resource', function () {
         delete remote[1].stamp
 
         // There should be a client_offline notification for CID 2
-        assert.equal(remote.length, 2)
+        assert.strictEqual(remote.length, 2)
 
-        assert.deepEqual(remote[1], { userId: 1,
+        assert.deepStrictEqual(remote[1], { userId: 1,
           userType: 2,
           clientId: client2.id,
           online: false,
@@ -396,9 +396,9 @@ describe('given a presence resource', function () {
         // Remove stamp, it makes no sense to test those
         delete local[0].stamp
         // Check local broadcast
-        assert.equal(local.length, 3)
+        assert.strictEqual(local.length, 3)
         // There should be a client_offline notification for CID 1
-        assert.deepEqual(local[0], { to: 'aaa',
+        assert.deepStrictEqual(local[0], { to: 'aaa',
           op: 'client_offline',
           explicit: true,
           value: { userId: 1, clientId: client.id }
@@ -407,7 +407,7 @@ describe('given a presence resource', function () {
         // Remove stamp, it makes no sense to test those
         delete local[1].stamp
         // There should be a client_offline notification for CID 2
-        assert.deepEqual(local[1], { to: 'aaa',
+        assert.deepStrictEqual(local[1], { to: 'aaa',
           op: 'client_offline',
           explicit: true,
           value: { userId: 1, clientId: client2.id }
@@ -415,90 +415,90 @@ describe('given a presence resource', function () {
         // There should be a broadcast for a offline notification for UID 1
         // Remove stamp, it makes no sense to test those
         delete local[2].stamp
-        assert.deepEqual(local[2], { to: 'aaa', op: 'offline', value: { 1: 2 } })
-        assert.deepEqual(local[2].value, { 1: 2 })
+        assert.deepStrictEqual(local[2], { to: 'aaa', op: 'offline', value: { 1: 2 } })
+        assert.deepStrictEqual(local[2].value, { 1: 2 })
 
         // No notifications sent to the client themselves.
-        assert.equal(typeof messages[client.id], 'undefined')
-        assert.equal(typeof messages[client2.id], 'undefined')
+        assert.strictEqual(typeof messages[client.id], 'undefined')
+        assert.strictEqual(typeof messages[client2.id], 'undefined')
       })
 
       it('should emit a user disconnect only after both disconnect (both implicit)', function () {
         presence.unsubscribe(client)
 
-        assert.equal(remote.length, 1)
+        assert.strictEqual(remote.length, 1)
         // A client_offline should be sent for CID 1
-        assert.equal(remote[0].online, false)
-        assert.equal(remote[0].userId, 1)
-        assert.equal(remote[0].clientId, client.id)
+        assert.strictEqual(remote[0].online, false)
+        assert.strictEqual(remote[0].userId, 1)
+        assert.strictEqual(remote[0].clientId, client.id)
 
         presence.unsubscribe(client2)
 
-        assert.equal(remote.length, 2)
+        assert.strictEqual(remote.length, 2)
         // There should be a client_offline notification for CID 2
-        assert.equal(remote[1].userId, 1)
-        assert.equal(remote[1].clientId, client2.id)
-        assert.equal(remote[1].online, false)
+        assert.strictEqual(remote[1].userId, 1)
+        assert.strictEqual(remote[1].clientId, client2.id)
+        assert.strictEqual(remote[1].online, false)
 
         // Check local broadcast
-        assert.equal(local.length, 2)
+        assert.strictEqual(local.length, 2)
         // There should be a client_offline notification for CID 1
-        assert.equal(local[0].op, 'client_offline')
-        assert.equal(local[0].value.userId, 1)
-        assert.equal(local[0].value.clientId, client.id)
+        assert.strictEqual(local[0].op, 'client_offline')
+        assert.strictEqual(local[0].value.userId, 1)
+        assert.strictEqual(local[0].value.clientId, client.id)
         // There should be a client_offline notification for CID 2
-        assert.equal(local[1].op, 'client_offline')
-        assert.equal(local[1].value.userId, 1)
-        assert.equal(local[1].value.clientId, client2.id)
+        assert.strictEqual(local[1].op, 'client_offline')
+        assert.strictEqual(local[1].value.userId, 1)
+        assert.strictEqual(local[1].value.clientId, client2.id)
 
         // Manually expire the timer
         presence.manager.expiryTimers[1]._onTimeout()
         clearTimeout(presence.manager.expiryTimers[1])
 
         // There should be a broadcast for a offline notification for UID 1
-        assert.equal(local.length, 3)
-        assert.equal(local[2].op, 'offline')
-        assert.deepEqual(local[2].value, { 1: 2 })
+        assert.strictEqual(local.length, 3)
+        assert.strictEqual(local[2].op, 'offline')
+        assert.deepStrictEqual(local[2].value, { 1: 2 })
 
         // No notifications sent to the client themselves.
-        assert.equal(typeof messages[client.id], 'undefined')
-        assert.equal(typeof messages[client2.id], 'undefined')
+        assert.strictEqual(typeof messages[client.id], 'undefined')
+        assert.strictEqual(typeof messages[client2.id], 'undefined')
       })
 
       it('should emit a user disconnect only after both disconnect (one implicit, other explicit)', function () {
         presence.unsubscribe(client)
 
-        assert.equal(remote.length, 1)
+        assert.strictEqual(remote.length, 1)
         // A client_offline should be sent for CID 1
-        assert.equal(remote[0].online, false)
-        assert.equal(remote[0].userId, 1)
-        assert.equal(remote[0].clientId, client.id)
+        assert.strictEqual(remote[0].online, false)
+        assert.strictEqual(remote[0].userId, 1)
+        assert.strictEqual(remote[0].clientId, client.id)
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' })
 
         // Check local broadcast
-        assert.equal(local.length, 2)
+        assert.strictEqual(local.length, 2)
         // There should be a client_offline notification for CID 1
-        assert.equal(local[0].op, 'client_offline')
-        assert.equal(local[0].value.userId, 1)
-        assert.equal(local[0].value.clientId, client.id)
+        assert.strictEqual(local[0].op, 'client_offline')
+        assert.strictEqual(local[0].value.userId, 1)
+        assert.strictEqual(local[0].value.clientId, client.id)
         // There should be a client_offline notification for CID 2
-        assert.equal(local[1].op, 'client_offline')
-        assert.equal(local[1].value.userId, 1)
-        assert.equal(local[1].value.clientId, client2.id)
+        assert.strictEqual(local[1].op, 'client_offline')
+        assert.strictEqual(local[1].value.userId, 1)
+        assert.strictEqual(local[1].value.clientId, client2.id)
 
         // Manually expire the timer
         presence.manager.expiryTimers[1]._onTimeout()
         clearTimeout(presence.manager.expiryTimers[1])
 
         // There should be a broadcast for a offline notification for UID 1
-        assert.equal(local.length, 3)
-        assert.equal(local[2].op, 'offline')
-        assert.deepEqual(local[2].value, { 1: 2 })
+        assert.strictEqual(local.length, 3)
+        assert.strictEqual(local[2].op, 'offline')
+        assert.deepStrictEqual(local[2].value, { 1: 2 })
 
         // No notifications sent to the client themselves.
-        assert.equal(typeof messages[client.id], 'undefined')
-        assert.equal(typeof messages[client2.id], 'undefined')
+        assert.strictEqual(typeof messages[client.id], 'undefined')
+        assert.strictEqual(typeof messages[client2.id], 'undefined')
       })
     })
   })
@@ -510,7 +510,7 @@ describe('given a presence resource', function () {
 
       Persistence.persistHash = function (to, key, value) {
         called = true
-        assert.deepEqual(value.userData, { test: 1 })
+        assert.deepStrictEqual(value.userData, { test: 1 })
       }
 
       presence.set(client, { type: 2, key: 123, value: 'online', userData: { test: 1 } })
@@ -526,7 +526,7 @@ describe('given a presence resource', function () {
       }
       var fakeClient = {
         send: function (msg) {
-          assert.deepEqual(msg.value[123], data)
+          assert.deepStrictEqual(msg.value[123], data)
         }
       }
 
@@ -563,7 +563,7 @@ describe('a presence resource', function () {
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:incoming', function (message) {
-          assert.equal(message.to, subscribeMessage.to)
+          assert.strictEqual(message.to, subscribeMessage.to)
           done()
         })
       })

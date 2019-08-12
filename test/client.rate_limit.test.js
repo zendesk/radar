@@ -35,8 +35,8 @@ describe('The Server', function () {
       var success = false
 
       client.on('err', function (message) {
-        assert.equal(message.op, 'err')
-        assert.equal(message.value, 'rate limited')
+        assert.strictEqual(message.op, 'err')
+        assert.strictEqual(message.value, 'rate limited')
         success = true
       })
 

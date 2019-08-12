@@ -28,8 +28,8 @@ describe('Once radar server is running', function () {
     var options = { association: association, clientVersion: '1.0.0' }
 
     client.control('test').nameSync(options, function (msg) {
-      assert.equal('nameSync', msg.op)
-      assert.equal('control:/dev/test', msg.to)
+      assert.strictEqual('nameSync', msg.op)
+      assert.strictEqual('control:/dev/test', msg.to)
       done()
     })
   })

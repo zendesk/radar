@@ -7,8 +7,9 @@ var expect = require('chai').expect
 var literalStream = require('literal-stream')
 var _ = require('lodash')
 var uuid = require('uuid')
+var assert = require('assert')
 
-var EMPTY_REQ = {headers: {}}
+var EMPTY_REQ = { headers: {} }
 
 describe('ServiceInterface', function () {
   var ServiceInterface = require('../src/server/service_interface')
@@ -37,7 +38,7 @@ describe('ServiceInterface', function () {
   describe('Routing middleware', function () {
     it('responds to requests in /radar/service/*', function (done) {
       var req = getReq()
-      var res = stubRes({end: done})
+      var res = stubRes({ end: done })
       var next = sinon.spy()
       serviceInterface.middleware(req, res, next)
 
@@ -129,7 +130,7 @@ describe('ServiceInterface', function () {
         }
       })
       serviceInterface.on('request', function (clientSession, message) {
-        clientSession.send({status: 'ok'})
+        clientSession.send({ status: 'ok' })
       })
       serviceInterface.middleware(req, res)
     })
@@ -261,7 +262,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {id: 'asdfg', headers: {'x-session-id': 'qwerty'}}
+        var req = { id: 'asdfg', headers: { 'x-session-id': 'qwerty' } }
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -278,7 +279,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {id: 'asdfg', headers: {}}
+        var req = { id: 'asdfg', headers: {} }
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -295,7 +296,7 @@ describe('ServiceInterface', function () {
           done()
         })
 
-        var req = {id: 'asdfg', headers: {}}
+        var req = { id: 'asdfg', headers: {} }
         var res = {}
 
         serviceInterface._processIncomingMessage(msg, req, res)
@@ -320,10 +321,10 @@ describe('ServiceInterface', function () {
       })
       describe('clientSession.send', function () {
         it('clientSession.send writes and ends the res', function (done) {
-          var msg = {op: 'get'}
+          var msg = { op: 'get' }
 
           serviceInterface.on('request', function (clientSession, message) {
-            clientSession.send({message: 'contents'})
+            clientSession.send({ message: 'contents' })
           })
 
           var req = EMPTY_REQ
@@ -340,10 +341,10 @@ describe('ServiceInterface', function () {
 
         describe('when response message is an error', function () {
           it('raises it to http statusCode error 400', function (done) {
-            var msg = {op: 'get'}
+            var msg = { op: 'get' }
 
             serviceInterface.on('request', function (clientSession, message) {
-              clientSession.send({op: 'err', value: 'invalid'})
+              clientSession.send({ op: 'err', value: 'invalid' })
             })
 
             var req = EMPTY_REQ
@@ -359,11 +360,11 @@ describe('ServiceInterface', function () {
             serviceInterface._processIncomingMessage(msg, req, res)
           })
           describe('given auth err message', function () {
-            var msg = {op: 'get'}
+            var msg = { op: 'get' }
 
             beforeEach(function () {
               serviceInterface.on('request', function (clientSession, message) {
-                clientSession.send({op: 'err', value: 'auth'})
+                clientSession.send({ op: 'err', value: 'auth' })
               })
             })
 
@@ -397,11 +398,11 @@ describe('ServiceInterface', function () {
         })
 
         it('if HttpResponse is already ended, does not try to write again', function (done) {
-          var msg = {op: 'get'}
+          var msg = { op: 'get' }
 
           serviceInterface.on('request', function (clientSession, message) {
-            clientSession.send({message: '1'})
-            clientSession.send({message: '2'})
+            clientSession.send({ message: '1' })
+            clientSession.send({ message: '2' })
           })
 
           var req = EMPTY_REQ
@@ -409,7 +410,7 @@ describe('ServiceInterface', function () {
             write: sinon.spy(),
             end: function () {
               res.finished = true
-              expect(res.write).to.have.been.called.once
+              assert(res.write.calledOnce)
               done()
             }
           }
@@ -446,7 +447,7 @@ describe('ServiceInterface', function () {
         }
 
         serviceInterface.on('request', function (clientSession, message) {
-          clientSession.send({message: 'contents'})
+          clientSession.send({ message: 'contents' })
         })
 
         var req = postReq(msg)

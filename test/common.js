@@ -1,9 +1,10 @@
 var http = require('http')
+var path = require('path')
 var logging = require('minilog')('common')
 var formatter = require('./lib/formatter')
 var Persistence = require('persistence')
 var RadarServer = require('../index').server
-var configuration = require('../configurator').load({persistence: true})
+var configuration = require('../configurator').load({ persistence: true })
 var Sentry = require('../src/core/resources/presence/sentry')
 var Client = require('radar_client').constructor
 var fork = require('child_process').fork
@@ -30,23 +31,23 @@ module.exports = {
   spawnRadar: function () {
     var radarProcess
 
-    function getListener (action, callback) {
+    function getListener (action, callbackFn) {
       var listener = function (message) {
         message = JSON.parse(message)
         logging.debug('message received', message, action)
         if (message.action === action) {
-          if (callback) callback(message.error)
+          if (callbackFn) callbackFn(message.error)
         }
       }
       return listener
     }
 
-    radarProcess = fork(__dirname + '/lib/radar.js')
-    radarProcess.sendCommand = function (command, arg, callback) {
+    radarProcess = fork(path.join(__dirname, '/lib/radar.js'))
+    radarProcess.sendCommand = function (command, arg, callbackFn) {
       var listener = getListener(command, function (error) {
         logging.debug('removing listener', command)
         radarProcess.removeListener('message', listener)
-        if (callback) callback(error)
+        if (callbackFn) callbackFn(error)
       })
 
       radarProcess.on('message', listener)
@@ -75,19 +76,19 @@ module.exports = {
     })
   },
 
-  restartRadar: function (radar, configuration, clients, callback) {
+  restartRadar: function (radar, configuration, clients, callbackFn) {
     var tracker = Tracker.create('server restart, given clients ready', function () {
-      if (callback) setTimeout(callback, 5)
+      if (callbackFn) setTimeout(callbackFn, 5)
     })
 
     for (var i = 0; i < clients.length; i++) {
       clients[i].once('ready', tracker('client ' + i + ' ready'))
     }
 
-    var server_restart = tracker('server restart')
+    var serverRestart = tracker('server restart')
 
     radar.sendCommand('stop', {}, function () {
-      radar.sendCommand('start', configuration, server_restart)
+      radar.sendCommand('start', configuration, serverRestart)
     })
   },
 

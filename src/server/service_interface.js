@@ -75,7 +75,7 @@ function error (err, res) {
   err.statusCode = err.statusCode || 400
   log.warn(err.statusCode, err.stack)
   res.statusCode = err.statusCode
-  var message = {op: 'err'}
+  var message = { op: 'err' }
 
   if (err.statusCode === 401 || err.statusCode === 403) {
     message.value = 'auth'

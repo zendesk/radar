@@ -96,20 +96,20 @@ Server.prototype._setup = function (httpServer, configuration) {
   var self = this
 
   return self._setupRedis(configuration.persistence)
-  .then(function () {
-    self._setupSentry(configuration)
-    Stamper.setup(self.sentry.name)
-    self._setupEngineio(httpServer, configuration.engineio)
-    self._setupDistributor()
-    self._setupServiceInterface(httpServer)
-  })
-  .then(function () {
-    logging.debug('#server - started ' + self.id)
-    self.emit('ready')
-    self._ready()
-  }, function (err) {
-    logging.error('#server - could not start', err)
-  })
+    .then(function () {
+      self._setupSentry(configuration)
+      Stamper.setup(self.sentry.name)
+      self._setupEngineio(httpServer, configuration.engineio)
+      self._setupDistributor()
+      self._setupServiceInterface(httpServer)
+    })
+    .then(function () {
+      logging.debug('#server - started ' + self.id)
+      self.emit('ready')
+      self._ready()
+    }, function (err) {
+      logging.error('#server - could not start', err)
+    })
 }
 
 Server.prototype._setupRedis = function (configuration) {

@@ -13,25 +13,25 @@ var clone = function (object) {
   return JSON.parse(JSON.stringify(object))
 }
 
-var presenceManagerForSentry = function (name, options, callback) {
+var presenceManagerForSentry = function (name, options, callbackFn) {
   var tempSentry = newTestSentry(name)
   var pm = new PresenceManager('presence:/dev/test', {}, tempSentry)
 
   options = options || {}
 
   if (typeof (options) !== 'object') {
-    callback = options
+    callbackFn = options
     options = {}
   }
 
   if (!options.dead) {
     tempSentry.start(options, function () {
-      callback(pm)
+      callbackFn(pm)
       tempSentry.stop()
     })
   } else {
     tempSentry._keepAlive(options)
-    callback(pm)
+    callbackFn(pm)
   }
 }
 
@@ -110,7 +110,7 @@ PresenceMessage.prototype.assert_online = function (originalMessage) {
 
   value[client.userId] = client.userType
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     to: this.scope,
     op: 'online',
     value: value,
@@ -133,7 +133,7 @@ PresenceMessage.prototype.assert_offline = function (originalMessage) {
 
   value[client.userId] = client.userType
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     to: this.scope,
     op: 'offline',
     value: value
@@ -161,7 +161,7 @@ PresenceMessage.prototype.assert_client_online = function (originalMessage) {
   this.assert_stamp(message.stamp)
   delete message.stamp
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     to: this.scope,
     op: 'client_online',
     value: value
@@ -183,7 +183,7 @@ PresenceMessage.prototype.assert_client_updated = function (originalMessage, cli
   this.assert_stamp(message.stamp)
   delete message.stamp
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     to: this.scope,
     op: 'client_updated',
     value: value
@@ -210,7 +210,7 @@ PresenceMessage.prototype.assert_client_offline = function (originalMessage, exp
   this.assert_stamp(message.stamp)
   delete message.stamp
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     to: this.scope,
     op: 'client_offline',
     explicit: explicit,
@@ -232,7 +232,7 @@ PresenceMessage.prototype.assert_message_sequence = function (list, from) {
   var args
   var messages = this.notifications.slice(from)
 
-  assert.equal(messages.length, list.length, 'mismatch ' + list + ' in messages received : ' + JSON.stringify(messages))
+  assert.strictEqual(messages.length, list.length, 'mismatch ' + list + ' in messages received : ' + JSON.stringify(messages))
 
   for (i = 0; i < messages.length; i++) {
     if (typeof (list[i]) === 'object') {
@@ -254,25 +254,25 @@ PresenceMessage.prototype.assert_onlines_received = function () {
     var cid = client.clientId
     var type = client.userType
     var i
-    var online_idx = -1
-    var client_online_idx = -1
+    var onlineIdx = -1
+    var clientOnlineIdx = -1
 
     for (i = 0; i < this.notifications.length; i++) {
       var value = this.notifications[i].value
-      if (typeof value[uid] !== undefined && value[uid] === type) {
-        assert.equal(online_idx, -1)
-        online_idx = i
+      if (typeof value[uid] !== 'undefined' && value[uid] === type) {
+        assert.strictEqual(onlineIdx, -1)
+        onlineIdx = i
         this.for_client(client).assert_online(this.notifications[i])
       }
       if (value.userId === uid && value.clientId === cid) {
-        assert.equal(client_online_idx, -1)
-        client_online_idx = i
+        assert.strictEqual(clientOnlineIdx, -1)
+        clientOnlineIdx = i
         this.for_client(client).assert_client_online(this.notifications[i])
       }
     }
-    assert.ok(online_idx !== -1)
-    assert.ok(client_online_idx !== -1)
-    assert.ok(client_online_idx > online_idx)
+    assert.ok(onlineIdx !== -1)
+    assert.ok(clientOnlineIdx !== -1)
+    assert.ok(clientOnlineIdx > onlineIdx)
   }
 }
 
@@ -311,7 +311,7 @@ PresenceMessage.prototype.assert_get_response = function (message) {
     value[client.userId] = client.userType
   })
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     op: 'get',
     to: this.scope,
     value: value
@@ -359,7 +359,7 @@ PresenceMessage.prototype.assert_get_v2_response = function (message, clientData
     value: value
   }
 
-  assert.deepEqual(expectedMessage, message,
+  assert.deepStrictEqual(expectedMessage, message,
     JSON.stringify(expectedMessage) + ' vs ' + JSON.stringify(message))
 }
 
@@ -379,7 +379,7 @@ PresenceMessage.prototype.assert_sync_response = function (message) {
     value[client.userId] = client.userType
   })
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     op: 'online',
     to: this.scope,
     value: value
@@ -418,7 +418,7 @@ PresenceMessage.prototype.assert_ack_for = function (type, message) {
   }
   expected.userData = this.client.userData
 
-  assert.deepEqual(expected, message)
+  assert.deepStrictEqual(expected, message)
   assert.ok(ackNumber > 0)
 
   // Restore
@@ -500,7 +500,7 @@ StreamMessage.prototype.assert_ack_for = function (type, message, resource, acti
   }
   expected.userData = this.client.userData
 
-  assert.deepEqual(expected, message)
+  assert.deepStrictEqual(expected, message)
   assert.ok(ackNumber > 0)
 
   // Restore
@@ -525,7 +525,7 @@ StreamMessage.prototype.assert_push_notification = function (message, resource, 
     value: value,
     userData: this.client.userData
   }
-  assert.deepEqual(expected, message)
+  assert.deepStrictEqual(expected, message)
   message.id = id
   assert.ok(message.id)
 }
@@ -533,7 +533,7 @@ StreamMessage.prototype.assert_push_notification = function (message, resource, 
 StreamMessage.prototype.assert_message_sequence = function (list, from) {
   var i
   var messages = this.notifications.slice(from)
-  assert.equal(list.length, messages.length, 'mismatch in number of messages')
+  assert.strictEqual(list.length, messages.length, 'mismatch in number of messages')
   for (i = 0; i < messages.length; i++) {
     var listEntry = list[i]
     var resource, action, value, sender
@@ -553,7 +553,7 @@ StreamMessage.prototype.assert_get_response = function (response, list, idstart)
   var scope = this.scope
   for (var i = 0; i < list.length; i++) {
     var listEntry = list[i]
-    assert.equal(listEntry.length, 4)
+    assert.strictEqual(listEntry.length, 4)
     values.push({
       to: scope,
       op: 'push',
@@ -565,7 +565,7 @@ StreamMessage.prototype.assert_get_response = function (response, list, idstart)
     })
   }
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     op: 'get',
     to: this.scope,
     value: values
@@ -581,7 +581,7 @@ StreamMessage.prototype.assert_sync_error_notification = function (notification,
     error.end = state.end
   }
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     op: 'push',
     to: this.scope,
     error: error
@@ -597,7 +597,7 @@ StreamMessage.prototype.assert_sync_error_get_response = function (response, sta
     error.end = state.end
   }
 
-  assert.deepEqual({
+  assert.deepStrictEqual({
     op: 'get',
     to: this.scope,
     value: [],

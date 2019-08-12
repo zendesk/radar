@@ -65,7 +65,7 @@ describe('given two clients and a presence resource', function () {
       p.on(2, function () {
         // Online and client_online
         p.for_client(client2).assert_message_sequence(
-          [ 'online', 'client_online' ]
+          ['online', 'client_online']
         )
         client.presence('test').unsubscribe(function (message) {
           p.for_client(client).assert_ack_for_unsubscribe(message)
@@ -85,7 +85,7 @@ describe('given two clients and a presence resource', function () {
               // Should show client 1 as online
               p.for_online_clients(client).assert_get_response(message)
               p.for_client(client).assert_message_sequence(
-                [ 'online', 'client_online' ]
+                ['online', 'client_online']
               )
               done()
             })
@@ -202,7 +202,7 @@ describe('given two clients and a presence resource', function () {
 
         p.fail_on_more_than(2)
         p.on(2, function () {
-          p.for_client(client).assert_message_sequence([ 'online', 'client_online' ])
+          p.for_client(client).assert_message_sequence(['online', 'client_online'])
         })
       })
 
@@ -220,9 +220,9 @@ describe('given two clients and a presence resource', function () {
         p.fail_on_more_than(3)
         p.on(3, function () {
           p.for_client(client).assert_message_sequence([
-            [ 'online' ],
-            [ 'client_online' ],
-            [ 'client_updated', clientData ]
+            ['online'],
+            ['client_online'],
+            ['client_updated', clientData]
           ])
         })
       })
@@ -244,10 +244,10 @@ describe('given two clients and a presence resource', function () {
         p.fail_on_more_than(4)
         p.on(4, function () {
           p.for_client(client).assert_message_sequence([
-            [ 'online' ],
-            [ 'client_online' ],
-            [ 'client_updated', clientData ],
-            [ 'client_updated', clientData2 ]
+            ['online'],
+            ['client_online'],
+            ['client_updated', clientData],
+            ['client_updated', clientData2]
           ])
         })
       })
@@ -275,7 +275,7 @@ describe('given two clients and a presence resource', function () {
           })
 
         var verify = function () {
-          assert.equal(2 * count, p.notifications.length)
+          assert.strictEqual(2 * count, p.notifications.length)
           p.for_client(client).assert_message_sequence(expected)
           done()
         }
@@ -292,7 +292,7 @@ describe('given two clients and a presence resource', function () {
 
         p.on(2, function () {
           p.for_client(client).assert_message_sequence(
-            [ 'online', 'client_online' ]
+            ['online', 'client_online']
           )
           client.presence('test').unsubscribe()
         })
@@ -315,7 +315,7 @@ describe('given two clients and a presence resource', function () {
 
         p.on(2, function () {
           p.for_client(client).assert_message_sequence(
-            [ 'online', 'client_online' ]
+            ['online', 'client_online']
           )
           client.presence('no_default').unsubscribe()
         })
@@ -386,7 +386,7 @@ describe('given two clients and a presence resource', function () {
     })
 
     it('should respond correctly when using v2 API (with clientData)', function (done) {
-      var clientData = { '1': '1' }
+      var clientData = { 1: '1' }
 
       client.presence('test').get({ version: 2 }, function (message) {
         p.for_online_clients().assert_get_v2_response(message)
@@ -435,7 +435,7 @@ describe('given two clients and a presence resource', function () {
 
     it('should respond correctly when using via v2 API (with userData)', function (done) {
       // Not supported in v1 api because the result.op == "online" which is handled
-      // by the message listener but not by the sync() callback
+      // by the message listener but not by the sync() callbackFn
 
       client.presence('test').set('online', function () {
         client.presence('test').sync({ version: 2 }, function (message) {
@@ -448,7 +448,7 @@ describe('given two clients and a presence resource', function () {
 
     it('should respond correctly when using via v2 API (without userData)', function (done) {
       // Not supported in v1 api because the result.op == "online" which is handled
-      // by the message listener but not by the sync() callback
+      // by the message listener but not by the sync() callbackFn
 
       client3.presence('test').set('online', function () {
         client3.presence('test').sync({ version: 2 }, function (message) {
@@ -460,7 +460,7 @@ describe('given two clients and a presence resource', function () {
     })
 
     it('should respond correctly when using v2 API (with clientData)', function (done) {
-      var clientData = { '1': '1' }
+      var clientData = { 1: '1' }
 
       client3.presence('test').set('online', clientData, function () {
         client3.presence('test').sync({ version: 2 }, function (message) {

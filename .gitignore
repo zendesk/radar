@@ -6,6 +6,7 @@ npm-debug.log
 devmode.log
 logs/radar.log
 *.swp
+.vscode
 
 # mac os file explorer settings
 .DS_Store

@@ -76,7 +76,7 @@ describe('given a client and a server', function () {
     describe('for incoming online messages,', function () {
       it('should emit user/client onlines', function (done) {
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online' ])
+          p.assert_message_sequence(['online', 'client_online'])
           done()
         }
         presenceManager.addClient('abc', 100, 2, { name: 'tester' })
@@ -89,7 +89,7 @@ describe('given a client and a server', function () {
 
       it('should ignore duplicate messages', function (done) {
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online' ])
+          p.assert_message_sequence(['online', 'client_online'])
           done()
         }
         presenceManager.addClient('abc', 100, 2, { name: 'tester' })
@@ -100,7 +100,7 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore messages from dead servers (sentry expired and gone)', function (done) {
-        presenceManagerForSentry('dead', {dead: true}, function (pm) {
+        presenceManagerForSentry('dead', { dead: true }, function (pm) {
           pm.addClient('abc', 100, 2, { name: 'tester' })
         })
 
@@ -125,7 +125,7 @@ describe('given a client and a server', function () {
 
       it('should emit user/client offline for explicit disconnect', function (done) {
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ])
+          p.assert_message_sequence(['online', 'client_online', 'client_explicit_offline', 'offline'])
           done()
         }
         presenceManager.removeClient('abc', 100, 2)
@@ -136,7 +136,7 @@ describe('given a client and a server', function () {
 
       it('should handle multiple explicit disconnects', function (done) {
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online', 'client_explicit_offline', 'offline' ])
+          p.assert_message_sequence(['online', 'client_online', 'client_explicit_offline', 'offline'])
           done()
         }
         presenceManager.removeClient('abc', 100, 2)
@@ -150,7 +150,7 @@ describe('given a client and a server', function () {
         this.timeout(4000)
 
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline' ])
+          p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline'])
           done()
         }
         presenceManager._implicitDisconnect('abc', 100, 2)
@@ -163,7 +163,7 @@ describe('given a client and a server', function () {
         this.timeout(4000)
 
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline' ])
+          p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline'])
           done()
         }
         presenceManager._implicitDisconnect('abc', 100, 2)
@@ -177,7 +177,7 @@ describe('given a client and a server', function () {
         this.timeout(5000)
 
         var validate = function () {
-          p.assert_message_sequence([ 'online', 'client_online', 'client_implicit_offline', 'offline' ])
+          p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline', 'offline'])
           done()
         }
         presenceManager._implicitDisconnect('abc', 100, 2)
@@ -209,14 +209,14 @@ describe('given a client and a server', function () {
     })
 
     describe('when syncing (v2), ', function () {
-      it('should send new notifications and callback correctly', function (done) {
+      it('should send new notifications and callbackFn correctly', function (done) {
         this.timeout(5000)
-        var callback = false
+        var callbackFn = false
         var validate = function () {
           p.for_online_clients(clients.abc, clients.def)
             .assert_onlines_received()
 
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
 
@@ -224,7 +224,7 @@ describe('given a client and a server', function () {
           p.for_online_clients(clients.abc, clients.def)
             .assert_sync_v2_response(message)
 
-          callback = true
+          callbackFn = true
         })
 
         p.on(4, function () {
@@ -233,19 +233,19 @@ describe('given a client and a server', function () {
         p.fail_on_more_than(4)
       })
 
-      it('should send new notifications and callback correctly for different clients with same user', function (done) {
-        var callback = false
+      it('should send new notifications and callbackFn correctly for different clients with same user', function (done) {
+        var callbackFn = false
         var validate = function () {
           p.for_online_clients(clients.abc, clients.def, clients.pqr)
             .assert_onlines_received()
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
         presenceManager.addClient('pqr', 100, 2, { name: 'tester1' }, function () {
           client.presence('test').on(p.notify).sync({ version: 2 }, function (message) {
             p.for_online_clients(clients.abc, clients.def, clients.pqr)
               .assert_sync_v2_response(message)
-            callback = true
+            callbackFn = true
           })
         })
 
@@ -256,20 +256,20 @@ describe('given a client and a server', function () {
       })
 
       it('subsequent new online notifications should work fine', function (done) {
-        var callback = false
+        var callbackFn = false
         var validate = function () {
           // these should be last two, so from=4
           p.for_client(clients.hij)
             .assert_message_sequence(['online', 'client_online'], 4)
 
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
         client.presence('test').on(p.notify).sync({ version: 2 }, function (message) {
           p.for_online_clients(clients.abc, clients.def)
             .assert_sync_v2_response(message)
-          callback = true
+          callbackFn = true
         })
 
         // After sync's online has come, add another client
@@ -286,10 +286,10 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry expired and gone)', function (done) {
-        var callback = false
+        var callbackFn = false
         var validate = function () {
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
 
@@ -297,7 +297,7 @@ describe('given a client and a server', function () {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function () {
             client.presence('test').on(p.notify).sync({ version: 2 }, function (message) {
               p.for_online_clients(clients.abc, clients.def).assert_sync_v2_response(message)
-              callback = true
+              callbackFn = true
             })
 
             p.fail_on_more_than(4)
@@ -309,19 +309,19 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry expired but present)', function (done) {
-        var callback = false
+        var callbackFn = false
         var validate = function () {
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
 
-        presenceManagerForSentry('expired', {expiration: Date.now() - 10}, function (pm) {
+        presenceManagerForSentry('expired', { expiration: Date.now() - 10 }, function (pm) {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function () {
             client.presence('test').on(p.notify).sync({ version: 2 }, function (message) {
               p.for_online_clients(clients.abc, clients.def)
                 .assert_sync_v2_response(message)
-              callback = true
+              callbackFn = true
             })
             p.fail_on_more_than(4)
             p.on(4, function () {
@@ -348,20 +348,20 @@ describe('given a client and a server', function () {
       })
 
       it('subsequent new online notifications should work fine', function (done) {
-        var callback = false
+        var callbackFn = false
         var validate = function () {
           // after 4 messages,
           p.for_client(clients.hij)
             .assert_message_sequence(['online', 'client_online'], 4)
 
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
-          assert.ok(callback)
+          assert.ok(callbackFn)
           done()
         }
         client.presence('test').on(p.notify).sync(function (message) {
           p.for_online_clients(clients.abc, clients.def)
             .assert_sync_response(message)
-          callback = true
+          callbackFn = true
         })
 
         p.on(4, function () {
@@ -380,7 +380,7 @@ describe('given a client and a server', function () {
     })
 
     describe('when getting, ', function () {
-      it('should send correct callback and no notifications', function (done) {
+      it('should send correct callbackFn and no notifications', function (done) {
         client.presence('test').on(p.notify).get(function (message) {
           p.for_online_clients(clients.abc, clients.def)
             .assert_get_response(message)
@@ -391,7 +391,7 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry gone)', function (done) {
-        presenceManagerForSentry('unknown', {dead: true}, function (pm) {
+        presenceManagerForSentry('unknown', { dead: true }, function (pm) {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function () {
             client.presence('test').on(p.notify).get(function (message) {
               p.for_online_clients(clients.abc, clients.def).assert_get_response(message)
@@ -404,7 +404,7 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry expired but not gone)', function (done) {
-        presenceManagerForSentry('expired', {expiration: Date.now() - 10}, function (pm) {
+        presenceManagerForSentry('expired', { expiration: Date.now() - 10 }, function (pm) {
           pm.addClient('klm', 400, 2, { name: 'tester4' }, function () {
             client.presence('test').on(p.notify).get(function (message) {
               p.for_online_clients(clients.abc, clients.def)

@@ -33,7 +33,7 @@ module.exports = {
     var o = Middleware
     var k
     for (k in o) {
-      if (o.hasOwnProperty(k)) {
+      if (Object.prototype.hasOwnProperty.call(o, k)) {
         receiver.prototype[k] = o[k]
       }
     }

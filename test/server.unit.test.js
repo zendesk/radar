@@ -1,4 +1,4 @@
-/* globals describe, it, beforeEach, afterEach*/
+/* globals describe, it, beforeEach, afterEach */
 var common = require('./common.js')
 var assert = require('assert')
 var sinon = require('sinon')
@@ -43,7 +43,7 @@ describe('given a server', function () {
 
   it('should emit resource:new when allocating a new resource', function (done) {
     radarServer.on('resource:new', function (resource) {
-      assert.equal(resource.to, subscribeMessage.to)
+      assert.strictEqual(resource.to, subscribeMessage.to)
       done()
     })
 
@@ -93,7 +93,7 @@ describe('given a server', function () {
     }
 
     socket.send = function (message) {
-      assert.equal(message.value, 'unknown_type')
+      assert.strictEqual(message.value, 'unknown_type')
       done()
     }
 
@@ -123,7 +123,7 @@ describe('given a server', function () {
     radarServer._processMessage(socket, batchMessage)
 
     setTimeout(function () {
-      expect(radarServer._handleResourceMessage).to.have.been.called.twice
+      assert(radarServer._handleResourceMessage.calledTwice)
       done()
     }, 20)
   })
@@ -139,8 +139,8 @@ describe('given a server', function () {
 
       resource.on('message:incoming', function (incomingMessage) {
         assert(incomingMessage.stamp.id !== undefined)
-        assert.equal(incomingMessage.stamp.clientId, socket.id)
-        assert.equal(incomingMessage.stamp.sentryId, radarServer.sentry.name)
+        assert.strictEqual(incomingMessage.stamp.clientId, socket.id)
+        assert.strictEqual(incomingMessage.stamp.sentryId, radarServer.sentry.name)
         done()
       })
     })
@@ -156,8 +156,8 @@ describe('given a server', function () {
     beforeEach(function () {
       stubClientSession = new EventEmitter()
       stubClientSession.id = 1
-      radarServer.sessionManager = {add: function () { return stubClientSession }}
-      socket = {id: 1}
+      radarServer.sessionManager = { add: function () { return stubClientSession } }
+      socket = { id: 1 }
       radarServer._onSocketConnection(socket)
     })
     it('registers clientSession on message handler', function () {
@@ -169,8 +169,8 @@ describe('given a server', function () {
     describe('clientSesion on end handler', function () {
       it('calls onDestroyClient middleware for each resource', function (done) {
         radarServer.resources = {
-          123: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()},
-          234: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()}
+          123: { subscribers: { 1: stubClientSession }, unsubscribe: sinon.stub(), destroy: sinon.stub() },
+          234: { subscribers: { 1: stubClientSession }, unsubscribe: sinon.stub(), destroy: sinon.stub() }
         }
 
         var calls = []
@@ -196,8 +196,8 @@ describe('given a server', function () {
 
       it('calls resource.unsubscribe for each resource', function (done) {
         radarServer.resources = {
-          123: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()},
-          234: {subscribers: {1: stubClientSession}, unsubscribe: sinon.stub(), destroy: sinon.stub()}
+          123: { subscribers: { 1: stubClientSession }, unsubscribe: sinon.stub(), destroy: sinon.stub() },
+          234: { subscribers: { 1: stubClientSession }, unsubscribe: sinon.stub(), destroy: sinon.stub() }
         }
 
         stubClientSession.emit('end')
@@ -247,20 +247,20 @@ describe('given a server', function () {
 
       radarServer.on('sentry:down', function (sentryId, message) {
         expect(sentryId).to.equal('sentryId')
-        expect(message).to.deep.equal({message: true})
+        expect(message).to.deep.equal({ message: true })
         done()
       })
-      sentry.emit('down', 'sentryId', {message: true})
+      sentry.emit('down', 'sentryId', { message: true })
     })
     it('forwards sentry on up event', function (done) {
       var sentry = radarServer.sentry
 
       radarServer.on('sentry:up', function (sentryId, message) {
         expect(sentryId).to.equal('sentryId')
-        expect(message).to.deep.equal({message: true})
+        expect(message).to.deep.equal({ message: true })
         done()
       })
-      sentry.emit('up', 'sentryId', {message: true})
+      sentry.emit('up', 'sentryId', { message: true })
     })
 
     describe('#_onSentryDown', function () {
@@ -270,14 +270,18 @@ describe('given a server', function () {
           clientSessionIdsForSentryId: sinon.stub().returns(['client1', 'client2'])
         }
         radarServer.resources = {
-          123: {type: 'presence', manager: {
-            store: stubStore,
-            disconnectRemoteClient: sinon.stub()
-          }, destroy: sinon.stub()},
-          234: {type: 'presence', manager: {
-            store: stubStore,
-            disconnectRemoteClient: sinon.stub()
-          }, destroy: sinon.stub()}
+          123: { type: 'presence',
+            manager: {
+              store: stubStore,
+              disconnectRemoteClient: sinon.stub()
+            },
+            destroy: sinon.stub() },
+          234: { type: 'presence',
+            manager: {
+              store: stubStore,
+              disconnectRemoteClient: sinon.stub()
+            },
+            destroy: sinon.stub() }
         }
       })
 

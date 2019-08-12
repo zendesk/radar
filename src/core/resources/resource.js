@@ -40,11 +40,11 @@ function recursiveMerge (target /*, ..sources */) {
   return target
 }
 
-function Resource (to, server, options, default_options) {
+function Resource (to, server, options, defaultOptions) {
   this.to = to
   this.subscribers = {}
   this.server = server // RadarServer instance
-  this.options = recursiveMerge({}, options || {}, default_options || {})
+  this.options = recursiveMerge({}, options || {}, defaultOptions || {})
 }
 
 MiniEventEmitter.mixin(Resource)
