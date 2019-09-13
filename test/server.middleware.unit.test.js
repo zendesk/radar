@@ -45,9 +45,9 @@ describe('given a server with filters', function () {
       radarServer.use({
         onMessage: function (client, message, options, next) {
           called = true
-          assert.equal(client.id, socket.id)
-          assert.equal(options.type, 'Control')
-          assert.deepEqual(message, controlMessage)
+          assert.strictEqual(client.id, socket.id)
+          assert.strictEqual(options.type, 'Control')
+          assert.deepStrictEqual(message, controlMessage)
           next()
         }
       })
@@ -59,7 +59,7 @@ describe('given a server with filters', function () {
       var called = false
 
       socket.send = function (message) {
-        assert.equal('err', message.op)
+        assert.strictEqual('err', message.op)
         assert(called)
         done()
       }
@@ -67,7 +67,7 @@ describe('given a server with filters', function () {
       radarServer.use({
         onMessage: function (client, message, options, next) {
           called = true
-          assert.equal(options.type, 'Control')
+          assert.strictEqual(options.type, 'Control')
           socket.send({ op: 'err' })
           next('err')
         }
@@ -85,7 +85,7 @@ describe('given a server with filters', function () {
         if (value === 1) {
           onMessagevious = value
         } else if (value === 2) {
-          assert.equal(onMessagevious, 1)
+          assert.strictEqual(onMessagevious, 1)
           done()
         }
       }

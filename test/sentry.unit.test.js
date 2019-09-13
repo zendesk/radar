@@ -2,7 +2,7 @@
 var assert = require('assert')
 var Sentry = require('../src/core/resources/presence/sentry.js')
 var Persistence = require('persistence')
-var configuration = require('../configurator.js').load({persistence: true})
+var configuration = require('../configurator.js').load({ persistence: true })
 var _ = require('lodash')
 var currentSentry = 0
 var sentry
@@ -47,7 +47,7 @@ describe('a Server Entry (Sentry)', function () {
     })
   })
 
-  it('start with callback', function (done) {
+  it('start with callbackFn', function (done) {
     sentry = newSentry()
     sentry.start(defaults, done)
   })
@@ -55,13 +55,13 @@ describe('a Server Entry (Sentry)', function () {
   describe('isDown', function () {
     it('initially, it should be down', function () {
       sentry = newSentry()
-      assert.equal(sentry.isDown(sentry.name), true)
+      assert.strictEqual(sentry.isDown(sentry.name), true)
     })
 
     it('after start, it should be up', function () {
       sentry = newSentry()
       sentry.start(defaults, function () {
-        assert.equal(sentry.isDown(sentry.name), false)
+        assert.strictEqual(sentry.isDown(sentry.name), false)
       })
     })
   })
@@ -71,8 +71,8 @@ describe('a Server Entry (Sentry)', function () {
       sentry = newSentry()
 
       sentry.start(defaults, function () {
-        assert.equal(sentry.sentries.length, 1)
-        assert.equal(sentry.name, sentry.sentries[0].name)
+        assert.strictEqual(Object.keys(sentry.sentries).length, 1)
+        assert.strictEqual(sentry.sentries[Object.keys(sentry.sentries)[0]].name, sentry.name)
       })
     })
   })
@@ -81,7 +81,7 @@ describe('a Server Entry (Sentry)', function () {
     beforeEach(function (done) {
       sentryOne = newSentry()
       sentryTwo = newSentry()
-      sentries = [ sentryOne, sentryTwo ]
+      sentries = [sentryOne, sentryTwo]
 
       sentryOne.start(defaults, function () {
         sentryTwo.start(defaults, done)
@@ -91,7 +91,7 @@ describe('a Server Entry (Sentry)', function () {
     it('after start, the sentries should know about each other', function (done) {
       var checkSentriesKnowEachOther = function () {
         sentries.forEach(function (s) {
-          assert.equal(Object.keys(s.sentries).length, 2)
+          assert.strictEqual(Object.keys(s.sentries).length, 2)
         })
         done()
       }
@@ -102,7 +102,7 @@ describe('a Server Entry (Sentry)', function () {
     it('after a down, and after check, sentries should clean up', function (done) {
       var checkForSentryTwoGone = function () {
         setTimeout(function () {
-          assert.equal(sentryOne.sentries[sentryTwo.name], undefined)
+          assert.strictEqual(sentryOne.sentries[sentryTwo.name], undefined)
           done()
         }, 500)
       }
@@ -113,18 +113,18 @@ describe('a Server Entry (Sentry)', function () {
 
   describe('complex scenario, with more than two sentries, when one dies', function () {
     it('all remaining sentries should do proper cleanup', function (done) {
-      sentryOne = newSentry({checkInterval: 10})
-      sentryTwo = newSentry({checkInterval: 20}) // It's important that sentryTwo is slower.
+      sentryOne = newSentry({ checkInterval: 10 })
+      sentryTwo = newSentry({ checkInterval: 20 }) // It's important that sentryTwo is slower.
       sentryThree = newSentry()
-      sentries = [ sentryOne, sentryTwo, sentryThree ]
+      sentries = [sentryOne, sentryTwo, sentryThree]
 
       var stopAndAssert = function () {
         // stop one
         sentryThree.stop(function () {
           setTimeout(function () {
             // assert existing sentries no longer know sentryThree.
-            assert.equal(sentryOne.sentries[sentryThree.name], undefined)
-            assert.equal(sentryTwo.sentries[sentryThree.name], undefined)
+            assert.strictEqual(sentryOne.sentries[sentryThree.name], undefined)
+            assert.strictEqual(sentryTwo.sentries[sentryThree.name], undefined)
             done()
           }, 300)
         })
@@ -144,9 +144,9 @@ describe('a Server Entry (Sentry)', function () {
 
   describe('when emiting events', function () {
     it('should emit up when going up', function (done) {
-      sentryOne = newSentry({checkInterval: 10})
+      sentryOne = newSentry({ checkInterval: 10 })
       sentryOne.on('up', function (name, message) {
-        assert.equal(name, sentryOne.name)
+        assert.strictEqual(name, sentryOne.name)
         done()
       })
 
@@ -158,7 +158,7 @@ describe('a Server Entry (Sentry)', function () {
       sentryTwo = newSentry()
 
       sentryOne.on('down', function (name, message) {
-        assert.equal(name, sentryTwo.name)
+        assert.strictEqual(name, sentryTwo.name)
         done()
       })
 

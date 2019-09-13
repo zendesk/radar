@@ -3,7 +3,7 @@ var PresenceManager = require('./presence_manager.js')
 var Stamper = require('../../stamper.js')
 var logging = require('minilog')('radar:presence')
 
-var default_options = {
+var defaultOptions = {
   policy: {
     // 12 hours in seconds
     maxPersistence: 12 * 60 * 60,
@@ -15,7 +15,7 @@ var default_options = {
 
 function Presence (to, server, options) {
   this.sentry = server.sentry
-  Resource.call(this, to, server, options, default_options)
+  Resource.call(this, to, server, options, defaultOptions)
   this.setup()
 }
 

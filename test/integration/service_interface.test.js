@@ -29,7 +29,7 @@ describe('Given a Radar server', function () {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({op: 'get', to: 'sd'})
+      body: JSON.stringify({ op: 'get', to: 'sd' })
     }
   })
 
@@ -84,7 +84,7 @@ describe('Given a Radar server', function () {
           options.body = JSON.stringify({
             op: 'get',
             to: 'presence:/account/ticket/1',
-            options: {version: 2}
+            options: { version: 2 }
           })
 
           return fetch(endpoint, options).then(function (res) {
@@ -143,7 +143,7 @@ describe('Given a Radar server', function () {
           options.body = JSON.stringify({
             op: 'get',
             to: 'presence:/account/' + scope,
-            options: {version: 2}
+            options: { version: 2 }
           })
 
           return fetch(endpoint, options).then(function (res) {
@@ -216,7 +216,7 @@ describe('Given a Radar server', function () {
             op: 'get',
             to: 'status:/account/name',
             value: {
-              '123': value
+              123: value
             }
           })
         })

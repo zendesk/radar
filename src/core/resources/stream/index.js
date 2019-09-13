@@ -3,7 +3,7 @@ var Persistence = require('persistence')
 var logging = require('minilog')('radar:stream')
 var SubscriberState = require('./subscriber_state.js')
 
-var default_options = {
+var defaultOptions = {
   policy: {
     maxPersistence: 7 * 24 * 60 * 60, // 1 week in seconds
     maxLength: 100000
@@ -11,7 +11,7 @@ var default_options = {
 }
 
 function Stream (to, server, options) {
-  Resource.call(this, to, server, options, default_options)
+  Resource.call(this, to, server, options, defaultOptions)
   this.list = new Persistence.List(to, this.options.policy.maxPersistence, this.options.policy.maxLength)
   this.subscriberState = new SubscriberState()
 }

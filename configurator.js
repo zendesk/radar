@@ -14,26 +14,30 @@
 // Minimal radar settings
 var defaultSettings = [
   {
-    name: 'port', description: 'port to listen',
+    name: 'port',
+    description: 'port to listen',
     env: 'RADAR_PORT',
     abbr: 'p',
     full: 'port',
     default: '8000'
   },
   {
-    name: 'redisUrl', description: 'Redis url',
+    name: 'redisUrl',
+    description: 'Redis url',
     env: 'RADAR_REDIS_URL',
     abbr: 'r',
     full: 'redis_url',
     default: 'redis://localhost:6379'
   },
   {
-    name: 'sentinelMasterName', description: 'sentinel master name',
+    name: 'sentinelMasterName',
+    description: 'sentinel master name',
     env: 'RADAR_SENTINEL_MASTER_NAME',
     full: 'sentinel_master_name'
   },
   {
-    name: 'sentinelUrls', description: 'sentinel urls',
+    name: 'sentinelUrls',
+    description: 'sentinel urls',
     env: 'RADAR_SENTINEL_URLS',
     full: 'sentinel_urls'
   }
@@ -116,7 +120,7 @@ Configurator.prototype._defaultConfiguration = function () {
   var config = {}
 
   this.settings.forEach(function (element) {
-    if (element.hasOwnProperty('default')) {
+    if (Object.prototype.hasOwnProperty.call(element, 'default')) {
       config[element.name] = element.default
     }
   })
@@ -186,7 +190,7 @@ function parseUrl (redisUrl) {
 
 function merge (destination, source) {
   for (var name in source) {
-    if (source.hasOwnProperty(name)) {
+    if (Object.prototype.hasOwnProperty.call(source, name)) {
       destination[name] = source[name]
     }
   }

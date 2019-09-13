@@ -98,10 +98,10 @@ describe('given a server', function () {
   }
 })
 
-function asyncWhile (conditionPredicate, bodyFn, callback) {
+function asyncWhile (conditionPredicate, bodyFn, callbackFn) {
   setImmediate(function () {
-    if (!conditionPredicate()) { return callback() }
+    if (!conditionPredicate()) { return callbackFn() }
     bodyFn()
-    asyncWhile(conditionPredicate, bodyFn, callback)
+    asyncWhile(conditionPredicate, bodyFn, callbackFn)
   })
 }

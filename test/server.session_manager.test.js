@@ -32,8 +32,8 @@ describe('SessionManager', function () {
 
   describe('client session adapters', function () {
     describe('when instantiating with adapters option', function () {
-      var adapters = [{canAdapt: function () {}, adapt: function () {}}]
-      var sessionManager = new SessionManager({adapters: adapters})
+      var adapters = [{ canAdapt: function () {}, adapt: function () {} }]
+      var sessionManager = new SessionManager({ adapters: adapters })
 
       it('assigns the adapters to this.adapters', function () {
         expect(sessionManager.adapters).to.deep.equal(adapters)
@@ -47,17 +47,16 @@ describe('SessionManager', function () {
     })
 
     describe('#canAdapt', function () {
-      var someObj = {foo: 1}
+      var someObj = { foo: 1 }
 
       it('returns true when an adapter matches', function () {
-        var adapterStub1 = {canAdapt: sinon.stub().returns(false)}
-        var adapterStub2 = {canAdapt: sinon.stub().returns(true)}
+        var adapterStub1 = { canAdapt: sinon.stub().returns(false) }
+        var adapterStub2 = { canAdapt: sinon.stub().returns(true) }
         sessionManager.adapters.push(adapterStub1, adapterStub2)
-        expect(sessionManager.canAdapt(someObj))
-          .to.be.true
+        expect(sessionManager.canAdapt(someObj)).to.be.true
       })
       it('returns false when no adapter matches', function () {
-        var adapterStub1 = {canAdapt: sinon.stub().returns(false)}
+        var adapterStub1 = { canAdapt: sinon.stub().returns(false) }
         sessionManager.adapters.push(adapterStub1)
         expect(sessionManager.canAdapt(someObj))
           .to.be.false
@@ -69,7 +68,7 @@ describe('SessionManager', function () {
     })
 
     describe('#adapt', function () {
-      var someObj = {foo: 1}
+      var someObj = { foo: 1 }
       var adapter
       describe('given a matching adapter', function () {
         var session = {}
@@ -118,9 +117,9 @@ describe('SessionManager', function () {
     it('returns false otherwise', function () {
       expect(sessionManager.isValidAdapter({}))
         .to.be.false
-      expect(sessionManager.isValidAdapter({adapt: function () {}}))
+      expect(sessionManager.isValidAdapter({ adapt: function () {} }))
         .to.be.false
-      expect(sessionManager.isValidAdapter({canAdapt: function () {}}))
+      expect(sessionManager.isValidAdapter({ canAdapt: function () {} }))
         .to.be.false
     })
   })
@@ -183,7 +182,7 @@ describe('SessionManager', function () {
     })
 
     describe('given a non-ClientSession', function () {
-      var someObj = {id: 'one'}
+      var someObj = { id: 'one' }
 
       it('tries to adapt the obj', function () {
         var adapter = {

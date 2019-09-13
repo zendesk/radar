@@ -12,10 +12,10 @@ module.exports.create = function createClientSessionStateMachine (clientSession)
   return StateMachine.create({
     initial: 'initializing',
     events: [
-      {name: 'initialize', from: 'initializing', to: 'ready'},
-      {name: 'leave', from: 'ready', to: 'not ready'},
-      {name: 'comeback', from: 'not ready', to: 'ready'},
-      {name: 'end', from: ['initializing', 'ready', 'not ready'], to: 'ended'}
+      { name: 'initialize', from: 'initializing', to: 'ready' },
+      { name: 'leave', from: 'ready', to: 'not ready' },
+      { name: 'comeback', from: 'not ready', to: 'ready' },
+      { name: 'end', from: ['initializing', 'ready', 'not ready'], to: 'ended' }
     ],
     callbacks: {
       oninitialize: bind(oninitialize, clientSession),

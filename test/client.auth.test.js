@@ -28,8 +28,8 @@ describe('auth test', function () {
     it('subscribe fails and emits err', function (done) {
       client.on('err', function (message) {
         assert.ok(message.origin)
-        assert.equal(message.origin.op, 'subscribe')
-        assert.equal(message.origin.to, 'message:/client_auth/disabled')
+        assert.strictEqual(message.origin.op, 'subscribe')
+        assert.strictEqual(message.origin.to, 'message:/client_auth/disabled')
         setTimeout(done, 50)
       })
 
@@ -43,10 +43,10 @@ describe('auth test', function () {
       // Cache policy true for this type
       client.on('err', function (message) {
         assert.ok(message.origin)
-        assert.equal(message.origin.op, 'publish')
-        assert.equal(message.origin.to, 'message:/client_auth/disabled')
+        assert.strictEqual(message.origin.op, 'publish')
+        assert.strictEqual(message.origin.to, 'message:/client_auth/disabled')
         Persistence.readOrderedWithScores('message:/client_auth/disabled', function (messages) {
-          assert.deepEqual([], messages)
+          assert.deepStrictEqual([], messages)
           done()
         })
       })
@@ -58,11 +58,11 @@ describe('auth test', function () {
 
   describe('if type is not disabled', function () {
     it('should work', function (done) {
-      var originalMessage = {hello: 'world', timestamp: Date.now()}
+      var originalMessage = { hello: 'world', timestamp: Date.now() }
 
       client.message('enabled').on(function (message) {
-        assert.deepEqual(message.value, originalMessage)
-        assert.equal(message.to, 'message:/client_auth/enabled')
+        assert.deepStrictEqual(message.value, originalMessage)
+        assert.strictEqual(message.to, 'message:/client_auth/enabled')
         done()
       })
 

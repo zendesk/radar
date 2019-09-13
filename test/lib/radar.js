@@ -90,7 +90,7 @@ Type.add([
 
 var Service = {}
 
-Service.start = function (configuration, callback) {
+Service.start = function (configuration, callbackFn) {
   logger.debug('creating radar', configuration)
   httpServer = http.createServer(p404)
 
@@ -108,7 +108,7 @@ Service.start = function (configuration, callback) {
       serverStarted = true
       Persistence.delWildCard('*', function () {
         logger.info('Persistence cleared')
-        callback()
+        callbackFn()
       })
     })
   })
@@ -116,7 +116,7 @@ Service.start = function (configuration, callback) {
   radar.attach(httpServer, configuration)
 }
 
-Service.stop = function (arg, callback) {
+Service.stop = function (arg, callbackFn) {
   var serverTimeout
   logger.info('stop')
 
@@ -124,9 +124,9 @@ Service.stop = function (arg, callback) {
     logger.info('httpServer closed')
     if (serverStarted) {
       clearTimeout(serverTimeout)
-      logger.info('Calling callback, close event')
+      logger.info('Calling callbackFn, close event')
       serverStarted = false
-      callback()
+      callbackFn()
     }
   })
 
@@ -135,7 +135,7 @@ Service.stop = function (arg, callback) {
       logger.info('radar terminated')
       if (!serverStarted) {
         logger.info('httpServer terminated')
-        callback()
+        callbackFn()
       } else {
         logger.info('closing httpServer')
         logger.info('connections left', httpServer._connections)
@@ -145,8 +145,8 @@ Service.stop = function (arg, callback) {
           // throw the close event within time.
           if (serverStarted) {
             serverStarted = false
-            logger.info('Calling callback, timeout')
-            callback()
+            logger.info('Calling callbackFn, timeout')
+            callbackFn()
           }
         }, 200)
       }

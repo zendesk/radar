@@ -1,3 +1,6 @@
+### 0.31.0
+* [PR #243](https://github.com/zendesk/radar/pull/243) - Upgrade Node.Js version to 10 (LTS) and its dependencies
+
 ### 0.30.0
 * [PR #243](https://github.com/zendesk/radar/pull/243) - Remove support for node v0.1x / Emit profiling once on sentry down
 

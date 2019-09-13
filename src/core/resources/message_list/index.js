@@ -2,7 +2,7 @@ var Resource = require('../resource.js')
 var Persistence = require('persistence')
 var logger = require('minilog')('radar:message_list')
 
-var default_options = {
+var defaultOptions = {
   policy: {
     maxPersistence: 14 * 24 * 60 * 60 // 2 weeks in seconds
   }
@@ -13,7 +13,7 @@ var default_options = {
 // after being the last user.
 
 function MessageList (to, server, options) {
-  Resource.call(this, to, server, options, default_options)
+  Resource.call(this, to, server, options, defaultOptions)
 }
 
 MessageList.prototype = new Resource()

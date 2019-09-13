@@ -47,7 +47,7 @@ describe('SocketClientSessionAdapter', function () {
       })
     })
     describe('given non-socket-like object', function () {
-      var obj = {foo: 'bar'}
+      var obj = { foo: 'bar' }
       it('returns false', function () {
         expect(socketClientSessionAdapter.canAdapt(obj))
           .to.be.false

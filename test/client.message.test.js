@@ -40,32 +40,32 @@ describe('When using message list resources:', function () {
   describe('subscribe/unsubscribe', function () {
     it('should subscribe successfully with an ack', function (done) {
       client.message('test').subscribe(function (message) {
-        assert.equal('subscribe', message.op)
-        assert.equal('message:/dev/test', message.to)
+        assert.strictEqual('subscribe', message.op)
+        assert.strictEqual('message:/dev/test', message.to)
         done()
       })
     })
 
     it('should unsubscribe successfully with an ack', function (done) {
       client.message('test').unsubscribe(function (message) {
-        assert.equal('unsubscribe', message.op)
-        assert.equal('message:/dev/test', message.to)
+        assert.strictEqual('unsubscribe', message.op)
+        assert.strictEqual('message:/dev/test', message.to)
         done()
       })
     })
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = {state: 'test1'}
+      var message = { state: 'test1' }
 
       var finished = {}
 
-      function validate (msg, client_name) {
-        assert.equal('message:/dev/test', msg.to)
-        assert.equal('publish', msg.op)
-        assert.equal(message.state, msg.value.state)
-        assert.ok(!finished[client_name])
-        finished[client_name] = true
+      function validate (msg, clientName) {
+        assert.strictEqual('message:/dev/test', msg.to)
+        assert.strictEqual('publish', msg.op)
+        assert.strictEqual(message.state, msg.value.state)
+        assert.ok(!finished[clientName])
+        finished[clientName] = true
         if (finished.client && finished.client2) {
           setTimeout(done, 30)
         }
@@ -110,13 +110,13 @@ describe('When using message list resources:', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = {state: 'test1'}
-      var message2 = {state: 'test2'}
-      var message3 = {state: 'test3'}
+      var message = { state: 'test1' }
+      var message2 = { state: 'test2' }
+      var message3 = { state: 'test3' }
 
       // test.numAssertions = 3
       client2.message('test').on(function (msg) {
-        assert.equal(msg.value.state, 'test1')
+        assert.strictEqual(msg.value.state, 'test1')
         client2.message('test').unsubscribe().publish(message2)
         client2.message('test').unsubscribe().publish(message3)
       })
@@ -148,12 +148,12 @@ describe('When using message list resources:', function () {
       }
 
       function verify () {
-        assert.equal(messages.length, received.length)
+        assert.strictEqual(messages.length, received.length)
         for (var i = 0; i < received.length; i++) {
-          assert.equal('publish', received[i].op)
-          assert.deepEqual(messages[i], received[i].value)
-          assert.equal('message:/dev/cached_chat/1', received[i].to)
-          assert.deepEqual({}, received[i].userData)
+          assert.strictEqual('publish', received[i].op)
+          assert.deepStrictEqual(messages[i], received[i].value)
+          assert.strictEqual('message:/dev/cached_chat/1', received[i].to)
+          assert.deepStrictEqual({}, received[i].userData)
         }
         done()
       }
@@ -163,10 +163,10 @@ describe('When using message list resources:', function () {
   describe('publish', function () {
     it('can ack a publish', function (done) {
       client.message('test').publish('foobar', function (message) {
-        assert.equal('message:/dev/test', message.to)
-        assert.equal('foobar', message.value)
-        assert.equal('publish', message.op)
-        assert.deepEqual({}, message.userData)
+        assert.strictEqual('message:/dev/test', message.to)
+        assert.strictEqual('foobar', message.value)
+        assert.strictEqual('publish', message.op)
+        assert.deepStrictEqual({}, message.userData)
         done()
       })
     })
@@ -175,21 +175,21 @@ describe('When using message list resources:', function () {
       var message = '{ "state": "other"}'
 
       client.message('test').when(function (msg) {
-        assert.equal('message:/dev/test', msg.to)
-        assert.equal('string', typeof msg.value)
-        assert.equal('{ "state": "other"}', msg.value)
+        assert.strictEqual('message:/dev/test', msg.to)
+        assert.strictEqual('string', typeof msg.value)
+        assert.strictEqual('{ "state": "other"}', msg.value)
         done()
       })
       client.message('test').subscribe().publish(message)
     })
 
     it('can publish an Object', function (done) {
-      var message = {state: 'other'}
+      var message = { state: 'other' }
 
       client.message('test').when(function (msg) {
         if (msg.value && msg.value.state && msg.value.state === 'other') {
-          assert.equal('message:/dev/test', msg.to)
-          assert.equal('other', msg.value.state)
+          assert.strictEqual('message:/dev/test', msg.to)
+          assert.strictEqual('other', msg.value.state)
           done()
           return true
         }
@@ -227,13 +227,13 @@ describe('When using message list resources:', function () {
         .publish(message)
         .once(function () {
           client.message('cached_chat/1').on(function (msg) {
-            assert.equal('publish', msg.op)
-            assert.equal('message:/dev/cached_chat/1', msg.to)
-            assert.deepEqual({}, msg.userData)
-            assert.equal('foobar', msg.value)
+            assert.strictEqual('publish', msg.op)
+            assert.strictEqual('message:/dev/cached_chat/1', msg.to)
+            assert.deepStrictEqual({}, msg.userData)
+            assert.strictEqual('foobar', msg.value)
             assertions++
             setTimeout(function () {
-              assert.equal(1, assertions)
+              assert.strictEqual(1, assertions)
               done()
             }, 50)
           }).sync()
@@ -248,13 +248,13 @@ describe('When using message list resources:', function () {
         .publish(message)
         .once(function () {
           client.message('cached_chat/1').on(function (msg) {
-            assert.equal('publish', msg.op)
-            assert.equal('message:/dev/cached_chat/1', msg.to)
-            assert.deepEqual({}, msg.userData)
-            assert.equal('bar', msg.value.foo)
+            assert.strictEqual('publish', msg.op)
+            assert.strictEqual('message:/dev/cached_chat/1', msg.to)
+            assert.deepStrictEqual({}, msg.userData)
+            assert.strictEqual('bar', msg.value.foo)
             assertions++
             setTimeout(function () {
-              assert.equal(1, assertions)
+              assert.strictEqual(1, assertions)
               done()
             }, 50)
           }).sync()
@@ -282,12 +282,12 @@ describe('When using message list resources:', function () {
           received.push(msg)
           if (received.length === messages.length) {
             setTimeout(function () {
-              assert.equal(messages.length, received.length)
+              assert.strictEqual(messages.length, received.length)
               for (var i = 0; i < received.length; i++) {
-                assert.equal('publish', received[i].op)
-                assert.deepEqual(messages[i], received[i].value)
-                assert.equal('message:/dev/cached_chat/1', received[i].to)
-                assert.deepEqual({}, received[i].userData)
+                assert.strictEqual('publish', received[i].op)
+                assert.deepStrictEqual(messages[i], received[i].value)
+                assert.strictEqual('message:/dev/cached_chat/1', received[i].to)
+                assert.deepStrictEqual({}, received[i].userData)
               }
               done()
             }, 50)

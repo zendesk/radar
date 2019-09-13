@@ -95,7 +95,7 @@ ClientSession.prototype.storeData = function (messageIn) {
 }
 
 ClientSession.prototype.readData = function (cb) {
-  var data = {subscriptions: this.subscriptions, presences: this.presences}
+  var data = { subscriptions: this.subscriptions, presences: this.presences }
 
   if (cb) {
     cb(data)

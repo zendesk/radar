@@ -53,8 +53,8 @@ describe('given a server', function () {
 
     it('it should prevent unauthorized access', function (done) {
       socket.send = function (message) {
-        assert.equal('err', message.op)
-        assert.equal('auth', message.value)
+        assert.strictEqual('err', message.op)
+        assert.strictEqual('auth', message.value)
         done()
       }
 

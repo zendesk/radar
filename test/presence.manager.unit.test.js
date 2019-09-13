@@ -8,11 +8,11 @@ describe('PresenceManager', function () {
   describe('#disconnectRemoteClient', function () {
     it('sends implicit offline message without updating redis', function (done) {
       var scope = 'presence:/foo/bar'
-      var sentry = {on: function () {}}
+      var sentry = { on: function () {} }
       var clientSessionId = 'abcdef'
 
       var presenceManager = new PresenceManager(scope, {}, sentry)
-      presenceManager.processRedisEntry = function (message, callback) {
+      presenceManager.processRedisEntry = function (message, callbackFn) {
         expect(message).to.deep.equal({
           userId: undefined,
           userType: undefined,
@@ -20,7 +20,7 @@ describe('PresenceManager', function () {
           online: false,
           explicit: false
         })
-        callback()
+        callbackFn()
       }
       presenceManager.disconnectRemoteClient(clientSessionId, function (err) {
         done(err)

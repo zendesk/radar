@@ -57,12 +57,12 @@ describe('When using the stream resource', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = {state: 'test1'}
+      var message = { state: 'test1' }
       var finished = {}
 
-      function validate (msg, client_name) {
-        assert.ok(!finished[client_name])
-        finished[client_name] = true
+      function validate (msg, clientName) {
+        assert.ok(!finished[clientName])
+        finished[clientName] = true
         if (finished.client && finished.client2) {
           setTimeout(done, 30)
         }
@@ -104,9 +104,9 @@ describe('When using the stream resource', function () {
 
       s.on(3, function () {
         s.assert_message_sequence([
-          [ 'ticket/1', 'open', message ],
-          [ 'ticket/2', 'close', message2 ],
-          [ 'ticket/3', 'edit', message3 ]
+          ['ticket/1', 'open', message],
+          ['ticket/2', 'close', message2],
+          ['ticket/3', 'edit', message3]
         ])
         done()
       })
@@ -122,9 +122,9 @@ describe('When using the stream resource', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = {state: 'test1'}
-      var message2 = {state: 'test2'}
-      var message3 = {state: 'test3'}
+      var message = { state: 'test1' }
+      var message2 = { state: 'test2' }
+      var message3 = { state: 'test3' }
 
       // test.numAssertions = 3
       client2.stream('test').on(function (msg) {
@@ -137,9 +137,9 @@ describe('When using the stream resource', function () {
       client2.stream('test').subscribe().push('ticket/1', 'open', message)
       s.on(3, function () {
         s.for_sender(client2).assert_message_sequence([
-          [ 'ticket/1', 'open', message ],
-          [ 'ticket/1', 'open', message2 ],
-          [ 'ticket/1', 'open', message3 ]
+          ['ticket/1', 'open', message],
+          ['ticket/1', 'open', message2],
+          ['ticket/1', 'open', message3]
         ])
         done()
       })
@@ -153,22 +153,22 @@ describe('When using the stream resource', function () {
           .push('ticket/1', 'open', 'third')
         s.on(3, function () {
           s.for_sender(client2).assert_message_sequence([
-            [ 'ticket/1', 'open', 'first' ],
-            [ 'ticket/1', 'open', 'second' ],
-            [ 'ticket/1', 'open', 'third' ]
+            ['ticket/1', 'open', 'first'],
+            ['ticket/1', 'open', 'second'],
+            ['ticket/1', 'open', 'third']
           ])
           client.stream('test').unsubscribe()
           client2.stream('test').push('ticket/1', 'open', 'fourth')
             .push('ticket/1', 'open', 'fifth')
             .push('ticket/1', 'open', 'sixth')
-          client.stream('test').subscribe({from: s.notifications[2].id})
+          client.stream('test').subscribe({ from: s.notifications[2].id })
           s.fail_on_more_than(6)
 
           s.on(6, function () {
             s.for_sender(client2).assert_message_sequence([
-              [ 'ticket/1', 'open', 'fourth' ],
-              [ 'ticket/1', 'open', 'fifth' ],
-              [ 'ticket/1', 'open', 'sixth' ]
+              ['ticket/1', 'open', 'fourth'],
+              ['ticket/1', 'open', 'fifth'],
+              ['ticket/1', 'open', 'sixth']
             ], 3)
             done()
           })
@@ -184,15 +184,15 @@ describe('When using the stream resource', function () {
           .push('ticket/1', 'open', 'fourth')
         s.on(4, function () {
           s.for_sender(client2).assert_message_sequence([
-            [ 'ticket/1', 'open', 'first' ],
-            [ 'ticket/1', 'open', 'second' ],
-            [ 'ticket/1', 'open', 'third' ],
-            [ 'ticket/1', 'open', 'fourth' ]
+            ['ticket/1', 'open', 'first'],
+            ['ticket/1', 'open', 'second'],
+            ['ticket/1', 'open', 'third'],
+            ['ticket/1', 'open', 'fourth']
           ])
           client.stream('short_stream/1').unsubscribe()
           client2.stream('short_stream/1').push('ticket/1', 'open', 'fifth')
             .push('ticket/1', 'open', 'sixth', function () {
-              client.stream('short_stream/1').subscribe({from: s.notifications[3].id})
+              client.stream('short_stream/1').subscribe({ from: s.notifications[3].id })
             })
         })
         s.fail_on_more_than(5)
@@ -211,15 +211,15 @@ describe('When using the stream resource', function () {
           .push('ticket/1', 'open', 'fourth')
         s.on(4, function () {
           s.for_sender(client2).assert_message_sequence([
-            [ 'ticket/1', 'open', 'first' ],
-            [ 'ticket/1', 'open', 'second' ],
-            [ 'ticket/1', 'open', 'third' ],
-            [ 'ticket/1', 'open', 'fourth' ]
+            ['ticket/1', 'open', 'first'],
+            ['ticket/1', 'open', 'second'],
+            ['ticket/1', 'open', 'third'],
+            ['ticket/1', 'open', 'fourth']
           ])
           client.stream('short_stream/2').unsubscribe()
           client2.stream('short_stream/2').push('ticket/1', 'open', 'fifth')
             .push('ticket/1', 'open', 'sixth', function () {
-              client.stream('short_stream/2').subscribe({from: s.notifications[3].id})
+              client.stream('short_stream/2').subscribe({ from: s.notifications[3].id })
             })
         })
         s.on(5, function () {
@@ -244,12 +244,12 @@ describe('When using the stream resource', function () {
           .push('ticket/1', 'open', 'fourth')
         s.on(4, function () {
           s.for_sender(client2).assert_message_sequence([
-            [ 'ticket/1', 'open', 'first' ],
-            [ 'ticket/1', 'open', 'second' ],
-            [ 'ticket/1', 'open', 'third' ],
-            [ 'ticket/1', 'open', 'fourth' ]
+            ['ticket/1', 'open', 'first'],
+            ['ticket/1', 'open', 'second'],
+            ['ticket/1', 'open', 'third'],
+            ['ticket/1', 'open', 'fourth']
           ])
-          client.stream('uncached_stream/1').subscribe({from: s.notifications[3].id})
+          client.stream('uncached_stream/1').subscribe({ from: s.notifications[3].id })
         })
 
         s.fail_on_more_than(5)
@@ -288,29 +288,29 @@ describe('When using the stream resource', function () {
 
   describe('get', function () {
     it('can get a String', function (done) {
-      var once_push = function () {
+      var oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
-            [ 'ticket/1', 'open', 'foo', client ],
-            [ 'ticket/1', 'close', 'foo', client ]
+            ['ticket/1', 'open', 'foo', client],
+            ['ticket/1', 'close', 'foo', client]
           ])
           done()
         })
       }
       client.stream('test').push('ticket/1', 'open', 'foo')
-      client.stream('test').push('ticket/1', 'close', 'foo', once_push)
+      client.stream('test').push('ticket/1', 'close', 'foo', oncePush)
     })
 
     it('can get an Object', function (done) {
-      var once_push = function () {
+      var oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
-            [ 'ticket/1', 'open', { hello: 'world' }, client ]
+            ['ticket/1', 'open', { hello: 'world' }, client]
           ])
           done()
         })
       }
-      client.stream('test').push('ticket/1', 'open', { hello: 'world' }, once_push)
+      client.stream('test').push('ticket/1', 'open', { hello: 'world' }, oncePush)
     })
 
     it('returns [] if empty', function (done) {
@@ -327,14 +327,14 @@ describe('When using the stream resource', function () {
         .push('ticket/1', 'open', 'third')
       s.once(3, function () {
         s.for_sender(client2).assert_message_sequence([
-          [ 'ticket/1', 'open', 'first' ],
-          [ 'ticket/1', 'open', 'second' ],
-          [ 'ticket/1', 'open', 'third' ]
+          ['ticket/1', 'open', 'first'],
+          ['ticket/1', 'open', 'second'],
+          ['ticket/1', 'open', 'third']
         ])
-        client.stream('test').get({from: s.notifications[0].id}, function (m) {
+        client.stream('test').get({ from: s.notifications[0].id }, function (m) {
           s.assert_get_response(m, [
-            [ 'ticket/1', 'open', 'second', client2 ],
-            [ 'ticket/1', 'open', 'third', client2 ]
+            ['ticket/1', 'open', 'second', client2],
+            ['ticket/1', 'open', 'third', client2]
           ], s.notifications[1].id) // from the next
           done()
         })
@@ -350,12 +350,12 @@ describe('When using the stream resource', function () {
         .push('ticket/1', 'open', 'fourth')
       s.once(4, function () {
         s.for_sender(client2).assert_message_sequence([
-          [ 'ticket/1', 'open', 'first' ],
-          [ 'ticket/1', 'open', 'second' ],
-          [ 'ticket/1', 'open', 'third' ],
-          [ 'ticket/1', 'open', 'fourth' ]
+          ['ticket/1', 'open', 'first'],
+          ['ticket/1', 'open', 'second'],
+          ['ticket/1', 'open', 'third'],
+          ['ticket/1', 'open', 'fourth']
         ])
-        client.stream('short_stream/get/1').get({from: s.notifications[1].id}, function (m) {
+        client.stream('short_stream/get/1').get({ from: s.notifications[1].id }, function (m) {
           s.assert_sync_error_get_response(m, { start: 3, end: 4, from: 2, size: 2 })
           done()
         })
@@ -371,7 +371,7 @@ describe('When using the stream resource', function () {
           assert.ok(false)
         }).sync(function (message) {
           s.assert_sync_response(message, [
-            [ 'ticket/1', 'open', 'foo', client2 ]
+            ['ticket/1', 'open', 'foo', client2]
           ])
           setTimeout(done, 50)
         })
