@@ -1,6 +1,7 @@
 language: node_js
 node_js:
-- '12.6.0'
+- '10'
+- '12'
 services:
 - redis-server
 script:
@@ -8,9 +9,6 @@ script:
 - verbose=1 radar_log=info npm test
 before_install: 
   - npm install npm@6.9.0 -g
-notifications:
-  flowdock:
-    secure: eqo+1HteeVzHGckSQhvSG18sD7Eq/DdFSouaW3Mj7owW8gH83/utYgCU2DOiSn404wOqIv2MgI+CYzgoFQCoYaR98BgxYS2iike1GWkn+s53VFSS9WNkjWW/4W7Fm+g4fWEDnN00U4mIJK3G/9l+C2zDiSaRwuD+9K61o3QCWaM=
 sudo: false
 branches:
   only: [master, staging, production]
