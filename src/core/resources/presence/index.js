@@ -41,6 +41,7 @@ Presence.prototype.setup = function () {
 
   this.manager.on('user_offline', function (userId, userType) {
     logging.info('#presence - user_offline', userId, userType, self.to)
+    console.log('Still logging you: #presence - user_offline', userId, userType, self.to)
     var value = {}
     value[userId] = userType
     self.broadcast({
