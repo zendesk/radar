@@ -246,7 +246,6 @@ PresenceManager.prototype.expireUser = function (userId, userType) {
 // For sync
 PresenceManager.prototype.fullRead = function (callback) {
   var self = this
-
   // Sync scope presence
   logging.debug('#presence - fullRead', this.scope)
 
@@ -263,6 +262,8 @@ PresenceManager.prototype.fullRead = function (callback) {
       count++
       if (count === keys.length) {
         if (callback) callback(self.getOnline())
+      } else if (keys.length === 0) {
+        if (callback) callback(self.getOnline())
       }
     }
     // Process all messages in one go before updating subscribers to avoid
@@ -271,6 +272,9 @@ PresenceManager.prototype.fullRead = function (callback) {
       var message = replies[key]
       self.processRedisEntry(message, completed)
     })
+    if (keys.length === 0) {
+      self.processRedisEntry('', completed)
+    }
   }
 
   Persistence.readHashAll(this.scope, function (replies) {
