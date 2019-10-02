@@ -109,7 +109,8 @@ describe('the Configurator', function () {
 
   describe('custom setting', function () {
     var newOption = {
-      name: 'testOption', description: 'test option',
+      name: 'testOption',
+      description: 'test option',
       env: 'RADAR_TEST',
       abbr: 'e',
       full: 'exp',

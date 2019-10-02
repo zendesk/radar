@@ -94,11 +94,11 @@ describe('When radar server restarts', function () {
         assert.equal(message.value, 'hello')
       })).set('hello')
 
-      var presence_done = tracker('presence updated')
+      var presenceDone = tracker('presence updated')
       client.presence('restore').on(function (message) {
         if (message.op === 'online') {
           assert.equal(message.to, 'presence:/test/restore')
-          presence_done()
+          presenceDone()
         }
       }).set('online')
     }

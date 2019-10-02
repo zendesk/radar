@@ -254,25 +254,25 @@ PresenceMessage.prototype.assert_onlines_received = function () {
     var cid = client.clientId
     var type = client.userType
     var i
-    var online_idx = -1
-    var client_online_idx = -1
+    var onlineIdx = -1
+    var clientOnlineIdx = -1
 
     for (i = 0; i < this.notifications.length; i++) {
       var value = this.notifications[i].value
       if (typeof value[uid] !== undefined && value[uid] === type) {
-        assert.equal(online_idx, -1)
-        online_idx = i
+        assert.equal(onlineIdx, -1)
+        onlineIdx = i
         this.for_client(client).assert_online(this.notifications[i])
       }
       if (value.userId === uid && value.clientId === cid) {
-        assert.equal(client_online_idx, -1)
-        client_online_idx = i
+        assert.equal(clientOnlineIdx, -1)
+        clientOnlineIdx = i
         this.for_client(client).assert_client_online(this.notifications[i])
       }
     }
-    assert.ok(online_idx !== -1)
-    assert.ok(client_online_idx !== -1)
-    assert.ok(client_online_idx > online_idx)
+    assert.ok(onlineIdx !== -1)
+    assert.ok(clientOnlineIdx !== -1)
+    assert.ok(clientOnlineIdx > onlineIdx)
   }
 }
 

@@ -220,7 +220,7 @@ describe('given a presence resource', function () {
   describe('user disconnects', function () {
     describe('when implicit', function () {
       it('should notify correctly even if redis has not replied to set(online) yet', function (done) {
-        var client_online_called = false
+        var clientOnlineCalled = false
 
         Persistence.publish = function (scope, m) {
           // 10ms delay
@@ -232,10 +232,10 @@ describe('given a presence resource', function () {
         presence.set(client, { key: 1, type: 2, value: 'online' })
         presence.unsubscribe(client)
         presence.manager.once('client_online', function () {
-          client_online_called = true
+          clientOnlineCalled = true
         })
         presence.manager.once('client_offline', function () {
-          assert.ok(client_online_called)
+          assert.ok(clientOnlineCalled)
           done()
         })
       })

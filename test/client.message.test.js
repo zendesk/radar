@@ -60,12 +60,12 @@ describe('When using message list resources:', function () {
 
       var finished = {}
 
-      function validate (msg, client_name) {
+      function validate (msg, clientName) {
         assert.equal('message:/dev/test', msg.to)
         assert.equal('publish', msg.op)
         assert.equal(message.state, msg.value.state)
-        assert.ok(!finished[client_name])
-        finished[client_name] = true
+        assert.ok(!finished[clientName])
+        finished[clientName] = true
         if (finished.client && finished.client2) {
           setTimeout(done, 30)
         }

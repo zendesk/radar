@@ -60,9 +60,9 @@ describe('When using the stream resource', function () {
       var message = {state: 'test1'}
       var finished = {}
 
-      function validate (msg, client_name) {
-        assert.ok(!finished[client_name])
-        finished[client_name] = true
+      function validate (msg, clientName) {
+        assert.ok(!finished[clientName])
+        finished[clientName] = true
         if (finished.client && finished.client2) {
           setTimeout(done, 30)
         }
@@ -288,7 +288,7 @@ describe('When using the stream resource', function () {
 
   describe('get', function () {
     it('can get a String', function (done) {
-      var once_push = function () {
+      var oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
             [ 'ticket/1', 'open', 'foo', client ],
@@ -298,11 +298,11 @@ describe('When using the stream resource', function () {
         })
       }
       client.stream('test').push('ticket/1', 'open', 'foo')
-      client.stream('test').push('ticket/1', 'close', 'foo', once_push)
+      client.stream('test').push('ticket/1', 'close', 'foo', oncePush)
     })
 
     it('can get an Object', function (done) {
-      var once_push = function () {
+      var oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
             [ 'ticket/1', 'open', { hello: 'world' }, client ]
@@ -310,7 +310,7 @@ describe('When using the stream resource', function () {
           done()
         })
       }
-      client.stream('test').push('ticket/1', 'open', { hello: 'world' }, once_push)
+      client.stream('test').push('ticket/1', 'open', { hello: 'world' }, oncePush)
     })
 
     it('returns [] if empty', function (done) {

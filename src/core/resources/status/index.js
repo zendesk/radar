@@ -2,14 +2,14 @@ var Resource = require('../resource.js')
 var Persistence = require('persistence')
 var logger = require('minilog')('radar:status')
 
-var default_options = {
+var defaultOptions = {
   policy: {
     maxPersistence: 12 * 60 * 60 // 12 hours in seconds
   }
 }
 
 function Status (to, server, options) {
-  Resource.call(this, to, server, options, default_options)
+  Resource.call(this, to, server, options, defaultOptions)
 }
 
 Status.prototype = new Resource()

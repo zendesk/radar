@@ -87,14 +87,14 @@ exports['Radar api tests'] = {
 
   // GET /radar/message?accountName=test&scope=chat/1
   'can get a message scope': function (done) {
-    var message_type = {
+    var messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
       authProvider: false,
       policy: { cache: true, maxAgeSeconds: 30 }
     }
 
-    Type.register('message', message_type)
+    Type.register('message', messageType)
 
     var to = 'message:/setStatus/chat/1'
     var opts = Type.getByExpression(to)
@@ -116,7 +116,7 @@ exports['Radar api tests'] = {
 
   // POST /radar/message { accountName:'test', scope:'ticket/1' }
   'can set a message scope': function (done) {
-    var message_type = {
+    var messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'MessageList',
       authProvider: false,
@@ -126,7 +126,7 @@ exports['Radar api tests'] = {
       }
     }
 
-    Type.register('message', message_type)
+    Type.register('message', messageType)
 
     Client.post('/node/radar/message')
       .data({ accountName: 'setStatus', scope: 'chat/2', value: 'hello' })

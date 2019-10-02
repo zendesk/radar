@@ -5,7 +5,7 @@ var MessageList = require('../src/core/resources/message_list')
 var Persistence = require('persistence')
 
 describe('For a message list', function () {
-  var message_list
+  var messageList
   var Radar = {
     broadcast: function () {}
   }
@@ -25,7 +25,7 @@ describe('For a message list', function () {
   })
 
   beforeEach(function () {
-    message_list = new MessageList('aaa', Radar, {})
+    messageList = new MessageList('aaa', Radar, {})
     FakePersistence.publish = function () {}
     FakePersistence.readOrderedWithScores = function () {}
     FakePersistence.persistOrdered = function () {}
@@ -40,7 +40,7 @@ describe('For a message list', function () {
         publishCalled = true
       }
 
-      message_list.publish({}, 'hello world')
+      messageList.publish({}, 'hello world')
       assert.ok(publishCalled)
     })
 
@@ -55,8 +55,8 @@ describe('For a message list', function () {
         FakePersistence.persistOrdered = function () {
           persistCalled = true
         }
-        var message_list = new MessageList('aab', Radar, { policy: { cache: true } })
-        message_list.publish({}, 'hello world')
+        var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
+        messageList.publish({}, 'hello world')
         assert.ok(publishCalled)
         assert.ok(persistCalled)
       })
@@ -66,8 +66,8 @@ describe('For a message list', function () {
         FakePersistence.expire = function (name, expiry) {
           expiryTime = expiry
         }
-        var message_list = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
-        message_list.publish({}, 'hello world')
+        var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+        messageList.publish({}, 'hello world')
         assert.equal(expiryTime, 24 * 60 * 60)
       })
 
@@ -76,8 +76,8 @@ describe('For a message list', function () {
         FakePersistence.expire = function (name, expiry) {
           expiryTime = expiry
         }
-        var message_list = new MessageList('aab', Radar, { policy: { cache: true } })
-        message_list.publish({}, 'hello world')
+        var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
+        messageList.publish({}, 'hello world')
         assert.equal(expiryTime, 14 * 24 * 60 * 60)
       })
     })
@@ -85,13 +85,13 @@ describe('For a message list', function () {
 
   describe('syncing', function () {
     it('causes a read', function (done) {
-      var message_list = new MessageList('aab', Radar, { policy: { cache: true } })
+      var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
       FakePersistence.readOrderedWithScores = function (key, value, callback) {
         assert.equal('aab', key)
         callback([1, 2])
       }
 
-      message_list.sync({
+      messageList.sync({
         send: function (msg) {
           // Check message
           assert.equal('sync', msg.op)
@@ -104,7 +104,7 @@ describe('For a message list', function () {
 
     it('renews expiry for maxPersistence', function (done) {
       var expiryTime
-      var message_list = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+      var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
       FakePersistence.readOrderedWithScores = function (key, value, callback) {
         assert.equal('aab', key)
         callback([1, 2])
@@ -113,7 +113,7 @@ describe('For a message list', function () {
         expiryTime = expiry
       }
 
-      message_list.sync({
+      messageList.sync({
         send: function () {
           assert.equal(expiryTime, 24 * 60 * 60)
           done()
@@ -124,25 +124,25 @@ describe('For a message list', function () {
 
   describe('unsubscribing', function () {
     it('renews expiry for maxPersistence', function (done) {
-      var message_list = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
-      message_list.server = { destroyResource: function () {} }
+      var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+      messageList.server = { destroyResource: function () {} }
       FakePersistence.expire = function (name, expiry) {
         assert.equal(expiry, 24 * 60 * 60)
         setTimeout(done, 1)
       }
 
-      message_list.unsubscribe({
+      messageList.unsubscribe({
         send: function () {}
       }, {})
     })
   })
 
   it('default maxPersistence is 14 days', function () {
-    assert.equal(message_list.options.policy.maxPersistence, 14 * 24 * 60 * 60)
+    assert.equal(messageList.options.policy.maxPersistence, 14 * 24 * 60 * 60)
   })
 
   it('default caching is false', function () {
-    assert.ok(!message_list.options.policy.cache)
+    assert.ok(!messageList.options.policy.cache)
   })
 })
 

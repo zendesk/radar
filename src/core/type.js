@@ -41,7 +41,7 @@ function getByExpression (to) {
         continue
       }
 
-      if (expression.test && expression.test(to) || expression === to) {
+      if (expression.test && (expression.test(to) || expression === to)) {
         logger.debug('#type - found', to)
         return definition
       }

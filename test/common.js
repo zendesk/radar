@@ -1,4 +1,5 @@
 var http = require('http')
+var path = require('path')
 var logging = require('minilog')('common')
 var formatter = require('./lib/formatter')
 var Persistence = require('persistence')
@@ -41,7 +42,7 @@ module.exports = {
       return listener
     }
 
-    radarProcess = fork(__dirname + '/lib/radar.js')
+    radarProcess = fork(path.join(__dirname, '/lib/radar.js'))
     radarProcess.sendCommand = function (command, arg, callback) {
       var listener = getListener(command, function (error) {
         logging.debug('removing listener', command)
@@ -84,10 +85,10 @@ module.exports = {
       clients[i].once('ready', tracker('client ' + i + ' ready'))
     }
 
-    var server_restart = tracker('server restart')
+    var serverRestart = tracker('server restart')
 
     radar.sendCommand('stop', {}, function () {
-      radar.sendCommand('start', configuration, server_restart)
+      radar.sendCommand('start', configuration, serverRestart)
     })
   },
 

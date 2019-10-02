@@ -1,4 +1,4 @@
-/* globals describe, it, beforeEach, afterEach*/
+/* globals describe, it, beforeEach, afterEach */
 var common = require('./common.js')
 var assert = require('assert')
 var sinon = require('sinon')
@@ -270,14 +270,22 @@ describe('given a server', function () {
           clientSessionIdsForSentryId: sinon.stub().returns(['client1', 'client2'])
         }
         radarServer.resources = {
-          123: {type: 'presence', manager: {
-            store: stubStore,
-            disconnectRemoteClient: sinon.stub()
-          }, destroy: sinon.stub()},
-          234: {type: 'presence', manager: {
-            store: stubStore,
-            disconnectRemoteClient: sinon.stub()
-          }, destroy: sinon.stub()}
+          123: {
+            type: 'presence',
+            manager: {
+              store: stubStore,
+              disconnectRemoteClient: sinon.stub()
+            },
+            destroy: sinon.stub()
+          },
+          234: {
+            type: 'presence',
+            manager: {
+              store: stubStore,
+              disconnectRemoteClient: sinon.stub()
+            },
+            destroy: sinon.stub()
+          }
         }
       })
 

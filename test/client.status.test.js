@@ -56,13 +56,13 @@ describe('When using status resources', function () {
       var message = {state: 'test1'}
       var finished = {}
 
-      function validate (msg, client_name) {
+      function validate (msg, clientName) {
         assert.equal('status:/dev/test', msg.to)
         assert.equal('set', msg.op)
         assert.equal('246', msg.key)
         assert.equal(message.state, msg.value.state)
-        assert.ok(!finished[client_name])
-        finished[client_name] = true
+        assert.ok(!finished[clientName])
+        finished[clientName] = true
         if (finished.client && finished.client2) {
           setTimeout(done, 30)
         }
@@ -181,7 +181,7 @@ describe('When using status resources', function () {
 
   describe('get', function () {
     it('can get a String', function (done) {
-      var once_set = function () {
+      var onceSet = function () {
         client.status('test').get(function (message) {
           assert.equal('get', message.op)
           assert.equal('status:/dev/test', message.to)
@@ -189,11 +189,11 @@ describe('When using status resources', function () {
           done()
         })
       }
-      client.status('test').set('foo', once_set)
+      client.status('test').set('foo', onceSet)
     })
 
     it('can get an Object', function (done) {
-      var once_set = function () {
+      var onceSet = function () {
         client.status('test').get(function (message) {
           assert.equal('get', message.op)
           assert.equal('status:/dev/test', message.to)
@@ -201,7 +201,7 @@ describe('When using status resources', function () {
           done()
         })
       }
-      client.status('test').set({ hello: 'world' }, once_set)
+      client.status('test').set({ hello: 'world' }, onceSet)
     })
 
     it('returns {} if not set', function (done) {
