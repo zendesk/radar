@@ -251,7 +251,7 @@ PresenceManager.prototype.fullRead = function (callback) {
 
   this.handleRedisReply = function (replies) {
     logging.debug('#presence - fullRead replies', self.scope, replies)
-    if (!replies) {
+    if (!replies || Object.keys(replies).length === 0) {
       if (callback) { callback(self.getOnline()) }
       return
     }
@@ -262,8 +262,6 @@ PresenceManager.prototype.fullRead = function (callback) {
       count++
       if (count === keys.length) {
         if (callback) callback(self.getOnline())
-      } else if (keys.length === 0) {
-        if (callback) callback(self.getOnline())
       }
     }
     // Process all messages in one go before updating subscribers to avoid
@@ -272,9 +270,6 @@ PresenceManager.prototype.fullRead = function (callback) {
       var message = replies[key]
       self.processRedisEntry(message, completed)
     })
-    if (keys.length === 0) {
-      self.processRedisEntry('', completed)
-    }
   }
 
   Persistence.readHashAll(this.scope, function (replies) {
