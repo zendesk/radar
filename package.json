@@ -55,7 +55,7 @@
     "nomnom": "^1.8.1",
     "nonblocking": "^1.0.2",
     "observable-map": "0.0.4",
-    "persistence": ">= 1.0.5",
+    "persistence": "github:zendesk/persistence#kbui/replace-redis-with-ioredis",
     "polyfill-promise": "^4.0.1",
     "radar_message": "^1.1.0",
     "semver": "^5.0.3",
