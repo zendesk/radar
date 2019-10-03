@@ -1,4 +1,5 @@
 /* globals describe, it, beforeEach */
+/* eslint-disable no-unused-expressions */
 
 var sinon = require('sinon')
 var chai = require('chai')

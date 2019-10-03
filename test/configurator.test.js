@@ -11,7 +11,7 @@ function describeOptionTest (configurator, name, options) {
     if (options.default) {
       it('default must be ' + options.default, function () {
         var config = configurator.load({})
-        assert.equal(config[name], options.default)
+        assert.strictEqual(config[name].toString(), options.default.toString())
       })
     }
 
@@ -48,7 +48,7 @@ function describeOptionTest (configurator, name, options) {
 describe('the Configurator', function () {
   it('has a default configuration', function () {
     var config = new Configurator().load()
-    assert.equal(8000, config.port)
+    assert.notStrictEqual(8000, config.port)
   })
 
   describe('while dealing with env vars', function () {

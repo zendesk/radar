@@ -49,14 +49,12 @@
     "http-attach": "^1.0.0",
     "javascript-state-machine": "^2.3.5",
     "lodash": "^4.17.15",
-    "lodash.bind": "^3.1.0",
     "miniee": "0.0.5",
     "minilog": "2.0.8",
     "nomnom": "^1.8.1",
     "nonblocking": "^1.0.2",
     "observable-map": "0.0.4",
     "persistence": "^2.0.0",
-    "polyfill-promise": "^4.0.1",
     "radar_message": "^1.1.0",
     "semver": "^5.7.1",
     "uuid": "^2.0.1"
@@ -71,9 +69,9 @@
     "radar_client": "^0.16.5",
     "simple_sentinel": "^0.1.8",
     "sinon": "^7.5.0",
-    "sinon-chai": "^2.8.0",
+    "sinon-chai": "^3.3.0",
     "smooth-progress": "^1.0.4",
-    "standard": "^8.6.0"
+    "standard": "^14.3.1"
   },
   "scripts": {
     "prestart": "npm run check-modules",

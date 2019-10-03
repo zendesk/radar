@@ -12,7 +12,7 @@ function SessionManager (opt) {
     self.emit('change', event)
   })
 
-  this.adapters = opt && opt.adapters || []
+  this.adapters = (opt && opt.adapters) || []
   this.adapters.forEach(function (adapter) {
     if (!self.isValidAdapter(adapter)) {
       throw new TypeError('Invalid Adapter: ' + adapter)

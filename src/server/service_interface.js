@@ -1,3 +1,5 @@
+/* eslint-disable node/no-deprecated-api */
+
 var EventEmitter = require('events').EventEmitter
 var inherits = require('util').inherits
 var httpAttach = require('http-attach')
