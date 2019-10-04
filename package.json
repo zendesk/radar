@@ -47,7 +47,7 @@
     "content-type": "^1.0.2",
     "engine.io": "^3.4.0",
     "http-attach": "^1.0.0",
-    "javascript-state-machine": "^2.3.5",
+    "javascript-state-machine": "^3.1.0",
     "lodash": "^4.17.15",
     "miniee": "0.0.5",
     "minilog": "2.0.8",
@@ -56,16 +56,16 @@
     "observable-map": "0.0.4",
     "persistence": "^2.0.0",
     "radar_message": "^1.1.0",
-    "semver": "^5.7.1",
+    "semver": "^6.3.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-interface": "^2.0.2",
     "literal-stream": "^0.1.0",
-    "mocha": "~5",
-    "node-fetch": "^1.3.3",
-    "proxyquire": "^1.7.3",
+    "mocha": "^6.2.1",
+    "node-fetch": "^2.6.0",
+    "proxyquire": "^2.1.3",
     "radar_client": "^0.16.5",
     "simple_sentinel": "^0.1.8",
     "sinon": "^7.5.0",
@@ -88,10 +88,10 @@
     "pretest:sentinel": "./node_modules/.bin/simple_sentinel start",
     "test:sentinel": "ls ./test/*.test.js | xargs -n 1 -t -I {} sh -c 'TEST=\"{}\" RADAR_SENTINEL_URLS=sentinel://localhost:26379 RADAR_SENTINEL_MASTER_NAME=mymaster npm run test:one'",
     "posttest:sentinel": "./node_modules/.bin/simple_sentinel stop",
-    "test:one": "./node_modules/.bin/mocha --reporter spec --slow 4000ms --timeout 8000ms --exit \"$TEST\"",
-    "test:one-solo": "./node_modules/.bin/mocha --reporter spec --slow 4000ms --timeout 8000ms --exit",
-    "test:debug": "./node_modules/.bin/mocha --inspect-brk --reporter spec --slow 4000ms --exit \"$TEST\"",
-    "test:memory": "mocha --expose-gc test/*.memory.test.js --reporter spec"
+    "test:one": "./node_modules/.bin/mocha  --reporter spec --slow 4000ms --timeout 8000ms --exit \"$TEST\"",
+    "test:one-solo": "./node_modules/.bin/mocha  --reporter spec --slow 4000ms --timeout 8000ms --exit",
+    "test:debug": "./node_modules/.bin/mocha debug  --reporter spec --slow 4000ms --exit \"$TEST\"",
+    "test:memory": "mocha --expose-gc test/*.memory.test.js  --reporter spec"
   },
   "standard": {
     "ignore": [
