@@ -30,11 +30,9 @@ var Middleware = {
 
 module.exports = {
   mixin: function (receiver) {
-    var o = Middleware
-    var k
-    for (k in o) {
-      if (Object.prototype.hasOwnProperty.call(o, k)) {
-        receiver.prototype[k] = o[k]
+    for (const key in Middleware) {
+      if (Object.prototype.hasOwnProperty.call(Middleware, key)) {
+        receiver.prototype[key] = Middleware[key]
       }
     }
   }

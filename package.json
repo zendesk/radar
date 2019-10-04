@@ -41,9 +41,9 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
-    "async": "^1.5.0",
+    "async": "^3.1.0",
     "callback_tracker": "0.1.0",
-    "concat-stream": "^1.5.1",
+    "concat-stream": "^2.0.0",
     "content-type": "^1.0.2",
     "engine.io": "^3.4.0",
     "http-attach": "^1.0.0",
@@ -57,7 +57,7 @@
     "persistence": "^2.0.0",
     "radar_message": "^1.1.0",
     "semver": "^5.7.1",
-    "uuid": "^2.0.1"
+    "uuid": "^3.3.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
