@@ -1,3 +1,6 @@
+### 0.32.0
+* [PR #248](https://github.com/zendesk/radar/pull/248) - Upgrade persistence to use `ioredis` instead of `node_redis`.
+
 ### 0.31.0
 * [PR #243](https://github.com/zendesk/radar/pull/243) - Upgrade Node.Js version to 10 (LTS) and its dependencies
 
