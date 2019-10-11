@@ -246,13 +246,12 @@ PresenceManager.prototype.expireUser = function (userId, userType) {
 // For sync
 PresenceManager.prototype.fullRead = function (callback) {
   var self = this
-
   // Sync scope presence
   logging.debug('#presence - fullRead', this.scope)
 
   this.handleRedisReply = function (replies) {
     logging.debug('#presence - fullRead replies', self.scope, replies)
-    if (!replies) {
+    if (!replies || Object.keys(replies).length === 0) {
       if (callback) { callback(self.getOnline()) }
       return
     }
