@@ -19,6 +19,15 @@ var id = require('../core/id')
 var Sentry = require('../core/resources/presence/sentry')
 var nonblocking = require('nonblocking')
 
+class NewServer extends DefaultEngineIO.Server {
+  handleRequest (req, res) {
+    res.setHeader('x-radar', 'v49')
+    super.handleRequest(req, res)
+  }
+}
+
+DefaultEngineIO.Server = NewServer
+
 function Server () {
   var self = this
   this.id = id()
