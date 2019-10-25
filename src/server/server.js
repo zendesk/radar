@@ -22,6 +22,7 @@ var nonblocking = require('nonblocking')
 class NewServer extends DefaultEngineIO.Server {
   handleRequest (req, res) {
     res.setHeader('x-radar', 'v49')
+    res.setHeader('Access-Control-Expose-Headers', 'Cache-Control, Content-Language, Content-Type, Expires, Last-Modified, Pragma, x-radar')
     super.handleRequest(req, res)
   }
 }
