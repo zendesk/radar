@@ -1,18 +1,18 @@
-var log = require('minilog')('radar:session_manager')
-var ClientSession = require('../client/client_session')
-var EventEmitter = require('events').EventEmitter
-var inherits = require('util').inherits
-var ObservableMap = require('observable-map')
-var _ = require('lodash')
+const log = require('minilog')('radar:session_manager')
+const ClientSession = require('../client/client_session')
+const EventEmitter = require('events').EventEmitter
+const inherits = require('util').inherits
+const { observable, observe } = require('mobx')
+const _ = require('lodash')
 
 function SessionManager (opt) {
   var self = this
-  this.sessions = new ObservableMap()
-  this.sessions.on('change', function (event) {
-    self.emit('change', event)
+  this.sessions = observable.map({})
+  observe(self.sessions, function (change) {
+    self.emit('change', change)
   })
 
-  this.adapters = opt && opt.adapters || []
+  this.adapters = (opt && opt.adapters) || []
   this.adapters.forEach(function (adapter) {
     if (!self.isValidAdapter(adapter)) {
       throw new TypeError('Invalid Adapter: ' + adapter)

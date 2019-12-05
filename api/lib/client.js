@@ -1,3 +1,5 @@
+/* eslint-disable node/no-deprecated-api */
+
 var https = require('https')
 var http = require('http')
 var qs = require('querystring')

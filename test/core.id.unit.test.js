@@ -1,4 +1,6 @@
 /* globals describe, it, beforeEach */
+/* eslint-disable no-unused-expressions */
+
 var chai = require('chai')
 var expect = chai.expect
 var _ = require('lodash')

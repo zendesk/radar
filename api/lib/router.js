@@ -1,3 +1,5 @@
+/* eslint-disable node/no-deprecated-api */
+
 var url = require('url')
 var logging = require('minilog')('radar:api-router')
 

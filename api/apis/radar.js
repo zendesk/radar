@@ -1,3 +1,5 @@
+/* eslint-disable node/no-deprecated-api */
+
 var url = require('url')
 var Status = require('../../src/core').Status
 var MessageList = require('../../src/core').MessageList

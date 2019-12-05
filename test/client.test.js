@@ -32,7 +32,7 @@ describe('ClientSession', function () {
 
         clientSession._initialize()
         assert.ok(clientSession.state.initialize.called)
-        assert.strictEqual(clientSession.state.current, 'ready')
+        assert.strictEqual(clientSession.state.state, 'ready')
       })
       it('updates lastModified', function () {
         var clock = sinon.useFakeTimers()
@@ -56,7 +56,7 @@ describe('ClientSession', function () {
 
         assert.strictEqual(clientSession.name, 'abc')
         assert.strictEqual(clientSession.accountName, 'qwe')
-        assert.strictEqual(clientSession.state.current, 'ready')
+        assert.strictEqual(clientSession.state.state, 'ready')
       })
     })
     describe('_initializeOnNameSync', function () {
@@ -94,8 +94,7 @@ describe('ClientSession', function () {
           clientSession.state.end.called = true
           return orig.call(clientSession.state)
         }
-
-        clientSession.state.current = 'ready'
+        clientSession.state.initialize()
 
         transport.emit('close')
 
@@ -106,7 +105,7 @@ describe('ClientSession', function () {
         clientSession.on('end', function () {
           done()
         })
-        clientSession.state.current = 'ready'
+        clientSession.state.initialize()
         clientSession.state.end()
       })
     })
@@ -119,7 +118,7 @@ describe('ClientSession', function () {
         clientSession.on('message', function (message) {
           done()
         })
-        clientSession.state.current = 'ready'
+        clientSession.state.initialize()
         transport.emit('message', JSON.stringify(originalMessage))
       })
 
@@ -129,7 +128,7 @@ describe('ClientSession', function () {
           assert.deepStrictEqual(message, originalMessage)
           done()
         })
-        clientSession.state.current = 'ready'
+        clientSession.state.initialize()
         transport.emit('message', JSON.stringify(originalMessage))
       })
       it('does not emit transport message event if message is malformed', function (done) {
@@ -145,7 +144,7 @@ describe('ClientSession', function () {
       })
       it('dispatches namesync', function () {
         var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
-        assert.strictEqual(clientSession.state.current, 'initializing')
+        assert.strictEqual(clientSession.state.state, 'initializing')
         var called = 0
         var orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
@@ -158,7 +157,7 @@ describe('ClientSession', function () {
       })
       it('dispatches namesync again after already initialized (multiple nameSync messages over session lifetime)', function () {
         var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
-        assert.strictEqual(clientSession.state.current, 'initializing')
+        assert.strictEqual(clientSession.state.state, 'initializing')
         var called = 0
         var orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
@@ -168,7 +167,7 @@ describe('ClientSession', function () {
 
         transport.emit('message', JSON.stringify(message))
         assert.strictEqual(called, 1)
-        assert.strictEqual(clientSession.state.current, 'ready')
+        assert.strictEqual(clientSession.state.state, 'ready')
         transport.emit('message', JSON.stringify(message))
         assert.strictEqual(called, 2)
       })

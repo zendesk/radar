@@ -61,7 +61,7 @@ ClientSession.prototype._cleanup = function () {
 ClientSession.prototype.send = function (message) {
   var data = JSON.stringify(message)
   log.info('#socket.message.outgoing', this.id, data)
-  if (this.state.current === 'ended') {
+  if (this.state.state === 'ended') {
     log.warn('Cannot send message after ClientSession ended', this.id, data)
     return
   }
@@ -122,7 +122,7 @@ ClientSession.prototype._setupTransport = function () {
     }
     log.info('#socket.message.incoming', self.id, decoded)
 
-    switch (self.state.current) {
+    switch (self.state.state) {
       case 'initializing':
       case 'ready':
         self._initializeOnNameSync(decoded)

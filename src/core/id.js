@@ -1,10 +1,8 @@
-var uuid = require('uuid')
-
 // unique string ids are used in many places in radar
 // this module should be used to generating them, to
 // ensure consistency
 
-var defaultGenerator = uuid.v4
+var defaultGenerator = require('uuid/v4')
 var generator = defaultGenerator
 
 // () => String

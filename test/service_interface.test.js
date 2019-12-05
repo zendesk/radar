@@ -1,4 +1,5 @@
 /* globals describe, it, beforeEach */
+/* eslint-disable no-unused-expressions */
 
 var sinon = require('sinon')
 var chai = require('chai')
@@ -6,7 +7,6 @@ chai.use(require('sinon-chai'))
 var expect = require('chai').expect
 var literalStream = require('literal-stream')
 var _ = require('lodash')
-var uuid = require('uuid')
 var assert = require('assert')
 
 var EMPTY_REQ = { headers: {} }
@@ -156,8 +156,6 @@ describe('ServiceInterface', function () {
       var res = stubRes({
         end: function () {
           expect(req).to.have.property('id')
-          // gen.id is a uuid:
-          expect(uuid.unparse(uuid.parse(req.id))).to.equal(req.id)
           done()
         }
       })

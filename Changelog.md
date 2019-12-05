@@ -1,3 +1,6 @@
+### 0.33.0
+* [PR #249](https://github.com/zendesk/radar/pull/249) - Update packages to their latest dependencies.
+
 ### 0.32.0
 * [PR #248](https://github.com/zendesk/radar/pull/248) - Upgrade persistence to use `ioredis` instead of `node_redis`.
 

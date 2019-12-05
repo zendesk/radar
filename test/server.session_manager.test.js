@@ -1,4 +1,6 @@
 /* globals describe, it, beforeEach */
+/* eslint-disable no-unused-expressions */
+
 var SessionManager = require('../src/server/session_manager')
 var ClientSession = require('../src/client/client_session')
 var chai = require('chai')

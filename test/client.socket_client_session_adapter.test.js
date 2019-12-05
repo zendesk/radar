@@ -1,4 +1,6 @@
 /* globals describe, it, beforeEach */
+/* eslint-disable no-unused-expressions */
+
 var SocketClientSessionAdapter = require('../src/client/socket_client_session_adapter')
 var ClientSession = require('../src/client/client_session')
 var chai = require('chai')

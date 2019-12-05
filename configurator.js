@@ -10,6 +10,7 @@
  * ARGV > ENV > DEFAULTS
  *
  */
+/* eslint-disable node/no-deprecated-api */
 
 // Minimal radar settings
 var defaultSettings = [
