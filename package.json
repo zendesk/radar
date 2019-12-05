@@ -51,7 +51,7 @@
     "lodash": "^4.17.15",
     "miniee": "0.0.5",
     "minilog": "2.0.8",
-    "mobx": "^5.14.2",
+    "mobx": "^5.15.0",
     "nomnom": "^1.8.1",
     "nonblocking": "^1.0.2",
     "persistence": "^2.0.0",
