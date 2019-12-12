@@ -1,3 +1,6 @@
+### 0.33.1
+* [PR #251](https://github.com/zendesk/radar/pull/251) - Bumps radar_client to 0.16.7
+
 ### 0.33.0
 * [PR #249](https://github.com/zendesk/radar/pull/249) - Update packages to their latest dependencies.
 
