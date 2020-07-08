@@ -135,6 +135,7 @@ Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
   if (engineioConfig) {
     engine = engineioConfig.module
     engineConf = engineioConfig.conf
+    engineConf.wsEngine = 'uWebSockets.js'
 
     this.engineioPath = engineioConfig.conf ? engineioConfig.conf.path : 'default'
   }
