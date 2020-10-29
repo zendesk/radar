@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-var http = require('http')
-var configuration = require('../configurator.js').load({ persistence: true })
-var Radar = require('../src/server/server.js')
-var Api = require('../api/api.js')
-var Minilog = require('minilog')
+const http = require('http')
+const configuration = require('../configurator.js').load({ persistence: true })
+const Radar = require('../src/server/server.js')
+const Api = require('../api/api.js')
+const Minilog = require('minilog')
 
 // Configure log output
 Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
@@ -16,13 +16,13 @@ function p404 (req, res) {
   res.end('404 Not Found')
 }
 
-var httpServer = http.createServer(p404)
+const httpServer = http.createServer(p404)
 
 // Radar API
 Api.attach(httpServer)
 
 // Radar server
-var radar = new Radar()
+const radar = new Radar()
 radar.attach(httpServer, configuration)
 
 httpServer.listen(configuration.port, function () {

@@ -1,14 +1,14 @@
 /* globals describe, it */
-var assert = require('assert')
-var Stamper = require('../src/core/stamper.js')
-var sentryName = 'theSentryName'
-var clientId = 'clientId'
+const assert = require('assert')
+const Stamper = require('../src/core/stamper.js')
+const sentryName = 'theSentryName'
+const clientId = 'clientId'
 
 Stamper.setup('theSentryName')
 
 describe('a Stamper service', function () {
   it('adds a stamp object to objects', function () {
-    var message = {}
+    const message = {}
 
     Stamper.stamp(message, clientId)
 
@@ -19,7 +19,7 @@ describe('a Stamper service', function () {
   })
 
   it('allows optional client id', function () {
-    var message = {}
+    const message = {}
 
     Stamper.stamp(message)
 
@@ -30,7 +30,7 @@ describe('a Stamper service', function () {
   })
 
   it('does not override id if present', function () {
-    var message = { stamp: { id: 1 } }
+    const message = { stamp: { id: 1 } }
 
     Stamper.stamp(message, clientId)
 

@@ -1,20 +1,20 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
-var common = require('./common.js')
-var assert = require('assert')
-var Persistence = require('../src/core').Persistence
-var Tracker = require('callback_tracker')
-var PresenceManager = require('../src/core/resources/presence/presence_manager.js')
-var assertHelper = require('./lib/assert_helper.js')
-var PresenceMessage = assertHelper.PresenceMessage
-var Sentry = require('../src/core/resources/presence/sentry.js')
-var radar
-var client
+const common = require('./common.js')
+const assert = require('assert')
+const Persistence = require('../src/core').Persistence
+const Tracker = require('callback_tracker')
+const PresenceManager = require('../src/core/resources/presence/presence_manager.js')
+const assertHelper = require('./lib/assert_helper.js')
+const PresenceMessage = assertHelper.PresenceMessage
+const Sentry = require('../src/core/resources/presence/sentry.js')
+let radar
+let client
 
 describe('given a client and a server,', function () {
-  var p
-  var sentry = new Sentry('test-sentry', assertHelper.SentryDefaults)
-  var presenceManager = new PresenceManager('presence:/dev/test', {}, sentry)
-  var publishClientOnline = function (client) {
+  let p
+  const sentry = new Sentry('test-sentry', assertHelper.SentryDefaults)
+  const presenceManager = new PresenceManager('presence:/dev/test', {}, sentry)
+  const publishClientOnline = function (client) {
     presenceManager.addClient(client.clientId, client.userId, client.userType, client.userData)
   }
 
@@ -36,7 +36,7 @@ describe('given a client and a server,', function () {
     p = new PresenceMessage('dev', 'test')
     p.client = { userId: 100, clientId: 'abc', userData: { name: 'tester' }, userType: 2 }
 
-    var track = Tracker.create('beforeEach', done)
+    const track = Tracker.create('beforeEach', done)
     // Set ourselves alive
     sentry.start(assertHelper.SentryDefaults, function () {
       client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'))
@@ -61,8 +61,8 @@ describe('given a client and a server,', function () {
       it('should emit offlines if sentry times out', function (done) {
         this.timeout(18000)
 
-        var validate = function () {
-          var ts = p.times
+        const validate = function () {
+          const ts = p.times
           p.assert_message_sequence([
             'online',
             'client_online',
@@ -88,7 +88,7 @@ describe('given a client and a server,', function () {
 
       it('should still be online if sentry is alive', function (done) {
         this.timeout(6000)
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online'])
           done()
         }

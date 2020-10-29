@@ -1,8 +1,8 @@
-var hostname = require('os').hostname()
-var Router = require('./lib/router.js')
-var RadarApi = require('./apis/radar.js')
+const hostname = require('os').hostname()
+const Router = require('./lib/router.js')
+const RadarApi = require('./apis/radar.js')
 
-var api = new Router()
+const api = new Router()
 
 function homepage (req, res) {
   res.setHeader('Content-Type', 'text/plain') // IE will otherwise try to save the response instead of just showing it

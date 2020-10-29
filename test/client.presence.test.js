@@ -1,15 +1,15 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
-var common = require('./common.js')
-var assert = require('assert')
-var Tracker = require('callback_tracker')
-var PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
-var radar
-var client
-var client2
-var client3
+const common = require('./common.js')
+const assert = require('assert')
+const Tracker = require('callback_tracker')
+const PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
+let radar
+let client
+let client2
+let client3
 
 describe('given two clients and a presence resource', function () {
-  var p
+  let p
   before(function (done) {
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, done)
@@ -21,7 +21,7 @@ describe('given two clients and a presence resource', function () {
 
   beforeEach(function (done) {
     p = new PresenceMessage('dev', 'test')
-    var track = Tracker.create('beforeEach', done)
+    const track = Tracker.create('beforeEach', done)
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'))
     client2 = common.getClient('dev', 246, 0, { name: 'tester2' }, track('client 2 ready'))
     client3 = common.getClient('dev', 300, 0, {}, track('client 3 ready'))
@@ -207,7 +207,7 @@ describe('given two clients and a presence resource', function () {
       })
 
       it('should send online notification only once for multiple set(online), unless updated clientData', function (done) {
-        var clientData = { data: 2 }
+        const clientData = { data: 2 }
 
         // Subscribe online with client 2
         client2.presence('test').on(p.notify)
@@ -229,8 +229,8 @@ describe('given two clients and a presence resource', function () {
 
       it('should send online notification only once for multiple set(online), unless updated clientData, ' +
         'but only if it differs', function (done) {
-        var clientData = { data: 2 }
-        var clientData2 = { data: 3 }
+        const clientData = { data: 2 }
+        const clientData2 = { data: 3 }
 
         client2.presence('test').on(p.notify)
           .subscribe(function () {
@@ -253,10 +253,10 @@ describe('given two clients and a presence resource', function () {
       })
 
       it('should send presence messages correctly when toggling back and forth', function (done) {
-        var expected = []
-        var count = 8
+        let expected = []
+        const count = 8
 
-        var toggle = function (index) {
+        const toggle = function (index) {
           if (index % 2 === 0) {
             expected = expected.concat(['online', 'client_online'])
             client.presence('test').set('online')
@@ -269,12 +269,12 @@ describe('given two clients and a presence resource', function () {
         client2.presence('test')
           .on(p.notify)
           .subscribe(function () {
-            for (var i = 0; i < count; i++) {
+            for (let i = 0; i < count; i++) {
               setTimeout(toggle, 10, i)
             }
           })
 
-        var verify = function () {
+        const verify = function () {
           assert.strictEqual(2 * count, p.notifications.length)
           p.for_client(client).assert_message_sequence(expected)
           done()
@@ -386,7 +386,7 @@ describe('given two clients and a presence resource', function () {
     })
 
     it('should respond correctly when using v2 API (with clientData)', function (done) {
-      var clientData = { 1: '1' }
+      const clientData = { 1: '1' }
 
       client.presence('test').get({ version: 2 }, function (message) {
         p.for_online_clients().assert_get_v2_response(message)
@@ -404,7 +404,7 @@ describe('given two clients and a presence resource', function () {
       client2.presence('test').on(p.notify).subscribe(function () {
         // Set client 1 to online
         client.presence('test').set('online', function () {
-          var foo = setInterval(function () {
+          const foo = setInterval(function () {
             client2.presence('test').get(function (message) {
               // Both should show client 1 as online
               p.for_online_clients(client).assert_get_response(message)
@@ -460,7 +460,7 @@ describe('given two clients and a presence resource', function () {
     })
 
     it('should respond correctly when using v2 API (with clientData)', function (done) {
-      var clientData = { 1: '1' }
+      const clientData = { 1: '1' }
 
       client3.presence('test').set('online', clientData, function () {
         client3.presence('test').sync({ version: 2 }, function (message) {
@@ -490,7 +490,7 @@ describe('given two clients and a presence resource', function () {
       client2.presence('test').on(p.notify).subscribe(function () {
         // Set client 1 to online
         client.presence('test').set('online', function () {
-          var foo = setInterval(function () {
+          const foo = setInterval(function () {
             client2.presence('test').sync(function (message) {
               // Both should show client 1 as online
               p.for_online_clients(client).assert_sync_response(message)
@@ -516,7 +516,7 @@ describe('given two clients and a presence resource', function () {
       client2.presence('test').set('online')
       setTimeout(function () {
         // Hack a bit so that clientSessionId is saved
-        var clientId = client2.currentClientId()
+        const clientId = client2.currentClientId()
         client2.currentClientId = function () { return clientId }
         // Disconnect, causing a request timeout or socket close
         client2.manager.close()
@@ -542,11 +542,11 @@ describe('given two clients and a presence resource', function () {
       )
 
       // Hack a bit so that clientSessionId is saved
-      var clientId = client.currentClientId()
+      const clientId = client.currentClientId()
       client.currentClientId = function () { return clientId }
 
       client.dealloc('test')
-      var time = Date.now()
+      const time = Date.now()
 
       setTimeout(function () {
         client2.presence('test').get(function (message) {

@@ -1,4 +1,4 @@
-var StateMachine = require('javascript-state-machine')
+const StateMachine = require('javascript-state-machine')
 
 module.exports.create = function createClientSessionStateMachine (clientSession) {
   return new StateMachine({

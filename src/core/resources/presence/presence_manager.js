@@ -1,8 +1,8 @@
-var _ = require('lodash')
-var PresenceStore = require('./presence_store.js')
-var Persistence = require('persistence')
-var Minilog = require('minilog')
-var logging = Minilog('radar:presence_manager')
+const _ = require('lodash')
+const PresenceStore = require('./presence_store.js')
+let Persistence = require('persistence')
+const Minilog = require('minilog')
+const logging = Minilog('radar:presence_manager')
 
 function PresenceManager (scope, policy, sentry) {
   this.scope = scope
@@ -17,8 +17,8 @@ function PresenceManager (scope, policy, sentry) {
 require('util').inherits(PresenceManager, require('events').EventEmitter)
 
 PresenceManager.prototype.setup = function () {
-  var store = this.store
-  var self = this
+  const store = this.store
+  const self = this
 
   store.on('user_added', function (message) {
     self.emit('user_online', message.userId, message.userType,
@@ -48,7 +48,7 @@ PresenceManager.prototype.setup = function () {
 }
 
 PresenceManager.prototype.destroy = function () {
-  var self = this
+  const self = this
 
   this.destroying = true
 
@@ -69,7 +69,7 @@ PresenceManager.prototype.addClient = function (clientSessionId, userId, userTyp
     callback = clientData
   }
 
-  var message = {
+  const message = {
     userId: userId,
     userType: userType,
     userData: userData,
@@ -94,7 +94,7 @@ PresenceManager.prototype.addClient = function (clientSessionId, userId, userTyp
 
 // Explicit disconnect (set('offline'))
 PresenceManager.prototype.removeClient = function (clientSessionId, userId, userType, callback) {
-  var message = {
+  const message = {
     userId: userId,
     userType: userType,
     clientId: clientSessionId,
@@ -108,14 +108,14 @@ PresenceManager.prototype.removeClient = function (clientSessionId, userId, user
 
 // Implicit disconnect (broken connection)
 PresenceManager.prototype.disconnectClient = function (clientSessionId, callback) {
-  var userId = this.store.userOf(clientSessionId)
-  var userType
+  let userId = this.store.userOf(clientSessionId)
+  let userType
 
   // If there is no userid, then we've already removed the user (e.g. via a remove
   // call) or, we have not added this client to the store yet. (redis reply for
   // addClient has not come)
   if (!userId) {
-    var message = this.store.cacheRemove(clientSessionId)
+    const message = this.store.cacheRemove(clientSessionId)
     if (!message) {
       // This is possible if multiple servers are expiring a fallen server's clients
       logging.warn('#presence - no userId/userType found for', clientSessionId,
@@ -133,11 +133,11 @@ PresenceManager.prototype.disconnectClient = function (clientSessionId, callback
 
 PresenceManager.prototype.disconnectRemoteClient = function (clientSessionId, callback) {
   // send implicit disconnect to our subscribers, but dont publish via redis
-  var userId = this.store.userOf(clientSessionId)
-  var userType = this.store.userTypeOf(userId)
-  var self = this
+  const userId = this.store.userOf(clientSessionId)
+  const userType = this.store.userTypeOf(userId)
+  const self = this
 
-  var message = {
+  const message = {
     userId: userId,
     userType: userType,
     clientId: clientSessionId,
@@ -152,7 +152,7 @@ PresenceManager.prototype.disconnectRemoteClient = function (clientSessionId, ca
 
 PresenceManager.prototype._implicitDisconnect = function (clientSessionId, userId,
   userType, callback) {
-  var message = {
+  const message = {
     userId: userId,
     userType: userType,
     clientId: clientSessionId,
@@ -165,18 +165,18 @@ PresenceManager.prototype._implicitDisconnect = function (clientSessionId, userI
 }
 
 PresenceManager.prototype.processRedisEntry = function (message, callback) {
-  var store = this.store
-  var self = this
-  var sentry = this.sentry
-  var userId = message.userId
-  var clientSessionId = message.clientId
-  var userType = message.userType
+  const store = this.store
+  const self = this
+  const sentry = this.sentry
+  const userId = message.userId
+  const clientSessionId = message.clientId
+  const userType = message.userType
 
   logging.debug('#presence - processRedisEntry:', message, this.scope)
   callback = callback || function () {}
 
   if (message.online) {
-    var isDown = sentry.isDown(message.sentry)
+    const isDown = sentry.isDown(message.sentry)
     if (!isDown) {
       self.clearExpiry(userId)
       store.add(clientSessionId, userId, userType, message)
@@ -196,7 +196,7 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
 }
 
 PresenceManager.prototype.handleOffline = function (clientSessionId, userId, userType, explicit) {
-  var message = {
+  const message = {
     userId: userId,
     userType: userType,
     clientId: clientSessionId,
@@ -237,7 +237,7 @@ PresenceManager.prototype.setupExpiry = function (userId, userType) {
 }
 
 PresenceManager.prototype.expireUser = function (userId, userType) {
-  var message = { userId: userId, userType: userType }
+  const message = { userId: userId, userType: userType }
   logging.info('#presence - trying to remove user after timeout:', userId, this.scope)
   delete this.expiryTimers[userId]
   this.store.removeUserIfEmpty(userId, message)
@@ -245,7 +245,7 @@ PresenceManager.prototype.expireUser = function (userId, userType) {
 
 // For sync
 PresenceManager.prototype.fullRead = function (callback) {
-  var self = this
+  const self = this
   // Sync scope presence
   logging.debug('#presence - fullRead', this.scope)
 
@@ -256,9 +256,9 @@ PresenceManager.prototype.fullRead = function (callback) {
       return
     }
 
-    var count = 0
-    var keys = Object.keys(replies)
-    var completed = function () {
+    let count = 0
+    const keys = Object.keys(replies)
+    const completed = function () {
       count++
       if (count === keys.length) {
         if (callback) callback(self.getOnline())
@@ -267,7 +267,7 @@ PresenceManager.prototype.fullRead = function (callback) {
     // Process all messages in one go before updating subscribers to avoid
     // sending multiple messages
     keys.forEach(function (key) {
-      var message = replies[key]
+      const message = replies[key]
       self.processRedisEntry(message, completed)
     })
   }
@@ -279,8 +279,8 @@ PresenceManager.prototype.fullRead = function (callback) {
 
 // Sync v1
 PresenceManager.prototype.getOnline = function () {
-  var result = {}
-  var store = this.store
+  const result = {}
+  const store = this.store
 
   this.store.users().forEach(function (userId) {
     result[userId] = store.userTypeOf(userId)
@@ -291,8 +291,8 @@ PresenceManager.prototype.getOnline = function () {
 
 // Sync v2
 PresenceManager.prototype.getClientsOnline = function () {
-  var result = {}
-  var store = this.store
+  const result = {}
+  const store = this.store
 
   function processMessage (message) {
     result[message.userId] = result[message.userId] || {
@@ -300,7 +300,7 @@ PresenceManager.prototype.getClientsOnline = function () {
       userType: message.userType
     }
 
-    var payload = _.extend({},
+    const payload = _.extend({},
       (message.userData || {}),
       (message.clientData || {}))
 

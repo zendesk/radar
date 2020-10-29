@@ -1,15 +1,15 @@
 /* globals describe, it, beforeEach, before, after */
 
-var common = require('./common.js')
-var assert = require('assert')
-var Tracker = require('callback_tracker')
-var radar
-var client
-var client2
+const common = require('./common.js')
+const assert = require('assert')
+const Tracker = require('callback_tracker')
+let radar
+let client
+let client2
 
 describe('When using status resources', function () {
   before(function (done) {
-    var track = Tracker.create('before', done)
+    const track = Tracker.create('before', done)
 
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, function () {
@@ -28,7 +28,7 @@ describe('When using status resources', function () {
     client.status('test').removeAllListeners()
     client2.status('test').removeAllListeners()
 
-    var track = Tracker.create('before each', done)
+    const track = Tracker.create('before each', done)
     client.status('test').unsubscribe(track('client unsubscribe'))
     client2.status('test').unsubscribe(track('client2 unsubscribe'))
     common.startPersistence(track('redis cleanup'))
@@ -53,8 +53,8 @@ describe('When using status resources', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = { state: 'test1' }
-      var finished = {}
+      const message = { state: 'test1' }
+      const finished = {}
 
       function validate (msg, clientName) {
         assert.strictEqual('status:/dev/test', msg.to)
@@ -92,9 +92,9 @@ describe('When using status resources', function () {
       // Send three messages, client2 will assert if it receieves any
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1' }
-      var message2 = { state: 'test2' }
-      var message3 = { state: 'test3' }
+      const message = { state: 'test1' }
+      const message2 = { state: 'test2' }
+      const message3 = { state: 'test3' }
 
       client2.status('test').on(function (msg) {
         assert.ok(false)
@@ -116,9 +116,9 @@ describe('When using status resources', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1' }
-      var message2 = { state: 'test2' }
-      var message3 = { state: 'test3' }
+      const message = { state: 'test1' }
+      const message2 = { state: 'test2' }
+      const message3 = { state: 'test3' }
 
       // test.numAssertions = 3
       client2.status('test').on(function (msg) {
@@ -181,7 +181,7 @@ describe('When using status resources', function () {
 
   describe('get', function () {
     it('can get a String', function (done) {
-      var onceSet = function () {
+      const onceSet = function () {
         client.status('test').get(function (message) {
           assert.strictEqual('get', message.op)
           assert.strictEqual('status:/dev/test', message.to)
@@ -193,7 +193,7 @@ describe('When using status resources', function () {
     })
 
     it('can get an Object', function (done) {
-      var onceSet = function () {
+      const onceSet = function () {
         client.status('test').get(function (message) {
           assert.strictEqual('get', message.op)
           assert.strictEqual('status:/dev/test', message.to)

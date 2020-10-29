@@ -1,6 +1,6 @@
-var id = require('./id')
-var logging = require('minilog')('radar:stamper')
-var sentryName
+const id = require('./id')
+const logging = require('minilog')('radar:stamper')
+let sentryName
 
 module.exports = {
   setup: function (name) {

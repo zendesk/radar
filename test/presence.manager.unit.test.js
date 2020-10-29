@@ -1,17 +1,17 @@
 /* globals describe, it */
-var chai = require('chai')
-var expect = chai.expect
+const chai = require('chai')
+const expect = chai.expect
 
 describe('PresenceManager', function () {
-  var PresenceManager = require('../src/core/resources/presence/presence_manager')
+  const PresenceManager = require('../src/core/resources/presence/presence_manager')
 
   describe('#disconnectRemoteClient', function () {
     it('sends implicit offline message without updating redis', function (done) {
-      var scope = 'presence:/foo/bar'
-      var sentry = { on: function () {} }
-      var clientSessionId = 'abcdef'
+      const scope = 'presence:/foo/bar'
+      const sentry = { on: function () {} }
+      const clientSessionId = 'abcdef'
 
-      var presenceManager = new PresenceManager(scope, {}, sentry)
+      const presenceManager = new PresenceManager(scope, {}, sentry)
       presenceManager.processRedisEntry = function (message, callbackFn) {
         expect(message).to.deep.equal({
           userId: undefined,
