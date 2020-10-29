@@ -3,7 +3,10 @@ const assert = require('assert')
 const Sentry = require('../src/core/resources/presence/sentry.js')
 const Persistence = require('persistence')
 const configuration = require('../configurator.js').load({ persistence: true })
-const _ = require('lodash')
+const map = require('lodash/map')
+const indexOf = require('lodash/indexOf')
+const extend = require('lodash/extend')
+
 let currentSentry = 0
 let sentry
 let sentryOne
@@ -19,15 +22,15 @@ const defaults = {
 function newSentry (options) {
   const name = 'sentry-' + currentSentry++
 
-  return new Sentry(name, _.extend(defaults, (options || {})))
+  return new Sentry(name, extend(defaults, (options || {})))
 }
 
 function assertSentriesKnowEachOther (sentries, done) {
   const sentryNames = sentries.map(function (s) { return s.name })
 
   sentries.forEach(function (sentry) {
-    _.map(sentry.sentries, function (message) {
-      assert(_.indexOf(sentryNames, message.name) >= -1)
+    map(sentry.sentries, function (message) {
+      assert(indexOf(sentryNames, message.name) >= -1)
     })
   })
 

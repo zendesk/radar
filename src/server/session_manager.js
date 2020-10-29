@@ -1,9 +1,9 @@
 const log = require('minilog')('radar:session_manager')
 const ClientSession = require('../client/client_session')
-const EventEmitter = require('events').EventEmitter
-const inherits = require('util').inherits
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
 const { observable, observe } = require('mobx')
-const _ = require('lodash')
+const find = require('lodash/find')
 
 function SessionManager (opt) {
   const self = this
@@ -74,7 +74,7 @@ SessionManager.prototype.canAdapt = function (obj) {
 
 // (Any) => ClientSession?
 SessionManager.prototype.adapt = function (obj) {
-  const adapter = _.find(this.adapters, function (adapter) {
+  const adapter = find(this.adapters, function (adapter) {
     return adapter.canAdapt(obj)
   })
   log.info('Adapting ClientSession with ' + nameOf(adapter))

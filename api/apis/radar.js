@@ -1,11 +1,7 @@
 /* eslint-disable node/no-deprecated-api */
 
 const url = require('url')
-const Status = require('../../src/core').Status
-const MessageList = require('../../src/core').MessageList
-const Presence = require('../../src/core').Presence
-const PresenceManager = require('../../src/core').PresenceManager
-const Type = require('../../src/core').Type
+const { Status, MessageList, Presence, PresenceManager, Type } = require('../../src/core')
 const hostname = require('os').hostname()
 
 function jsonResponse (response, object) {

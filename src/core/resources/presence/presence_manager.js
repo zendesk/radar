@@ -1,4 +1,4 @@
-const _ = require('lodash')
+const extend = require('lodash/extend')
 const PresenceStore = require('./presence_store.js')
 let Persistence = require('persistence')
 const Minilog = require('minilog')
@@ -300,7 +300,7 @@ PresenceManager.prototype.getClientsOnline = function () {
       userType: message.userType
     }
 
-    const payload = _.extend({},
+    const payload = extend({},
       (message.userData || {}),
       (message.clientData || {}))
 

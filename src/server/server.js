@@ -1,4 +1,4 @@
-const _ = require('lodash')
+const extend = require('lodash/extend')
 const async = require('async')
 const MiniEventEmitter = require('miniee')
 const Redis = require('persistence')
@@ -165,7 +165,7 @@ Server.prototype._setupSentry = function (configuration) {
   }
 
   if (configuration.sentry) {
-    _.extend(sentryOptions, configuration.sentry)
+    extend(sentryOptions, configuration.sentry)
   }
 
   this.sentry = new Sentry(this.id)

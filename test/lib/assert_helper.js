@@ -1,4 +1,4 @@
-const _ = require('lodash')
+const extend = require('lodash/extend')
 const assert = require('assert')
 const EE = require('events').EventEmitter
 const Sentry = require('../../src/core/resources/presence/sentry.js')
@@ -347,7 +347,7 @@ PresenceMessage.prototype.assert_get_v2_response = function (message, clientData
     userHash.userType = client.userType
 
     if (clientData) {
-      userHash.clients[client.clientId] = _.extend({}, client.userData, clientData)
+      userHash.clients[client.clientId] = extend({}, client.userData, clientData)
     } else {
       userHash.clients[client.clientId] = client.userData
     }

@@ -1,4 +1,4 @@
-const _ = require('lodash')
+const isEqual = require('lodash/isEqual')
 const logging = require('minilog')('radar:presence_store')
 
 function PresenceStore (scope) {
@@ -41,7 +41,7 @@ PresenceStore.prototype.add = function (clientSessionId, userId, userType, messa
     this.socketUserMap[clientSessionId] = userId
   } else {
     const previous = this.map[userId][clientSessionId]
-    if (message.clientData && !_.isEqual(message.clientData, previous.clientData)) {
+    if (message.clientData && !isEqual(message.clientData, previous.clientData)) {
       events.push('client_updated')
       this.map[userId][clientSessionId] = message
     }

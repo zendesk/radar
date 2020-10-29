@@ -6,7 +6,7 @@ const chai = require('chai')
 chai.use(require('sinon-chai'))
 const expect = require('chai').expect
 const literalStream = require('literal-stream')
-const _ = require('lodash')
+const extend = require('lodash/extend')
 const assert = require('assert')
 
 const EMPTY_REQ = { headers: {} }
@@ -19,7 +19,7 @@ describe('ServiceInterface', function () {
   })
 
   function getReq (o) {
-    return _.extend({
+    return extend({
       method: 'GET',
       url: '/radar/service',
       headers: {}
@@ -27,7 +27,7 @@ describe('ServiceInterface', function () {
   }
 
   function stubRes (o) {
-    return _.extend({
+    return extend({
       statusCode: 200,
       setHeader: sinon.spy(),
       write: sinon.spy(),

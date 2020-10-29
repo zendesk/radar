@@ -3,7 +3,7 @@
 
 const chai = require('chai')
 const expect = chai.expect
-const _ = require('lodash')
+const uniq = require('lodash/uniq')
 const sinon = require('sinon')
 chai.use(require('sinon-chai'))
 
@@ -22,7 +22,7 @@ describe('id', function () {
     expect(ids[0]).to.be.a('string')
     expect(ids[1]).to.be.a('string')
     expect(ids[2]).to.be.a('string')
-    expect(_.uniq(ids)).to.deep.equal(ids)
+    expect(uniq(ids)).to.deep.equal(ids)
   })
 
   describe('.setGenerator', function () {

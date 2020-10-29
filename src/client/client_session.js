@@ -1,6 +1,6 @@
 const log = require('minilog')('radar:client')
-const EventEmitter = require('events').EventEmitter
-const inherits = require('util').inherits
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
 const ClientSessionStateMachine = require('./client_session_state_machine')
 
 // TODO: move to a SessionManager class
