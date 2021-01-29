@@ -1,3 +1,5 @@
+![CI](https://github.com/zendesk/radar/workflows/CI/badge.svg)
+
 ## radar
 
 The real-time service layer for your web application
