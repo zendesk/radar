@@ -15,6 +15,9 @@ jobs:
       with:
         node-version: ${{ matrix.version }}
     - name: install
-      run: npm install
+      run: |
+        sudo apt update
+        sudo apt install -y redis-server
+        npm install
     - name: node_js ${{ matrix.version }}
       run: verbose=1 npm test
