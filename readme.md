@@ -3,7 +3,7 @@
 The real-time service layer for your web application
 
 [![npm](https://img.shields.io/npm/v/radar.svg)](https://www.npmjs.com/package/radar)
-[![Build Status](https://travis-ci.org/zendesk/radar.svg?branch=master)](https://travis-ci.org/zendesk/radar)
+[![CI](https://github.com/zendesk/radar/workflows/CI/badge.svg)](https://travis-ci.org/zendesk/radar)
 [![Dependency Status](https://david-dm.org/zendesk/radar.svg)](https://david-dm.org/zendesk/radar)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 
