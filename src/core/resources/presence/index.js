@@ -39,14 +39,15 @@ Presence.prototype.setup = function () {
     })
   })
 
-  this.manager.on('user_offline', function (userId, userType) {
+  this.manager.on('user_offline', function (userId, userType, userData) {
     logging.info('#presence - user_offline', userId, userType, self.to)
     var value = {}
     value[userId] = userType
     self.broadcast({
       to: self.to,
       op: 'offline',
-      value: value
+      value: value,
+      userData: userData
     })
   })
 
@@ -143,7 +144,7 @@ Presence.prototype._setOffline = function (clientSession, message) {
     Resource.prototype.unsubscribe.call(this, clientSession, message)
   } else {
     // Remove from local
-    this.manager.removeClient(clientSession.id, userId, message.type, ackCheck)
+    this.manager.removeClient(clientSession.id, userId, message.type, message.userData, ackCheck)
   }
 }
 

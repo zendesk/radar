@@ -26,7 +26,7 @@ PresenceManager.prototype.setup = function () {
   })
 
   store.on('user_removed', function (message) {
-    self.emit('user_offline', message.userId, message.userType)
+    self.emit('user_offline', message.userId, message.userType, message.userData)
   })
 
   store.on('client_added', function (message) {
@@ -93,10 +93,11 @@ PresenceManager.prototype.addClient = function (clientSessionId, userId, userTyp
 }
 
 // Explicit disconnect (set('offline'))
-PresenceManager.prototype.removeClient = function (clientSessionId, userId, userType, callback) {
+PresenceManager.prototype.removeClient = function (clientSessionId, userId, userType, userData, callback) {
   var message = {
     userId: userId,
     userType: userType,
+    userData: userData,
     clientId: clientSessionId,
     online: false,
     explicit: true
@@ -186,19 +187,20 @@ PresenceManager.prototype.processRedisEntry = function (message, callback) {
       // Orphan redis entry: silently remove from redis then remove from store
       // implicitly.
       Persistence.deleteHash(this.scope, userId + '.' + clientSessionId)
-      self.handleOffline(clientSessionId, userId, userType, false /* explicit */)
+      self.handleOffline(clientSessionId, userId, userType, message.userData, false)
     }
     callback()
   } else {
-    this.handleOffline(clientSessionId, userId, userType, message.explicit)
+    this.handleOffline(clientSessionId, userId, userType, message.userData, message.explicit)
     callback()
   }
 }
 
-PresenceManager.prototype.handleOffline = function (clientSessionId, userId, userType, explicit) {
+PresenceManager.prototype.handleOffline = function (clientSessionId, userId, userType, userData, explicit) {
   var message = {
     userId: userId,
     userType: userType,
+    userData: userData,
     clientId: clientSessionId,
     online: false,
     explicit: explicit
