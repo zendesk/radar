@@ -3,7 +3,7 @@ function SocketClientSessionAdapter (clientSessionCtor) {
 }
 
 SocketClientSessionAdapter.prototype.adapt = function (socket) {
-  var clientSession = new this.ClientSession(undefined, socket.id, undefined, undefined, socket)
+  const clientSession = new this.ClientSession(undefined, socket.id, undefined, undefined, socket)
   return clientSession
 }
 

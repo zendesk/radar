@@ -1,9 +1,9 @@
-var Resource = require('../resource.js')
-var Persistence = require('persistence')
-var logging = require('minilog')('radar:stream')
-var SubscriberState = require('./subscriber_state.js')
+const Resource = require('../resource.js')
+let Persistence = require('persistence')
+const logging = require('minilog')('radar:stream')
+const SubscriberState = require('./subscriber_state.js')
 
-var defaultOptions = {
+const defaultOptions = {
   policy: {
     maxPersistence: 7 * 24 * 60 * 60, // 1 week in seconds
     maxLength: 100000
@@ -33,9 +33,9 @@ Stream.prototype._getSyncError = function (from) {
 }
 
 Stream.prototype._subscribe = function (clientSession, message) {
-  var self = this
-  var from = message.options && message.options.from
-  var sub = this.subscriberState.get(clientSession.id)
+  const self = this
+  const from = message.options && message.options.from
+  const sub = this.subscriberState.get(clientSession.id)
 
   if (typeof from === 'undefined' || from < 0) {
     return
@@ -44,7 +44,7 @@ Stream.prototype._subscribe = function (clientSession, message) {
   sub.startSubscribing(from)
   this._get(from, function (error, values) {
     if (error) {
-      var syncError = self._getSyncError(from)
+      const syncError = self._getSyncError(from)
       syncError.op = 'push'
       clientSession.send(syncError)
     } else {
@@ -65,13 +65,13 @@ Stream.prototype.subscribe = function (clientSession, message) {
 }
 
 Stream.prototype.get = function (clientSession, message) {
-  var stream = this
-  var from = message && message.options && message.options.from
+  const stream = this
+  const from = message && message.options && message.options.from
   logging.debug('#stream - get', this.to, 'from: ' + from, (clientSession && clientSession.id))
 
   this._get(from, function (error, values) {
     if (error) {
-      var syncError = stream._getSyncError(from)
+      const syncError = stream._getSyncError(from)
       syncError.op = 'get'
       syncError.value = []
       clientSession.send(syncError)
@@ -86,7 +86,7 @@ Stream.prototype.get = function (clientSession, message) {
 }
 
 Stream.prototype._get = function (from, callback) {
-  var self = this
+  const self = this
   this.list.info(function (error, start, end, size) {
     if (error) { return callback(error) }
     self.start = start
@@ -97,11 +97,11 @@ Stream.prototype._get = function (from, callback) {
 }
 
 Stream.prototype.push = function (clientSession, message) {
-  var self = this
+  const self = this
 
   logging.debug('#stream - push', this.to, message, (clientSession && clientSession.id))
 
-  var m = {
+  const m = {
     to: this.to,
     op: 'push',
     resource: message.resource,
@@ -129,12 +129,12 @@ Stream.prototype.sync = function (clientSession, message) {
 }
 
 Stream.prototype.redisIn = function (data) {
-  var self = this
+  const self = this
   logging.info('#' + this.type, '- incoming from #redis', this.to, data, 'subs:', Object.keys(this.subscribers).length)
   Object.keys(this.subscribers).forEach(function (clientSessionId) {
-    var clientSession = self.getClientSession(clientSessionId)
+    const clientSession = self.getClientSession(clientSessionId)
     if (clientSession && clientSession.send) {
-      var sub = self.subscriberState.get(clientSession.id)
+      const sub = self.subscriberState.get(clientSession.id)
       if (sub && sub.sendable(data)) {
         clientSession.send(data)
         sub.sent = data.id

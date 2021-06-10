@@ -1,7 +1,7 @@
-var MiniEventEmitter = require('miniee')
-var logging = require('minilog')('radar:resource')
-var Stamper = require('../stamper.js')
-var ClientSession = require('../../client/client_session')
+const MiniEventEmitter = require('miniee')
+const logging = require('minilog')('radar:resource')
+const Stamper = require('../stamper.js')
+const ClientSession = require('../../client/client_session')
 /*
 
 Resources
@@ -19,7 +19,7 @@ Resources
 */
 
 function recursiveMerge (target /*, ..sources */) {
-  var sources = Array.prototype.slice.call(arguments, 1)
+  const sources = Array.prototype.slice.call(arguments, 1)
 
   sources.forEach(function (source) {
     if (source) {
@@ -78,7 +78,7 @@ Resource.prototype.unsubscribe = function (clientSession, message) {
 
 // Send to clients
 Resource.prototype.redisIn = function (data) {
-  var self = this
+  const self = this
 
   Stamper.stamp(data)
 
@@ -86,7 +86,7 @@ Resource.prototype.redisIn = function (data) {
     Object.keys(this.subscribers).length)
 
   Object.keys(this.subscribers).forEach(function (clientSessionId) {
-    var clientSession = self.getClientSession(clientSessionId)
+    const clientSession = self.getClientSession(clientSessionId)
 
     if (clientSession && clientSession.send) {
       data.stamp.clientId = clientSession.id

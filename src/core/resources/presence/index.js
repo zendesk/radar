@@ -1,9 +1,9 @@
-var Resource = require('../resource.js')
-var PresenceManager = require('./presence_manager.js')
-var Stamper = require('../../stamper.js')
-var logging = require('minilog')('radar:presence')
+const Resource = require('../resource.js')
+const PresenceManager = require('./presence_manager.js')
+const Stamper = require('../../stamper.js')
+const logging = require('minilog')('radar:presence')
 
-var defaultOptions = {
+const defaultOptions = {
   policy: {
     // 12 hours in seconds
     maxPersistence: 12 * 60 * 60,
@@ -23,13 +23,13 @@ Presence.prototype = new Resource()
 Presence.prototype.type = 'presence'
 
 Presence.prototype.setup = function () {
-  var self = this
+  const self = this
 
   this.manager = new PresenceManager(this.to, this.options.policy, this.sentry)
 
   this.manager.on('user_online', function (userId, userType, userData) {
     logging.info('#presence - user_online', userId, userType, self.to)
-    var value = {}
+    const value = {}
     value[userId] = userType
     self.broadcast({
       to: self.to,
@@ -41,7 +41,7 @@ Presence.prototype.setup = function () {
 
   this.manager.on('user_offline', function (userId, userType) {
     logging.info('#presence - user_offline', userId, userType, self.to)
-    var value = {}
+    const value = {}
     value[userId] = userType
     self.broadcast({
       to: self.to,
@@ -107,8 +107,8 @@ Presence.prototype.set = function (clientSession, message) {
 }
 
 Presence.prototype._setOnline = function (clientSession, message) {
-  var presence = this
-  var userId = message.key
+  const presence = this
+  const userId = message.key
 
   function ackCheck () {
     presence.ack(clientSession, message.ack)
@@ -129,8 +129,8 @@ Presence.prototype._setOnline = function (clientSession, message) {
 }
 
 Presence.prototype._setOffline = function (clientSession, message) {
-  var presence = this
-  var userId = message.key
+  const presence = this
+  const userId = message.key
 
   function ackCheck () {
     presence.ack(clientSession, message.ack)
@@ -160,10 +160,10 @@ Presence.prototype.unsubscribe = function (clientSession, message) {
 }
 
 Presence.prototype.sync = function (clientSession, message) {
-  var self = this
+  const self = this
   this.fullRead(function (online) {
     if (message.options && parseInt(message.options.version, 10) === 2) {
-      var value = self.manager.getClientsOnline()
+      const value = self.manager.getClientsOnline()
       logging.info('#presence - sync', value)
       clientSession.send({
         op: 'get',
@@ -187,9 +187,9 @@ Presence.prototype.sync = function (clientSession, message) {
 
 // This is a full sync of the online status from Redis
 Presence.prototype.get = function (clientSession, message) {
-  var self = this
+  const self = this
   this.fullRead(function (online) {
-    var value
+    let value
 
     if (message.options && message.options.version === 2) {
       // pob
@@ -208,7 +208,7 @@ Presence.prototype.get = function (clientSession, message) {
 }
 
 Presence.prototype.broadcast = function (message, except) {
-  var self = this
+  const self = this
 
   Stamper.stamp(message)
 
@@ -217,7 +217,7 @@ Presence.prototype.broadcast = function (message, except) {
   logging.debug('#presence - update subscribed clients', message, except, this.to)
 
   Object.keys(this.subscribers).forEach(function (clientSessionId) {
-    var clientSession = self.getClientSession(clientSessionId)
+    const clientSession = self.getClientSession(clientSessionId)
     if (clientSession && clientSessionId !== except && self.subscribers[clientSessionId].listening) {
       message.stamp.clientId = clientSessionId
       clientSession.send(message)

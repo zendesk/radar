@@ -1,8 +1,8 @@
-var Resource = require('../resource.js')
-var Persistence = require('persistence')
-var logger = require('minilog')('radar:message_list')
+const Resource = require('../resource.js')
+let Persistence = require('persistence')
+const logger = require('minilog')('radar:message_list')
 
-var defaultOptions = {
+const defaultOptions = {
   policy: {
     maxPersistence: 14 * 24 * 60 * 60 // 2 weeks in seconds
   }
@@ -21,7 +21,7 @@ MessageList.prototype.type = 'message'
 
 // Publish to Redis
 MessageList.prototype.publish = function (clientSession, message) {
-  var self = this
+  const self = this
 
   logger.debug('#message_list - publish', this.to, message, clientSession && clientSession.id)
 
@@ -41,7 +41,7 @@ MessageList.prototype._publish = function (to, policy, message, callback) {
 }
 
 MessageList.prototype.sync = function (clientSession, message) {
-  var to = this.to
+  const to = this.to
 
   logger.debug('#message_list - sync', this.to, message, clientSession && clientSession.id)
 

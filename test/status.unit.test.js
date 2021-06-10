@@ -1,17 +1,17 @@
 /* globals describe, it, before, after, beforeEach, afterEach */
-var assert = require('assert')
-var Status = require('../src/core/resources/status')
-var Persistence = require('persistence')
-var Common = require('./common.js')
+const assert = require('assert')
+const Status = require('../src/core/resources/status')
+const Persistence = require('persistence')
+const Common = require('./common.js')
 
 describe('given a status resource', function () {
-  var status
-  var FakePersistence = {
+  let status
+  const FakePersistence = {
     read: function () {},
     publish: function () {},
     expire: function () {}
   }
-  var Radar = {
+  const Radar = {
     broadcast: function () {}
   }
 
@@ -67,8 +67,8 @@ describe('given a status resource', function () {
 
   describe('set', function () {
     it('online', function () {
-      var message = { key: 123, value: 'online' }
-      var persisted, published
+      const message = { key: 123, value: 'online' }
+      let persisted, published
       FakePersistence.persistHash = function (hash, key, value) {
         assert.strictEqual(123, key)
         assert.strictEqual('online', value)
@@ -85,8 +85,8 @@ describe('given a status resource', function () {
     })
 
     it('offline', function () {
-      var message = { key: 123, value: 'offline' }
-      var persisted, published
+      const message = { key: 123, value: 'offline' }
+      let persisted, published
       FakePersistence.persistHash = function (hash, key, value) {
         assert.strictEqual(123, key)
         assert.strictEqual('offline', value)
@@ -103,8 +103,8 @@ describe('given a status resource', function () {
     })
 
     it('renews expiry for maxPersistence', function () {
-      var message = { key: 123, value: 'online' }
-      var expired
+      const message = { key: 123, value: 'online' }
+      let expired
       FakePersistence.expire = function (hash, expiry) {
         assert.strictEqual('aaa', hash)
         assert.strictEqual(expiry, 12 * 60 * 60)
@@ -156,13 +156,13 @@ describe('given a status resource', function () {
     })
 
     it('can be overrided', function (done) {
-      var options = {
+      const options = {
         policy: {
           maxPersistence: 24 * 60 * 60
         }
       }
 
-      var status = new Status('aaa', Radar, options)
+      const status = new Status('aaa', Radar, options)
       assert.strictEqual(status.options.policy.maxPersistence, 24 * 60 * 60)
 
       FakePersistence.expire = function (key, persistence) {
@@ -175,7 +175,7 @@ describe('given a status resource', function () {
 })
 
 describe('a status resource', function () {
-  var radarServer
+  let radarServer
 
   describe('emitting messages', function () {
     beforeEach(function (done) {
@@ -187,7 +187,7 @@ describe('a status resource', function () {
     })
 
     it('should emit incomming messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' }
+      const subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:incoming', function (message) {
@@ -202,10 +202,10 @@ describe('a status resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' }
-      var setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2 } }
-      var socketOne = { id: 1, send: function (m) {} }
-      var socketTwo = { id: 2, send: function (m) {} }
+      const subscribeMessage = { op: 'subscribe', to: 'status:/z1/test/ticket/1' }
+      const setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2 } }
+      const socketOne = { id: 1, send: function (m) {} }
+      const socketTwo = { id: 2, send: function (m) {} }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {
@@ -222,8 +222,8 @@ describe('a status resource', function () {
     // Case when setting status with the api
     describe('when not subscribed', function () {
       it('should emit outgoing messages', function (done) {
-        var setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2 } }
-        var socketOne = { id: 1, send: function (m) {} }
+        const setMessage = { op: 'set', to: 'status:/z1/test/ticket/1', value: { 1: 2 } }
+        const socketOne = { id: 1, send: function (m) {} }
 
         radarServer.on('resource:new', function (resource) {
           resource.on('message:outgoing', function (message) {
@@ -237,9 +237,9 @@ describe('a status resource', function () {
       })
 
       it('should unsubcribe (destroy resource) if there are no subscribers', function (done) {
-        var to = 'status:/z1/test/ticket/1'
-        var setMessage = { op: 'set', to: to, value: { 1: 2 } }
-        var socketOne = { id: 1, send: function (m) {} }
+        const to = 'status:/z1/test/ticket/1'
+        const setMessage = { op: 'set', to: to, value: { 1: 2 } }
+        const socketOne = { id: 1, send: function (m) {} }
 
         radarServer.on('resource:destroy', function (resource) {
           assert.strictEqual(radarServer.resources[to], resource)

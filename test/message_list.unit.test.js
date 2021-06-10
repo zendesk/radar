@@ -1,15 +1,15 @@
 /* globals describe, it, beforeEach, before, after */
-var assert = require('assert')
-var Common = require('./common')
-var MessageList = require('../src/core/resources/message_list')
-var Persistence = require('persistence')
+const assert = require('assert')
+const Common = require('./common')
+const MessageList = require('../src/core/resources/message_list')
+const Persistence = require('persistence')
 
 describe('For a message list', function () {
-  var messageList
-  var Radar = {
+  let messageList
+  const Radar = {
     broadcast: function () {}
   }
-  var FakePersistence = {
+  const FakePersistence = {
     read: function () {},
     persist: function () {},
     publish: function () {},
@@ -34,7 +34,7 @@ describe('For a message list', function () {
 
   describe('publishing', function () {
     it('causes a publish to persistence', function () {
-      var publishCalled = false
+      let publishCalled = false
       FakePersistence.publish = function (key, message) {
         assert.strictEqual('hello world', message)
         publishCalled = true
@@ -46,8 +46,8 @@ describe('For a message list', function () {
 
     describe('if cache is set to true', function () {
       it('causes a broadcast and a write', function () {
-        var publishCalled = false
-        var persistCalled = false
+        let publishCalled = false
+        let persistCalled = false
         FakePersistence.publish = function (key, message) {
           assert.strictEqual('hello world', message)
           publishCalled = true
@@ -55,28 +55,28 @@ describe('For a message list', function () {
         FakePersistence.persistOrdered = function () {
           persistCalled = true
         }
-        var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
+        const messageList = new MessageList('aab', Radar, { policy: { cache: true } })
         messageList.publish({}, 'hello world')
         assert.ok(publishCalled)
         assert.ok(persistCalled)
       })
 
       it('sets expiry if maxPersistence is provided', function () {
-        var expiryTime
+        let expiryTime
         FakePersistence.expire = function (name, expiry) {
           expiryTime = expiry
         }
-        var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+        const messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
         messageList.publish({}, 'hello world')
         assert.strictEqual(expiryTime, 24 * 60 * 60)
       })
 
       it('sets expiry to default maxPersistence if none provided', function () {
-        var expiryTime
+        let expiryTime
         FakePersistence.expire = function (name, expiry) {
           expiryTime = expiry
         }
-        var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
+        const messageList = new MessageList('aab', Radar, { policy: { cache: true } })
         messageList.publish({}, 'hello world')
         assert.strictEqual(expiryTime, 14 * 24 * 60 * 60)
       })
@@ -85,7 +85,7 @@ describe('For a message list', function () {
 
   describe('syncing', function () {
     it('causes a read', function (done) {
-      var messageList = new MessageList('aab', Radar, { policy: { cache: true } })
+      const messageList = new MessageList('aab', Radar, { policy: { cache: true } })
       FakePersistence.readOrderedWithScores = function (key, value, callbackFn) {
         assert.strictEqual('aab', key)
         callbackFn([1, 2])
@@ -103,8 +103,8 @@ describe('For a message list', function () {
     })
 
     it('renews expiry for maxPersistence', function (done) {
-      var expiryTime
-      var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+      let expiryTime
+      const messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
       FakePersistence.readOrderedWithScores = function (key, value, callbackFn) {
         assert.strictEqual('aab', key)
         callbackFn([1, 2])
@@ -124,7 +124,7 @@ describe('For a message list', function () {
 
   describe('unsubscribing', function () {
     it('renews expiry for maxPersistence', function (done) {
-      var messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
+      const messageList = new MessageList('aab', Radar, { policy: { cache: true, maxPersistence: 24 * 60 * 60 } })
       messageList.server = { destroyResource: function () {} }
       FakePersistence.expire = function (name, expiry) {
         assert.strictEqual(expiry, 24 * 60 * 60)
@@ -148,14 +148,14 @@ describe('For a message list', function () {
 
 describe('a message list resource', function () {
   describe('emitting messages', function () {
-    var radarServer
+    let radarServer
 
     beforeEach(function (done) {
       radarServer = Common.createRadarServer(done)
     })
 
     it('should emit incomming messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' }
+      const subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:incoming', function (message) {
@@ -170,10 +170,10 @@ describe('a message list resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' }
-      var publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: { type: 'activity', user_id: 123456789, state: 4 } }
-      var socketOne = { id: 1, send: function (m) {} }
-      var socketTwo = { id: 2, send: function (m) {} }
+      const subscribeMessage = { op: 'subscribe', to: 'message:/z1/test/ticket/1' }
+      const publishMessage = { op: 'publish', to: 'message:/z1/test/ticket/1', value: { type: 'activity', user_id: 123456789, state: 4 } }
+      const socketOne = { id: 1, send: function (m) {} }
+      const socketTwo = { id: 2, send: function (m) {} }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {

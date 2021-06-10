@@ -1,4 +1,4 @@
-var logging = require('minilog')('radar:legacy_auth_manager')
+const logging = require('minilog')('radar:legacy_auth_manager')
 
 // Legacy auth middleware
 //
@@ -13,7 +13,7 @@ var logging = require('minilog')('radar:legacy_auth_manager')
 //    authProvider: new MyAuthProvider()
 // }
 
-var LegacyAuthManager = function () {}
+const LegacyAuthManager = function () {}
 
 LegacyAuthManager.prototype.onMessage = function (clientSession, message, messageType, next) {
   if (!this.isAuthorized(clientSession, message, messageType)) {
@@ -32,8 +32,8 @@ LegacyAuthManager.prototype.onMessage = function (clientSession, message, messag
 }
 
 LegacyAuthManager.prototype.isAuthorized = function (clientSession, message, messageType) {
-  var isAuthorized = true
-  var provider = messageType && messageType.authProvider
+  let isAuthorized = true
+  const provider = messageType && messageType.authProvider
 
   if (provider && provider.authorize) {
     isAuthorized = provider.authorize(messageType, message, clientSession)

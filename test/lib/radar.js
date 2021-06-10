@@ -1,20 +1,20 @@
-var http = require('http')
-var Radar = require('../../index.js')
-var Middleware = require('../../src/middleware')
-var QuotaManager = Middleware.QuotaManager
-var LegacyAuthManager = Middleware.LegacyAuthManager
-var Persistence = require('persistence')
-var Type = require('../../src/core').Type
-var Minilog = require('minilog')
-var logger = Minilog('lib_radar')
-var formatter = require('./formatter.js')
-var assertHelper = require('./assert_helper.js')
-var serverStarted = false
-var radar
-var httpServer
+const http = require('http')
+const Radar = require('../../index.js')
+const Middleware = require('../../src/middleware')
+const QuotaManager = Middleware.QuotaManager
+const LegacyAuthManager = Middleware.LegacyAuthManager
+const Persistence = require('persistence')
+const Type = require('../../src/core').Type
+const Minilog = require('minilog')
+const logger = Minilog('lib_radar')
+const formatter = require('./formatter.js')
+const assertHelper = require('./assert_helper.js')
+let serverStarted = false
+let radar
+let httpServer
 
 if (process.env.verbose) {
-  var minilogPipe = Minilog
+  let minilogPipe = Minilog
 
   // Configure log output
   if (process.env.radar_log) {
@@ -88,7 +88,7 @@ Type.add([
   }
 ])
 
-var Service = {}
+const Service = {}
 
 Service.start = function (configuration, callbackFn) {
   logger.debug('creating radar', configuration)
@@ -96,7 +96,7 @@ Service.start = function (configuration, callbackFn) {
 
   // Add sentry defaults for testing.
   configuration.sentry = assertHelper.SentryDefaults
-  var RadarServer = Radar.server
+  const RadarServer = Radar.server
   radar = new RadarServer()
 
   radar.use(new QuotaManager())
@@ -117,7 +117,7 @@ Service.start = function (configuration, callbackFn) {
 }
 
 Service.stop = function (arg, callbackFn) {
-  var serverTimeout
+  let serverTimeout
   logger.info('stop')
 
   httpServer.on('close', function () {
@@ -155,9 +155,9 @@ Service.stop = function (arg, callbackFn) {
 }
 
 process.on('message', function (message) {
-  var command = JSON.parse(message)
+  const command = JSON.parse(message)
 
-  var complete = function (error) {
+  const complete = function (error) {
     logger.debug('complete: ', error, command.action)
     process.send(JSON.stringify({
       action: command.action,

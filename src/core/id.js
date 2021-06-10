@@ -2,8 +2,8 @@
 // this module should be used to generating them, to
 // ensure consistency
 
-var defaultGenerator = require('uuid/v4')
-var generator = defaultGenerator
+const { v4: defaultGenerator } = require('uuid')
+let generator = defaultGenerator
 
 // () => String
 function generateUniqueId () {

@@ -1,10 +1,10 @@
-var log = require('minilog')('radar:client')
-var EventEmitter = require('events').EventEmitter
-var inherits = require('util').inherits
-var ClientSessionStateMachine = require('./client_session_state_machine')
+const log = require('minilog')('radar:client')
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
+const ClientSessionStateMachine = require('./client_session_state_machine')
 
 // TODO: move to a SessionManager class
-var clientsById = {}
+const clientsById = {}
 
 function ClientSession (name, id, accountName, version, transport) {
   this.state = ClientSessionStateMachine.create(this)
@@ -27,7 +27,7 @@ function ClientSession (name, id, accountName, version, transport) {
 inherits(ClientSession, EventEmitter)
 
 ClientSession.prototype._initialize = function (set) {
-  var self = this
+  const self = this
 
   if (set) {
     Object.keys(set).forEach(function (key) {
@@ -59,7 +59,7 @@ ClientSession.prototype._cleanup = function () {
 // clientSession.send(message)
 
 ClientSession.prototype.send = function (message) {
-  var data = JSON.stringify(message)
+  const data = JSON.stringify(message)
   log.info('#socket.message.outgoing', this.id, data)
   if (this.state.state === 'ended') {
     log.warn('Cannot send message after ClientSession ended', this.id, data)
@@ -71,7 +71,7 @@ ClientSession.prototype.send = function (message) {
 
 // Persist subscriptions and presences when not already persisted in memory
 ClientSession.prototype.storeData = function (messageIn) {
-  var processedOp = false
+  let processedOp = false
 
   // Persist the message data, according to type
   switch (messageIn.op) {
@@ -95,7 +95,7 @@ ClientSession.prototype.storeData = function (messageIn) {
 }
 
 ClientSession.prototype.readData = function (cb) {
-  var data = { subscriptions: this.subscriptions, presences: this.presences }
+  const data = { subscriptions: this.subscriptions, presences: this.presences }
 
   if (cb) {
     cb(data)
@@ -107,7 +107,7 @@ ClientSession.prototype.readData = function (cb) {
 // Private methods
 
 ClientSession.prototype._setupTransport = function () {
-  var self = this
+  const self = this
 
   if (!this.transport || !this.transport.on) {
     return
@@ -115,7 +115,7 @@ ClientSession.prototype._setupTransport = function () {
 
   this.transport.on('message', emitClientMessage)
   function emitClientMessage (message) {
-    var decoded = self._decodeIncomingMessage(message)
+    const decoded = self._decodeIncomingMessage(message)
     if (!decoded) {
       log.warn('#socket.message.incoming.decode - could not decode')
       return
@@ -149,7 +149,7 @@ ClientSession.prototype._initializeOnNameSync = function (message) {
 
   this.send({ op: 'ack', value: message && message.ack })
 
-  var association = message.options.association
+  const association = message.options.association
 
   log.info('create: association name: ' + association.name +
     '; association id: ' + association.id)
@@ -164,7 +164,7 @@ ClientSession.prototype._initializeOnNameSync = function (message) {
 }
 
 ClientSession.prototype._decodeIncomingMessage = function (message) {
-  var decoded
+  let decoded
   try {
     decoded = JSON.parse(message)
   } catch (e) {
@@ -182,8 +182,8 @@ ClientSession.prototype._decodeIncomingMessage = function (message) {
 }
 
 ClientSession.prototype._logState = function () {
-  var subCount = Object.keys(this.subscriptions).length
-  var presCount = Object.keys(this.presences).length
+  const subCount = Object.keys(this.subscriptions).length
+  const presCount = Object.keys(this.presences).length
 
   log.info('#storeData', {
     client_id: this.id,
@@ -193,9 +193,9 @@ ClientSession.prototype._logState = function () {
 }
 
 ClientSession.prototype._storeDataSubscriptions = function (messageIn) {
-  var message = _cloneForStorage(messageIn)
-  var to = message.to
-  var existingSubscription
+  const message = _cloneForStorage(messageIn)
+  const to = message.to
+  let existingSubscription
 
   // Persist the message data, according to type
   switch (message.op) {
@@ -219,9 +219,9 @@ ClientSession.prototype._storeDataSubscriptions = function (messageIn) {
 }
 
 ClientSession.prototype._storeDataPresences = function (messageIn) {
-  var message = _cloneForStorage(messageIn)
-  var to = message.to
-  var existingPresence
+  const message = _cloneForStorage(messageIn)
+  const to = message.to
+  let existingPresence
 
   // Persist the message data, according to type
   if (message.op === 'set' && to.substr(0, 'presence:/'.length) === 'presence:/') {
@@ -243,7 +243,7 @@ ClientSession.prototype._storeDataPresences = function (messageIn) {
 // Private functions
 // TODO: move to util module
 function _cloneForStorage (messageIn) {
-  var message = {}
+  const message = {}
 
   message.to = messageIn.to
   message.op = messageIn.op

@@ -1,16 +1,16 @@
 /* globals describe, it, beforeEach */
 /* eslint-disable no-unused-expressions */
 
-var SocketClientSessionAdapter = require('../src/client/socket_client_session_adapter')
-var ClientSession = require('../src/client/client_session')
-var chai = require('chai')
+const SocketClientSessionAdapter = require('../src/client/socket_client_session_adapter')
+const ClientSession = require('../src/client/client_session')
+const chai = require('chai')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-interface'))
-var expect = chai.expect
-var sinon = require('sinon')
+const expect = chai.expect
+const sinon = require('sinon')
 
 describe('SocketClientSessionAdapter', function () {
-  var socketClientSessionAdapter
+  let socketClientSessionAdapter
   beforeEach(function () {
     socketClientSessionAdapter = new SocketClientSessionAdapter(ClientSession)
   })
@@ -36,7 +36,7 @@ describe('SocketClientSessionAdapter', function () {
 
   describe('#canAdapt', function () {
     describe('given a socket-like object', function () {
-      var obj = {
+      const obj = {
         id: 5,
         send: function () {},
         on: function () {},
@@ -49,7 +49,7 @@ describe('SocketClientSessionAdapter', function () {
       })
     })
     describe('given non-socket-like object', function () {
-      var obj = { foo: 'bar' }
+      const obj = { foo: 'bar' }
       it('returns false', function () {
         expect(socketClientSessionAdapter.canAdapt(obj))
           .to.be.false
@@ -65,10 +65,10 @@ describe('SocketClientSessionAdapter', function () {
 
   describe('#adapt', function () {
     describe('given a socket-like object', function () {
-      var socket = {
+      const socket = {
         id: 'foo'
       }
-      var ctor
+      let ctor
 
       beforeEach(function () {
         ctor = sinon.stub()

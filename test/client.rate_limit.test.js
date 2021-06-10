@@ -1,13 +1,13 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
-var common = require('./common.js')
-var assert = require('assert')
-var Tracker = require('callback_tracker')
-var PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
-var radar
-var client
+const common = require('./common.js')
+const assert = require('assert')
+const Tracker = require('callback_tracker')
+const PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
+let radar
+let client
 
 describe('The Server', function () {
-  var p
+  let p
   before(function (done) {
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, done)
@@ -19,7 +19,7 @@ describe('The Server', function () {
 
   beforeEach(function (done) {
     p = new PresenceMessage('dev', 'limited1')
-    var track = Tracker.create('beforeEach', done)
+    const track = Tracker.create('beforeEach', done)
     client = common.getClient('dev', 123, 0, { name: 'tester' }, track('client 1 ready'))
   })
 
@@ -32,7 +32,7 @@ describe('The Server', function () {
 
   describe('given a limited presence type', function () {
     it('should not allow subscription after a certain limit', function (done) {
-      var success = false
+      let success = false
 
       client.on('err', function (message) {
         assert.strictEqual(message.op, 'err')

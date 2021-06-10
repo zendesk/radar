@@ -1,13 +1,13 @@
 /* globals */
-var assert = require('assert')
-var Persistence = require('persistence')
-var Presence = require('../index.js').core.Presence
-var Common = require('./common.js')
-var readHashAll = Persistence.readHashAll
-var chai = require('chai')
-var expect = chai.expect
+const assert = require('assert')
+const Persistence = require('persistence')
+const Presence = require('../index.js').core.Presence
+const Common = require('./common.js')
+const readHashAll = Persistence.readHashAll
+const chai = require('chai')
+const expect = chai.expect
 
-var Server = {
+const Server = {
   broadcast: function () {},
   server: {
     clients: { }
@@ -22,7 +22,7 @@ var Server = {
 
 exports['given a presence monitor'] = {
   beforeEach: function (done) {
-    var self = this
+    const self = this
     Persistence.readHashAll = readHashAll
     Common.startPersistence(function () {
       self.presence = new Presence('aaa', Server, {})
@@ -35,7 +35,7 @@ exports['given a presence monitor'] = {
   },
 
   'messages from Redis trigger immediate notifications if new': function (done) {
-    var presence = this.presence
+    const presence = this.presence
     presence.manager.once('user_online', function (userId, userType) {
       assert.strictEqual(123, userId)
       assert.strictEqual(0, userType)
@@ -55,8 +55,8 @@ exports['given a presence monitor'] = {
   },
 
   'messages from Redis are not broadcast, only changes in status are': function () {
-    var presence = this.presence
-    var updates = []
+    const presence = this.presence
+    const updates = []
     // Replace function
     presence.manager.on('user_online', function (userId, userType) {
       updates.push([true, userId, userType])
@@ -120,8 +120,8 @@ exports['given a presence monitor'] = {
   },
 
   'setting status twice does not cause duplicate notifications': function (done) {
-    var presence = this.presence
-    var calls = 0
+    const presence = this.presence
+    let calls = 0
     presence.manager.on('user_online', function (userId, userType) {
       assert.strictEqual(123, userId)
       assert.strictEqual(0, userType)
@@ -136,8 +136,8 @@ exports['given a presence monitor'] = {
   },
 
   'string userId is treated the same as int userId': function (done) {
-    var presence = this.presence
-    var calls = 0
+    const presence = this.presence
+    let calls = 0
     presence.manager.on('user_online', function (userId, userType) {
       assert.strictEqual(123, userId)
       assert.strictEqual(0, userType)
@@ -152,14 +152,14 @@ exports['given a presence monitor'] = {
   },
 
   'full reads consider users with a valid sentry as online': function (done) {
-    var presence = this.presence
+    const presence = this.presence
     Persistence.readHashAll = function (scope, callbackFn) {
       callbackFn({
         123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name },
         124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: presence.sentry.name }
       })
     }
-    var users = {}
+    const users = {}
     this.presence.manager.on('user_online', function (userId, userType) {
       users[userId] = userType
     })
@@ -173,7 +173,7 @@ exports['given a presence monitor'] = {
 
   'full reads exclude users that were set to online with an invalid sentry': function (done) {
     // This may happen if the server gets terminated, so the key is never deleted properly...
-    var presence = this.presence
+    const presence = this.presence
     Persistence.readHashAll = function (scope, callbackFn) {
       callbackFn({
         123: { online: true, userId: 123, userType: 0, clientId: 'aab', sentry: 'unknown' },
@@ -187,7 +187,7 @@ exports['given a presence monitor'] = {
   },
 
   'full reads cause change events based on what was previously known': function (done) {
-    var presence = this.presence
+    const presence = this.presence
     // Make 123 online
     presence.redisIn({ online: true, userId: 123, userType: 0, clientId: 'aab', sentry: presence.sentry.name })
 
@@ -197,8 +197,8 @@ exports['given a presence monitor'] = {
         124: { online: true, userId: 124, userType: 2, clientId: 'bbb', sentry: presence.sentry.name }
       })
     }
-    var added = {}
-    var removed = {}
+    const added = {}
+    const removed = {}
     presence.manager.on('user_online', function (userId, userType) {
       added[userId] = userType
     })
@@ -215,7 +215,7 @@ exports['given a presence monitor'] = {
   },
 
   'when there are two messages for a single user - one setting the user offline and another setting it online, the online prevails': function (done) {
-    var presence = this.presence
+    const presence = this.presence
 
     Persistence.readHashAll = function (scope, callbackFn) {
       callbackFn({
@@ -228,8 +228,8 @@ exports['given a presence monitor'] = {
       })
     }
 
-    var added = {}
-    var removed = {}
+    const added = {}
+    const removed = {}
     presence.manager.on('user_online', function (userId, userType) {
       added[userId] = userType
     })

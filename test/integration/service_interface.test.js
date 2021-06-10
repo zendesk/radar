@@ -1,14 +1,14 @@
 /* globals describe, it, beforeEach, before, after */
-var expect = require('chai').expect
-var fetch = require('node-fetch')
-var qs = require('querystring')
+const expect = require('chai').expect
+const fetch = require('node-fetch')
+const qs = require('querystring')
 
-var common = require('../common.js')
+const common = require('../common.js')
 
 describe('Given a Radar server', function () {
-  var endpoint
-  var options
-  var radar
+  let endpoint
+  let options
+  let radar
   before(function (done) {
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, function () {
@@ -101,9 +101,9 @@ describe('Given a Radar server', function () {
         })
       })
       describe('given a client online on a presence resource', function () {
-        var client
-        var scope = 'test_presence_with_clients'
-        var USER_TYPE_AGENT = 2
+        let client
+        const scope = 'test_presence_with_clients'
+        const USER_TYPE_AGENT = 2
         before(function (done) {
           client = common.getClient('account', 123, USER_TYPE_AGENT, {}, function () {
             client.presence(scope).set('online', function (ack) {
@@ -150,7 +150,7 @@ describe('Given a Radar server', function () {
             expect(res.status).to.equal(200)
             return res.json()
           }).then(function (body) {
-            var expected = {
+            const expected = {
               op: 'get',
               to: 'presence:/account/' + scope,
               value: {
@@ -188,9 +188,9 @@ describe('Given a Radar server', function () {
 
     describe('when setting and then getting a Status', function () {
       it('expects the same value back', function () {
-        var value = Date.now()
+        const value = Date.now()
 
-        var set = Object.create(options)
+        const set = Object.create(options)
         set.body = JSON.stringify({
           op: 'set',
           to: 'status:/account/name',
@@ -198,7 +198,7 @@ describe('Given a Radar server', function () {
           value: value
         })
 
-        var get = Object.create(options)
+        const get = Object.create(options)
         get.body = JSON.stringify({
           op: 'get',
           to: 'status:/account/name'
@@ -230,7 +230,7 @@ describe('Given a Radar server', function () {
       delete options.body
     })
     it('Presence get', function () {
-      var url = endpoint + '?' + qs.stringify({
+      const url = endpoint + '?' + qs.stringify({
         to: 'presence:/account/ticket/1'
       })
       return fetch(url, options).then(function (res) {
@@ -245,7 +245,7 @@ describe('Given a Radar server', function () {
       })
     })
     it('Status get', function () {
-      var url = endpoint + '?' + qs.stringify({
+      const url = endpoint + '?' + qs.stringify({
         to: 'status:/account/ticket/1'
       })
       return fetch(url, options).then(function (res) {

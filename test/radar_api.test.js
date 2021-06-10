@@ -1,19 +1,19 @@
-var http = require('http')
-var assert = require('assert')
-var Api = require('../api/api.js')
-var ClientScope = require('../api/lib/client')
-var Persistence = require('../src/core').Persistence
-var PresenceManager = require('../src/core').PresenceManager
-var Presence = require('../src/core').Presence
-var Type = require('../src/core').Type
-var Status = require('../src/core').Status
-var MessageList = require('../src/core').MessageList
-var Common = require('./common.js')
-var frontend
+const http = require('http')
+const assert = require('assert')
+const Api = require('../api/api.js')
+const ClientScope = require('../api/lib/client')
+const Persistence = require('../src/core').Persistence
+const PresenceManager = require('../src/core').PresenceManager
+const Presence = require('../src/core').Presence
+const Type = require('../src/core').Type
+const Status = require('../src/core').Status
+const MessageList = require('../src/core').MessageList
+const Common = require('./common.js')
+let frontend
 
-var originalSentry = Presence.sentry
+const originalSentry = Presence.sentry
 
-var Client = new ClientScope({
+const Client = new ClientScope({
   secure: false,
   host: 'localhost',
   port: 8123
@@ -41,9 +41,9 @@ exports['Radar api tests'] = {
 
   // GET /radar/status?accountName=test&scope=ticket/1
   'can get a status scope': function (done) {
-    var to = 'status:/test/ticket/1'
-    var opts = Type.getByExpression(to)
-    var status = new Status(to, {}, opts)
+    const to = 'status:/test/ticket/1'
+    const opts = Type.getByExpression(to)
+    const status = new Status(to, {}, opts)
 
     status.set({}, {
       key: 'foo',
@@ -87,7 +87,7 @@ exports['Radar api tests'] = {
 
   // GET /radar/message?accountName=test&scope=chat/1
   'can get a message scope': function (done) {
-    var messageType = {
+    const messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'message',
       authProvider: false,
@@ -96,9 +96,9 @@ exports['Radar api tests'] = {
 
     Type.register('message', messageType)
 
-    var to = 'message:/setStatus/chat/1'
-    var opts = Type.getByExpression(to)
-    var msgList = new MessageList(to, {}, opts)
+    const to = 'message:/setStatus/chat/1'
+    const opts = Type.getByExpression(to)
+    const msgList = new MessageList(to, {}, opts)
 
     msgList.publish({}, {
       key: 'foo',
@@ -116,7 +116,7 @@ exports['Radar api tests'] = {
 
   // POST /radar/message { accountName:'test', scope:'ticket/1' }
   'can set a message scope': function (done) {
-    var messageType = {
+    const messageType = {
       expr: new RegExp('^message:/setStatus/(.+)$'),
       type: 'MessageList',
       authProvider: false,
@@ -152,7 +152,7 @@ exports['Radar api tests'] = {
     before: function (done) {
       function FakePersistence () {}
 
-      var messages = {
+      const messages = {
         'presence:/test/ticket/1': {
           '1.1000': {
             userId: 1,
@@ -180,7 +180,7 @@ exports['Radar api tests'] = {
       FakePersistence.deleteHash = function (scope, callbackFn) {}
 
       PresenceManager.setBackend(FakePersistence)
-      var fakeSentry = {
+      const fakeSentry = {
         name: 'server1',
         isDown: function () {
           return false

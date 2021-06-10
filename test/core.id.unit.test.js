@@ -1,35 +1,35 @@
 /* globals describe, it, beforeEach */
 /* eslint-disable no-unused-expressions */
 
-var chai = require('chai')
-var expect = chai.expect
-var _ = require('lodash')
-var sinon = require('sinon')
+const chai = require('chai')
+const expect = chai.expect
+const uniq = require('lodash/uniq')
+const sinon = require('sinon')
 chai.use(require('sinon-chai'))
 
 describe('id', function () {
-  var id = require('../src/core/id')
+  const id = require('../src/core/id')
 
   beforeEach(function () {
     id.setGenerator(id.defaultGenerator)
   })
 
   it('can generate unique string ids', function () {
-    var ids = []
+    const ids = []
     ids[0] = id()
     ids[1] = id()
     ids[2] = id()
     expect(ids[0]).to.be.a('string')
     expect(ids[1]).to.be.a('string')
     expect(ids[2]).to.be.a('string')
-    expect(_.uniq(ids)).to.deep.equal(ids)
+    expect(uniq(ids)).to.deep.equal(ids)
   })
 
   describe('.setGenerator', function () {
     it('can override the function used to generate ids', function () {
-      var generator = sinon.stub().returns('abc')
+      const generator = sinon.stub().returns('abc')
       id.setGenerator(generator)
-      var out = id()
+      const out = id()
       expect(generator).to.have.been.called
       expect(out).to.equal('abc')
     })

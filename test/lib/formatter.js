@@ -1,16 +1,16 @@
-var Minilog = require('minilog')
+const Minilog = require('minilog')
 
-var formatter = new Minilog.Transform()
+const formatter = new Minilog.Transform()
 formatter.nameLength = 22
 formatter.write = function (name, level, args) {
-  var i
+  let i
   if (this.nameLength < name.length) {
     this.nameLength = name.length
   }
   for (i = name.length; i < this.nameLength; i++) {
     name = name.concat(' ')
   }
-  var result = [].concat(args)
+  const result = [].concat(args)
   for (i = 0; i < result.length; i++) {
     if (result[i] && typeof result[i] === 'object') {
       // Buffers in Node.js look bad when stringified
