@@ -2,6 +2,7 @@ var MiniEventEmitter = require('miniee')
 var logging = require('minilog')('radar:resource')
 var Stamper = require('../stamper.js')
 var ClientSession = require('../../client/client_session')
+const { setServer, getServer } = require('../../helpers/server_cache.js')
 /*
 
 Resources
@@ -43,7 +44,7 @@ function recursiveMerge (target /*, ..sources */) {
 function Resource (to, server, options, defaultOptions) {
   this.to = to
   this.subscribers = {}
-  this.server = server // RadarServer instance
+  this.server = setServer(server)
   this.options = recursiveMerge({}, options || {}, defaultOptions || {})
 }
 
@@ -70,7 +71,8 @@ Resource.prototype.unsubscribe = function (clientSession, message) {
   if (!Object.keys(this.subscribers).length) {
     logging.info('#' + this.type, '- destroying resource', this.to,
       this.subscribers, clientSession.id)
-    this.server.destroyResource(this.to)
+    const server = getServer(this.server)
+    if (server) server.destroyResource(this.to)
   }
 
   this.ack(clientSession, message && message.ack)
@@ -98,7 +100,8 @@ Resource.prototype.redisIn = function (data) {
 
   if (Object.keys(this.subscribers).length === 0) {
     logging.info('#' + this.type, '- no subscribers, destroying resource', this.to)
-    this.server.destroyResource(this.to)
+    const server = getServer(this.server)
+    if (server) server.destroyResource(this.to)
   }
 }
 
