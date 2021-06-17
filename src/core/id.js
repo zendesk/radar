@@ -2,7 +2,7 @@
 // this module should be used to generating them, to
 // ensure consistency
 
-var defaultGenerator = require('uuid/v4')
+const { v4: defaultGenerator } = require('uuid')
 var generator = defaultGenerator
 
 // () => String
