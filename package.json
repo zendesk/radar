@@ -69,7 +69,7 @@
     "radar_client": "^0.16.7",
     "redis": "^3.0.0",
     "simple_sentinel": "^0.1.8",
-    "sinon": "^9.0.1",
+    "sinon": "^11.1.1",
     "sinon-chai": "^3.5.0",
     "smooth-progress": "^1.0.4",
     "standard": "^14.3.3"
