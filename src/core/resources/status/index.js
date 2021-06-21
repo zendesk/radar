@@ -1,8 +1,8 @@
-var Resource = require('../resource.js')
-var Persistence = require('persistence')
-var logger = require('minilog')('radar:status')
+const Resource = require('../resource.js')
+let Persistence = require('persistence')
+const logger = require('minilog')('radar:status')
 
-var defaultOptions = {
+const defaultOptions = {
   policy: {
     maxPersistence: 12 * 60 * 60 // 12 hours in seconds
   }
@@ -17,7 +17,7 @@ Status.prototype.type = 'status'
 
 // Get status
 Status.prototype.get = function (clientSession) {
-  var to = this.to
+  const to = this.to
 
   logger.debug('#status - get', this.to, (clientSession && clientSession.id))
 
@@ -35,7 +35,7 @@ Status.prototype._get = function (to, callback) {
 }
 
 Status.prototype.set = function (clientSession, message) {
-  var self = this
+  const self = this
 
   logger.debug('#status - set', this.to, message, (clientSession && clientSession.id))
 

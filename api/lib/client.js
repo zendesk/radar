@@ -1,10 +1,10 @@
 /* eslint-disable node/no-deprecated-api */
 
-var https = require('https')
-var http = require('http')
-var qs = require('querystring')
-var urlmodule = require('url')
-var logging = require('minilog')('client')
+const https = require('https')
+const http = require('http')
+const qs = require('querystring')
+const urlmodule = require('url')
+const logging = require('minilog')('client')
 
 function Scope (defaults) {
   // Clone Client.def. We don't want to change the defaults when we modify options further.
@@ -12,7 +12,7 @@ function Scope (defaults) {
 }
 
 Scope.prototype.get = function (path) {
-  var c = new Client()
+  const c = new Client()
 
   // Note: assigning this.defaults to c.options will still cause issues!
   // The problem is that since we modify c.options when forming requests
@@ -25,7 +25,7 @@ Scope.prototype.get = function (path) {
 }
 
 Scope.prototype.post = function (path) {
-  var c = new Client()
+  const c = new Client()
 
   c.options = JSON.parse(JSON.stringify(this.defaults))
   c.set('method', 'POST')
@@ -73,11 +73,11 @@ Client.prototype.end = function (callback) {
 }
 
 Client.prototype._end = function (callback) {
-  var self = this
-  var options = this.options
-  var secure = this.options.secure
-  var resData = ''
-  var protocol = (secure ? https : http)
+  const self = this
+  const options = this.options
+  const secure = this.options.secure
+  let resData = ''
+  const protocol = (secure ? https : http)
 
   if (this.beforeRequest) {
     this.beforeRequest(this)
@@ -87,10 +87,10 @@ Client.prototype._end = function (callback) {
     (secure ? 'https ' : 'http') +
     'request. Options: ', options)
 
-  var proxy = protocol.request(options, function (response) {
+  const proxy = protocol.request(options, function (response) {
     response.on('data', function (chunk) { resData += chunk })
     response.on('end', function () {
-      var isRedirect = Math.floor(response.statusCode / 100) === 3 && response.headers && response.headers.location
+      const isRedirect = Math.floor(response.statusCode / 100) === 3 && response.headers && response.headers.location
 
       logging.debug('Response for the request "' + options.method + ' ' + options.host + options.path + '" has been ended.')
 
@@ -149,7 +149,7 @@ Client.prototype._redirect = function (response, callback) {
   }
 
   // Parse location to check for port
-  var parts = urlmodule.parse(response.headers.location)
+  const parts = urlmodule.parse(response.headers.location)
   if (parts.protocol === 'http:') {
     this.options.secure = false
     this.options.port = parts.port || 80

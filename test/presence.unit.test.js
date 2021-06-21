@@ -1,19 +1,19 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
-var assert = require('assert')
-var MiniEE = require('miniee')
-var Persistence = require('persistence')
-var Common = require('./common.js')
-var Presence = require('../src/core/resources/presence')
-var sinon = require('sinon')
-var expect = require('chai').expect
+const assert = require('assert')
+const MiniEE = require('miniee')
+const Persistence = require('persistence')
+const Common = require('./common.js')
+const Presence = require('../src/core/resources/presence')
+const sinon = require('sinon')
+const expect = require('chai').expect
 
 describe('given a presence resource', function () {
-  var presence, client, client2
-  var oldExpire = Persistence.expire
-  var oldPersistHash = Persistence.persistHash
-  var oldPublish = Persistence.publish
+  let presence, client, client2
+  const oldExpire = Persistence.expire
+  const oldPersistHash = Persistence.persistHash
+  const oldPublish = Persistence.publish
 
-  var Server = {
+  const Server = {
     broadcast: function () {},
     terminate: function () {},
     destroyResource: function () {},
@@ -61,7 +61,7 @@ describe('given a presence resource', function () {
 
   describe('.set', function () {
     it('can be set online', function () {
-      var published
+      let published
       Persistence.publish = function (scope, m, callbackFn) {
         assert.strictEqual(1, m.userId)
         assert.strictEqual(2, m.userType)
@@ -76,7 +76,7 @@ describe('given a presence resource', function () {
     })
 
     it('can be set offline', function () {
-      var published
+      let published
       Persistence.publish = function (scope, m) {
         presence.redisIn(m)
       }
@@ -95,8 +95,8 @@ describe('given a presence resource', function () {
     })
 
     it('can be set to online and include arbitrary client data', function () {
-      var published
-      var clientData = { abc: 'abc' }
+      let published
+      const clientData = { abc: 'abc' }
 
       Persistence.publish = function (scope, m) {
         assert.strictEqual(1, m.userId)
@@ -128,11 +128,11 @@ describe('given a presence resource', function () {
 
     it('setting twice does not cause duplicate notifications', function () {
       // See also: presence_monitor.test.js / test with the same name
-      var calls = 0
+      let calls = 0
       Persistence.publish = function (scope, m) {
-        var online = m.online
-        var userId = m.userId
-        var userType = m.userType
+        const online = m.online
+        const userId = m.userId
+        const userType = m.userType
 
         assert.strictEqual(1, userId)
         assert.strictEqual(2, userType)
@@ -151,8 +151,8 @@ describe('given a presence resource', function () {
 
   describe('.sync', function () {
     it('message v2 sends get response + subscribes', function (done) {
-      var called = {}
-      var socket = {
+      const called = {}
+      const socket = {
         send: function (message) {
           called[message.op] = message
         }
@@ -170,8 +170,8 @@ describe('given a presence resource', function () {
       })
     })
     it('message v2 version can be a string or a number', function (done) {
-      var sent = []
-      var socket = {
+      const sent = []
+      const socket = {
         send: function (message) {
           sent.push(message.op)
         }
@@ -196,8 +196,8 @@ describe('given a presence resource', function () {
       }
     })
     it('message v1 sends online response + subscribes', function (done) {
-      var called = {}
-      var socket = {
+      const called = {}
+      const socket = {
         send: function (message) {
           called[message.op] = message
         }
@@ -220,7 +220,7 @@ describe('given a presence resource', function () {
   describe('user disconnects', function () {
     describe('when implicit', function () {
       it('should notify correctly even if redis has not replied to set(online) yet', function (done) {
-        var clientOnlineCalled = false
+        let clientOnlineCalled = false
 
         Persistence.publish = function (scope, m) {
           // 10ms delay
@@ -295,13 +295,13 @@ describe('given a presence resource', function () {
         assert.ok(presence.manager.expiryTimers[123]._idleTimeout > 0)
         assert.strictEqual(Object.keys(presence.manager.expiryTimers).length, 2)
 
-        var remote = []
-        var local = []
+        const remote = []
+        const local = []
         Persistence.publish = function (scope, data) {
           remote.push(data)
           presence.redisIn(data)
         }
-        var oldBroadcast = presence.broadcast
+        const oldBroadcast = presence.broadcast
         presence.broadcast = function (data) {
           local.push(data)
         }
@@ -325,7 +325,7 @@ describe('given a presence resource', function () {
       })
     })
     describe('when two connections have the same user', function () {
-      var remote, local, oldBroadcast, messages
+      let remote, local, oldBroadcast, messages
 
       beforeEach(function () {
         Persistence.publish = function (scope, m) {
@@ -509,8 +509,8 @@ describe('given a presence resource', function () {
 
   describe('userData', function () {
     it('userData should be stored on an incoming message', function () {
-      var persistHash = Persistence.persistHash
-      var called = false
+      const persistHash = Persistence.persistHash
+      let called = false
 
       Persistence.persistHash = function (to, key, value) {
         called = true
@@ -524,11 +524,11 @@ describe('given a presence resource', function () {
     })
 
     it('userData should be included as the value of a client in a presence response', function () {
-      var data = {
+      const data = {
         clients: {},
         userType: 2
       }
-      var fakeClient = {
+      const fakeClient = {
         send: function (msg) {
           assert.deepStrictEqual(msg.value[123], data)
         }
@@ -552,7 +552,7 @@ describe('given a presence resource', function () {
 
 describe('a presence resource', function () {
   describe('emitting messages', function () {
-    var radarServer
+    let radarServer
 
     beforeEach(function (done) {
       radarServer = Common.createRadarServer(done)
@@ -563,7 +563,7 @@ describe('a presence resource', function () {
     })
 
     it('should emit incomming messages', function (done) {
-      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' }
+      const subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:incoming', function (message) {
@@ -578,11 +578,11 @@ describe('a presence resource', function () {
     })
 
     it('should emit outgoing messages', function (done) {
-      var count = 0
-      var setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' }
-      var subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' }
-      var socketOne = { id: 1, send: function (m) {} }
-      var socketTwo = { id: 2, send: function (m) {} }
+      let count = 0
+      const setMessage = { op: 'set', to: 'presence:/z1/test/ticket/1', value: 'online' }
+      const subscribeMessage = { op: 'subscribe', to: 'presence:/z1/test/ticket/1' }
+      const socketOne = { id: 1, send: function (m) {} }
+      const socketTwo = { id: 2, send: function (m) {} }
 
       radarServer.on('resource:new', function (resource) {
         resource.on('message:outgoing', function (message) {

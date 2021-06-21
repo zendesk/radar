@@ -3,7 +3,7 @@
 // ensure consistency
 
 const { v4: defaultGenerator } = require('uuid')
-var generator = defaultGenerator
+let generator = defaultGenerator
 
 // () => String
 function generateUniqueId () {

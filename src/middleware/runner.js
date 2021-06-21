@@ -1,22 +1,22 @@
-var async = require('async')
+const async = require('async')
 
-var Middleware = {
+const Middleware = {
   use: function (middleware) {
     this._middleware = this._middleware || []
     this._middleware.push(middleware)
   },
 
   runMiddleware: function () {
-    var context = arguments[0]
-    var args = [].slice.call(arguments, 1, -1)
-    var callback = [].slice.call(arguments, -1)[0]
+    const context = arguments[0]
+    const args = [].slice.call(arguments, 1, -1)
+    const callback = [].slice.call(arguments, -1)[0]
 
     if (!this._middleware) {
       callback()
       return
     }
 
-    var process = function (middleware, next) {
+    const process = function (middleware, next) {
       if (middleware[context]) {
         middleware[context].apply(middleware, args.concat(next))
       } else {

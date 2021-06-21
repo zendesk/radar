@@ -1,7 +1,7 @@
-var logging = require('minilog')('radar:rate_limiter')
-var MiniEventEmitter = require('miniee')
+const logging = require('minilog')('radar:rate_limiter')
+const MiniEventEmitter = require('miniee')
 
-var QuotaLimiter = function (limit) {
+const QuotaLimiter = function (limit) {
   this._limit = limit
   this._resources = {
     id: {},
@@ -42,8 +42,8 @@ QuotaLimiter.prototype.isAboveLimit = function (id, limit) {
 }
 
 QuotaLimiter.prototype.countAll = function () {
-  var counts = {}
-  var self = this
+  const counts = {}
+  const self = this
 
   Object.keys(this._resources.id).forEach(function (id) {
     counts[id] = self.count(id)
@@ -53,7 +53,7 @@ QuotaLimiter.prototype.countAll = function () {
 }
 
 QuotaLimiter.prototype.count = function (id) {
-  var resources = this._getResourcesByType('id', id)
+  const resources = this._getResourcesByType('id', id)
   return (resources ? Object.keys(resources).length : 0)
 }
 
@@ -83,7 +83,7 @@ QuotaLimiter.prototype._add = function (id, to) {
 }
 
 QuotaLimiter.prototype._addByType = function (type, key1, key2) {
-  var resources = this._getResourcesByType(type, key1)
+  let resources = this._getResourcesByType(type, key1)
 
   if (!resources) {
     resources = this._initResourcesByType(type, key1)
@@ -97,22 +97,22 @@ QuotaLimiter.prototype._getResourcesByType = function (type, key) {
 }
 
 QuotaLimiter.prototype._initResourcesByType = function (type, key) {
-  var resource = this._resources[type][key] = {}
+  const resource = this._resources[type][key] = {}
   return resource
 }
 
 QuotaLimiter.prototype._isNewResource = function (id, to) {
-  var resources = this._getResourcesByType('id', id)
+  const resources = this._getResourcesByType('id', id)
 
   return !(resources && Object.keys(resources).indexOf(to) !== -1)
 }
 
 QuotaLimiter.prototype._deepRemove = function (type, key, results, lookup) {
-  var self = this
+  const self = this
 
   if (results && Object.keys(results).length > 0) {
     Object.keys(results).forEach(function (result) {
-      var keys = lookup.call(self, type, result)
+      const keys = lookup.call(self, type, result)
 
       if (keys) { delete keys[key] }
     })

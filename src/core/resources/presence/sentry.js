@@ -1,31 +1,31 @@
-var _ = require('lodash')
-var Minilog = require('minilog')
-var logging = Minilog('radar:sentry')
-var Persistence = require('persistence')
-var redisSentriesKey = 'sentry:/radar'
-var id = require('../../id')
+const _ = require('lodash')
+const Minilog = require('minilog')
+const logging = Minilog('radar:sentry')
+const Persistence = require('persistence')
+const redisSentriesKey = 'sentry:/radar'
+const id = require('../../id')
 
-var defaultOptions = {
+const defaultOptions = {
   EXPIRY_OFFSET: 60 * 1000, // 1 minute max valid time for an sentry message
   REFRESH_INTERVAL: 10000, // 10 seconds to refresh own sentry
   CHECK_INTERVAL: 30000 // 30 seconds to check for new sentries
 }
 
-var parseJSON = function (message) {
+const parseJSON = function (message) {
   try {
     return JSON.parse(message)
   } catch (e) {}
 }
 
-var messageIsExpired = function (message) {
+const messageIsExpired = function (message) {
   return (!message || !message.expiration || (message.expiration <= Date.now()))
 }
 
-var messageExpiration = function (message) {
+const messageExpiration = function (message) {
   return (message && message.expiration && (message.expiration - Date.now()))
 }
 
-var Sentry = function (name) {
+const Sentry = function (name) {
   this.sentries = {}
   this._setName(name)
 
@@ -37,9 +37,8 @@ var Sentry = function (name) {
 require('util').inherits(Sentry, require('events').EventEmitter)
 
 Sentry.prototype.start = function (options, callback) {
-  var self = this
-  var keepAliveOptions = {}
-  var upMessage
+  const self = this
+  const keepAliveOptions = {}
 
   options = options || {}
 
@@ -57,7 +56,7 @@ Sentry.prototype.start = function (options, callback) {
     keepAliveOptions.expiration = options.expiration
   }
 
-  upMessage = self._keepAlive(keepAliveOptions)
+  const upMessage = self._keepAlive(keepAliveOptions)
 
   this._loadAndCleanUpSentries(function () {
     self.emit('up', self.name, upMessage)
@@ -86,11 +85,11 @@ Sentry.prototype.sentryNames = function () {
 }
 
 Sentry.prototype.isDown = function (name) {
-  var lastMessage = this.sentries[name]
-  var isSentryDown = messageIsExpired(lastMessage)
+  const lastMessage = this.sentries[name]
+  const isSentryDown = messageIsExpired(lastMessage)
 
   if (isSentryDown) {
-    var text = this.messageExpirationText(lastMessage)
+    const text = this.messageExpirationText(lastMessage)
 
     logging.debug('#presence - #sentry isDown', name, isSentryDown, text)
   }
@@ -99,8 +98,8 @@ Sentry.prototype.isDown = function (name) {
 }
 
 Sentry.prototype.messageExpirationText = function (message) {
-  var expiration = messageExpiration(message)
-  var text = expiration ? expiration + '/' + this._expiryOffset : 'not-present'
+  const expiration = messageExpiration(message)
+  const text = expiration ? expiration + '/' + this._expiryOffset : 'not-present'
 
   return text
 }
@@ -123,8 +122,8 @@ Sentry.prototype._applyOptions = function (options) {
 
 Sentry.prototype._keepAlive = function (options) {
   options = options || {}
-  var message = this._newKeepAliveMessage(options.name, options.expiration)
-  var name = message.name
+  const message = this._newKeepAliveMessage(options.name, options.expiration)
+  const name = message.name
 
   this.sentries[name] = message
 
@@ -154,11 +153,11 @@ Sentry.prototype._expiryOffsetFromNow = function () {
 // * expire sentries based on stale messages.
 //
 Sentry.prototype._loadAndCleanUpSentries = function (callback) {
-  var self = this
+  const self = this
 
   Persistence.readHashAll(redisSentriesKey, function (replies) {
     replies = replies || {}
-    var repliesKeys = Object.keys(replies)
+    const repliesKeys = Object.keys(replies)
 
     self._purgeGoneSentries(replies, repliesKeys)
 
@@ -174,11 +173,9 @@ Sentry.prototype._loadAndCleanUpSentries = function (callback) {
 }
 
 Sentry.prototype._purgeSentry = function (name) {
-  var lastMessage
-
   Persistence.deleteHash(redisSentriesKey, name)
 
-  lastMessage = this.sentries[name]
+  const lastMessage = this.sentries[name]
   logging.info('#presence - #sentry down:', name, lastMessage.host, lastMessage.port)
   delete this.sentries[name]
   this.emit('down', name, lastMessage)
@@ -188,8 +185,8 @@ Sentry.prototype._purgeSentry = function (name) {
 // we compare existing sentry names to reply names
 // and clear whatever we have that no longer exists.
 Sentry.prototype._purgeGoneSentries = function (replies, repliesKeys) {
-  var self = this
-  var sentriesGone = _.difference(this.sentryNames(), repliesKeys)
+  const self = this
+  const sentriesGone = _.difference(this.sentryNames(), repliesKeys)
 
   sentriesGone.forEach(function (name) {
     self._purgeSentry(name)
@@ -200,7 +197,7 @@ Sentry.prototype._purgeGoneSentries = function (replies, repliesKeys) {
 // As of now, we only care about new sentries going online.
 // Everything else gets inferred based on time.
 Sentry.prototype._startListening = function () {
-  var self = this
+  const self = this
 
   if (!this._listener) {
     this._listener = function (channel, message) {
@@ -231,7 +228,7 @@ Sentry.prototype._saveMessage = function (message) {
 }
 
 Sentry.prototype._refresh = function () {
-  var interval = Math.floor(this._refreshInterval)
+  const interval = Math.floor(this._refreshInterval)
 
   logging.info('#presence - #sentry keep alive:', this.name)
   this._keepAlive()
@@ -239,7 +236,7 @@ Sentry.prototype._refresh = function () {
 }
 
 Sentry.prototype._checkSentries = function () {
-  var interval = Math.floor(this._checkInterval)
+  const interval = Math.floor(this._checkInterval)
 
   logging.info('#presence - #sentry checking sentries:', this.name)
   this._loadAndCleanUpSentries()

@@ -1,7 +1,7 @@
 /* eslint-disable node/no-deprecated-api */
 
-var url = require('url')
-var logging = require('minilog')('radar:api-router')
+const url = require('url')
+const logging = require('minilog')('radar:api-router')
 
 function Router () {
   this.urlMap = []
@@ -11,10 +11,10 @@ function Router () {
 Router.prototype.route = function (req, res) {
   logging.info('Routing request "' + req.method + ' ' + req.url + '"')
 
-  var pathname = url.parse(req.url).pathname.replace(/^\/?node/, '')
-  var len = this.urlMap.length
-  var i = -1
-  var urlHandler
+  const pathname = url.parse(req.url).pathname.replace(/^\/?node/, '')
+  const len = this.urlMap.length
+  let i = -1
+  let urlHandler
 
   while (++i <= len) {
     if (this.urlMap[i] && this.urlMap[i].method === req.method && this.urlMap[i].re.test(pathname)) {
@@ -28,7 +28,7 @@ Router.prototype.route = function (req, res) {
   }
 
   if (req.method === 'POST') {
-    var data = ''
+    let data = ''
 
     req.on('data', function (chunk) {
       data += chunk
@@ -54,17 +54,17 @@ Router.prototype.post = function (regexp, callback) {
 }
 
 Router.prototype.attach = function (httpServer) {
-  var self = this
+  const self = this
 
   // Cache and clean up listeners
-  var oldListeners = httpServer.listeners('request')
+  const oldListeners = httpServer.listeners('request')
   httpServer.removeAllListeners('request')
 
   // Add request handler
   httpServer.on('request', function (req, res) {
     if (!self.route(req, res)) {
       logging.info('Routing to old listeners')
-      for (var i = 0, l = oldListeners.length; i < l; i++) {
+      for (let i = 0, l = oldListeners.length; i < l; i++) {
         oldListeners[i].call(httpServer, req, res)
       }
     }

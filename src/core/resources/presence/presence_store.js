@@ -1,5 +1,5 @@
-var _ = require('lodash')
-var logging = require('minilog')('radar:presence_store')
+const _ = require('lodash')
+const logging = require('minilog')('radar:presence_store')
 
 function PresenceStore (scope) {
   this.scope = scope
@@ -17,14 +17,14 @@ PresenceStore.prototype.cacheAdd = function (clientSessionId, message) {
 }
 
 PresenceStore.prototype.cacheRemove = function (clientSessionId) {
-  var val = this.cache[clientSessionId]
+  const val = this.cache[clientSessionId]
   delete this.cache[clientSessionId]
   return val
 }
 
 PresenceStore.prototype.add = function (clientSessionId, userId, userType, message) {
-  var self = this
-  var events = []
+  const self = this
+  const events = []
 
   logging.debug('#presence - store.add', userId, clientSessionId, message, this.scope)
   this.cacheRemove(clientSessionId)
@@ -40,7 +40,7 @@ PresenceStore.prototype.add = function (clientSessionId, userId, userType, messa
     this.map[userId][clientSessionId] = message
     this.socketUserMap[clientSessionId] = userId
   } else {
-    var previous = this.map[userId][clientSessionId]
+    const previous = this.map[userId][clientSessionId]
     if (message.clientData && !_.isEqual(message.clientData, previous.clientData)) {
       events.push('client_updated')
       this.map[userId][clientSessionId] = message
@@ -55,8 +55,8 @@ PresenceStore.prototype.add = function (clientSessionId, userId, userType, messa
 }
 
 PresenceStore.prototype.remove = function (clientSessionId, userId, message) {
-  var self = this
-  var events = []
+  const self = this
+  const events = []
 
   logging.debug('#presence - store.remove', userId, clientSessionId, message, this.scope)
 
@@ -85,7 +85,7 @@ PresenceStore.prototype.remove = function (clientSessionId, userId, message) {
 }
 
 PresenceStore.prototype.removeClient = function (clientSessionId, message) {
-  var userId = this.socketUserMap[clientSessionId]
+  const userId = this.socketUserMap[clientSessionId]
   this.cacheRemove(clientSessionId)
 
   // When non-existent, return
@@ -130,7 +130,7 @@ PresenceStore.prototype.sockets = function (userId) {
 }
 
 PresenceStore.prototype.forEachClient = function (callback) {
-  var store = this
+  const store = this
   this.users().forEach(function (userId) {
     store.sockets(userId).forEach(function (clientSessionId) {
       if (callback) callback(userId, clientSessionId, store.get(clientSessionId, userId))
@@ -154,11 +154,11 @@ PresenceStore.prototype.userExists = function (userId) {
 // this code uses each clientSessionId in a separate chained call, the sum of which is
 // costly.
 PresenceStore.prototype.clientSessionIdsForSentryId = function (sentryId) {
-  var map = this.map
-  var clientSessionIds = []
+  const map = this.map
+  const clientSessionIds = []
   Object.keys(map).forEach(function (userId) {
     Object.keys(map[userId]).forEach(function (clientSessionId) {
-      var data = map[userId][clientSessionId]
+      const data = map[userId][clientSessionId]
       if (data && data.sentry === sentryId) {
         clientSessionIds.push(clientSessionId)
       }

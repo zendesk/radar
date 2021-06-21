@@ -1,6 +1,6 @@
-var logger = require('minilog')('radar:types')
+const logger = require('minilog')('radar:types')
 
-var Types = [
+let Types = [
   {
     name: 'general message',
     type: 'MessageList',
@@ -32,7 +32,10 @@ var Types = [
 // Get the type by resource "to" (aka, full scope)
 function getByExpression (to) {
   if (to) {
-    for (var i = 0, l = Types.length, definition, expression; i < l; ++i) {
+    const l = Types.length
+    let definition
+    let expression
+    for (let i = 0; i < l; ++i) {
       definition = Types[i]
       expression = definition.expression || definition.expr
       if (!expression) {

@@ -6,7 +6,7 @@ const { observable, observe } = require('mobx')
 const _ = require('lodash')
 
 function SessionManager (opt) {
-  var self = this
+  const self = this
   this.sessions = observable.map({})
   observe(self.sessions, function (change) {
     self.emit('change', change)
@@ -29,8 +29,8 @@ SessionManager.prototype.isValidAdapter = function (adapter) {
 
 // (ClientSesion|Any) => ClientSession?
 SessionManager.prototype.add = function (obj) {
-  var self = this
-  var session
+  const self = this
+  let session
 
   if (obj instanceof ClientSession) {
     session = obj
@@ -74,11 +74,11 @@ SessionManager.prototype.canAdapt = function (obj) {
 
 // (Any) => ClientSession?
 SessionManager.prototype.adapt = function (obj) {
-  var adapter = _.find(this.adapters, function (adapter) {
+  const adapter = _.find(this.adapters, function (adapter) {
     return adapter.canAdapt(obj)
   })
   log.info('Adapting ClientSession with ' + nameOf(adapter))
-  var adapted = adapter && adapter.adapt(obj)
+  const adapted = adapter && adapter.adapt(obj)
   return adapted || null
 }
 

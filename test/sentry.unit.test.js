@@ -1,29 +1,29 @@
 /* globals describe, it, beforeEach, afterEach, before */
-var assert = require('assert')
-var Sentry = require('../src/core/resources/presence/sentry.js')
-var Persistence = require('persistence')
-var configuration = require('../configurator.js').load({ persistence: true })
-var _ = require('lodash')
-var currentSentry = 0
-var sentry
-var sentryOne
-var sentryTwo
-var sentryThree
-var sentries = []
-var defaults = {
+const assert = require('assert')
+const Sentry = require('../src/core/resources/presence/sentry.js')
+const Persistence = require('persistence')
+const configuration = require('../configurator.js').load({ persistence: true })
+const _ = require('lodash')
+let currentSentry = 0
+let sentry
+let sentryOne
+let sentryTwo
+let sentryThree
+let sentries = []
+const defaults = {
   expiryOffset: 200,
   refreshInterval: 100,
   checkInterval: 200
 }
 
 function newSentry (options) {
-  var name = 'sentry-' + currentSentry++
+  const name = 'sentry-' + currentSentry++
 
   return new Sentry(name, _.extend(defaults, (options || {})))
 }
 
 function assertSentriesKnowEachOther (sentries, done) {
-  var sentryNames = sentries.map(function (s) { return s.name })
+  const sentryNames = sentries.map(function (s) { return s.name })
 
   sentries.forEach(function (sentry) {
     _.map(sentry.sentries, function (message) {
@@ -89,7 +89,7 @@ describe('a Server Entry (Sentry)', function () {
     })
 
     it('after start, the sentries should know about each other', function (done) {
-      var checkSentriesKnowEachOther = function () {
+      const checkSentriesKnowEachOther = function () {
         sentries.forEach(function (s) {
           assert.strictEqual(Object.keys(s.sentries).length, 2)
         })
@@ -100,7 +100,7 @@ describe('a Server Entry (Sentry)', function () {
     })
 
     it('after a down, and after check, sentries should clean up', function (done) {
-      var checkForSentryTwoGone = function () {
+      const checkForSentryTwoGone = function () {
         setTimeout(function () {
           assert.strictEqual(sentryOne.sentries[sentryTwo.name], undefined)
           done()
@@ -118,7 +118,7 @@ describe('a Server Entry (Sentry)', function () {
       sentryThree = newSentry()
       sentries = [sentryOne, sentryTwo, sentryThree]
 
-      var stopAndAssert = function () {
+      const stopAndAssert = function () {
         // stop one
         sentryThree.stop(function () {
           setTimeout(function () {

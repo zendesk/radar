@@ -1,44 +1,44 @@
 /* global describe, it */
 
-var assert = require('assert')
-var noArgs = ['', '']
-var noEnv = {}
-var Configurator = require('../configurator')
+const assert = require('assert')
+const noArgs = ['', '']
+const noEnv = {}
+const Configurator = require('../configurator')
 
 // Helper function. It tests multiple features of a given configuration option.
 function describeOptionTest (configurator, name, options) {
   describe('option: ' + name, function () {
     if (options.default) {
       it('default must be ' + options.default, function () {
-        var config = configurator.load({})
+        const config = configurator.load({})
         assert.strictEqual(config[name].toString(), options.default.toString())
       })
     }
 
     it('config: ' + name, function () {
-      var configOptions = {}
+      const configOptions = {}
       configOptions[name] = options.expected
-      var config = configurator.load({ config: configOptions, argv: noArgs, env: noEnv })
+      const config = configurator.load({ config: configOptions, argv: noArgs, env: noEnv })
       assert.strictEqual(config[name], options.expected)
     })
 
     it('env: ' + options.env, function () {
-      var envOptions = {}
+      const envOptions = {}
       envOptions[options.env] = options.expected
-      var config = configurator.load({ env: envOptions })
+      const config = configurator.load({ env: envOptions })
       assert.strictEqual(config[name], options.expected)
     })
 
     if (options.short) {
       it('short arg: ' + options.short, function () {
-        var config = configurator.load({ argv: ['', '', options.short, options.expected] })
+        const config = configurator.load({ argv: ['', '', options.short, options.expected] })
         assert.strictEqual(config[name], options.expected)
       })
     }
 
     if (options.long) {
       it('long arg: ' + options.long, function () {
-        var config = configurator.load({ argv: ['', '', options.long, options.expected] })
+        const config = configurator.load({ argv: ['', '', options.long, options.expected] })
         assert.strictEqual(config[name], options.expected)
       })
     }
@@ -47,13 +47,13 @@ function describeOptionTest (configurator, name, options) {
 
 describe('the Configurator', function () {
   it('has a default configuration', function () {
-    var config = new Configurator().load()
+    const config = new Configurator().load()
     assert.notStrictEqual(8000, config.port)
   })
 
   describe('while dealing with env vars', function () {
     it('env vars should win over default configuration', function () {
-      var config = new Configurator().load({
+      const config = new Configurator().load({
         config: { port: 8000 },
         argv: noArgs,
         env: { RADAR_PORT: 8001 }
@@ -63,7 +63,7 @@ describe('the Configurator', function () {
     })
 
     it('should only overwrite the right keys', function () {
-      var config = Configurator.load({
+      const config = Configurator.load({
         config: { port: 8004 },
         env: {
           RADAR_SENTINEL_MASTER_NAME: 'mymaster',
@@ -76,7 +76,7 @@ describe('the Configurator', function () {
   })
 
   describe('default settings', function () {
-    var configurator = new Configurator()
+    const configurator = new Configurator()
 
     describeOptionTest(configurator, 'port', {
       default: 8000,
@@ -108,7 +108,7 @@ describe('the Configurator', function () {
   })
 
   describe('custom setting', function () {
-    var newOption = {
+    const newOption = {
       name: 'testOption',
       description: 'test option',
       env: 'RADAR_TEST',
@@ -116,7 +116,7 @@ describe('the Configurator', function () {
       full: 'exp',
       default: 'testDefault'
     }
-    var configurator = new Configurator([newOption])
+    const configurator = new Configurator([newOption])
 
     describeOptionTest(configurator, 'testOption', {
       default: 'testDefault',

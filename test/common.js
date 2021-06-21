@@ -1,18 +1,18 @@
-var http = require('http')
-var path = require('path')
-var logging = require('minilog')('common')
-var formatter = require('./lib/formatter')
-var Persistence = require('persistence')
-var RadarServer = require('../index').server
-var configuration = require('../configurator').load({ persistence: true })
-var Sentry = require('../src/core/resources/presence/sentry')
-var Client = require('radar_client').constructor
-var fork = require('child_process').fork
-var Tracker = require('callback_tracker')
+const http = require('http')
+const path = require('path')
+const logging = require('minilog')('common')
+const formatter = require('./lib/formatter')
+const Persistence = require('persistence')
+const RadarServer = require('../index').server
+const configuration = require('../configurator').load({ persistence: true })
+const Sentry = require('../src/core/resources/presence/sentry')
+const Client = require('radar_client').constructor
+const fork = require('child_process').fork
+const Tracker = require('callback_tracker')
 
 Sentry.expiry = 4000
 if (process.env.verbose) {
-  var Minilog = require('minilog')
+  const Minilog = require('minilog')
   // Configure log output
   Minilog.pipe(Minilog.suggest.deny(/.*/, (process.env.radar_log ? process.env.radar_log : 'debug')))
     .pipe(formatter)
@@ -29,10 +29,8 @@ http.globalAgent.maxSockets = 10000
 
 module.exports = {
   spawnRadar: function () {
-    var radarProcess
-
     function getListener (action, callbackFn) {
-      var listener = function (message) {
+      const listener = function (message) {
         message = JSON.parse(message)
         logging.debug('message received', message, action)
         if (message.action === action) {
@@ -42,9 +40,9 @@ module.exports = {
       return listener
     }
 
-    radarProcess = fork(path.join(__dirname, '/lib/radar.js'))
+    const radarProcess = fork(path.join(__dirname, '/lib/radar.js'))
     radarProcess.sendCommand = function (command, arg, callbackFn) {
-      var listener = getListener(command, function (error) {
+      const listener = getListener(command, function (error) {
         logging.debug('removing listener', command)
         radarProcess.removeListener('message', listener)
         if (callbackFn) callbackFn(error)
@@ -77,15 +75,15 @@ module.exports = {
   },
 
   restartRadar: function (radar, configuration, clients, callbackFn) {
-    var tracker = Tracker.create('server restart, given clients ready', function () {
+    const tracker = Tracker.create('server restart, given clients ready', function () {
       if (callbackFn) setTimeout(callbackFn, 5)
     })
 
-    for (var i = 0; i < clients.length; i++) {
+    for (let i = 0; i < clients.length; i++) {
       clients[i].once('ready', tracker('client ' + i + ' ready'))
     }
 
-    var serverRestart = tracker('server restart')
+    const serverRestart = tracker('server restart')
 
     radar.sendCommand('stop', {}, function () {
       radar.sendCommand('start', configuration, serverRestart)
@@ -104,7 +102,7 @@ module.exports = {
     })
   },
   getClient: function (account, userId, userType, userData, done) {
-    var client = new Client().configure({
+    const client = new Client().configure({
       userId: userId,
       userType: userType,
       accountName: account,
@@ -118,10 +116,10 @@ module.exports = {
 
   // Create an in-process radar server, not a child process.
   createRadarServer: function (done) {
-    var notFound = function p404 (req, res) {}
-    var httpServer = http.createServer(notFound)
+    const notFound = function p404 (req, res) {}
+    const httpServer = http.createServer(notFound)
 
-    var radarServer = new RadarServer()
+    const radarServer = new RadarServer()
     radarServer.attach(httpServer, configuration)
 
     if (done) {

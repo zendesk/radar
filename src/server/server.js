@@ -1,25 +1,25 @@
-var _ = require('lodash')
-var async = require('async')
-var MiniEventEmitter = require('miniee')
-var Redis = require('persistence')
-var Core = require('../core')
-var Type = Core.Type
-var logging = require('minilog')('radar:server')
-var hostname = require('os').hostname()
-var DefaultEngineIO = require('engine.io')
-var Semver = require('semver')
-var ClientSession = require('../client/client_session.js')
-var Middleware = require('../middleware')
-var Stamper = require('../core/stamper.js')
-var ServiceInterface = require('./service_interface')
-var SessionManager = require('./session_manager')
-var SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
-var id = require('../core/id')
-var Sentry = require('../core/resources/presence/sentry')
-var nonblocking = require('nonblocking')
+const _ = require('lodash')
+const async = require('async')
+const MiniEventEmitter = require('miniee')
+const Redis = require('persistence')
+const Core = require('../core')
+const Type = Core.Type
+const logging = require('minilog')('radar:server')
+const hostname = require('os').hostname()
+const DefaultEngineIO = require('engine.io')
+const Semver = require('semver')
+const ClientSession = require('../client/client_session.js')
+const Middleware = require('../middleware')
+const Stamper = require('../core/stamper.js')
+const ServiceInterface = require('./service_interface')
+const SessionManager = require('./session_manager')
+const SocketClientSessionAdapter = require('../client/socket_client_session_adapter')
+const id = require('../core/id')
+const Sentry = require('../core/resources/presence/sentry')
+const nonblocking = require('nonblocking')
 
 function Server () {
-  var self = this
+  const self = this
   this.id = id()
   this.sessionManager = new SessionManager({
     adapters: [new SocketClientSessionAdapter(ClientSession)]
@@ -48,9 +48,9 @@ Server.prototype.attach = function (httpServer, configuration) {
 
 // Destroy empty resource
 Server.prototype.destroyResource = function (to) {
-  var self = this
-  var messageType = this._getMessageType(to)
-  var resource = this.resources[to]
+  const self = this
+  const messageType = this._getMessageType(to)
+  const resource = this.resources[to]
 
   if (resource) {
     this.runMiddleware('onDestroyResource', resource, messageType, function lastly (err) {
@@ -70,7 +70,7 @@ Server.prototype.destroyResource = function (to) {
 }
 
 Server.prototype.terminate = function (done) {
-  var self = this
+  const self = this
 
   Object.keys(this.resources).forEach(function (to) {
     self.destroyResource(to)
@@ -87,12 +87,12 @@ Server.prototype.terminate = function (done) {
 
 // Private API
 
-var VERSION_CLIENT_STOREDATA = '0.13.1'
+const VERSION_CLIENT_STOREDATA = '0.13.1'
 
 // (HttpServer, configuration: Object) => Promise
 Server.prototype._setup = function (httpServer, configuration) {
   configuration = configuration || {}
-  var self = this
+  const self = this
 
   return self._setupRedis(configuration.persistence)
     .then(function () {
@@ -119,8 +119,8 @@ Server.prototype._setupRedis = function (configuration) {
 }
 
 Server.prototype._setupServiceInterface = function (httpServer) {
-  var self = this
-  var service = ServiceInterface.setup(httpServer, self)
+  const self = this
+  const service = ServiceInterface.setup(httpServer, self)
   this._serviceInterface = service
 
   service.on('request', function (clientSession, message) {
@@ -129,8 +129,8 @@ Server.prototype._setupServiceInterface = function (httpServer) {
 }
 
 Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
-  var engine = DefaultEngineIO
-  var engineConf
+  let engine = DefaultEngineIO
+  let engineConf
 
   if (engineioConfig) {
     engine = engineioConfig.module
@@ -148,7 +148,7 @@ Server.prototype._setupDistributor = function () {
 
   this.subscriber.on('message', this._handlePubSubMessage.bind(this))
 
-  var oldPublish = Redis.publish
+  const oldPublish = Redis.publish
 
   // Log all outgoing to redis server
   Redis.publish = function (channel, data, callback) {
@@ -158,8 +158,8 @@ Server.prototype._setupDistributor = function () {
 }
 
 Server.prototype._setupSentry = function (configuration) {
-  var self = this
-  var sentryOptions = {
+  const self = this
+  const sentryOptions = {
     host: hostname,
     port: configuration.port
   }
@@ -182,8 +182,8 @@ Server.prototype._setupSentry = function (configuration) {
 }
 
 Server.prototype._onSentryDown = function (sentryId) {
-  var resources = this.resources
-  var presences = []
+  const resources = this.resources
+  const presences = []
 
   Object.keys(resources).forEach(function (scope) {
     if (resources[scope].type === 'presence') {
@@ -191,8 +191,8 @@ Server.prototype._onSentryDown = function (sentryId) {
     }
   })
 
-  var started = Date.now()
-  var sentrySessions = []
+  const started = Date.now()
+  const sentrySessions = []
 
   nonblocking(presences).forEach(function (presence) {
     if (presence.destroyed) {
@@ -212,9 +212,9 @@ Server.prototype._onSentryDown = function (sentryId) {
     }, end)
   })
 
-  var self = this
+  const self = this
   function end () {
-    var duration = Date.now() - started
+    const duration = Date.now() - started
     self.emit('profiling', {
       name: '_onSentryDown',
       duration: duration,
@@ -227,12 +227,12 @@ Server.prototype._onSentryDown = function (sentryId) {
 }
 
 Server.prototype._onSocketConnection = function (socket) {
-  var self = this
+  const self = this
 
   // Event: socket connected
   logging.info('#socket - connect', socket.id)
 
-  var clientSession = this.sessionManager.add(socket)
+  const clientSession = this.sessionManager.add(socket)
 
   clientSession.on('message', function (data) {
     self._processMessage(clientSession, data)
@@ -278,7 +278,7 @@ Server.prototype._handlePubSubMessage = function (to, data) {
 }
 
 Server.prototype._processMessage = function (clientSession, message) {
-  var self = this
+  const self = this
 
   // recursively handle `BatchMessage`s
   if (message.op === 'batch') {
@@ -289,7 +289,7 @@ Server.prototype._processMessage = function (clientSession, message) {
     return
   }
 
-  var messageType = this._getMessageType(message.to)
+  const messageType = this._getMessageType(message.to)
 
   if (!messageType) {
     logging.warn('#socket.message - unknown type', message, clientSession.id)
@@ -310,7 +310,7 @@ Server.prototype._processMessage = function (clientSession, message) {
 
 // Initialize a client, and persist messages where required
 Server.prototype._persistClientData = function (socket, message) {
-  var clientSession = ClientSession.get(socket.id)
+  const clientSession = ClientSession.get(socket.id)
   if (clientSession && Semver.gte(clientSession.version, VERSION_CLIENT_STOREDATA)) {
     logging.info('#socket.message - _persistClientData', message, socket.id)
     clientSession.storeData(message)
@@ -319,9 +319,9 @@ Server.prototype._persistClientData = function (socket, message) {
 
 // Get a resource, subscribe where required, and handle associated message
 Server.prototype._handleResourceMessage = function (socket, message, messageType) {
-  var self = this
-  var to = message.to
-  var resource = this._getResource(message, messageType)
+  const self = this
+  const to = message.to
+  const resource = this._getResource(message, messageType)
 
   if (resource) {
     logging.info('#socket.message - received', socket.id, message,
@@ -351,9 +351,9 @@ Server.prototype._getMessageType = function (messageScope) {
 
 // Get or create resource by "to" (aka, full scope)
 Server.prototype._getResource = function (message, messageType) {
-  var to = message.to
-  var type = messageType.type
-  var resource = this.resources[to]
+  const to = message.to
+  const type = messageType.type
+  let resource = this.resources[to]
 
   if (!resource) {
     if (type && Core.Resources[type]) {
