@@ -90,7 +90,7 @@ Configurator.prototype.load = function () {
 // Private instance methods
 
 Configurator.prototype._parseCli = function (argv) {
-  var parser = require('nomnom')()
+  var parser = require('@gerhobbelt/nomnom')()
 
   this.settings.forEach(function (element) {
     parser.option(element.name, {

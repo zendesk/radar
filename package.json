@@ -41,6 +41,7 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
+    "@gerhobbelt/nomnom": "^1.8.4-31",
     "async": "^3.2.0",
     "callback_tracker": "0.1.0",
     "concat-stream": "^2.0.0",
@@ -52,7 +53,6 @@
     "miniee": "0.0.5",
     "minilog": "^2.1.0",
     "mobx": "^6.3.2",
-    "nomnom": "^1.8.1",
     "nonblocking": "^1.0.2",
     "persistence": "^2.0.1",
     "radar_message": "^1.3.1",
