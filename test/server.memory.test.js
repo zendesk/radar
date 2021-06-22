@@ -1,11 +1,11 @@
 /* globals describe, it, beforeEach, afterEach, gc */
-var common = require('./common.js')
-var chai = require('chai')
-var expect = chai.expect
-var EventEmitter = require('events').EventEmitter
+const common = require('./common.js')
+const chai = require('chai')
+const expect = chai.expect
+const { EventEmitter } = require('events')
 
 describe('given a server', function () {
-  var radarServer
+  let radarServer
 
   beforeEach(function (done) {
     radarServer = common.createRadarServer(done)
@@ -16,27 +16,27 @@ describe('given a server', function () {
   })
 
   if (typeof gc === 'function') {
-    var progress = require('smooth-progress')
+    const progress = require('smooth-progress')
 
     it('should not leak memory when clients connect and disconnect', function (done) {
       this.timeout(0)
-      var totalConnections = 100000
-      var concurrentConnections = 10000
-      var thresholdBytes = 1024 * 1024
-      var sockets = []
-      var socketsHighWater = 0
-      var ended = false
-      var endedConnections = 0
+      const totalConnections = 100000
+      const concurrentConnections = 10000
+      const thresholdBytes = 1024 * 1024
+      const sockets = []
+      let socketsHighWater = 0
+      let ended = false
+      let endedConnections = 0
 
       // make sockets
-      var s = 0
+      let s = 0
       function makeSocket () {
-        var socket = new EventEmitter()
+        const socket = new EventEmitter()
         socket.id = s++
         return socket
       }
       function socketConnect () {
-        var socket = makeSocket()
+        const socket = makeSocket()
         sockets.push(socket)
         socketsHighWater = Math.max(sockets.length, socketsHighWater)
         radarServer._onSocketConnection(socket)
@@ -48,9 +48,9 @@ describe('given a server', function () {
           gc()
           setTimeout(function () {
             gc()
-            var end = process.memoryUsage().heapUsed
+            const end = process.memoryUsage().heapUsed
             console.log('Simulated', i.toLocaleString(), 'client connections, and saw max ', socketsHighWater.toLocaleString(), 'concurrent connections')
-            var growth = end - start
+            const growth = end - start
             console.log('Heap growth', growth.toLocaleString(), 'bytes')
             expect(end - start).to.be.lessThan(thresholdBytes)
             done()
@@ -58,7 +58,7 @@ describe('given a server', function () {
         }
       }
 
-      var bar = progress({
+      const bar = progress({
         tmpl: 'Simulating ' + totalConnections.toLocaleString() + ' connections... :bar :percent :eta',
         width: 25,
         total: totalConnections
@@ -71,12 +71,12 @@ describe('given a server', function () {
       }, 100)
 
       gc()
-      var start = process.memoryUsage().heapUsed
-      var i = 0
+      const start = process.memoryUsage().heapUsed
+      let i = 0
       asyncWhile(function () { return i < totalConnections }, function () {
         // limit concurrent
         if (sockets.length >= concurrentConnections || i === totalConnections) {
-          var socket = sockets.pop()
+          const socket = sockets.pop()
           socket && socket.emit('close')
           endedConnections++
         } else {
@@ -86,7 +86,7 @@ describe('given a server', function () {
       }, function () {
         // close remaining open sockets
         while (sockets.length) {
-          var socket = sockets.pop()
+          const socket = sockets.pop()
           socket && socket.emit('close')
           endedConnections++
         }

@@ -1,25 +1,25 @@
 /* globals describe, it, beforeEach, afterEach */
 /* eslint-disable no-unused-expressions, node/no-deprecated-api */
 
-var common = require('./common.js')
-var assert = require('assert')
-var sinon = require('sinon')
-var chai = require('chai')
-var Server = require('../src/server/server')
-var expect = chai.expect
-var subscribeMessage = {
+const common = require('./common.js')
+const assert = require('assert')
+const sinon = require('sinon')
+const chai = require('chai')
+const Server = require('../src/server/server')
+const { expect } = chai
+const subscribeMessage = {
   op: 'subscribe',
   to: 'presence:/z1/test/ticket/1'
 }
-var radarServer
+let radarServer
 
-var EventEmitter = require('events').EventEmitter
-var { listenerCount } = EventEmitter
+const EventEmitter = require('events').EventEmitter
+const { listenerCount } = EventEmitter
 
 chai.use(require('sinon-chai'))
 
 describe('given a server', function () {
-  var socket
+  let socket
 
   beforeEach(function (done) {
     radarServer = common.createRadarServer(done)
@@ -44,7 +44,7 @@ describe('given a server', function () {
   })
 
   it('should emit resource:new when allocating a new resource, but not on subsequent calls', function (done) {
-    var called = false
+    let called = false
 
     radarServer.on('resource:new', function (resource) {
       assert(!called)
@@ -62,7 +62,7 @@ describe('given a server', function () {
   })
 
   it('should emit resource:destroy when a resource is destroyed', function (done) {
-    var stubResource = {
+    const stubResource = {
       destroy: function () {}
     }
 
@@ -79,7 +79,7 @@ describe('given a server', function () {
   })
 
   it('should return an error when an invalid message type is sent', function (done) {
-    var invalidMessage = {
+    const invalidMessage = {
       to: 'invalid:/thing'
     }
 
@@ -92,7 +92,7 @@ describe('given a server', function () {
   })
 
   it('should unwrap batch messages', function (done) {
-    var batchMessage = {
+    const batchMessage = {
       op: 'batch',
       length: 2,
       value: [
@@ -120,7 +120,7 @@ describe('given a server', function () {
   })
 
   it('should stamp incoming messages', function (done) {
-    var message = {
+    const message = {
       to: 'presence:/dev/test/ticket/1',
       op: 'subscribe'
     }
@@ -142,8 +142,8 @@ describe('given a server', function () {
   })
 
   describe('#_onSocketConnection', function () {
-    var stubClientSession
-    var socket
+    let stubClientSession
+    let socket
     beforeEach(function () {
       stubClientSession = new EventEmitter()
       stubClientSession.id = 1
@@ -164,7 +164,7 @@ describe('given a server', function () {
           234: { subscribers: { 1: stubClientSession }, unsubscribe: sinon.stub(), destroy: sinon.stub() }
         }
 
-        var calls = []
+        const calls = []
         radarServer.runMiddleware = function () {
           calls.push(arguments)
           if (calls.length === 2) {
@@ -204,16 +204,16 @@ describe('given a server', function () {
 
   describe('#attach', function () {
     it('returns ready promise', function () {
-      var httpServer = require('http').createServer(function () {})
-      var radarServer = new Server()
+      const httpServer = require('http').createServer(function () {})
+      const radarServer = new Server()
 
-      var returned = radarServer.attach(httpServer, common.configuration)
+      const returned = radarServer.attach(httpServer, common.configuration)
       expect(returned).to.equal(radarServer.ready)
     })
 
     it('ready promise resolves once server is setup', function () {
-      var httpServer = require('http').createServer(function () {})
-      var radarServer = new Server()
+      const httpServer = require('http').createServer(function () {})
+      const radarServer = new Server()
       radarServer._stup = sinon.spy(radarServer, '_setup')
       return radarServer.attach(httpServer, common.configuration)
         .then(function () {
@@ -224,7 +224,7 @@ describe('given a server', function () {
 
   describe('Sentry setup', function () {
     it('registers sentry on down handler', function () {
-      var sentry = radarServer.sentry
+      const sentry = radarServer.sentry
 
       expect(listenerCount(sentry, 'down')).to.equal(1)
     })
@@ -234,7 +234,7 @@ describe('given a server', function () {
     })
 
     it('forwards sentry on down event', function (done) {
-      var sentry = radarServer.sentry
+      const sentry = radarServer.sentry
 
       radarServer.on('sentry:down', function (sentryId, message) {
         expect(sentryId).to.equal('sentryId')
@@ -244,7 +244,7 @@ describe('given a server', function () {
       sentry.emit('down', 'sentryId', { message: true })
     })
     it('forwards sentry on up event', function (done) {
-      var sentry = radarServer.sentry
+      const sentry = radarServer.sentry
 
       radarServer.on('sentry:up', function (sentryId, message) {
         expect(sentryId).to.equal('sentryId')
@@ -255,7 +255,7 @@ describe('given a server', function () {
     })
 
     describe('#_onSentryDown', function () {
-      var stubStore
+      let stubStore
       beforeEach(function () {
         stubStore = {
           clientSessionIdsForSentryId: sinon.stub().returns(['client1', 'client2'])

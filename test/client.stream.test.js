@@ -1,18 +1,18 @@
 /* globals describe, it, beforeEach, before, after */
 
-var common = require('./common.js')
-var assert = require('assert')
-var StreamMessage = require('./lib/assert_helper.js').StreamMessage
-var Tracker = require('callback_tracker')
-var logging = require('minilog')('test')
-var radar
-var client
-var client2
+const common = require('./common.js')
+const assert = require('assert')
+const { StreamMessage } = require('./lib/assert_helper.js')
+const Tracker = require('callback_tracker')
+const logging = require('minilog')('test')
+let radar
+let client
+let client2
 
 describe('When using the stream resource', function () {
-  var s = new StreamMessage('dev', 'test')
+  const s = new StreamMessage('dev', 'test')
   before(function (done) {
-    var track = Tracker.create('before', done)
+    const track = Tracker.create('before', done)
 
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, function () {
@@ -34,7 +34,7 @@ describe('When using the stream resource', function () {
     client.stream('test').removeAllListeners()
     client2.stream('test').removeAllListeners()
 
-    var track = Tracker.create('before each', done)
+    const track = Tracker.create('before each', done)
     client.stream('test').unsubscribe(track('client unsubscribe'))
     client2.stream('test').unsubscribe(track('client2 unsubscribe'))
     common.startPersistence(track('redis cleanup'))
@@ -57,8 +57,8 @@ describe('When using the stream resource', function () {
 
     // Sending a message should only send to each subscriber, but only once
     it('should receive a message only once per subscriber', function (done) {
-      var message = { state: 'test1' }
-      var finished = {}
+      const message = { state: 'test1' }
+      const finished = {}
 
       function validate (msg, clientName) {
         assert.ok(!finished[clientName])
@@ -94,9 +94,9 @@ describe('When using the stream resource', function () {
       // Send three messages, client2 will assert if it receieves any
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1' }
-      var message2 = { state: 'test2' }
-      var message3 = { state: 'test3' }
+      const message = { state: 'test1' }
+      const message2 = { state: 'test2' }
+      const message3 = { state: 'test3' }
 
       client2.stream('test').on(function (msg) {
         assert.ok(false)
@@ -122,9 +122,9 @@ describe('When using the stream resource', function () {
       // client2 will assert if it receives message 2 and 3
       // Stop test when we receive all three at client 1
 
-      var message = { state: 'test1' }
-      var message2 = { state: 'test2' }
-      var message3 = { state: 'test3' }
+      const message = { state: 'test1' }
+      const message2 = { state: 'test2' }
+      const message3 = { state: 'test3' }
 
       // test.numAssertions = 3
       client2.stream('test').on(function (msg) {
@@ -176,7 +176,7 @@ describe('When using the stream resource', function () {
       })
 
       it('should receive a sync-error if server ran out of history', function (done) {
-        var s = new StreamMessage('dev', 'short_stream/1')
+        const s = new StreamMessage('dev', 'short_stream/1')
         client.stream('short_stream/1').on(s.notify).subscribe()
         client2.stream('short_stream/1').push('ticket/1', 'open', 'first')
           .push('ticket/1', 'open', 'second')
@@ -203,7 +203,7 @@ describe('When using the stream resource', function () {
       })
 
       it('should still be subscribed after a sync-error', function (done) {
-        var s = new StreamMessage('dev', 'short_stream/2')
+        const s = new StreamMessage('dev', 'short_stream/2')
         client.stream('short_stream/2').on(s.notify).subscribe()
         client2.stream('short_stream/2').push('ticket/1', 'open', 'first')
           .push('ticket/1', 'open', 'second')
@@ -236,7 +236,7 @@ describe('When using the stream resource', function () {
       })
 
       it('should receive a sync-error if server does not keep history', function (done) {
-        var s = new StreamMessage('dev', 'uncached_stream/1')
+        const s = new StreamMessage('dev', 'uncached_stream/1')
         client.stream('uncached_stream/1').on(s.notify).subscribe()
         client2.stream('uncached_stream/1').push('ticket/1', 'open', 'first')
           .push('ticket/1', 'open', 'second')
@@ -288,7 +288,7 @@ describe('When using the stream resource', function () {
 
   describe('get', function () {
     it('can get a String', function (done) {
-      var oncePush = function () {
+      const oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
             ['ticket/1', 'open', 'foo', client],
@@ -302,7 +302,7 @@ describe('When using the stream resource', function () {
     })
 
     it('can get an Object', function (done) {
-      var oncePush = function () {
+      const oncePush = function () {
         client.stream('test').get(function (message) {
           s.assert_get_response(message, [
             ['ticket/1', 'open', { hello: 'world' }, client]
@@ -342,7 +342,7 @@ describe('When using the stream resource', function () {
     })
 
     it('returns sync-error if server lacks required history', function (done) {
-      var s = new StreamMessage('dev', 'short_stream/get/1')
+      const s = new StreamMessage('dev', 'short_stream/get/1')
       client.stream('short_stream/get/1').on(s.notify).subscribe()
       client2.stream('short_stream/get/1').push('ticket/1', 'open', 'first')
         .push('ticket/1', 'open', 'second')

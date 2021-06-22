@@ -1,16 +1,16 @@
 /* globals describe, it, beforeEach */
-var common = require('./common.js')
-var assert = require('assert')
-var ClientSession = require('../src/client/client_session.js')
-var EventEmitter = require('events').EventEmitter
-var sinon = require('sinon')
-var proxyquire = require('proxyquire')
+const common = require('./common.js')
+const assert = require('assert')
+const ClientSession = require('../src/client/client_session.js')
+const { EventEmitter } = require('events')
+const sinon = require('sinon')
+const proxyquire = require('proxyquire')
 
 describe('ClientSession', function () {
-  var clientSession
-  var presences
-  var subscriptions
-  var transport
+  let clientSession
+  let presences
+  let subscriptions
+  let transport
 
   beforeEach(function (done) {
     transport = new EventEmitter()
@@ -24,7 +24,7 @@ describe('ClientSession', function () {
   describe('state', function () {
     describe('_initialize', function () {
       it('sets state to ready', function () {
-        var orig = clientSession.state.initialize
+        const orig = clientSession.state.initialize
         clientSession.state.initialize = function () {
           clientSession.state.initialize.called = true
           return orig.call(clientSession.state)
@@ -35,7 +35,7 @@ describe('ClientSession', function () {
         assert.strictEqual(clientSession.state.state, 'ready')
       })
       it('updates lastModified', function () {
-        var clock = sinon.useFakeTimers()
+        const clock = sinon.useFakeTimers()
 
         try {
           clientSession = new ClientSession()
@@ -89,7 +89,7 @@ describe('ClientSession', function () {
     })
     describe('end', function () {
       it('called when the underlying socket is closed', function () {
-        var orig = clientSession.state.end
+        const orig = clientSession.state.end
         clientSession.state.end = function () {
           clientSession.state.end.called = true
           return orig.call(clientSession.state)
@@ -114,7 +114,7 @@ describe('ClientSession', function () {
   describe('message api', function () {
     describe('incoming', function () {
       it('emits transport message events if in ready state', function (done) {
-        var originalMessage = { message: 'foo', op: 'blah' }
+        const originalMessage = { message: 'foo', op: 'blah' }
         clientSession.on('message', function (message) {
           done()
         })
@@ -123,7 +123,7 @@ describe('ClientSession', function () {
       })
 
       it('parses JSON to object', function (done) {
-        var originalMessage = { message: 'foo', op: 'blah' }
+        const originalMessage = { message: 'foo', op: 'blah' }
         clientSession.on('message', function (message) {
           assert.deepStrictEqual(message, originalMessage)
           done()
@@ -132,7 +132,7 @@ describe('ClientSession', function () {
         transport.emit('message', JSON.stringify(originalMessage))
       })
       it('does not emit transport message event if message is malformed', function (done) {
-        var originalMessage = { bad: true }
+        const originalMessage = { bad: true }
         setTimeout(function () {
           done()
         }, 10)
@@ -143,10 +143,10 @@ describe('ClientSession', function () {
         transport.emit('message', JSON.stringify(originalMessage))
       })
       it('dispatches namesync', function () {
-        var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
+        const message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
         assert.strictEqual(clientSession.state.state, 'initializing')
-        var called = 0
-        var orig = clientSession._initializeOnNameSync
+        let called = 0
+        const orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
           called++
           orig.apply(this, arguments)
@@ -156,10 +156,10 @@ describe('ClientSession', function () {
         assert.strictEqual(called, 1)
       })
       it('dispatches namesync again after already initialized (multiple nameSync messages over session lifetime)', function () {
-        var message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
+        const message = { op: 'nameSync', options: { association: { id: 1, name: 'one' } } }
         assert.strictEqual(clientSession.state.state, 'initializing')
-        var called = 0
-        var orig = clientSession._initializeOnNameSync
+        let called = 0
+        const orig = clientSession._initializeOnNameSync
         clientSession._initializeOnNameSync = function () {
           called++
           orig.apply(this, arguments)
@@ -174,7 +174,7 @@ describe('ClientSession', function () {
     })
     describe('outgoing - .send', function () {
       it('calls transport.send', function () {
-        var originalMessage = { message: 'bar' }
+        const originalMessage = { message: 'bar' }
 
         clientSession.send(originalMessage)
 
@@ -190,8 +190,8 @@ describe('ClientSession', function () {
       })
 
       it('JSON stringifies message', function () {
-        var originalMessage = { message: 'bar' }
-        var expectedMessage = '{"message":"bar"}'
+        const originalMessage = { message: 'bar' }
+        const expectedMessage = '{"message":"bar"}'
 
         clientSession.send(originalMessage)
 
@@ -202,11 +202,11 @@ describe('ClientSession', function () {
         function logging () { return logging }
         logging.info = sinon.spy()
 
-        var ClientSession = proxyquire('../src/client/client_session.js', {
+        const ClientSession = proxyquire('../src/client/client_session.js', {
           minilog: logging
         })
-        var id = Math.random()
-        var clientSession = new ClientSession('joe', id, 'test', 1, transport)
+        const id = Math.random()
+        const clientSession = new ClientSession('joe', id, 'test', 1, transport)
 
         clientSession.send({ message: 'foo' })
 
@@ -218,8 +218,8 @@ describe('ClientSession', function () {
   describe('.storeData and .loadData', function () {
     describe('subscriptions', function () {
       it('should store subscribe operations', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var message = { to: to, op: 'subscribe' }
+        const to = 'presence:/test/account/ticket/1'
+        const message = { to: to, op: 'subscribe' }
 
         subscriptions[to] = message
 
@@ -235,8 +235,8 @@ describe('ClientSession', function () {
       })
 
       it('should store sync as subscribes', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var message = { to: to, op: 'sync' }
+        const to = 'presence:/test/account/ticket/1'
+        const message = { to: to, op: 'sync' }
 
         subscriptions[to] = message
 
@@ -252,9 +252,9 @@ describe('ClientSession', function () {
       })
 
       it('should remove subscriptions on unsubscribe', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var subscribe = { to: to, op: 'subscribe' }
-        var unsubscribe = { to: to, op: 'unsubscribe' }
+        const to = 'presence:/test/account/ticket/1'
+        const subscribe = { to: to, op: 'subscribe' }
+        const unsubscribe = { to: to, op: 'unsubscribe' }
 
         clientSession.storeData(subscribe)
         clientSession.storeData(unsubscribe)
@@ -269,9 +269,9 @@ describe('ClientSession', function () {
       })
 
       it('sync after subscribe, keeps the sync', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var subscribe = { to: to, op: 'subscribe' }
-        var sync = { to: to, op: 'sync' }
+        const to = 'presence:/test/account/ticket/1'
+        const subscribe = { to: to, op: 'subscribe' }
+        const sync = { to: to, op: 'sync' }
 
         clientSession.storeData(subscribe)
         clientSession.storeData(sync)
@@ -288,9 +288,9 @@ describe('ClientSession', function () {
       })
 
       it('subscribe after sync, keeps the sync', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var subscribe = { to: to, op: 'subscribe' }
-        var sync = { to: to, op: 'sync' }
+        const to = 'presence:/test/account/ticket/1'
+        const subscribe = { to: to, op: 'subscribe' }
+        const sync = { to: to, op: 'sync' }
 
         clientSession.storeData(sync)
         clientSession.storeData(subscribe)
@@ -309,8 +309,8 @@ describe('ClientSession', function () {
 
     describe('presences', function () {
       it('should store set online operations', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var message = { to: to, op: 'set', value: 'online' }
+        const to = 'presence:/test/account/ticket/1'
+        const message = { to: to, op: 'set', value: 'online' }
 
         clientSession.storeData(message)
 
@@ -327,9 +327,9 @@ describe('ClientSession', function () {
       })
 
       it('should remove presence when set offline', function (done) {
-        var to = 'presence:/test/account/ticket/1'
-        var online = { to: to, op: 'set', value: 'online' }
-        var offline = { to: to, op: 'set', value: 'offline' }
+        const to = 'presence:/test/account/ticket/1'
+        const online = { to: to, op: 'set', value: 'online' }
+        const offline = { to: to, op: 'set', value: 'offline' }
 
         clientSession.storeData(online)
         clientSession.storeData(offline)

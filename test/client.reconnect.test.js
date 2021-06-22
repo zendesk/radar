@@ -1,13 +1,13 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
 
-var common = require('./common.js')
-var assert = require('assert')
-var Tracker = require('callback_tracker')
-var Backoff = require('radar_client').Backoff
-var radar
+const common = require('./common.js')
+const assert = require('assert')
+const Tracker = require('callback_tracker')
+const { Backoff } = require('radar_client')
+let radar
 
 describe('When radar server restarts', function () {
-  var client, client2
+  let client, client2
 
   before(function (done) {
     Backoff.durations = [100, 200, 400]
@@ -19,7 +19,7 @@ describe('When radar server restarts', function () {
   })
 
   beforeEach(function (done) {
-    var track = Tracker.create('beforeEach reconnect', done)
+    const track = Tracker.create('beforeEach reconnect', done)
     client = common.getClient('test', 123, 0, { name: 'tester' }, track('client 1 ready'))
     client2 = common.getClient('test', 246, 0, { name: 'tester2' }, track('client 2 ready'))
   })
@@ -41,7 +41,7 @@ describe('When radar server restarts', function () {
 
   it('reestablishes presence', function (done) {
     this.timeout(8000)
-    var verifySubscriptions = function () {
+    const verifySubscriptions = function () {
       setTimeout(function () {
         client2.presence('restore').get(function (message) {
           assert.strictEqual('get', message.op)
@@ -59,10 +59,10 @@ describe('When radar server restarts', function () {
 
   it('reconnects existing clients', function (done) {
     this.timeout(8000)
-    var clientEvents = []
-    var client2Events = []
+    const clientEvents = []
+    const client2Events = []
 
-    var states = ['disconnected', 'connected', 'ready']
+    const states = ['disconnected', 'connected', 'ready']
     states.forEach(function (state) {
       client.once(state, function () { clientEvents.push(state) })
       client2.once(state, function () { client2Events.push(state) })
@@ -79,8 +79,8 @@ describe('When radar server restarts', function () {
 
   it('resubscribes to subscriptions', function (done) {
     this.timeout(8000)
-    var verifySubscriptions = function () {
-      var tracker = Tracker.create('resources updated', done)
+    const verifySubscriptions = function () {
+      const tracker = Tracker.create('resources updated', done)
 
       client.message('restore').on(tracker('message updated', function (message) {
         assert.strictEqual(message.to, 'message:/test/restore')
@@ -94,7 +94,7 @@ describe('When radar server restarts', function () {
         assert.strictEqual(message.value, 'hello')
       })).set('hello')
 
-      var presenceDone = tracker('presence updated')
+      const presenceDone = tracker('presence updated')
       client.presence('restore').on(function (message) {
         if (message.op === 'online') {
           assert.strictEqual(message.to, 'presence:/test/restore')
@@ -103,7 +103,7 @@ describe('When radar server restarts', function () {
       }).set('online')
     }
 
-    var tracker = Tracker.create('subscriptions done', function () {
+    const tracker = Tracker.create('subscriptions done', function () {
       common.restartRadar(radar, common.configuration, [client], verifySubscriptions)
     })
     client.message('restore').subscribe(tracker('message subscribed'))
@@ -113,8 +113,8 @@ describe('When radar server restarts', function () {
 
   it('must not repeat synced chat (messagelist) messages, with two clients', function (done) {
     this.timeout(8000)
-    var messages = []
-    var verifySubscriptions = function () {
+    const messages = []
+    const verifySubscriptions = function () {
       assert.strictEqual(messages.length, 2)
       assert.ok(messages.some(function (m) { return m.value === 'a1' }))
       assert.ok(messages.some(function (m) { return m.value === 'a2' }))

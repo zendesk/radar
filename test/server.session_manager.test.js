@@ -1,16 +1,16 @@
 /* globals describe, it, beforeEach */
 /* eslint-disable no-unused-expressions */
 
-var SessionManager = require('../src/server/session_manager')
-var ClientSession = require('../src/client/client_session')
-var chai = require('chai')
+const SessionManager = require('../src/server/session_manager')
+const ClientSession = require('../src/client/client_session')
+const chai = require('chai')
 chai.use(require('sinon-chai'))
 chai.use(require('chai-interface'))
-var expect = chai.expect
-var sinon = require('sinon')
+const expect = chai.expect
+const sinon = require('sinon')
 
 describe('SessionManager', function () {
-  var sessionManager
+  let sessionManager
   beforeEach(function () {
     sessionManager = new SessionManager()
   })
@@ -34,8 +34,8 @@ describe('SessionManager', function () {
 
   describe('client session adapters', function () {
     describe('when instantiating with adapters option', function () {
-      var adapters = [{ canAdapt: function () {}, adapt: function () {} }]
-      var sessionManager = new SessionManager({ adapters: adapters })
+      const adapters = [{ canAdapt: function () {}, adapt: function () {} }]
+      const sessionManager = new SessionManager({ adapters: adapters })
 
       it('assigns the adapters to this.adapters', function () {
         expect(sessionManager.adapters).to.deep.equal(adapters)
@@ -49,16 +49,16 @@ describe('SessionManager', function () {
     })
 
     describe('#canAdapt', function () {
-      var someObj = { foo: 1 }
+      const someObj = { foo: 1 }
 
       it('returns true when an adapter matches', function () {
-        var adapterStub1 = { canAdapt: sinon.stub().returns(false) }
-        var adapterStub2 = { canAdapt: sinon.stub().returns(true) }
+        const adapterStub1 = { canAdapt: sinon.stub().returns(false) }
+        const adapterStub2 = { canAdapt: sinon.stub().returns(true) }
         sessionManager.adapters.push(adapterStub1, adapterStub2)
         expect(sessionManager.canAdapt(someObj)).to.be.true
       })
       it('returns false when no adapter matches', function () {
-        var adapterStub1 = { canAdapt: sinon.stub().returns(false) }
+        const adapterStub1 = { canAdapt: sinon.stub().returns(false) }
         sessionManager.adapters.push(adapterStub1)
         expect(sessionManager.canAdapt(someObj))
           .to.be.false
@@ -70,10 +70,10 @@ describe('SessionManager', function () {
     })
 
     describe('#adapt', function () {
-      var someObj = { foo: 1 }
-      var adapter
+      const someObj = { foo: 1 }
+      let adapter
       describe('given a matching adapter', function () {
-        var session = {}
+        const session = {}
         beforeEach(function () {
           adapter = {
             adapt: sinon.stub().returns(session),
@@ -109,7 +109,7 @@ describe('SessionManager', function () {
 
   describe('#isValidAdapter', function () {
     it('returns true if has methods canAdapt and adapt', function () {
-      var adapter = {
+      const adapter = {
         canAdapt: function () {},
         adapt: function () {}
       }
@@ -128,23 +128,23 @@ describe('SessionManager', function () {
 
   describe('#add', function () {
     it('returns the ClientSession', function () {
-      var session = new ClientSession()
-      var added = sessionManager.add(session)
+      const session = new ClientSession()
+      const added = sessionManager.add(session)
       expect(added).to.equal(session)
     })
     it('returns an adapted ClientSession', function () {
-      var session = new ClientSession()
+      const session = new ClientSession()
       sessionManager.adapters.push({
         adapt: sinon.stub().returns(session),
         canAdapt: sinon.stub().returns(true)
       })
-      var added = sessionManager.add({})
+      const added = sessionManager.add({})
       expect(added).to.equal(session)
     })
   })
 
   describe('when adding a session', function () {
-    var clientSession
+    let clientSession
     beforeEach(function () {
       clientSession = new ClientSession('', 'foo')
       clientSession.once = sinon.spy()
@@ -165,8 +165,8 @@ describe('SessionManager', function () {
     })
 
     it('adding same session multiple times has no effect', function () {
-      var added1 = sessionManager.add(clientSession)
-      var added2 = sessionManager.add(clientSession)
+      const added1 = sessionManager.add(clientSession)
+      const added2 = sessionManager.add(clientSession)
       expect(sessionManager.length()).to.equal(1)
       expect(clientSession.once).to.have.callCount(1)
       expect(added1).to.equal(clientSession)
@@ -174,7 +174,7 @@ describe('SessionManager', function () {
     })
 
     describe('given a ClientSession', function () {
-      var clientSession = new ClientSession('', 2)
+      const clientSession = new ClientSession('', 2)
 
       it('can be added', function () {
         sessionManager.add(clientSession)
@@ -184,10 +184,10 @@ describe('SessionManager', function () {
     })
 
     describe('given a non-ClientSession', function () {
-      var someObj = { id: 'one' }
+      const someObj = { id: 'one' }
 
       it('tries to adapt the obj', function () {
-        var adapter = {
+        const adapter = {
           canAdapt: sinon.stub().returns(true),
           adapt: sinon.stub().returns(new ClientSession())
         }
@@ -201,8 +201,8 @@ describe('SessionManager', function () {
       })
 
       describe('when can be adapted', function () {
-        var adapted = new ClientSession('', 1)
-        var adapter
+        const adapted = new ClientSession('', 1)
+        let adapter
 
         beforeEach(function () {
           adapter = {
@@ -219,7 +219,7 @@ describe('SessionManager', function () {
         })
       })
       describe('when cannot be adapted', function () {
-        var adapter
+        let adapter
 
         beforeEach(function () {
           adapter = {

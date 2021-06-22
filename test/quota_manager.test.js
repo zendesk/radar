@@ -1,37 +1,37 @@
 /* globals describe, it, beforeEach */
-var assert = require('assert')
-var QuotaManager = require('../src/middleware').QuotaManager
-var quotaManager
-var client = {
+const assert = require('assert')
+const { QuotaManager } = require('../src/middleware')
+let quotaManager
+const client = {
   id: 1,
   send: function () {}
 }
-var resource = {
+const resource = {
   to: 'scope'
 }
-var limitedType = {
+const limitedType = {
   name: 'limited',
   policy: { limit: 1 }
 }
-var syncMessage = {
+const syncMessage = {
   op: 'sync',
   to: 'scope'
 }
-var unsubscribeMessage = {
+const unsubscribeMessage = {
   op: 'unsubscribe',
   to: 'scope'
 }
-var subscribeMessage = {
+const subscribeMessage = {
   op: 'subscribe',
   to: 'scope'
 }
-var otherMessage = {
+const otherMessage = {
   op: 'other',
   to: 'scope'
 }
 
-var assertLimitCount = function (manager, type, client, count, done) {
-  var limiter = manager.getLimiter(type)
+const assertLimitCount = function (manager, type, client, count, done) {
+  const limiter = manager.getLimiter(type)
   assert(limiter)
   assert.strictEqual(limiter.count(client.id), count)
   if (done) { done() }
@@ -81,7 +81,7 @@ describe('QuotaManager', function () {
       quotaManager.updateLimits(client, resource, subscribeMessage, limitedType, function (err) {
         assert(err === undefined)
 
-        var otherSubscribeMessage = { to: 'scope2', op: 'subscribe' }
+        const otherSubscribeMessage = { to: 'scope2', op: 'subscribe' }
         quotaManager.checkLimits(client, otherSubscribeMessage, limitedType, function (err) {
           assert(err)
           done()
@@ -93,7 +93,7 @@ describe('QuotaManager', function () {
       quotaManager.updateLimits(client, resource, syncMessage, limitedType, function (err) {
         assert(err === undefined)
 
-        var otherSubscribeMessage = { to: 'scope2', op: 'subscribe' }
+        const otherSubscribeMessage = { to: 'scope2', op: 'subscribe' }
         quotaManager.checkLimits(client, otherSubscribeMessage, limitedType, function (err) {
           assert(err)
           done()
@@ -105,7 +105,7 @@ describe('QuotaManager', function () {
       quotaManager.updateLimits(client, resource, otherMessage, limitedType, function (err) {
         assert(err === undefined)
 
-        var otherExtraMessage = { to: 'scope2', op: 'subscribe' }
+        const otherExtraMessage = { to: 'scope2', op: 'subscribe' }
         quotaManager.checkLimits(client, otherExtraMessage, limitedType, function (err) {
           assert(err === undefined)
           done()
@@ -116,7 +116,7 @@ describe('QuotaManager', function () {
 
   describe('when a resource gets destroyed', function () {
     it('should clean up', function (done) {
-      var limiter
+      let limiter
 
       quotaManager.updateLimits(client, resource, subscribeMessage, limitedType, function () {
         limiter = quotaManager.getLimiter(limitedType)
@@ -133,7 +133,7 @@ describe('QuotaManager', function () {
 
   describe('when a client gets destroyed', function () {
     it('should clean up', function (done) {
-      var limiter
+      let limiter
 
       quotaManager.updateLimits(client, resource, subscribeMessage, limitedType, function () {
         limiter = quotaManager.getLimiter(limitedType)

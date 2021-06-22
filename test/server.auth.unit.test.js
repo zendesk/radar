@@ -1,8 +1,8 @@
 /* globals describe, it, beforeEach */
-var common = require('./common.js')
-var assert = require('assert')
-var RadarTypes = require('../src/core/type.js')
-var controlMessage = {
+const common = require('./common.js')
+const assert = require('assert')
+const RadarTypes = require('../src/core/type.js')
+const controlMessage = {
   to: 'control:/dev/test',
   op: 'ctl',
   options: {
@@ -12,20 +12,20 @@ var controlMessage = {
     }
   }
 }
-var authProvider = {
+const authProvider = {
   authorize: function (channel, message, client) {
     return false
   }
 }
-var authorizedType = {
+const authorizedType = {
   name: 'general control',
   type: 'Control',
   authProvider: authProvider,
   expression: /^control:/
 }
-var LegacyAuthManager = require('../src/middleware').LegacyAuthManager
-var radarServer
-var socket
+const LegacyAuthManager = require('../src/middleware').LegacyAuthManager
+let radarServer
+let socket
 
 describe('given a server', function () {
   describe('without authentication', function () {

@@ -13,7 +13,7 @@
 /* eslint-disable node/no-deprecated-api */
 
 // Minimal radar settings
-var defaultSettings = [
+const defaultSettings = [
   {
     name: 'port',
     description: 'port to listen',
@@ -44,11 +44,11 @@ var defaultSettings = [
   }
 ]
 
-var Configurator = function (settings) {
+const Configurator = function (settings) {
   this.settings = clone(defaultSettings)
 
   if (settings) {
-    var self = this
+    const self = this
     settings.forEach(function (setting) {
       self.settings.push(clone(setting))
     })
@@ -59,8 +59,8 @@ var Configurator = function (settings) {
 
 // Creates a Configurator and returns loaded configuration
 Configurator.load = function () {
-  var configurator = new Configurator()
-  var configuration = configurator.load.apply(configurator, arguments)
+  const configurator = new Configurator()
+  const configuration = configurator.load.apply(configurator, arguments)
 
   return configuration
 }
@@ -68,11 +68,11 @@ Configurator.load = function () {
 // Instance methods
 
 Configurator.prototype.load = function () {
-  var self = this
-  var options = (arguments.length === 1 ? arguments[0] : {})
-  var cli = this._parseCli((options.argv || process.argv))
-  var env = this._parseEnv((options.env || process.env))
-  var config = this._defaultConfiguration()
+  const self = this
+  const options = (arguments.length === 1 ? arguments[0] : {})
+  const cli = this._parseCli((options.argv || process.argv))
+  const env = this._parseEnv((options.env || process.env))
+  const config = this._defaultConfiguration()
 
   merge(config, options.config)
 
@@ -90,7 +90,7 @@ Configurator.prototype.load = function () {
 // Private instance methods
 
 Configurator.prototype._parseCli = function (argv) {
-  var parser = require('nomnom')()
+  const parser = require('@gerhobbelt/nomnom')()
 
   this.settings.forEach(function (element) {
     parser.option(element.name, {
@@ -104,8 +104,8 @@ Configurator.prototype._parseCli = function (argv) {
 }
 
 Configurator.prototype._parseEnv = function (env) {
-  var cleanEnv = {}
-  var value
+  const cleanEnv = {}
+  let value
 
   this.settings.forEach(function (element) {
     value = env[element.env]
@@ -118,7 +118,7 @@ Configurator.prototype._parseEnv = function (env) {
 }
 
 Configurator.prototype._defaultConfiguration = function () {
-  var config = {}
+  const config = {}
 
   this.settings.forEach(function (element) {
     if (Object.prototype.hasOwnProperty.call(element, 'default')) {
@@ -130,9 +130,9 @@ Configurator.prototype._defaultConfiguration = function () {
 }
 
 Configurator.prototype._pickFirst = function (propName) {
-  var values = [].slice.call(arguments, 1)
-  var i = 0
-  var value = null
+  const values = [].slice.call(arguments, 1)
+  let i = 0
+  let value = null
 
   while (!value && i <= values.length) {
     if (values[i] && values[i][propName]) {
@@ -145,7 +145,7 @@ Configurator.prototype._pickFirst = function (propName) {
 }
 
 Configurator.prototype._forPersistence = function (configuration) {
-  var connection
+  let connection
 
   // Using sentinel
   if (configuration.sentinelMasterName) {
@@ -176,8 +176,8 @@ Configurator.prototype._forPersistence = function (configuration) {
 // TODO: Move to Util module, or somewhere else
 
 function parseUrl (redisUrl) {
-  var parsedUrl = require('url').parse(redisUrl)
-  var config = {
+  const parsedUrl = require('url').parse(redisUrl)
+  const config = {
     host: parsedUrl.hostname,
     port: parsedUrl.port
   }
@@ -190,7 +190,7 @@ function parseUrl (redisUrl) {
 }
 
 function merge (destination, source) {
-  for (var name in source) {
+  for (const name in source) {
     if (Object.prototype.hasOwnProperty.call(source, name)) {
       destination[name] = source[name]
     }

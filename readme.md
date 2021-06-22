@@ -28,8 +28,8 @@ $ npm install radar
 radar can be extended programmatically with custom code and middleware:
 
 ```js
-var http = require('http');
-var Radar = require('radar').server;
+var http = require('http')
+var { Radar } = require('radar')
 
 var httpServer = http.createServer(function(req, res) {
   res.end('Nothing here.');

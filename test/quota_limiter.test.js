@@ -1,12 +1,12 @@
 /* globals describe, it, beforeEach */
-var assert = require('assert')
-var QuotaLimiter = require('../src/middleware').QuotaLimiter
-var limit = 1
-var clientId = '1'
-var clientId2 = '2'
-var toPrefix = 'presence://thing/'
-var to = toPrefix + '1'
-var quotaLimiter
+const assert = require('assert')
+const { QuotaLimiter } = require('../src/middleware')
+const limit = 1
+const clientId = '1'
+const clientId2 = '2'
+const toPrefix = 'presence://thing/'
+const to = toPrefix + '1'
+let quotaLimiter
 
 describe('QuotaLimiter', function () {
   beforeEach(function () {

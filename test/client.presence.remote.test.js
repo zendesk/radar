@@ -1,20 +1,20 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
-var common = require('./common.js')
-var assert = require('assert')
-var Persistence = require('../src/core').Persistence
-var Tracker = require('callback_tracker')
-var PresenceManager = require('../src/core/resources/presence/presence_manager.js')
-var AssertHelper = require('./lib/assert_helper.js')
-var PresenceMessage = AssertHelper.PresenceMessage
-var presenceManagerForSentry = AssertHelper.presenceManagerForSentry
+const common = require('./common.js')
+const assert = require('assert')
+const { Persistence } = require('../src/core')
+const Tracker = require('callback_tracker')
+const PresenceManager = require('../src/core/resources/presence/presence_manager.js')
+const AssertHelper = require('./lib/assert_helper.js')
+const { PresenceMessage } = AssertHelper
+const { presenceManagerForSentry } = AssertHelper
 
 describe('given a client and a server', function () {
-  var client
-  var p
-  var presenceManager
-  var radar
-  var testSentry
-  var track
+  let client
+  let p
+  let presenceManager
+  let radar
+  let testSentry
+  let track
 
   before(function (done) {
     common.startPersistence(function () {
@@ -75,7 +75,7 @@ describe('given a client and a server', function () {
 
     describe('for incoming online messages,', function () {
       it('should emit user/client onlines', function (done) {
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online'])
           done()
         }
@@ -88,7 +88,7 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore duplicate messages', function (done) {
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online'])
           done()
         }
@@ -124,7 +124,7 @@ describe('given a client and a server', function () {
       })
 
       it('should emit user/client offline for explicit disconnect', function (done) {
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online', 'client_explicit_offline', 'offline'])
           done()
         }
@@ -135,7 +135,7 @@ describe('given a client and a server', function () {
       })
 
       it('should handle multiple explicit disconnects', function (done) {
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online', 'client_explicit_offline', 'offline'])
           done()
         }
@@ -149,7 +149,7 @@ describe('given a client and a server', function () {
       it('should not emit user_offline during user expiry for implicit disconnect', function (done) {
         this.timeout(4000)
 
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline'])
           done()
         }
@@ -162,7 +162,7 @@ describe('given a client and a server', function () {
       it('should not emit user_offline during user expiry for multiple implicit disconnects', function (done) {
         this.timeout(4000)
 
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline'])
           done()
         }
@@ -176,7 +176,7 @@ describe('given a client and a server', function () {
       it('should emit user_offline eventually for implicit disconnect', function (done) {
         this.timeout(5000)
 
-        var validate = function () {
+        const validate = function () {
           p.assert_message_sequence(['online', 'client_online', 'client_implicit_offline', 'offline'])
           done()
         }
@@ -189,7 +189,7 @@ describe('given a client and a server', function () {
   })
 
   describe('with existing persistence entries, ', function () {
-    var clients = {}
+    let clients = {}
     beforeEach(function (done) {
       presenceManagerForSentry('server1', function (pm) {
         pm.addClient('abc', 100, 2, { name: 'tester1' }, function () {
@@ -211,8 +211,8 @@ describe('given a client and a server', function () {
     describe('when syncing (v2), ', function () {
       it('should send new notifications and callbackFn correctly', function (done) {
         this.timeout(5000)
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           p.for_online_clients(clients.abc, clients.def)
             .assert_onlines_received()
 
@@ -234,8 +234,8 @@ describe('given a client and a server', function () {
       })
 
       it('should send new notifications and callbackFn correctly for different clients with same user', function (done) {
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           p.for_online_clients(clients.abc, clients.def, clients.pqr)
             .assert_onlines_received()
           assert.ok(callbackFn)
@@ -256,8 +256,8 @@ describe('given a client and a server', function () {
       })
 
       it('subsequent new online notifications should work fine', function (done) {
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           // these should be last two, so from=4
           p.for_client(clients.hij)
             .assert_message_sequence(['online', 'client_online'], 4)
@@ -286,8 +286,8 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry expired and gone)', function (done) {
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
           assert.ok(callbackFn)
           done()
@@ -309,8 +309,8 @@ describe('given a client and a server', function () {
       })
 
       it('should ignore dead server clients (sentry expired but present)', function (done) {
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
           assert.ok(callbackFn)
           done()
@@ -334,7 +334,7 @@ describe('given a client and a server', function () {
 
     describe('when syncing (v1), (deprecated since callbacks are broken)', function () {
       it('should send all notifications (one extra for sync)', function (done) {
-        var validate = function () {
+        const validate = function () {
           p.for_online_clients(clients.abc, clients.def).assert_onlines_received()
           done()
         }
@@ -348,8 +348,8 @@ describe('given a client and a server', function () {
       })
 
       it('subsequent new online notifications should work fine', function (done) {
-        var callbackFn = false
-        var validate = function () {
+        let callbackFn = false
+        const validate = function () {
           // after 4 messages,
           p.for_client(clients.hij)
             .assert_message_sequence(['online', 'client_online'], 4)

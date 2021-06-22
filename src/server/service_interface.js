@@ -1,23 +1,23 @@
 /* eslint-disable node/no-deprecated-api */
 
-var EventEmitter = require('events').EventEmitter
-var inherits = require('util').inherits
-var httpAttach = require('http-attach')
-var log = require('minilog')('radar:service_interface')
-var parseUrl = require('url').parse
-var RadarMessage = require('radar_message')
-var concatStream = require('concat-stream')
-var id = require('../core/id')
-var parseContentType = require('content-type').parse
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
+const httpAttach = require('http-attach')
+const log = require('minilog')('radar:service_interface')
+const { parse: parseUrl } = require('url')
+const RadarMessage = require('radar_message')
+const concatStream = require('concat-stream')
+const id = require('../core/id')
+const { parse: parseContentType } = require('content-type')
 
 function ServiceInterface (middlewareRunner) {
   this._middlewareRunner = middlewareRunner || noopMiddlewareRunner
   log.debug('New ServiceInterface')
 }
 
-var noopMiddlewareRunner = {
+const noopMiddlewareRunner = {
   runMiddleware: function () {
-    var callback = arguments[arguments.length - 1]
+    const callback = arguments[arguments.length - 1]
     callback()
   }
 }
@@ -43,25 +43,26 @@ ServiceInterface.prototype._dispatch = function (req, res) {
     case 'POST':
       this._post(req, res)
       break
-    default:
-      var err = new Error('not found')
+    default: {
+      const err = new Error('not found')
       err.statusCode = 404
       error(err, res)
+    }
   }
 }
 
 // simple "get"
 ServiceInterface.prototype._get = function (req, res) {
-  var self = this
-  var qs = parseUrl(req.url, true).query
+  const self = this
+  const qs = parseUrl(req.url, true).query
 
   if (!qs.to) {
-    var e = new Error('Missing required parameter to')
+    const e = new Error('Missing required parameter to')
     e.statusCode = 400
     return error(e, res)
   }
 
-  var message = RadarMessage.Request.buildGet(qs.to).message
+  const message = RadarMessage.Request.buildGet(qs.to).message
 
   try {
     log.info('POST incoming message', message)
@@ -72,12 +73,12 @@ ServiceInterface.prototype._get = function (req, res) {
   }
 }
 
-var SHOW_STACK_TRACE = !String(process.env.NODE_ENV).match(/prod/i)
+const SHOW_STACK_TRACE = !String(process.env.NODE_ENV).match(/prod/i)
 function error (err, res) {
   err.statusCode = err.statusCode || 400
   log.warn(err.statusCode, err.stack)
   res.statusCode = err.statusCode
-  var message = { op: 'err' }
+  const message = { op: 'err' }
 
   if (err.statusCode === 401 || err.statusCode === 403) {
     message.value = 'auth'
@@ -93,25 +94,27 @@ function error (err, res) {
 }
 
 ServiceInterface.prototype._post = function (req, res) {
-  var self = this
+  const self = this
+  let contentType
 
   try {
-    var contentType = parseContentType(req.headers['content-type']).type
+    contentType = parseContentType(req.headers['content-type']).type
   } catch (e) {
     log.info('Parsing content-type failed', req.headers['content-type'])
   }
 
   if (!req.headers || contentType !== 'application/json') {
-    var err = new Error('Content-type must be application/json')
+    const err = new Error('Content-type must be application/json')
     err.statusCode = 415
     return error(err, res)
   }
 
   req.pipe(concatStream(function (body) {
+    let message
     try {
-      var message = JSON.parse(body)
+      message = JSON.parse(body)
     } catch (e) {
-      var err = new Error('Body must be valid JSON')
+      const err = new Error('Body must be valid JSON')
       err.statusCode = 400
       return error(err, res)
     }
@@ -162,10 +165,10 @@ ServiceInterfaceClientSession.prototype.send = function (msg) {
 }
 
 ServiceInterface.prototype._processIncomingMessage = function (message, req, res) {
-  var self = this
+  const self = this
 
   if (!allowedOp(message.op)) {
-    var err = new Error('Only get and set op allowed via ServiceInterface')
+    const err = new Error('Only get and set op allowed via ServiceInterface')
     err.statusCode = 400
     return error(err, res)
   }
@@ -173,7 +176,7 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
   this._middlewareRunner.runMiddleware('onServiceInterfaceIncomingMessage', message, req, res, function (err) {
     if (err) { return error(err, res) }
 
-    var clientSession = new ServiceInterfaceClientSession(req, res)
+    const clientSession = new ServiceInterfaceClientSession(req, res)
 
     message.ack = message.ack || clientSession.id
     log.info('ServiceInterface request', message)
@@ -182,7 +185,7 @@ ServiceInterface.prototype._processIncomingMessage = function (message, req, res
 }
 
 function setup (httpServer, middlewareRunner) {
-  var serviceInterface = new ServiceInterface(middlewareRunner)
+  const serviceInterface = new ServiceInterface(middlewareRunner)
   httpAttach(httpServer, function () {
     serviceInterface.middleware.apply(serviceInterface, arguments)
   })

@@ -1,17 +1,17 @@
-var MiniEventEmitter = require('miniee')
-var QuotaLimiter = require('./quota_limiter.js')
-var ClientSession = require('../client/client_session.js')
-var logging = require('minilog')('radar:quota_manager')
+const MiniEventEmitter = require('miniee')
+const QuotaLimiter = require('./quota_limiter.js')
+const ClientSession = require('../client/client_session.js')
+const logging = require('minilog')('radar:quota_manager')
 
-var QuotaManager = function () {
+const QuotaManager = function () {
   this._limiters = {}
 }
 
 MiniEventEmitter.mixin(QuotaManager)
 
 QuotaManager.prototype.checkLimits = function (clientSession, message, messageType, next) {
-  var limiter = this.getLimiter(messageType)
-  var softLimit
+  const limiter = this.getLimiter(messageType)
+  let softLimit
 
   if (!limiter || (message.op !== 'subscribe' && message.op !== 'sync')) {
     next()
@@ -29,7 +29,7 @@ QuotaManager.prototype.checkLimits = function (clientSession, message, messageTy
     // Log Soft Limit, if available
     softLimit = this._getSoftLimit(messageType)
     if (softLimit && limiter.count(clientSession.id) === softLimit) {
-      var client = ClientSession.get(clientSession.id)
+      const client = ClientSession.get(clientSession.id)
       this._logLimits(client, softLimit, limiter.count(clientSession.id))
     }
 
@@ -38,7 +38,7 @@ QuotaManager.prototype.checkLimits = function (clientSession, message, messageTy
 }
 
 QuotaManager.prototype.updateLimits = function (clientSession, resource, message, messageType, next) {
-  var limiter = this.getLimiter(messageType)
+  const limiter = this.getLimiter(messageType)
 
   if (limiter) {
     switch (message.op) {
@@ -56,7 +56,7 @@ QuotaManager.prototype.updateLimits = function (clientSession, resource, message
 }
 
 QuotaManager.prototype.destroyByClient = function (clientSession, resource, messageType, next) {
-  var limiter = this.findLimiter(messageType)
+  const limiter = this.findLimiter(messageType)
 
   if (limiter) {
     limiter.remove(clientSession.id, resource.to)
@@ -66,8 +66,8 @@ QuotaManager.prototype.destroyByClient = function (clientSession, resource, mess
 }
 
 QuotaManager.prototype.destroyByResource = function (resource, messageType, next) {
-  var to = resource.to
-  var limiter = this.findLimiter(messageType)
+  const to = resource.to
+  const limiter = this.findLimiter(messageType)
 
   if (limiter) {
     limiter.removeByTo(to)
@@ -81,7 +81,7 @@ QuotaManager.prototype.findLimiter = function (messageType) {
 }
 
 QuotaManager.prototype.getLimiter = function (messageType) {
-  var limiter = this.findLimiter(messageType)
+  let limiter = this.findLimiter(messageType)
 
   if (!limiter && this._shouldLimit(messageType)) {
     limiter = this._buildLimiter(messageType)
@@ -93,7 +93,7 @@ QuotaManager.prototype.getLimiter = function (messageType) {
 }
 
 QuotaManager.prototype._buildLimiter = function (messageType) {
-  var limiter
+  let limiter
 
   if (this._shouldLimit(messageType)) {
     limiter = new QuotaLimiter(messageType.policy.limit)
@@ -115,7 +115,7 @@ QuotaManager.prototype._shouldSoftLimit = function (messageType) {
 }
 
 QuotaManager.prototype._getSoftLimit = function (messageType) {
-  var softLimit
+  let softLimit
 
   if (this._shouldSoftLimit(messageType)) {
     softLimit = messageType.policy.softLimit

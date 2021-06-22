@@ -1,10 +1,10 @@
 /* globals describe, it, before, after, afterEach */
-var assert = require('assert')
-var common = require('./common.js')
-var Persistence = require('persistence')
+const assert = require('assert')
+const common = require('./common.js')
+const Persistence = require('persistence')
 
 describe('auth test', function () {
-  var radar, client
+  let radar, client
   before(function (done) {
     radar = common.spawnRadar()
     radar.sendCommand('start', common.configuration, function () {
@@ -58,7 +58,7 @@ describe('auth test', function () {
 
   describe('if type is not disabled', function () {
     it('should work', function (done) {
-      var originalMessage = { hello: 'world', timestamp: Date.now() }
+      const originalMessage = { hello: 'world', timestamp: Date.now() }
 
       client.message('enabled').on(function (message) {
         assert.deepStrictEqual(message.value, originalMessage)

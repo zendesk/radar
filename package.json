@@ -41,6 +41,7 @@
     "url": "https://github.com/zendesk/radar.git"
   },
   "dependencies": {
+    "@gerhobbelt/nomnom": "^1.8.4-31",
     "async": "^3.2.0",
     "callback_tracker": "0.1.0",
     "concat-stream": "^2.0.0",
@@ -51,28 +52,26 @@
     "lodash": "^4.17.15",
     "miniee": "0.0.5",
     "minilog": "^2.1.0",
-    "mobx": "^5.15.4",
-    "nomnom": "^1.8.1",
+    "mobx": "^6.3.2",
     "nonblocking": "^1.0.2",
     "persistence": "^2.0.1",
     "radar_message": "^1.3.1",
     "semver": "^7.1.3",
-    "uuid": "^7.0.3"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-interface": "^2.0.2",
     "literal-stream": "^0.1.0",
-    "mocha": "^7.1.1",
+    "mocha": "^9.0.1",
     "node-fetch": "^2.6.0",
     "proxyquire": "^2.1.3",
     "radar_client": "^0.16.7",
-    "redis": "^3.0.0",
     "simple_sentinel": "^0.1.8",
-    "sinon": "^9.0.1",
+    "sinon": "^11.1.1",
     "sinon-chai": "^3.5.0",
     "smooth-progress": "^1.0.4",
-    "standard": "^14.3.3"
+    "standard": "^16.0.3"
   },
   "scripts": {
     "prestart": "npm run check-modules",

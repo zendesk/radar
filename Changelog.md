@@ -1,3 +1,6 @@
+### 0.34.1
+* [PR #273](https://github.com/zendesk/radar/pull/273) - Package updates, including a replacement for `nomnom`
+
 ### 0.34.0
 * [PR #254](https://github.com/zendesk/radar/pull/254) - Package updates
 
