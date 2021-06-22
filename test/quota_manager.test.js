@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
 const assert = require('assert')
-const QuotaManager = require('../src/middleware').QuotaManager
+const { QuotaManager } = require('../src/middleware')
 let quotaManager
 const client = {
   id: 1,

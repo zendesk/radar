@@ -3,7 +3,7 @@ const assert = require('assert')
 const Persistence = require('persistence')
 const Presence = require('../index.js').core.Presence
 const Common = require('./common.js')
-const readHashAll = Persistence.readHashAll
+const { readHashAll } = Persistence
 const chai = require('chai')
 const expect = chai.expect
 

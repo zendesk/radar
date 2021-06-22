@@ -2,7 +2,7 @@
 const common = require('./common.js')
 const chai = require('chai')
 const expect = chai.expect
-const EventEmitter = require('events').EventEmitter
+const { EventEmitter } = require('events')
 
 describe('given a server', function () {
   let radarServer

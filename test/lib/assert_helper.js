@@ -1,6 +1,6 @@
 const _ = require('lodash')
 const assert = require('assert')
-const EE = require('events').EventEmitter
+const { EventEmitter: EE } = require('events')
 const Sentry = require('../../src/core/resources/presence/sentry.js')
 const PresenceManager = require('../../src/core/resources/presence/presence_manager.js')
 const SentryDefaults = {

@@ -4,7 +4,7 @@
 const sinon = require('sinon')
 const chai = require('chai')
 chai.use(require('sinon-chai'))
-const expect = require('chai').expect
+const { expect } = require('chai')
 const literalStream = require('literal-stream')
 const _ = require('lodash')
 const assert = require('assert')

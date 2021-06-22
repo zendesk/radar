@@ -1,14 +1,14 @@
 /* eslint-disable node/no-deprecated-api */
 
-const EventEmitter = require('events').EventEmitter
-const inherits = require('util').inherits
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
 const httpAttach = require('http-attach')
 const log = require('minilog')('radar:service_interface')
-const parseUrl = require('url').parse
+const { parse: parseUrl } = require('url')
 const RadarMessage = require('radar_message')
 const concatStream = require('concat-stream')
 const id = require('../core/id')
-const parseContentType = require('content-type').parse
+const { parse: parseContentType } = require('content-type')
 
 function ServiceInterface (middlewareRunner) {
   this._middlewareRunner = middlewareRunner || noopMiddlewareRunner

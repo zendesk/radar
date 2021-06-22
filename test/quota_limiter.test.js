@@ -1,6 +1,6 @@
 /* globals describe, it, beforeEach */
 const assert = require('assert')
-const QuotaLimiter = require('../src/middleware').QuotaLimiter
+const { QuotaLimiter } = require('../src/middleware')
 const limit = 1
 const clientId = '1'
 const clientId2 = '2'

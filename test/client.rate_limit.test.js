@@ -2,7 +2,7 @@
 const common = require('./common.js')
 const assert = require('assert')
 const Tracker = require('callback_tracker')
-const PresenceMessage = require('./lib/assert_helper.js').PresenceMessage
+const { PresenceMessage } = require('./lib/assert_helper.js')
 let radar
 let client
 

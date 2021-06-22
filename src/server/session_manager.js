@@ -1,7 +1,7 @@
 const log = require('minilog')('radar:session_manager')
 const ClientSession = require('../client/client_session')
-const EventEmitter = require('events').EventEmitter
-const inherits = require('util').inherits
+const { EventEmitter } = require('events')
+const { inherits } = require('util')
 const { observable, observe } = require('mobx')
 const _ = require('lodash')
 

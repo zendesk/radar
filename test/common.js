@@ -3,11 +3,11 @@ const path = require('path')
 const logging = require('minilog')('common')
 const formatter = require('./lib/formatter')
 const Persistence = require('persistence')
-const RadarServer = require('../index').server
+const { server: RadarServer } = require('../index')
 const configuration = require('../configurator').load({ persistence: true })
 const Sentry = require('../src/core/resources/presence/sentry')
-const Client = require('radar_client').constructor
-const fork = require('child_process').fork
+const { constructor: Client } = require('radar_client')
+const { fork } = require('child_process')
 const Tracker = require('callback_tracker')
 
 Sentry.expiry = 4000

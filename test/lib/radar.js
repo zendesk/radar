@@ -1,10 +1,9 @@
 const http = require('http')
 const Radar = require('../../index.js')
 const Middleware = require('../../src/middleware')
-const QuotaManager = Middleware.QuotaManager
-const LegacyAuthManager = Middleware.LegacyAuthManager
+const { QuotaManager, LegacyAuthManager } = Middleware
 const Persistence = require('persistence')
-const Type = require('../../src/core').Type
+const { Type } = require('../../src/core')
 const Minilog = require('minilog')
 const logger = Minilog('lib_radar')
 const formatter = require('./formatter.js')

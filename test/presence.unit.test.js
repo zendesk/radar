@@ -5,7 +5,7 @@ const Persistence = require('persistence')
 const Common = require('./common.js')
 const Presence = require('../src/core/resources/presence')
 const sinon = require('sinon')
-const expect = require('chai').expect
+const { expect } = require('chai')
 
 describe('given a presence resource', function () {
   let presence, client, client2

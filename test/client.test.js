@@ -2,7 +2,7 @@
 const common = require('./common.js')
 const assert = require('assert')
 const ClientSession = require('../src/client/client_session.js')
-const EventEmitter = require('events').EventEmitter
+const { EventEmitter } = require('events')
 const sinon = require('sinon')
 const proxyquire = require('proxyquire')
 

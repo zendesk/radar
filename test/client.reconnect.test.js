@@ -3,7 +3,7 @@
 const common = require('./common.js')
 const assert = require('assert')
 const Tracker = require('callback_tracker')
-const Backoff = require('radar_client').Backoff
+const { Backoff } = require('radar_client')
 let radar
 
 describe('When radar server restarts', function () {

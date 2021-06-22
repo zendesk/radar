@@ -2,7 +2,7 @@
 
 const common = require('./common.js')
 const assert = require('assert')
-const StreamMessage = require('./lib/assert_helper.js').StreamMessage
+const { StreamMessage } = require('./lib/assert_helper.js')
 const Tracker = require('callback_tracker')
 const logging = require('minilog')('test')
 let radar

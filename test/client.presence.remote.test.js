@@ -1,12 +1,12 @@
 /* globals describe, it, beforeEach, afterEach, before, after */
 const common = require('./common.js')
 const assert = require('assert')
-const Persistence = require('../src/core').Persistence
+const { Persistence } = require('../src/core')
 const Tracker = require('callback_tracker')
 const PresenceManager = require('../src/core/resources/presence/presence_manager.js')
 const AssertHelper = require('./lib/assert_helper.js')
-const PresenceMessage = AssertHelper.PresenceMessage
-const presenceManagerForSentry = AssertHelper.presenceManagerForSentry
+const { PresenceMessage } = AssertHelper
+const { presenceManagerForSentry } = AssertHelper
 
 describe('given a client and a server', function () {
   let client

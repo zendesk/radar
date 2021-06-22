@@ -6,7 +6,7 @@ const assert = require('assert')
 const sinon = require('sinon')
 const chai = require('chai')
 const Server = require('../src/server/server')
-const expect = chai.expect
+const { expect } = chai
 const subscribeMessage = {
   op: 'subscribe',
   to: 'presence:/z1/test/ticket/1'
