@@ -136,7 +136,11 @@ Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
     engine = engineioConfig.module
     engineConf = engineioConfig.conf
 
+    engineConf.allowEIO3 = true
+
     this.engineioPath = engineioConfig.conf ? engineioConfig.conf.path : 'default'
+  } else {
+    engineConf = { allowEIO3: true }
   }
 
   this.socketServer = engine.attach(httpServer, engineConf)
