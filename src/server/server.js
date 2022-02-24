@@ -139,6 +139,8 @@ Server.prototype._setupEngineio = function (httpServer, engineioConfig) {
     this.engineioPath = engineioConfig.conf ? engineioConfig.conf.path : 'default'
   }
 
+  engineConf.allowEIO3 = true
+
   this.socketServer = engine.attach(httpServer, engineConf)
   this.socketServer.on('connection', this._onSocketConnection.bind(this))
 }
