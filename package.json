@@ -51,7 +51,7 @@
     "javascript-state-machine": "^3.1.0",
     "lodash": "^4.17.21",
     "miniee": "0.0.5",
-    "minilog": "^3.1.0",
+    "minilog": "^2.1.0",
     "mobx": "^6.4.1",
     "nonblocking": "^1.0.3",
     "persistence": "^2.0.3",
