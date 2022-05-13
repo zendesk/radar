@@ -46,7 +46,7 @@
     "callback_tracker": "0.1.0",
     "concat-stream": "^2.0.0",
     "content-type": "^1.0.4",
-    "engine.io": "^6.1.3",
+    "engine.io": "^6.2.0",
     "http-attach": "^1.0.0",
     "javascript-state-machine": "^3.1.0",
     "lodash": "^4.17.21",
