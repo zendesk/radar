@@ -9,16 +9,16 @@
 * [PR #283](https://github.com/zendesk/radar/pull/283) - upgrade engine.io
 * [PR #291](https://github.com/zendesk/radar/pull/291) - upgrade dependencies
 
-### 0.40.1
+### 0.40.1
 * [PR #279](https://github.com/zendesk/radar/pull/279) - Rollback Minilog to version 2
 
-### 0.40.0
+### 0.40.0
 * [PR #278](https://github.com/zendesk/radar/pull/278) - Package update, including engine.io v6
 
-### 0.34.5
+### 0.34.5
 * [PR #275](https://github.com/zendesk/radar/pull/275) - Rollback Minilog to version 2
 
-### 0.34.4
+### 0.34.4
 * [PR #265](https://github.com/zendesk/radar/pull/265) - Package updates
 
 ### 0.34.1
