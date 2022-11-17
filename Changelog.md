@@ -1,8 +1,33 @@
+### 0.42.3
+* [PR #292](https://github.com/zendesk/radar/pull/292) - update dependencies
+
+### 0.42.2
+* [PR #286](https://github.com/zendesk/radar/pull/286) - upgrade sync
+* [PR #284](https://github.com/zendesk/radar/pull/284) - upgrade semver
+* [PR #288](https://github.com/zendesk/radar/pull/288) - bump node-fetch
+* [PR #287](https://github.com/zendesk/radar/pull/287) - bump minimist
+* [PR #283](https://github.com/zendesk/radar/pull/283) - upgrade engine.io
+* [PR #291](https://github.com/zendesk/radar/pull/291) - upgrade dependencies
+
+### 0.40.1
+* [PR #279](https://github.com/zendesk/radar/pull/279) - Rollback Minilog to version 2
+
+### 0.40.0
+* [PR #278](https://github.com/zendesk/radar/pull/278) - Package update, including engine.io v6
+
+### 0.34.5
+* [PR #275](https://github.com/zendesk/radar/pull/275) - Rollback Minilog to version 2
+
+### 0.34.4
+* [PR #265](https://github.com/zendesk/radar/pull/265) - Package updates
+
 ### 0.34.1
 * [PR #273](https://github.com/zendesk/radar/pull/273) - Package updates, including a replacement for `nomnom`
+* [PR #265](https://github.com/zendesk/radar/pull/265) - Adds Github Actions
 
 ### 0.34.0
 * [PR #254](https://github.com/zendesk/radar/pull/254) - Package updates
+* [PR #255](https://github.com/zendesk/radar/pull/255) - Changelog and version update
 
 ### 0.33.1
 * [PR #251](https://github.com/zendesk/radar/pull/251) - Bumps radar_client to 0.16.7
