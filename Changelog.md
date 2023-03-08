@@ -1,7 +1,10 @@
-### 0.42.3
+### 0.40.4
+* [PR #299](https://github.com/zendesk/radar/pull/299) - update dependencies
+
+### 0.40.3
 * [PR #292](https://github.com/zendesk/radar/pull/292) - update dependencies
 
-### 0.42.2
+### 0.40.2
 * [PR #286](https://github.com/zendesk/radar/pull/286) - upgrade sync
 * [PR #284](https://github.com/zendesk/radar/pull/284) - upgrade semver
 * [PR #288](https://github.com/zendesk/radar/pull/288) - bump node-fetch
