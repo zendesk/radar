@@ -1,3 +1,6 @@
+### 0.40.5
+* [PR #307](https://github.com/zendesk/radar/pull/307) - update dependencies
+
 ### 0.40.4
 * [PR #299](https://github.com/zendesk/radar/pull/299) - update dependencies
 
