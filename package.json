@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.40.4",
+  "version": "0.40.5",
   "author": "Zendesk, Inc.",
   "license": "Apache-2.0",
   "engines": {
