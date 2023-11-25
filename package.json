@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@gerhobbelt/nomnom": "^1.8.4-31",
-    "async": "^3.2.4",
+    "async": "^3.2.5",
     "callback_tracker": "0.1.0",
     "concat-stream": "^2.0.0",
     "content-type": "^1.0.5",
