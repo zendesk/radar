@@ -54,7 +54,7 @@
     "minilog": "^2.1.0",
     "mobx": "^6.10.2",
     "nonblocking": "^1.0.3",
-    "persistence": "^2.0.3",
+    "persistence": "github:zendesk/persistence#redis-connection-with-tls-option",
     "radar_message": "^1.4.0",
     "semver": "^7.5.4",
     "uuid": "^8.3.2"
