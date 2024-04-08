@@ -186,6 +186,11 @@ function parseUrl (redisUrl) {
     // the password part of user:pass format
     config.redis_auth = parsedUrl.auth.substr(parsedUrl.auth.indexOf(':') + 1)
   }
+
+  if (redisUrl.startsWith('rediss://')) {
+    config.tls = {}
+  }
+
   return config
 }
 
