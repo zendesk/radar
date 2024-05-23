@@ -1,7 +1,7 @@
 {
   "name": "radar",
   "description": "Realtime apps with a high level API based on engine.io",
-  "version": "0.42.0",
+  "version": "0.42.1",
   "author": "Zendesk, Inc.",
   "license": "Apache-2.0",
   "engines": {
@@ -54,7 +54,7 @@
     "minilog": "^2.1.0",
     "mobx": "^6.10.2",
     "nonblocking": "^1.0.3",
-    "persistence": "^2.1.0",
+    "persistence": "github:zendesk/persistence#silk-1730-add-new-redis-connector",
     "radar_message": "^1.4.0",
     "semver": "^7.5.4",
     "uuid": "^8.3.2"
