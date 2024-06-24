@@ -13,6 +13,7 @@
 /* eslint-disable node/no-deprecated-api */
 
 // Minimal radar settings
+
 const defaultSettings = [
   {
     name: 'port',
@@ -41,6 +42,18 @@ const defaultSettings = [
     description: 'sentinel urls',
     env: 'RADAR_SENTINEL_URLS',
     full: 'sentinel_urls'
+  },
+  {
+    name: 'redisReplicaUrl',
+    description: 'redis replica url',
+    env: 'REDIS_REPLICA_URL',
+    full: 'redis_replica_url'
+  },
+  {
+    name: 'radarMigrationEnabled',
+    description: 'migration kill switch',
+    env: 'RADAR_MIGRATION_ENABLED',
+    full: 'radar_migration_enabled'
   }
 ]
 
@@ -61,7 +74,6 @@ const Configurator = function (settings) {
 Configurator.load = function () {
   const configurator = new Configurator()
   const configuration = configurator.load.apply(configurator, arguments)
-
   return configuration
 }
 
@@ -146,24 +158,23 @@ Configurator.prototype._pickFirst = function (propName) {
 
 Configurator.prototype._forPersistence = function (configuration) {
   let connection
-
   // Using sentinel
   if (configuration.sentinelMasterName) {
     if (!configuration.sentinelUrls) {
       throw Error('sentinelMasterName present but no sentinelUrls was provided. ')
     }
-
     connection = {
       id: configuration.sentinelMasterName
     }
-
     connection.sentinels = configuration.sentinelUrls
       .split(',')
       .map(parseUrl)
   } else { // Using standalone redis
     connection = parseUrl(configuration.redisUrl)
   }
-
+  if (configuration.radarMigrationEnabled === 'true' && configuration.redisReplicaUrl !== null) {
+    connection.redisReplicaUrl = parseUrl(configuration.redisReplicaUrl)
+  }
   return {
     use_connection: 'main',
     connection_settings: {

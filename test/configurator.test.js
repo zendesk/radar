@@ -73,6 +73,24 @@ describe('the Configurator', function () {
       assert.strictEqual(8004, config.port)
       assert.strictEqual('mymaster', config.sentinelMasterName)
     })
+
+    it('should only overwrite the right keys with migration enabled', function () {
+      const config = Configurator.load({
+        config: {
+          port: 8004
+        },
+        env: {
+          RADAR_SENTINEL_MASTER_NAME: 'mymaster',
+          RADAR_SENTINEL_URLS: 'sentinel://localhost:7777',
+          RADAR_MIGRATION_ENABLED: 'true',
+          REDIS_REPLICA_URL: 'redis://localhost:6379'
+        }
+      })
+      assert.strictEqual(8004, config.port)
+      assert.strictEqual('mymaster', config.sentinelMasterName)
+      assert.strictEqual('redis://localhost:6379', config.redisReplicaUrl)
+      assert.strictEqual('true', config.radarMigrationEnabled)
+    })
   })
 
   describe('default settings', function () {
