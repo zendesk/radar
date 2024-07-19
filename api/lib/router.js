@@ -63,6 +63,7 @@ Router.prototype.attach = function (httpServer) {
   // Add request handler
   httpServer.on('request', function (req, res) {
     if (!self.route(req, res)) {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
       logging.info('Routing to old listeners')
       for (let i = 0, l = oldListeners.length; i < l; i++) {
         oldListeners[i].call(httpServer, req, res)
