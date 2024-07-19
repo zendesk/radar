@@ -11,6 +11,7 @@ const hostname = require('os').hostname()
 function jsonResponse (response, object) {
   response.setHeader('Content-type', 'application/json')
   response.setHeader('Cache-Control', 'no-cache')
+  response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   response.end(JSON.stringify(object))
 }
 
