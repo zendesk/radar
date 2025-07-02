@@ -146,7 +146,7 @@ describe('When using status resources', function () {
         assert.strictEqual('status:/dev/test', message.to)
         assert.strictEqual('foobar', message.value)
         assert.strictEqual(123, message.key)
-        assert.deepStrictEqual({}, message.userData)
+        assert.deepStrictEqual(common.normalize({}), common.normalize(message.userData))
         assert.deepStrictEqual(0, message.type)
         done()
       })
@@ -157,7 +157,7 @@ describe('When using status resources', function () {
         assert.strictEqual('status:/dev/test', message.to)
         assert.strictEqual('foo', message.value)
         assert.strictEqual(123, message.key)
-        assert.deepStrictEqual({}, message.userData)
+        assert.deepStrictEqual(common.normalize({}), common.normalize(message.userData))
         assert.deepStrictEqual(0, message.type)
         done()
       }).subscribe(function () {
@@ -168,9 +168,9 @@ describe('When using status resources', function () {
       client2.status('test').on(function (message) {
         assert.strictEqual('set', message.op)
         assert.strictEqual('status:/dev/test', message.to)
-        assert.deepStrictEqual({ foo: 'bar' }, message.value)
+        assert.deepStrictEqual(common.normalize({ foo: 'bar' }), common.normalize(message.value))
         assert.strictEqual(123, message.key)
-        assert.deepStrictEqual({}, message.userData)
+        assert.deepStrictEqual(common.normalize({}), common.normalize(message.userData))
         assert.deepStrictEqual(0, message.type)
         done()
       }).subscribe(function () {
@@ -185,7 +185,7 @@ describe('When using status resources', function () {
         client.status('test').get(function (message) {
           assert.strictEqual('get', message.op)
           assert.strictEqual('status:/dev/test', message.to)
-          assert.deepStrictEqual({ 123: 'foo' }, message.value)
+          assert.deepStrictEqual(common.normalize({ 123: 'foo' }), common.normalize(message.value))
           done()
         })
       }
@@ -197,7 +197,7 @@ describe('When using status resources', function () {
         client.status('test').get(function (message) {
           assert.strictEqual('get', message.op)
           assert.strictEqual('status:/dev/test', message.to)
-          assert.deepStrictEqual({ 123: { hello: 'world' } }, message.value)
+          assert.deepStrictEqual(common.normalize({ 123: { hello: 'world' } }), common.normalize(message.value))
           done()
         })
       }
@@ -208,7 +208,7 @@ describe('When using status resources', function () {
       client.status('non-exist').get(function (message) {
         assert.strictEqual('get', message.op)
         assert.strictEqual('status:/dev/non-exist', message.to)
-        assert.deepStrictEqual({}, message.value)
+        assert.deepStrictEqual(common.normalize({}), common.normalize(message.value))
         done()
       })
     })
@@ -223,7 +223,7 @@ describe('When using status resources', function () {
         }).sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.strictEqual('get', message.op)
-          assert.deepStrictEqual({ 246: 'foo' }, message.value)
+          assert.deepStrictEqual(common.normalize({ 246: 'foo' }), common.normalize(message.value))
           setTimeout(done, 50)
         })
       })
@@ -235,13 +235,13 @@ describe('When using status resources', function () {
           assert.strictEqual('status:/dev/test', message.to)
           assert.strictEqual('bar', message.value)
           assert.strictEqual(123, message.key)
-          assert.deepStrictEqual({}, message.userData)
+          assert.deepStrictEqual(common.normalize({}), common.normalize(message.userData))
           assert.deepStrictEqual(0, message.type)
           done()
         }).sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.strictEqual('get', message.op)
-          assert.deepStrictEqual({ 123: 'foo' }, message.value)
+          assert.deepStrictEqual(common.normalize({ 123: 'foo' }), common.normalize(message.value))
           client.status('test').set('bar')
         })
       })
@@ -251,7 +251,7 @@ describe('When using status resources', function () {
         client.status('test').sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.strictEqual('get', message.op)
-          assert.deepStrictEqual({ 123: 'foo' }, message.value)
+          assert.deepStrictEqual(common.normalize({ 123: 'foo' }), common.normalize(message.value))
           done()
         })
       })
@@ -261,7 +261,7 @@ describe('When using status resources', function () {
         client.status('test').sync(function (message) {
           // Sync is implemented as subscribe + get, hence the return op is "get"
           assert.strictEqual('get', message.op)
-          assert.deepStrictEqual({ 123: { foo: 'bar' } }, message.value)
+          assert.deepStrictEqual(common.normalize({ 123: { foo: 'bar' } }), common.normalize(message.value))
           done()
         })
       })
@@ -270,7 +270,7 @@ describe('When using status resources', function () {
       client.status('test').sync(function (message) {
         // Sync is implemented as subscribe + get, hence the return op is "get"
         assert.strictEqual('get', message.op)
-        assert.deepStrictEqual({}, message.value)
+        assert.deepStrictEqual(common.normalize({}), common.normalize(message.value))
         done()
       })
     })

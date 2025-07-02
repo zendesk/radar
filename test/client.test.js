@@ -226,10 +226,11 @@ describe('ClientSession', function () {
         clientSession.storeData(message)
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: subscriptions,
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: subscriptions,
+              presences: {}
+            }))
           done()
         })
       })
@@ -243,10 +244,11 @@ describe('ClientSession', function () {
         clientSession.storeData(message)
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: subscriptions,
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: subscriptions,
+              presences: {}
+            }))
           done()
         })
       })
@@ -260,10 +262,11 @@ describe('ClientSession', function () {
         clientSession.storeData(unsubscribe)
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: {},
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: {},
+              presences: {}
+            }))
           done()
         })
       })
@@ -279,10 +282,11 @@ describe('ClientSession', function () {
         subscriptions[to] = sync
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: subscriptions,
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: subscriptions,
+              presences: {}
+            }))
           done()
         })
       })
@@ -298,10 +302,11 @@ describe('ClientSession', function () {
         subscriptions[to] = sync
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: subscriptions,
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: subscriptions,
+              presences: {}
+            }))
           done()
         })
       })
@@ -318,10 +323,11 @@ describe('ClientSession', function () {
         presences[to] = message
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: {},
-            presences: presences
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: {},
+              presences: presences
+            }))
           done()
         })
       })
@@ -335,10 +341,11 @@ describe('ClientSession', function () {
         clientSession.storeData(offline)
 
         clientSession.readData(function (state) {
-          assert.deepStrictEqual(state, {
-            subscriptions: {},
-            presences: {}
-          })
+          assert.deepStrictEqual(common.normalize(state),
+            common.normalize({
+              subscriptions: {},
+              presences: {}
+            }))
           done()
         })
       })

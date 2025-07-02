@@ -42,7 +42,7 @@ QuotaLimiter.prototype.isAboveLimit = function (id, limit) {
 }
 
 QuotaLimiter.prototype.countAll = function () {
-  const counts = {}
+  const counts = Object.create(null)
   const self = this
 
   Object.keys(this._resources.id).forEach(function (id) {
@@ -97,7 +97,7 @@ QuotaLimiter.prototype._getResourcesByType = function (type, key) {
 }
 
 QuotaLimiter.prototype._initResourcesByType = function (type, key) {
-  const resource = this._resources[type][key] = {}
+  const resource = this._resources[type][key] = Object.create(null)
   return resource
 }
 

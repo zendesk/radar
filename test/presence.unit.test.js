@@ -6,6 +6,7 @@ const Common = require('./common.js')
 const Presence = require('../src/core/resources/presence')
 const sinon = require('sinon')
 const { expect } = require('chai')
+const common = require('./common.js')
 
 describe('given a presence resource', function () {
   let presence, client, client2
@@ -319,7 +320,7 @@ describe('given a presence resource', function () {
 
         // One broadcast of a user offline
         // First message is client_online for user 1
-        assert.deepStrictEqual(local[1], { to: 'aaa', op: 'offline', value: { 123: 0 } })
+        assert.deepStrictEqual(common.normalize(local[1]), common.normalize({ to: 'aaa', op: 'offline', value: { 123: 0 } }))
 
         presence.broadcast = oldBroadcast
       })
@@ -371,13 +372,14 @@ describe('given a presence resource', function () {
         // Remove stamp, it makes no sense to test those
         delete remote[0].stamp
 
-        assert.deepStrictEqual(remote[0], {
-          userId: 1,
-          userType: 2,
-          clientId: client.id,
-          online: false,
-          explicit: true
-        })
+        assert.deepStrictEqual(common.normalize(remote[0]),
+          common.normalize({
+            userId: 1,
+            userType: 2,
+            clientId: client.id,
+            online: false,
+            explicit: true
+          }))
 
         presence.set(client2, { key: 1, type: 2, value: 'offline' })
 
@@ -387,40 +389,43 @@ describe('given a presence resource', function () {
         // There should be a client_offline notification for CID 2
         assert.strictEqual(remote.length, 2)
 
-        assert.deepStrictEqual(remote[1], {
-          userId: 1,
-          userType: 2,
-          clientId: client2.id,
-          online: false,
-          explicit: true
-        })
+        assert.deepStrictEqual(common.normalize(remote[1]),
+          common.normalize({
+            userId: 1,
+            userType: 2,
+            clientId: client2.id,
+            online: false,
+            explicit: true
+          }))
 
         // Remove stamp, it makes no sense to test those
         delete local[0].stamp
         // Check local broadcast
         assert.strictEqual(local.length, 3)
         // There should be a client_offline notification for CID 1
-        assert.deepStrictEqual(local[0], {
-          to: 'aaa',
-          op: 'client_offline',
-          explicit: true,
-          value: { userId: 1, clientId: client.id }
-        })
+        assert.deepStrictEqual(common.normalize(local[0]),
+          common.normalize({
+            to: 'aaa',
+            op: 'client_offline',
+            explicit: true,
+            value: { userId: 1, clientId: client.id }
+          }))
 
         // Remove stamp, it makes no sense to test those
         delete local[1].stamp
         // There should be a client_offline notification for CID 2
-        assert.deepStrictEqual(local[1], {
-          to: 'aaa',
-          op: 'client_offline',
-          explicit: true,
-          value: { userId: 1, clientId: client2.id }
-        })
+        assert.deepStrictEqual(common.normalize(local[1]),
+          common.normalize({
+            to: 'aaa',
+            op: 'client_offline',
+            explicit: true,
+            value: { userId: 1, clientId: client2.id }
+          }))
         // There should be a broadcast for a offline notification for UID 1
         // Remove stamp, it makes no sense to test those
         delete local[2].stamp
-        assert.deepStrictEqual(local[2], { to: 'aaa', op: 'offline', value: { 1: 2 } })
-        assert.deepStrictEqual(local[2].value, { 1: 2 })
+        assert.deepStrictEqual(common.normalize(local[2]), common.normalize({ to: 'aaa', op: 'offline', value: { 1: 2 } }))
+        assert.deepStrictEqual(common.normalize(local[2].value), common.normalize({ 1: 2 }))
 
         // No notifications sent to the client themselves.
         assert.strictEqual(typeof messages[client.id], 'undefined')
@@ -462,7 +467,7 @@ describe('given a presence resource', function () {
         // There should be a broadcast for a offline notification for UID 1
         assert.strictEqual(local.length, 3)
         assert.strictEqual(local[2].op, 'offline')
-        assert.deepStrictEqual(local[2].value, { 1: 2 })
+        assert.deepStrictEqual(common.normalize(local[2].value), common.normalize({ 1: 2 }))
 
         // No notifications sent to the client themselves.
         assert.strictEqual(typeof messages[client.id], 'undefined')
@@ -498,7 +503,7 @@ describe('given a presence resource', function () {
         // There should be a broadcast for a offline notification for UID 1
         assert.strictEqual(local.length, 3)
         assert.strictEqual(local[2].op, 'offline')
-        assert.deepStrictEqual(local[2].value, { 1: 2 })
+        assert.deepStrictEqual(common.normalize(local[2].value), common.normalize({ 1: 2 }))
 
         // No notifications sent to the client themselves.
         assert.strictEqual(typeof messages[client.id], 'undefined')
@@ -514,7 +519,7 @@ describe('given a presence resource', function () {
 
       Persistence.persistHash = function (to, key, value) {
         called = true
-        assert.deepStrictEqual(value.userData, { test: 1 })
+        assert.deepStrictEqual(common.normalize(value.userData), common.normalize({ test: 1 }))
       }
 
       presence.set(client, { type: 2, key: 123, value: 'online', userData: { test: 1 } })
@@ -530,7 +535,7 @@ describe('given a presence resource', function () {
       }
       const fakeClient = {
         send: function (msg) {
-          assert.deepStrictEqual(msg.value[123], data)
+          assert.deepStrictEqual(common.normalize(msg.value[123]), common.normalize(data))
         }
       }
 
@@ -593,6 +598,34 @@ describe('a presence resource', function () {
 
       setTimeout(function () {
         radarServer._processMessage(socketOne, subscribeMessage)
+        radarServer._processMessage(socketTwo, setMessage)
+      }, 100)
+    })
+
+    it('should not allow prototype pollution via set message', function (done) {
+    // This message tries to pollute Object.prototype
+      let count = 0
+      const setMessage = {
+        op: 'set',
+        to: 'presence:/z1/test/ticket/1',
+        value: 'online',
+        key: '__proto__',
+        type: { polluted: true }
+      }
+      const socketTwo = { id: 'polluter', send: function () {} }
+
+      radarServer.on('resource:new', function (resource) {
+        resource.on('message:outgoing', function (message) {
+        // After processing, check if global Object.prototype is polluted
+          const obj = {}
+          // If prototype pollution happened, obj.polluted would be true
+          assert.strictEqual(obj.polluter, undefined, 'Prototype pollution detected!')
+          count++
+          if (count === 2) { done() }
+        })
+      })
+
+      setTimeout(function () {
         radarServer._processMessage(socketTwo, setMessage)
       }, 100)
     })

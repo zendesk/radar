@@ -4,7 +4,7 @@ const { inherits } = require('util')
 const ClientSessionStateMachine = require('./client_session_state_machine')
 
 // TODO: move to a SessionManager class
-const clientsById = {}
+const clientsById = Object.create(null)
 
 function ClientSession (name, id, accountName, version, transport) {
   this.state = ClientSessionStateMachine.create(this)
@@ -14,8 +14,8 @@ function ClientSession (name, id, accountName, version, transport) {
   this.name = name
   this.accountName = accountName
   this.id = id
-  this.subscriptions = {}
-  this.presences = {}
+  this.subscriptions = Object.create(null)
+  this.presences = Object.create(null)
   this.version = version || '0.0.0'
   EventEmitter.call(this)
 
@@ -243,7 +243,7 @@ ClientSession.prototype._storeDataPresences = function (messageIn) {
 // Private functions
 // TODO: move to util module
 function _cloneForStorage (messageIn) {
-  const message = {}
+  const message = Object.create(null)
 
   message.to = messageIn.to
   message.op = messageIn.op

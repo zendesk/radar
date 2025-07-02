@@ -18,7 +18,7 @@ StreamSubscriber.prototype.sendable = function (data) {
 }
 
 function SubscriberState () {
-  this.subscribers = {}
+  this.subscribers = Object.create(null)
 }
 
 SubscriberState.prototype.get = function (clientSessionId) {

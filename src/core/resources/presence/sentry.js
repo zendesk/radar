@@ -26,7 +26,7 @@ const messageExpiration = function (message) {
 }
 
 const Sentry = function (name) {
-  this.sentries = {}
+  this.sentries = Object.create(null)
   this._setName(name)
 
   this._expiryOffset = defaultOptions.EXPIRY_OFFSET
@@ -38,7 +38,7 @@ require('util').inherits(Sentry, require('events').EventEmitter)
 
 Sentry.prototype.start = function (options, callback) {
   const self = this
-  const keepAliveOptions = {}
+  const keepAliveOptions = Object.create(null)
 
   options = options || {}
 
@@ -74,7 +74,7 @@ Sentry.prototype.stop = function (callback) {
 
   this._stopTimer('_checkSentriesTimer')
   this._stopTimer('_refreshTimer')
-  this.sentries = {}
+  this.sentries = Object.create(null)
   this._stopListening()
 
   if (callback) { callback() }

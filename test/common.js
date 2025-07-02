@@ -127,5 +127,7 @@ module.exports = {
     }
 
     return radarServer
-  }
+  },
+
+  normalize: (obj) => JSON.parse(JSON.stringify(obj))
 }

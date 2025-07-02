@@ -9,7 +9,7 @@ function PresenceManager (scope, policy, sentry) {
   this.policy = policy
   this.sentry = sentry
   this.store = new PresenceStore(scope)
-  this.expiryTimers = {}
+  this.expiryTimers = Object.create(null)
   this.setup()
   this.destroying = false
 }
@@ -279,7 +279,7 @@ PresenceManager.prototype.fullRead = function (callback) {
 
 // Sync v1
 PresenceManager.prototype.getOnline = function () {
-  const result = {}
+  const result = Object.create(null)
   const store = this.store
 
   this.store.users().forEach(function (userId) {
@@ -291,7 +291,7 @@ PresenceManager.prototype.getOnline = function () {
 
 // Sync v2
 PresenceManager.prototype.getClientsOnline = function () {
-  const result = {}
+  const result = Object.create(null)
   const store = this.store
 
   function processMessage (message) {

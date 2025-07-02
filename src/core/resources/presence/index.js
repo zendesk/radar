@@ -29,7 +29,7 @@ Presence.prototype.setup = function () {
 
   this.manager.on('user_online', function (userId, userType, userData) {
     logging.info('#presence - user_online', userId, userType, self.to)
-    const value = {}
+    const value = Object.create(null)
     value[userId] = userType
     self.broadcast({
       to: self.to,
@@ -41,7 +41,7 @@ Presence.prototype.setup = function () {
 
   this.manager.on('user_offline', function (userId, userType) {
     logging.info('#presence - user_offline', userId, userType, self.to)
-    const value = {}
+    const value = Object.create(null)
     value[userId] = userType
     self.broadcast({
       to: self.to,

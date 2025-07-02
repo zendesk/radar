@@ -4,7 +4,7 @@ const ClientSession = require('../client/client_session.js')
 const logging = require('minilog')('radar:quota_manager')
 
 const QuotaManager = function () {
-  this._limiters = {}
+  this._limiters = Object.create(null)
 }
 
 MiniEventEmitter.mixin(QuotaManager)

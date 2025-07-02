@@ -3,10 +3,10 @@ const logging = require('minilog')('radar:presence_store')
 
 function PresenceStore (scope) {
   this.scope = scope
-  this.map = {}
-  this.cache = {}
-  this.socketUserMap = {}
-  this.userTypes = {}
+  this.map = Object.create(null)
+  this.cache = Object.create(null)
+  this.socketUserMap = Object.create(null)
+  this.userTypes = Object.create(null)
 }
 
 require('util').inherits(PresenceStore, require('events').EventEmitter)
@@ -31,7 +31,7 @@ PresenceStore.prototype.add = function (clientSessionId, userId, userType, messa
 
   if (!this.map[userId]) {
     events.push('user_added')
-    this.map[userId] = {}
+    this.map[userId] = Object.create(null)
     this.userTypes[userId] = userType
   }
 
