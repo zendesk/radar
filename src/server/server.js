@@ -25,9 +25,9 @@ function Server () {
     adapters: [new SocketClientSessionAdapter(ClientSession)]
   })
   this.socketServer = null
-  this.resources = {}
+  this.resources = Object.create(null)
   this.subscriber = null
-  this.subs = {}
+  this.subs = Object.create(null)
   this.sentry = null
 
   this.ready = new Promise(function (resolve) {

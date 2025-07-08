@@ -42,7 +42,7 @@ function recursiveMerge (target /*, ..sources */) {
 
 function Resource (to, server, options, defaultOptions) {
   this.to = to
-  this.subscribers = {}
+  this.subscribers = Object.create(null)
   this.server = server // RadarServer instance
   this.options = recursiveMerge({}, options || {}, defaultOptions || {})
 }
