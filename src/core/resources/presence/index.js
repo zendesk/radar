@@ -79,7 +79,7 @@ Presence.prototype.setup = function () {
   })
 
   this.manager.on('client_offline', function (clientSessionId, userId, explicit) {
-    logging.info('#presence - client_offline', clientSessionId, userId, explicit, self.to)
+    logging.debug('#presence - client_offline', clientSessionId, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_offline',
