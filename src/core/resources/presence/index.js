@@ -153,7 +153,7 @@ Presence.prototype.subscribe = function (clientSession, message) {
 }
 
 Presence.prototype.unsubscribe = function (clientSession, message) {
-  logging.info('#presence - implicit disconnect', clientSession.id, this.to)
+  logging.debug('#presence - implicit disconnect', clientSession.id, this.to)
   this.manager.disconnectClient(clientSession.id)
 
   Resource.prototype.unsubscribe.call(this, clientSession, message)
