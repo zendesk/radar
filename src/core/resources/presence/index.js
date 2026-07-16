@@ -51,7 +51,7 @@ Presence.prototype.setup = function () {
   })
 
   this.manager.on('client_online', function (clientSessionId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_online', clientSessionId, userId, self.to, userData, clientData)
+    logging.debug('#presence - client_online', clientSessionId, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_online',
