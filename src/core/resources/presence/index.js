@@ -51,7 +51,7 @@ Presence.prototype.setup = function () {
   })
 
   this.manager.on('client_online', function (clientSessionId, userId, userType, userData, clientData) {
-    logging.info('#presence - client_online', clientSessionId, userId, self.to, userData, clientData)
+    logging.debug('#presence - client_online', clientSessionId, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_online',
@@ -79,7 +79,7 @@ Presence.prototype.setup = function () {
   })
 
   this.manager.on('client_offline', function (clientSessionId, userId, explicit) {
-    logging.info('#presence - client_offline', clientSessionId, userId, explicit, self.to)
+    logging.debug('#presence - client_offline', clientSessionId, self.to)
     self.broadcast({
       to: self.to,
       op: 'client_offline',
@@ -153,7 +153,7 @@ Presence.prototype.subscribe = function (clientSession, message) {
 }
 
 Presence.prototype.unsubscribe = function (clientSession, message) {
-  logging.info('#presence - implicit disconnect', clientSession.id, this.to)
+  logging.debug('#presence - implicit disconnect', clientSession.id, this.to)
   this.manager.disconnectClient(clientSession.id)
 
   Resource.prototype.unsubscribe.call(this, clientSession, message)
